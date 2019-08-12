@@ -19,14 +19,15 @@ CFLAGS   := $(CFLAGS) -Werror -Wfatal-errors -std=gnu11 $(INCLUDES)
 DFLAGS   := $(CFLAGS) $(DFLAGS) -ggdb3 -O0
 CFLAGS   := $(CFLAGS) -DNDEBUG -DNVALGRIND -O2
 SOURCES  := $(shell find $(NAME) -type f -name "*.c")
-
+TESTS    := $(shell find tests -type f -name "*.c")
+TESTOBJS := $(patsubst tests/%.c, test/%.o, $(TESTS))
 
 .PHONY: all
 all: debug
 
 .PHONY: clean
 clean:
-	rm -rf debug prod
+	rm -rf debug prod test
 
 
 .PHONY: prod
@@ -57,3 +58,18 @@ debug/%.o: $(NAME)/%.c
 
 debug/$(LIBNAME): $(patsubst $(NAME)/%.c, debug/%.o, $(SOURCES))
 	$(AR) rcs $@ $^
+
+
+.PHONY: test
+test: test/$(NAME)
+
+-include $(patsubst tests/%.c, test/%.d, $(TESTS))
+
+test/%.o: tests/%.c
+	@mkdir -p $(dir $@)
+	$(CC) $(DFLAGS) -o $@ $<
+	@gcc -MM $(INCLUDES) $< | sed -e 's|[^:]*:|$@:|' > $(@:%.o=%.d)
+	@sed -e 's/.*: *//; s/\\$$//g; s/ /:\n/g; s/$$/:/' < $(@:%.o=%.d) >> $(@:%.o=%.d)
+
+test/$(NAME): debug/$(LIBNAME) $(TESTOBJS)
+	$(LD) $(DFLAGS) -o $@ $(TESTOBJS) -Ldebug -l$(NAME)
