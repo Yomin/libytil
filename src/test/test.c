@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#include "test.h"
-#include "ctx.h"
+#include <ytil/test/test.h>
+#include <ytil/test/ctx.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <setjmp.h>

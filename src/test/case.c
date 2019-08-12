@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include "case.h"
+#include <ytil/test/case.h>
 #include <ytil/def.h>
 #include <stdlib.h>
 

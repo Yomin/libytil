@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include "proc.h"
+#include <ytil/sys/proc.h>
 #include <ytil/def.h>
 #include <stddef.h>
 #include <stdlib.h>

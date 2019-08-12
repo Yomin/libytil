@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#include "time.h"
-#include "stdio.h"
+#include <ytil/ext/time.h>
+#include <ytil/ext/stdio.h>
 #include <assert.h>
 #include <stdlib.h>
 

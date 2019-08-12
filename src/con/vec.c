@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include "vec.h"
+#include <ytil/con/vec.h>
 #include <ytil/def.h>
 #include <ytil/magic.h>
 

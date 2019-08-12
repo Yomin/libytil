@@ -13,12 +13,12 @@ AR   = $(AR_$(verbose))
 
 NAME     := ytil
 LIBNAME  := lib$(NAME).a
-INCLUDES := $(INCLUDES) -I.
+INCLUDES := $(INCLUDES) -Iinclude
 CFLAGS   := $(CFLAGS) -Wall -Wextra -Wpedantic -Woverflow -Wno-unused-parameter
 CFLAGS   := $(CFLAGS) -Werror -Wfatal-errors -std=gnu11 $(INCLUDES)
 DFLAGS   := $(CFLAGS) $(DFLAGS) -ggdb3 -O0
 CFLAGS   := $(CFLAGS) -DNDEBUG -DNVALGRIND -O2
-SOURCES  := $(shell find $(NAME) -type f -name "*.c")
+SOURCES  := $(shell find src -type f -name "*.c")
 TESTS    := $(shell find tests -type f -name "*.c")
 TESTOBJS := $(patsubst tests/%.c, test/%.o, $(TESTS))
 
@@ -33,30 +33,30 @@ clean:
 .PHONY: prod
 prod: prod/$(LIBNAME)
 
--include $(patsubst $(NAME)/%.c, prod/%.d, $(SOURCES))
+-include $(patsubst src/%.c, prod/%.d, $(SOURCES))
 
-prod/%.o: $(NAME)/%.c
+prod/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -o $@ $<
 	@gcc -MM $(INCLUDES) $< | sed -e 's|[^:]*:|$@:|' > $(@:%.o=%.d)
 	@sed -e 's/.*: *//; s/\\$$//g; s/ /:\n/g; s/$$/:/' < $(@:%.o=%.d) >> $(@:%.o=%.d)
 
-prod/$(LIBNAME): $(patsubst $(NAME)/%.c, prod/%.o, $(SOURCES))
+prod/$(LIBNAME): $(patsubst src/%.c, prod/%.o, $(SOURCES))
 	$(AR) rcs $@ $^
 
 
 .PHONY: debug
 debug: debug/$(LIBNAME)
 
--include $(patsubst $(NAME)/%.c, debug/%.d, $(SOURCES))
+-include $(patsubst src/%.c, debug/%.d, $(SOURCES))
 
-debug/%.o: $(NAME)/%.c
+debug/%.o: src/%.c
 	@mkdir -p $(dir $@)
 	$(CC) $(DFLAGS) -o $@ $<
 	@gcc -MM $(INCLUDES) $< | sed -e 's|[^:]*:|$@:|' > $(@:%.o=%.d)
 	@sed -e 's/.*: *//; s/\\$$//g; s/ /:\n/g; s/$$/:/' < $(@:%.o=%.d) >> $(@:%.o=%.d)
 
-debug/$(LIBNAME): $(patsubst $(NAME)/%.c, debug/%.o, $(SOURCES))
+debug/$(LIBNAME): $(patsubst src/%.c, debug/%.o, $(SOURCES))
 	$(AR) rcs $@ $^
 
 

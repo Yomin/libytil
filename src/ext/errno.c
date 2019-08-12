@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include "errno.h"
+#include <ytil/ext/errno.h>
 #include <stddef.h>
 
 #define CASE_STRERRNO(err) case err: return #err;

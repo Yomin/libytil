@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include "ctype.h"
+#include <ytil/ext/ctype.h>
 
 
 int isword(int c)

@@ -20,8 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include "string.h"
-
+#include <ytil/ext/string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>

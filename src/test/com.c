@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include "com.h"
+#include <ytil/test/com.h>
 #include <ytil/def.h>
 #include <stdarg.h>
 #include <stdlib.h>

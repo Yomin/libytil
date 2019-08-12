@@ -20,10 +20,10 @@
  * THE SOFTWARE.
  */
 
-#include "run.h"
-#include "com.h"
-#include "state.h"
-#include "ctx.h"
+#include <ytil/test/run.h>
+#include <ytil/test/com.h>
+#include <ytil/test/state.h>
+#include <ytil/test/ctx.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
