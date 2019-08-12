@@ -53,29 +53,97 @@ char *time_strdup_isotime(const tm_st *tm);
 // format date and time into allocated buffer
 char *time_strdup_isots(const tm_st *tm);
 
-// format interval into allocated human readable representation
-char *time_strdup_duration(time_t from, time_t till);
+// format seconds into allocated human readable representation
+char *time_strdup_duration(size_t seconds, size_t milli_seconds);
+
+// set timespec with seconds
+void time_ts_set_sec(timespec_st *ts, size_t seconds);
+// set timespec with milli seconds
+void time_ts_set_milli(timespec_st *ts, size_t millis);
+// set timespec with micro seconds
+void time_ts_set_micro(timespec_st *ts, size_t micros);
+// set timespec with nano second
+void time_ts_set_nano(timespec_st *ts, size_t nanos);
 
 // add src timespec to dst timespec
 void time_ts_add(timespec_st *dst, const timespec_st *src);
-// add seconds and milliseconds to timespec
-void time_ts_add_s(timespec_st *dst, size_t sec, size_t msec);
-// return -1, 0, 1 if tsp1 is less than, equal, greater than tsp2
-int  time_ts_cmp(const timespec_st *tsp1, const timespec_st *tsp2);
+// add seconds to timespec
+void time_ts_add_sec(timespec_st *ts, size_t seconds);
+// add milli seconds to timespec
+void time_ts_add_milli(timespec_st *ts, size_t millis);
+// add micro seconds to timespec
+void time_ts_add_micro(timespec_st *ts, size_t micros);
+// add nano seconds to timespec
+void time_ts_add_nano(timespec_st *ts, size_t nanos);
+
+// return timespec in seconds
+size_t time_ts_get_sec(const timespec_st *ts);
+// return timespec in milli seconds
+size_t time_ts_get_milli(const timespec_st *ts);
+// return timespec in micro seconds
+size_t time_ts_get_micro(const timespec_st *ts);
+// return timespec in nano seconds
+size_t time_ts_get_nano(const timespec_st *ts);
+
+// return -1, 0, 1 if ts1 is less than, equal, greater than ts2
+int time_ts_cmp(const timespec_st *ts1, const timespec_st *ts2);
+
 // set dst timespec to end timespec - start timespec
-void time_ts_diff(timespec_st *dst, const timespec_st *start, const timespec_st *end);
+void   time_ts_diff(timespec_st *dst, const timespec_st *start, const timespec_st *end);
 // set dst timespec to end timeval - start timeval
-void time_ts_diff_tv(timespec_st *dst, const timeval_st *start, const timeval_st *end);
+void   time_ts_diff_tv(timeval_st *dst, const timespec_st *start, const timespec_st *end);
+// return end timespec - start timespec in seconds
+size_t time_ts_diff_sec(const timespec_st *start, const timespec_st *end);
+// return end timespec - start timespec in milli seconds
+size_t time_ts_diff_milli(const timespec_st *start, const timespec_st *end);
+// return end timespec - start timespec in micro seconds
+size_t time_ts_diff_micro(const timespec_st *start, const timespec_st *end);
+// return end timespec - start timespec in nano seconds
+size_t time_ts_diff_nano(const timespec_st *start, const timespec_st *end);
+
+// set timeval with seconds
+void time_tv_set_sec(timeval_st *tv, size_t seconds);
+// set timeval with milli seconds
+void time_tv_set_milli(timeval_st *tv, size_t millis);
+// set timeval with micro seconds
+void time_tv_set_micro(timeval_st *tv, size_t micros);
+// set timeval with nano second
+void time_tv_set_nano(timeval_st *tv, size_t nanos);
 
 // add src timeval to dst timeval
 void time_tv_add(timeval_st *dst, const timeval_st *src);
-// add seconds and milliseconds to timeval
-void time_tv_add_s(timeval_st *dst, size_t sec, size_t msec);
-// return -1, 0, 1 if tsp1 is less than, equal, greater than tsp2
-int  time_tv_cmp(const timeval_st *tv1, const timeval_st *tv2);
+// add seconds to timeval
+void time_tv_add_sec(timeval_st *tv, size_t seconds);
+// add milli seconds to timeval
+void time_tv_add_milli(timeval_st *tv, size_t millis);
+// add micro seconds to timeval
+void time_tv_add_micro(timeval_st *tv, size_t micros);
+// add nano seconds to timeval
+void time_tv_add_nano(timeval_st *tv, size_t nanos);
+
+// return timeval in seconds
+size_t time_tv_get_sec(const timeval_st *tv);
+// return timeval in milli seconds
+size_t time_tv_get_milli(const timeval_st *tv);
+// return timeval in micro seconds
+size_t time_tv_get_micro(const timeval_st *tv);
+// return timeval in nano seconds
+size_t time_tv_get_nano(const timeval_st *tv);
+
+// return -1, 0, 1 if tv1 is less than, equal, greater than tv2
+int time_tv_cmp(const timeval_st *tv1, const timeval_st *tv2);
+
 // set dst timeval to end timeval - start timeval
-void time_tv_diff(timeval_st *dst, const timeval_st *start, const timeval_st *end);
+void   time_tv_diff(timeval_st *dst, const timeval_st *start, const timeval_st *end);
 // set dst timeval to end timespec - start timespec
-void time_tv_diff_ts(timeval_st *dst, const timespec_st *start, const timespec_st *end);
+void   time_tv_diff_ts(timespec_st *dst, const timeval_st *start, const timeval_st *end);
+// return end timeval - start timeval in seconds
+size_t time_tv_diff_sec(const timeval_st *start, const timeval_st *end);
+// return end timeval - start timeval in milli seconds
+size_t time_tv_diff_milli(const timeval_st *start, const timeval_st *end);
+// return end timeval - start timeval in micro seconds
+size_t time_tv_diff_micro(const timeval_st *start, const timeval_st *end);
+// return end timeval - start timeval in nano seconds
+size_t time_tv_diff_nano(const timeval_st *start, const timeval_st *end);
 
 #endif
