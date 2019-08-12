@@ -14,7 +14,8 @@ AR   = $(AR_$(verbose))
 NAME     := ytil
 LIBNAME  := lib$(NAME).a
 INCLUDES := $(INCLUDES) -I.
-CFLAGS   := $(CFLAGS) -Wall -pedantic -std=gnu99 $(INCLUDES)
+CFLAGS   := $(CFLAGS) -Wall -Wextra -Wpedantic -Woverflow -Wno-unused-parameter
+CFLAGS   := $(CFLAGS) -Werror -Wfatal-errors -std=gnu11 $(INCLUDES)
 DFLAGS   := $(CFLAGS) $(DFLAGS) -ggdb3 -O0
 CFLAGS   := $(CFLAGS) -DNDEBUG -DNVALGRIND -O2
 SOURCES  := $(shell find $(NAME) -type f -name "*.c")
