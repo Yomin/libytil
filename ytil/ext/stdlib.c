@@ -200,7 +200,7 @@ static inline char *scalecopy(char *buf, const char *str, size_t n, ssize_t scal
 {
     size_t dot;
     
-    assert(scale <= n);
+    assert(scale < 0 || (size_t)scale <= n);
     
     if(scale <= 0)
     {

@@ -129,6 +129,10 @@
     if(!(condition)) \
         do { errno = (error); return (value); } while(0)
 
+// set errno and return value if reached
+#define return_err_if_reached(error, value) \
+    do { errno = (error); return (value); } while(0)
+
 #ifdef NDEBUG
     
     // does nothing in production mode
