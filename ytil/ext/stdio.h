@@ -29,26 +29,45 @@
 
 // format string into stack allocated buffer
 #define FMT(fmt, ...) __extension__ ({ \
-    int len = snprintf(NULL, 0, fmt, __VA_ARGS__); \
-    char *data = alloca(len+1); \
+    char *data; \
+    int len; \
+    \
+    len  = snprintf(NULL, 0, fmt, __VA_ARGS__); \
+    data = alloca(len+1); \
     snprintf(data, len+1, fmt, __VA_ARGS__); \
+    \
     data; })
 
 // format string into stack allocated buffer, va_list version
-#define VFMT(fmt, ap) __extension__ ({ \
-    int len = vsnprintf(NULL, 0, fmt, ap); \
-    char *data = alloca(len+1); \
-    vsnprintf(data, len+1, fmt, ap); \
+#define VFMT(fmt, ap1) __extension__ ({ \
+    va_list ap2; \
+    char *data; \
+    int len; \
+    \
+    va_copy(ap2, ap1); \
+    len = vsnprintf(NULL, 0, fmt, ap2); \
+    va_end(ap2); \
+    \
+    data = alloca(len+1); \
+    vsnprintf(data, len+1, fmt, ap1); \
+    \
     data; })
 
 // format string into stack allocated buffer, implicit use of variable arguments
 #define VVFMT(fmt) __extension__ ({ \
-    va_list ap; \
-    va_start(ap, fmt); \
-    int len = vsnprintf(NULL, 0, fmt, ap); \
-    char *data = alloca(len+1); \
-    vsnprintf(data, len+1, fmt, ap); \
-    va_end(ap); \
+    va_list ap1, ap2; \
+    char *data; \
+    int len; \
+    \
+    va_start(ap1, fmt); \
+    va_copy(ap2, ap1); \
+    len = vsnprintf(NULL, 0, fmt, ap2); \
+    va_end(ap2); \
+    \
+    data = alloca(len+1); \
+    vsnprintf(data, len+1, fmt, ap1); \
+    va_end(ap1); \
+    \
     data; })
 
 
