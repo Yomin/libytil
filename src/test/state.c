@@ -208,6 +208,7 @@ const char *test_state_strresult(test_result_id result)
     case TEST_RESULT_FAIL:      return "fail";
     case TEST_RESULT_TIMEOUT:   return "timeout";
     case TEST_RESULT_ERROR:     return "error";
+    case TEST_RESULT_SKIP:      return "skip";
     default:                    return errno = EINVAL, NULL;
     }
 }

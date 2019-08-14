@@ -76,7 +76,7 @@ typedef struct test_run
     test_count_st count;
     vec_ct path, filters;
     FILE *fp;
-    bool fork, clean_exit, core_dump, check_traced, traced;
+    bool fork, clean_exit, core_dump, skip, check_traced, traced;
     test_run_loglvl_id loglvl;
 } test_run_st;
 
@@ -140,6 +140,8 @@ static const struct option test_run_options[] =
     , { "noclean", no_argument,       NULL, 'C' }
     , { "dump",    no_argument,       NULL, 'd' }
     , { "nodump",  no_argument,       NULL, 'D' }
+    , { "skip",    no_argument,       NULL, 's' }
+    , { "noskip",  no_argument,       NULL, 'S' }
     , { "loglvl",  required_argument, NULL, 'l' }
     , { NULL,      0,                 NULL,  0  }
 };
@@ -164,7 +166,7 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
         switch(opt)
         {
         case 'h':
-            fprintf(run->fp, "Usage: %s [-v] [--loglvl=<lvl>] [--[no]fork] [--[no]clean] [--[no]dump] [path/to1,to2/suite*/case [...]]\n", argv[0]);
+            fprintf(run->fp, "Usage: %s [-v] [--loglvl=<lvl>] [--[no]fork] [--[no]clean] [--[no]dump] [--[no]skip] [path/to1,to2/suite*/case [...]]\n", argv[0]);
             return -1;
         case 'f':
         case 'F':
@@ -177,6 +179,10 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
         case 'd':
         case 'D':
             run->core_dump = opt == 'd';
+            break;
+        case 's':
+        case 'S':
+            run->skip = opt == 's';
             break;
         case 'l':
             if(strspn(optarg, "1234567890") != strlen(optarg))
@@ -223,6 +229,7 @@ test_run_ct test_run_new_with_args(int argc, char *argv[])
     
     run->fp = stdout;
     run->fork = true;
+    run->skip = true;
     run->check_traced = true;
     
     if(test_run_config(run, argc, argv))
@@ -532,7 +539,8 @@ static bool test_run_has_error(test_run_ct run)
 
 static bool test_run_has_warning(test_run_ct run)
 {
-    return !!run->count.results[TEST_RESULT_WARNING];
+    return run->count.results[TEST_RESULT_WARNING]
+    ||     run->count.results[TEST_RESULT_SKIP];
 }
 
 static size_t test_run_sum_count(test_run_ct run)
@@ -604,7 +612,7 @@ static int test_run_worker(test_run_ct run, test_case_const_ct tcase)
     test_case_cb fun;
     void *state = NULL;
     jmp_buf jump;
-    int null, rc;
+    int null;
     
     if(run->fork)
     {
@@ -626,8 +634,8 @@ static int test_run_worker(test_run_ct run, test_case_const_ct tcase)
     {
         ctx.jump = &jump;
         
-        if((rc = setjmp(jump)))
-            return rc;
+        if(setjmp(jump)) // returns 1 on jump
+            return 0;
     }
     
     proc_append_title(" [%s]", test_case_get_name(tcase));
@@ -740,7 +748,8 @@ static void test_run_eval(test_run_ct run, test_case_const_ct tcase)
         switch(result)
         {
         case TEST_RESULT_PASS:      color = COLOR_GREEN; break;
-        case TEST_RESULT_WARNING:   color = COLOR_YELLOW; break;
+        case TEST_RESULT_WARNING:
+        case TEST_RESULT_SKIP:      color = COLOR_YELLOW; break;
         default:                    color = COLOR_RED; break;
         }
         
@@ -762,7 +771,9 @@ static void test_run_eval(test_run_ct run, test_case_const_ct tcase)
 
 static void test_run_eval_status(test_run_ct run, test_case_const_ct tcase, bool signaled, int signal, bool exited, int rc)
 {
-    if(signaled)
+    if(test_state_get_result(run->state) == TEST_RESULT_SKIP)
+        ; // skip signal/rc inspection
+    else if(signaled)
     {
         if(!test_case_expects_signal(tcase))
         {
@@ -901,7 +912,7 @@ static int test_run_control(test_run_ct run, test_case_const_ct tcase, pid_t wor
 static int test_run_case(test_run_ct run, test_case_const_ct tcase)
 {
     pid_t pid;
-    int sv[2], rc;
+    int sv[2], rc = 0;
     
     if(!test_run_filter(run, TEST_ENTRY_CASE, test_case_get_name(tcase)))
         return 0;
@@ -914,7 +925,12 @@ static int test_run_case(test_run_ct run, test_case_const_ct tcase)
     
     if(!run->fork)
     {
-        if((rc = test_run_worker(run, tcase)) >= 0)
+        if(run->skip && (test_case_expects_exit(tcase) || test_case_expects_signal(tcase)))
+            test_state_set_result(run->state, TEST_RESULT_SKIP);
+        else
+            rc = test_run_worker(run, tcase);
+        
+        if(rc >= 0)
             test_run_eval_status(run, tcase, false, 0, true, rc);
     }
     else
@@ -974,7 +990,8 @@ static void test_run_print_summary(test_run_ct run)
             switch(result)
             {
             case TEST_RESULT_PASS:      color = COLOR_GREEN; break;
-            case TEST_RESULT_WARNING:   color = COLOR_YELLOW; break;
+            case TEST_RESULT_WARNING:
+            case TEST_RESULT_SKIP:      color = COLOR_YELLOW; break;
             default:                    color = COLOR_RED; break;
             }
             

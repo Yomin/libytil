@@ -42,6 +42,7 @@ typedef enum test_result
     , TEST_RESULT_FAIL
     , TEST_RESULT_TIMEOUT
     , TEST_RESULT_ERROR
+    , TEST_RESULT_SKIP
     , TEST_RESULTS
 } test_result_id;
 
