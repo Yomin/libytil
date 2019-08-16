@@ -26,6 +26,16 @@
 #include <ytil/test/suite.h>
 #include <stdbool.h>
 
+typedef enum test_run_error
+{
+      E_TEST_RUN_INVALID_OBJECT
+    , E_TEST_RUN_INVALID_SUITE
+    , E_TEST_RUN_INVALID_FILTER
+    , E_TEST_RUN_INVALID_OPTION
+    , E_TEST_RUN_MISSING_ARG
+    , E_TEST_RUN_MALFORMED_ARG
+    , E_TEST_RUN_TRACE_CHECK
+} test_run_error_id;
 
 struct test_run;
 typedef struct test_run *test_run_ct;

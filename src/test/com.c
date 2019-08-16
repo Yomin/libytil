@@ -43,13 +43,25 @@ typedef struct test_com
     void *ctx;
 } test_com_st;
 
+static const error_info_st error_infos[] =
+{
+      ERROR_INFO(E_TEST_COM_INVALID_MSG_TYPE, "Invalid message type.")
+    , ERROR_INFO(E_TEST_COM_INVALID_STATUS_TYPE, "Invalid status type.")
+    , ERROR_INFO(E_TEST_COM_INVALID_RESULT_TYPE, "Invalid result type.")
+    , ERROR_INFO(E_TEST_COM_INVALID_POS_TYPE, "Invalid position type.")
+    , ERROR_INFO(E_TEST_COM_INVALID_TIMESTAMP, "Invalid timestamp.")
+    , ERROR_INFO(E_TEST_COM_INVALID_TEXT_FORMAT, "Invalid text message format.")
+    , ERROR_INFO(E_TEST_COM_SHUTDOWN, "Test case peer shutdown.")
+    , ERROR_INFO(E_TEST_COM_WOULD_BLOCK, "Socket would block.")
+};
+
 
 test_com_ct test_com_new(test_com_msg_cb cb, void *ctx)
 {
     test_com_ct com;
     
     if(!(com = calloc(1, sizeof(test_com_st))))
-        return NULL;
+        return error_set_errno(calloc), NULL;
     
     com->cb = cb;
     com->ctx = ctx;
@@ -110,7 +122,7 @@ static int test_com_write(test_com_ct com, void *vdata, size_t size)
     
     for(; size; data += count, size -= count)
         if((count = send(com->sock, data, size, 0)) < 0)
-            return -1;
+            return error_set_errno(send), -1;
     
     return 0;
 }
@@ -121,10 +133,10 @@ static int test_com_send(test_com_ct com, test_com_msg_id type, size_t n, ...)
     void *data;
     size_t size;
     
-    return_err_if_fail(type < TEST_COM_TYPES, EINVAL, -1);
+    assert(type < TEST_COM_TYPES);
     
     if(test_com_write(com, &type, sizeof(test_com_msg_id)))
-        return -1;
+        return error_propagate(), -1;
     
     va_start(ap, n);
     
@@ -134,7 +146,7 @@ static int test_com_send(test_com_ct com, test_com_msg_id type, size_t n, ...)
         size = va_arg(ap, size_t);
         
         if(test_com_write(com, data, size))
-            return va_end(ap), -1;
+            return va_end(ap), error_propagate(), -1;
     }
     
     va_end(ap);
@@ -147,12 +159,12 @@ int test_com_send_status(test_com_ct com, test_status_id status)
     test_com_msg_un msg = { .status = status };
     
     assert(com);
-    return_err_if_fail(status < TEST_STATUSES, EINVAL, -1);
+    return_error_if_fail(status < TEST_STATUSES, E_TEST_COM_INVALID_STATUS_TYPE, -1);
     
     if(com->shortcut)
-        return com->cb(TEST_COM_STATUS, &msg, com->ctx);
+        return error_push_int(com->cb(TEST_COM_STATUS, &msg, com->ctx));
     
-    return test_com_send(com, TEST_COM_STATUS, 1, &status, sizeof(test_status_id));
+    return error_propagate_int(test_com_send(com, TEST_COM_STATUS, 1, &status, sizeof(test_status_id)));
 }
 
 int test_com_send_result(test_com_ct com, test_result_id result)
@@ -160,12 +172,12 @@ int test_com_send_result(test_com_ct com, test_result_id result)
     test_com_msg_un msg = { .result = result };
     
     assert(com);
-    return_err_if_fail(result < TEST_RESULTS, EINVAL, -1);
+    return_error_if_fail(result < TEST_RESULTS, E_TEST_COM_INVALID_RESULT_TYPE, -1);
     
     if(com->shortcut)
-        return com->cb(TEST_COM_RESULT, &msg, com->ctx);
+        return error_push_int(com->cb(TEST_COM_RESULT, &msg, com->ctx));
     
-    return test_com_send(com, TEST_COM_RESULT, 1, &result, sizeof(test_result_id));
+    return error_propagate_int(test_com_send(com, TEST_COM_RESULT, 1, &result, sizeof(test_result_id)));
 }
 
 int test_com_send_duration(test_com_ct com, clockid_t clock, timespec_st *start)
@@ -174,15 +186,15 @@ int test_com_send_duration(test_com_ct com, clockid_t clock, timespec_st *start)
     timespec_st now;
     
     assert(com);
-    return_err_if_fail(start, EINVAL, -1);
+    return_error_if_fail(start, E_TEST_COM_INVALID_TIMESTAMP, -1);
     
     clock_gettime(clock, &now);
     msg.duration = time_ts_diff_milli(start, &now);
     
     if(com->shortcut)
-        return com->cb(TEST_COM_DURATION, &msg, com->ctx);
+        return error_push_int(com->cb(TEST_COM_DURATION, &msg, com->ctx));
     
-    return test_com_send(com, TEST_COM_DURATION, 1, &msg.duration, sizeof(size_t));
+    return error_propagate_int(test_com_send(com, TEST_COM_DURATION, 1, &msg.duration, sizeof(size_t)));
 }
 
 int test_com_send_position(test_com_ct com, test_pos_id type, const char *file, size_t line)
@@ -191,17 +203,17 @@ int test_com_send_position(test_com_ct com, test_pos_id type, const char *file, 
     size_t len;
     
     assert(com);
-    return_err_if_fail(file && type < TEST_POS_TYPES, EINVAL, -1);
+    return_error_if_fail(file && type < TEST_POS_TYPES, E_TEST_COM_INVALID_POS_TYPE, -1);
     
     if(com->shortcut)
-        return com->cb(TEST_COM_POS, &msg, com->ctx);
+        return error_push_int(com->cb(TEST_COM_POS, &msg, com->ctx));
     
     len = strlen(file) +1;
     
-    return test_com_send(com, TEST_COM_POS, 4,
+    return error_propagate_int(test_com_send(com, TEST_COM_POS, 4,
         &type, sizeof(test_pos_id),
         &len, sizeof(size_t), file, len,
-        &line, sizeof(size_t));
+        &line, sizeof(size_t)));
 }
 
 int test_com_send_pass(test_com_ct com)
@@ -209,9 +221,9 @@ int test_com_send_pass(test_com_ct com)
     assert(com);
     
     if(com->shortcut)
-        return com->cb(TEST_COM_PASS, NULL, com->ctx);
+        return error_push_int(com->cb(TEST_COM_PASS, NULL, com->ctx));
     
-    return test_com_send(com, TEST_COM_PASS, 0);
+    return error_propagate_int(test_com_send(com, TEST_COM_PASS, 0));
 }
 
 int test_com_send_msg(test_com_ct com, test_msg_id type, const char *fmt, ...)
@@ -220,7 +232,7 @@ int test_com_send_msg(test_com_ct com, test_msg_id type, const char *fmt, ...)
     int rc;
     
     va_start(ap, fmt);
-    rc = test_com_send_msg_v(com, type, fmt, ap);
+    rc = error_propagate_int(test_com_send_msg_v(com, type, fmt, ap));
     va_end(ap);
     
     return rc;
@@ -233,7 +245,7 @@ int test_com_send_msg_v(test_com_ct com, test_msg_id type, const char *fmt, va_l
     size_t len;
     
     assert(com);
-    return_err_if_fail(fmt, EINVAL, -1);
+    return_error_if_fail(fmt, E_TEST_COM_INVALID_TEXT_FORMAT, -1);
     
     va_copy(ap2, ap1);
     
@@ -244,10 +256,10 @@ int test_com_send_msg_v(test_com_ct com, test_msg_id type, const char *fmt, va_l
     va_end(ap2);
     
     if(com->shortcut)
-        return com->cb(TEST_COM_MSG, &msg, com->ctx);
+        return error_push_int(com->cb(TEST_COM_MSG, &msg, com->ctx));
     
-    return test_com_send(com, TEST_COM_MSG, 3,
-        &type, sizeof(test_msg_id), &len, sizeof(size_t), msg.msg.text, len);
+    return error_propagate_int(test_com_send(com, TEST_COM_MSG, 3,
+        &type, sizeof(test_msg_id), &len, sizeof(size_t), msg.msg.text, len));
 }
 
 static char *test_com_alloc(test_com_ct com, size_t size)
@@ -260,7 +272,7 @@ static char *test_com_alloc(test_com_ct com, size_t size)
         cap = MAX(size, 128U);
         
         if(!(com->buf = malloc(cap)))
-            return NULL;
+            return error_set_errno(malloc), NULL;
         
         com->cap = cap;
         com->size = 0;
@@ -270,7 +282,7 @@ static char *test_com_alloc(test_com_ct com, size_t size)
         cap = MAX(com->size+size, com->cap*2);
         
         if(!(tmp = realloc(com->buf, cap)))
-            return NULL;
+            return error_set_errno(realloc), NULL;
         
         com->buf = tmp;
         com->cap = cap;
@@ -290,13 +302,17 @@ static int test_com_read(test_com_ct com, void *dst, size_t dst_size)
         size = com->pos + dst_size - com->size;
         
         if(!(data = test_com_alloc(com, size)))
-            return -1;
+            return error_propagate(), -1;
         
         for(; size; data += count, size -= count, com->size += count)
-            if((count = recv(com->sock, data, size, 0)) < 0)
-                return -1;
+            if((count = recv(com->sock, data, size, 0)) > 0)
+                continue;
             else if(!count)
-                return errno = ESHUTDOWN, -1;
+                return error_set(E_TEST_COM_SHUTDOWN), -1;
+            else if(errno == EWOULDBLOCK)
+                return error_set(E_TEST_COM_WOULD_BLOCK), -1;
+            else
+                return error_set_errno(recv), -1;
     }
     
     if(dst)
@@ -309,32 +325,32 @@ static int test_com_read(test_com_ct com, void *dst, size_t dst_size)
 
 static int test_com_read_type(test_com_ct com, test_com_msg_id *type)
 {
-    return test_com_read(com, type, sizeof(test_com_msg_id));
+    return error_propagate_int(test_com_read(com, type, sizeof(test_com_msg_id)));
 }
 
 static int test_com_read_status(test_com_ct com, test_status_id *status)
 {
-    return test_com_read(com, status, sizeof(test_status_id));
+    return error_propagate_int(test_com_read(com, status, sizeof(test_status_id)));
 }
 
 static int test_com_read_result(test_com_ct com, test_result_id *result)
 {
-    return test_com_read(com, result, sizeof(test_result_id));
+    return error_propagate_int(test_com_read(com, result, sizeof(test_result_id)));
 }
 
 static int test_com_read_pos_type(test_com_ct com, test_pos_id *type)
 {
-    return test_com_read(com, type, sizeof(test_pos_id));
+    return error_propagate_int(test_com_read(com, type, sizeof(test_pos_id)));
 }
 
 static int test_com_read_msg_type(test_com_ct com, test_msg_id *type)
 {
-    return test_com_read(com, type, sizeof(test_msg_id));
+    return error_propagate_int(test_com_read(com, type, sizeof(test_msg_id)));
 }
 
 static int test_com_read_size(test_com_ct com, size_t *size)
 {
-    return test_com_read(com, size, sizeof(size_t));
+    return error_propagate_int(test_com_read(com, size, sizeof(size_t)));
 }
 
 static int test_com_read_str(test_com_ct com, char **str)
@@ -342,12 +358,12 @@ static int test_com_read_str(test_com_ct com, char **str)
     size_t size, offset;
     
     if(test_com_read(com, &size, sizeof(size_t)))
-        return -1;
+        return error_propagate(), -1;
     
     offset = com->pos;
     
     if(test_com_read(com, NULL, size))
-        return -1;
+        return error_propagate(), -1;
     
     *str = &com->buf[offset]; // fixme next alloc may invalidate str
     
@@ -363,7 +379,7 @@ static int test_com_recv_msg(test_com_ct com)
     com->pos = 0;
     
     if(test_com_read_type(com, &type))
-        return -1;
+        return error_propagate(), -1;
     
     switch(type)
     {
@@ -390,13 +406,13 @@ static int test_com_recv_msg(test_com_ct com)
             break;
         break;
     default:
-        return_err_if_reached(EPROTO, -1);
+        return_error_if_reached(E_TEST_COM_INVALID_MSG_TYPE, -1);
     }
     
     if(rc)
-        return rc;
+        return error_propagate(), rc;
     
-    rc = com->cb(type, &msg, com->ctx);
+    rc = error_push_int(com->cb(type, &msg, com->ctx));
     
     if(com->pos < com->size)
         memmove(com->buf, &com->buf[com->pos], com->size - com->pos);
@@ -413,10 +429,12 @@ int test_com_recv(test_com_ct com)
     assert(com);
     
     while(1)
-        switch(rc = test_com_recv_msg(com))
-        {
-        case  0: continue;
-        case -1: return errno == EINTR || errno == EAGAIN || errno == ESHUTDOWN ? 0 : -1;
-        default: return rc;
-        }
+        if(!(rc = test_com_recv_msg(com)))
+            continue;
+        else if(rc > 0)
+            return rc;
+        else if(error_check(E_TEST_COM_WOULD_BLOCK) || error_check(E_TEST_COM_SHUTDOWN))
+            return 0;
+        else
+            return error_propagate(), -1;
 }

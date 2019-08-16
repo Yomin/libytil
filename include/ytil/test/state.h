@@ -25,6 +25,17 @@
 
 #include <stddef.h>
 
+typedef enum test_error
+{
+      E_TEST_STATE_INVALID_OBJECT
+    , E_TEST_STATE_INVALID_STATUS_TYPE
+    , E_TEST_STATE_INVALID_RESULT_TYPE
+    , E_TEST_STATE_INVALID_FILE
+    , E_TEST_STATE_INVALID_MSG
+    , E_TEST_STATE_INVALID_MSG_TYPE
+    , E_TEST_STATE_INVALID_CALLBACK
+} test_error_id;
+
 typedef enum test_status
 {
       TEST_STATUS_INIT

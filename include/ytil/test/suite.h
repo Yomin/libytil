@@ -29,6 +29,15 @@
 #include <stdbool.h>
 
 
+typedef enum test_suite_error
+{
+     E_TEST_SUITE_INVALID_CALLBACK
+   , E_TEST_SUITE_INVALID_NAME
+   , E_TEST_SUITE_INVALID_OBJECT
+   , E_TEST_SUITE_NOT_FOUND
+} test_suite_error_id;
+
+
 struct test_suite;
 
 typedef       struct test_suite *test_suite_ct;

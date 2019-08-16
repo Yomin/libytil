@@ -39,15 +39,23 @@ typedef struct test_suite_fold_state
     void *ctx;
 } test_suite_fold_st;
 
+static const error_info_st error_infos[] =
+{
+     ERROR_INFO(E_TEST_SUITE_INVALID_CALLBACK, "Invalid callback.")
+   , ERROR_INFO(E_TEST_SUITE_INVALID_NAME, "Invalid name.")
+   , ERROR_INFO(E_TEST_SUITE_INVALID_OBJECT, "Invalid test suite object.")
+   , ERROR_INFO(E_TEST_SUITE_NOT_FOUND, "Test suite/case not found.")
+};
+
 
 test_suite_ct test_suite_new(const char *name)
 {
     test_suite_ct suite;
     
-    return_err_if_fail(name, EINVAL, NULL);
+    return_error_if_fail(name, E_TEST_SUITE_INVALID_NAME, NULL);
     
     if(!(suite = calloc(1, sizeof(test_suite_st))))
-        return NULL;
+        return error_set_errno(calloc), NULL;
     
     suite->name = name;
     
@@ -56,7 +64,15 @@ test_suite_ct test_suite_new(const char *name)
 
 test_suite_ct test_suite_new_with_suite(const char *name, test_suite_ct sub)
 {
-    return test_suite_add_suite(test_suite_new(name), sub);
+    test_suite_ct suite;
+    
+    if(!(suite = test_suite_new(name)))
+        return error_propagate(), NULL;
+    
+    if(!(suite = test_suite_add_suite(suite, sub)))
+        return error_propagate(), NULL;
+    
+    return sub;
 }
 
 test_suite_ct _test_suite_new_with_suites(const char *name, ...)
@@ -64,8 +80,11 @@ test_suite_ct _test_suite_new_with_suites(const char *name, ...)
     test_suite_ct suite;
     va_list ap;
     
+    if(!(suite = test_suite_new(name)))
+        return error_propagate(), NULL;
+    
     va_start(ap, name);
-    suite = test_suite_add_suites_v(test_suite_new(name), ap);
+    suite = error_propagate_ptr(test_suite_add_suites_v(suite, ap));
     va_end(ap);
     
     return suite;
@@ -73,12 +92,28 @@ test_suite_ct _test_suite_new_with_suites(const char *name, ...)
 
 test_suite_ct test_suite_new_with_suites_v(const char *name, va_list ap)
 {
-    return test_suite_add_suites_v(test_suite_new(name), ap);
+    test_suite_ct suite;
+    
+    if(!(suite = test_suite_new(name)))
+        return error_propagate(), NULL;
+    
+    if(!(suite = test_suite_add_suites_v(suite, ap)))
+        return error_propagate(), NULL;
+    
+    return suite;
 }
 
 test_suite_ct test_suite_new_with_case(const char *name, test_case_ct tcase)
 {
-    return test_suite_add_case(test_suite_new(name), tcase);
+    test_suite_ct suite;
+    
+    if(!(suite = test_suite_new(name)))
+        return error_propagate(), NULL;
+    
+    if(!(suite = test_suite_add_case(suite, tcase)))
+        return error_propagate(), NULL;
+    
+    return suite;
 }
 
 test_suite_ct _test_suite_new_with_cases(const char *name, ...)
@@ -86,8 +121,11 @@ test_suite_ct _test_suite_new_with_cases(const char *name, ...)
     test_suite_ct suite;
     va_list ap;
     
+    if(!(suite = test_suite_new(name)))
+        return error_propagate(), NULL;
+    
     va_start(ap, name);
-    suite = test_suite_add_cases_v(test_suite_new(name), ap);
+    suite = error_propagate_ptr(test_suite_add_cases_v(suite, ap));
     va_end(ap);
     
     return suite;
@@ -95,7 +133,15 @@ test_suite_ct _test_suite_new_with_cases(const char *name, ...)
 
 test_suite_ct test_suite_new_with_cases_v(const char *name, va_list ap)
 {
-    return test_suite_add_cases_v(test_suite_new(name), ap);
+    test_suite_ct suite;
+    
+    if(!(suite = test_suite_new(name)))
+        return error_propagate(), NULL;
+    
+    if(!(suite = test_suite_add_cases_v(suite, ap)))
+        return error_propagate(), NULL;
+    
+    return suite;
 }
 
 static void test_entry_free(test_entry_id type, void *entry)
@@ -127,14 +173,14 @@ void test_suite_free(test_suite_ct suite)
 
 const char *test_suite_get_name(test_suite_const_ct suite)
 {
-    return_err_if_fail(suite, EINVAL, NULL);
+    return_error_if_fail(suite, E_TEST_SUITE_INVALID_OBJECT, NULL);
     
     return suite->name;
 }
 
 size_t test_suite_get_size(test_suite_const_ct suite)
 {
-    return_err_if_fail(suite, EINVAL, 0);
+    return_value_if_fail(suite, 0);
     
     return suite->entries ? vec_size(suite->entries) : 0;
 }
@@ -151,11 +197,12 @@ test_suite_ct test_suite_get_suite(test_suite_const_ct suite, const char *name)
 {
     test_entry_st *entry;
     
-    return_err_if_fail(suite && name, EINVAL, NULL);
-    return_err_if_fail(suite->entries, ENOENT, NULL);
+    return_error_if_fail(suite, E_TEST_SUITE_INVALID_OBJECT, NULL);
+    return_error_if_fail(name, E_TEST_SUITE_INVALID_NAME, NULL);
+    return_error_if_fail(suite->entries, E_TEST_SUITE_NOT_FOUND, NULL);
     
     if(!(entry = vec_find(suite->entries, test_suite_vec_find_suite, (void*)name)))
-        return NULL;
+        return error_set(E_TEST_SUITE_NOT_FOUND), NULL;
     
     return entry->value.suite;
 }
@@ -173,11 +220,12 @@ test_case_ct test_suite_get_case(test_suite_const_ct suite, const char *name)
 {
     test_entry_st *entry;
     
-    return_err_if_fail(suite && name, EINVAL, NULL);
-    return_err_if_fail(suite->entries, ENOENT, NULL);
+    return_error_if_fail(suite, E_TEST_SUITE_INVALID_OBJECT, NULL);
+    return_error_if_fail(name, E_TEST_SUITE_INVALID_NAME, NULL);
+    return_error_if_fail(suite->entries, E_TEST_SUITE_NOT_FOUND, NULL);
     
     if(!(entry = vec_find(suite->entries, test_suite_vec_find_case, (void*)name)))
-        return NULL;
+        return error_set(E_TEST_SUITE_NOT_FOUND), NULL;
     
     return entry->value.tcase;
 }
@@ -186,20 +234,19 @@ static test_suite_ct test_suite_add_entry(test_suite_ct suite, test_entry_id typ
 {
     test_entry_st *sentry;
     
-    if(!suite && !entry)
-        return errno = EINVAL, NULL;
-    
     if(!suite && entry)
-        return test_entry_free(type, entry), errno = EINVAL, NULL;
+        test_entry_free(type, entry);
+    
+    return_error_if_fail(suite, E_TEST_SUITE_INVALID_OBJECT, NULL);
     
     if(!entry)
-        return test_suite_free(suite), NULL;
+        return error_push(), test_suite_free(suite), NULL;
     
     if(!suite->entries && !(suite->entries = vec_new(10, sizeof(test_entry_st))))
-        return test_suite_free(suite), test_entry_free(type, entry), NULL;
+        return error_push(), test_suite_free(suite), test_entry_free(type, entry), NULL;
     
     if(!(sentry = vec_push(suite->entries)))
-        return test_suite_free(suite), test_entry_free(type, entry), NULL;
+        return error_push(), test_suite_free(suite), test_entry_free(type, entry), NULL;
     
     sentry->type = type;
     sentry->value.entry = entry;
@@ -209,7 +256,7 @@ static test_suite_ct test_suite_add_entry(test_suite_ct suite, test_entry_id typ
 
 test_suite_ct test_suite_add_suite(test_suite_ct suite, test_suite_ct sub)
 {
-    return test_suite_add_entry(suite, TEST_ENTRY_SUITE, sub);
+    return error_propagate_ptr(test_suite_add_entry(suite, TEST_ENTRY_SUITE, sub));
 }
 
 test_suite_ct _test_suite_add_suites(test_suite_ct suite, ...)
@@ -217,7 +264,7 @@ test_suite_ct _test_suite_add_suites(test_suite_ct suite, ...)
     va_list ap;
     
     va_start(ap, suite);
-    suite = test_suite_add_suites_v(suite, ap);
+    suite = error_propagate_ptr(test_suite_add_suites_v(suite, ap));
     va_end(ap);
     
     return suite;
@@ -239,15 +286,18 @@ test_suite_ct test_suite_add_suites_v(test_suite_ct suite, va_list ap)
             rc = suite = test_suite_add_entry(suite, TEST_ENTRY_SUITE, sub);
     }
     
-    if(!rc && suite)
+    if(rc)
+        return rc;
+    
+    if(suite)
         test_suite_free(suite);
     
-    return rc;
+    return error_push(), NULL;
 }
 
 test_suite_ct test_suite_add_case(test_suite_ct suite, test_case_ct tcase)
 {
-    return test_suite_add_entry(suite, TEST_ENTRY_CASE, tcase);
+    return error_propagate_ptr(test_suite_add_entry(suite, TEST_ENTRY_CASE, tcase));
 }
 
 test_suite_ct _test_suite_add_cases(test_suite_ct suite, ...)
@@ -255,7 +305,7 @@ test_suite_ct _test_suite_add_cases(test_suite_ct suite, ...)
     va_list ap;
     
     va_start(ap, suite);
-    suite = test_suite_add_cases_v(suite, ap);
+    suite = error_propagate_ptr(test_suite_add_cases_v(suite, ap));
     va_end(ap);
     
     return suite;
@@ -278,10 +328,13 @@ test_suite_ct test_suite_add_cases_v(test_suite_ct suite, va_list ap)
             rc = suite = test_suite_add_entry(suite, TEST_ENTRY_CASE, tcase);
     }
     
-    if(!rc && suite)
+    if(rc)
+        return rc;
+    
+    if(suite)
         test_suite_free(suite);
     
-    return rc;
+    return error_push(), NULL;
 }
 
 static int test_suite_vec_fold_entry(vec_const_ct vec, size_t index, void *elem, void *ctx)
@@ -289,14 +342,15 @@ static int test_suite_vec_fold_entry(vec_const_ct vec, size_t index, void *elem,
     test_suite_fold_st *state = ctx;
     test_entry_st *entry = elem;
     
-    return state->fold(state->suite, entry, state->ctx);
+    return error_push_int(state->fold(state->suite, entry, state->ctx));
 }
 
 int test_suite_fold(test_suite_const_ct suite, test_suite_fold_cb fold, void *ctx)
 {
     test_suite_fold_st state = { .suite = suite, .fold = fold, .ctx = ctx };
     
-    return_err_if_fail(suite && fold, EINVAL, -1);
+    return_error_if_fail(suite, E_TEST_SUITE_INVALID_OBJECT, -1);
+    return_error_if_fail(fold, E_TEST_SUITE_INVALID_CALLBACK, -1);
     
-    return vec_fold(suite->entries, test_suite_vec_fold_entry, &state);
+    return error_push_int(vec_fold(suite->entries, test_suite_vec_fold_entry, &state));
 }

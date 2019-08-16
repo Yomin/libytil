@@ -29,6 +29,18 @@
 #include <sys/types.h>
 
 
+typedef enum vec_error
+{
+      E_VEC_EMPTY
+    , E_VEC_INVALID_ELEMSIZE
+    , E_VEC_NO_BUFFER
+    , E_VEC_NOT_FOUND
+    , E_VEC_NULL_REQUEST
+    , E_VEC_OUT_OF_BOUNDS
+    , E_VEC_UNALIGNED
+} vec_error_id;
+
+
 struct vector;
 
 typedef       struct vector *vec_ct;
@@ -159,19 +171,19 @@ void *vec_insert_after_n(vec_ct vec, const void *dst, size_t n);
 void *vec_insert_after_en(vec_ct vec, const void *dst, size_t n, const void *elems);
 
 // remove last elem from vector
-int    vec_pop(vec_ct vec);
+int     vec_pop(vec_ct vec);
 // remove last n elems from vector, return count of elems removed
-size_t vec_pop_n(vec_ct vec, size_t n);
+ssize_t vec_pop_n(vec_ct vec, size_t n);
 // copy last elem from vector into dst and remove it from vector
-int    vec_pop_e(vec_ct vec, void *dst);
+int     vec_pop_e(vec_ct vec, void *dst);
 // return last elem from vector as pointer and remove it from vector
-void  *vec_pop_p(vec_ct vec);
+void   *vec_pop_p(vec_ct vec);
 // copy last n elems from vector into dst and remove them from vector
-size_t vec_pop_en(vec_ct vec, void *dst, size_t n);
+ssize_t vec_pop_en(vec_ct vec, void *dst, size_t n);
 // apply dtor to last elem from vector and remove it from vector
-int    vec_pop_f(vec_ct vec, vec_dtor_cb dtor, void *ctx);
+int     vec_pop_f(vec_ct vec, vec_dtor_cb dtor, void *ctx);
 // apply dtor to last n elems from vector and remove them from vector
-size_t vec_pop_fn(vec_ct vec, size_t n, vec_dtor_cb dtor, void *ctx);
+ssize_t vec_pop_fn(vec_ct vec, size_t n, vec_dtor_cb dtor, void *ctx);
 
 // remove elem from vector
 int     vec_remove(vec_ct vec, void *elem);

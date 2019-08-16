@@ -25,6 +25,13 @@
 
 #include <stdarg.h>
 
+typedef enum proc_error
+{
+      E_PROC_INVALID_TITLE
+    , E_PROC_NO_SPACE
+    , E_PROC_NOT_INITIALIZED
+} proc_error_id;
+
 
 // initialize proc title by scavenging argv and environ
 int proc_init_title(int argc, char *argv[]);

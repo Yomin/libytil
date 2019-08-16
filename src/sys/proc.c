@@ -35,8 +35,15 @@ typedef struct proc_title
     size_t size, orig_len, ref;
 } proc_title_st;
 
-static struct proc_title  *proc_title;
-extern char              **environ;
+static const error_info_st error_infos[] =
+{
+      ERROR_INFO(E_PROC_INVALID_TITLE, "Invalid proc title.")
+    , ERROR_INFO(E_PROC_NO_SPACE, "Not enough space scavenged.")
+    , ERROR_INFO(E_PROC_NOT_INITIALIZED, "proc title is not initalized.")
+};
+
+static proc_title_st   *proc_title;
+extern char           **environ;
 
 
 int proc_init_title(int argc, char *argv[])
@@ -48,7 +55,7 @@ int proc_init_title(int argc, char *argv[])
         return proc_title->ref++, 0;
     
     if(!(title = calloc(1, sizeof(proc_title_st))))
-        return -1;
+        return error_set_errno(calloc), -1;
     
     for(envc=0; environ[envc]; envc++);
     
@@ -58,10 +65,10 @@ int proc_init_title(int argc, char *argv[])
         title->size = environ[envc-1] + strlen(environ[envc-1]) - argv[0] +1;
     
     if(title->size < 2)
-        return free(title), errno = ENOSPC, -1;
+        return free(title), error_set(E_PROC_NO_SPACE), -1;
     
     if(!(title->data = malloc(title->size)))
-        return free(title), -1;
+        return free(title), error_set_errno(malloc), -1;
     
     memcpy(title->data, argv[0], title->size);
     
@@ -99,7 +106,7 @@ int proc_set_title(const char *fmt, ...)
     int rc;
     
     va_start(ap, fmt);
-    rc = proc_set_title_v(fmt, ap);
+    rc = error_propagate_int(proc_set_title_v(fmt, ap));
     va_end(ap);
     
     return rc;
@@ -107,7 +114,8 @@ int proc_set_title(const char *fmt, ...)
 
 int proc_set_title_v(const char *fmt, va_list ap)
 {
-    return_err_if_fail(proc_title && fmt, EINVAL, -1);
+    return_error_if_fail(proc_title, E_PROC_NOT_INITIALIZED, -1);
+    return_error_if_fail(fmt, E_PROC_INVALID_TITLE, -1);
     
     vsnprintf(proc_title->title, proc_title->size, fmt, ap);
     proc_title->title[proc_title->size-1] = '\0';
@@ -121,7 +129,7 @@ int proc_append_title(const char *fmt, ...)
     int rc;
     
     va_start(ap, fmt);
-    rc = proc_append_title_v(fmt, ap);
+    rc = error_propagate_int(proc_append_title_v(fmt, ap));
     va_end(ap);
     
     return rc;
@@ -132,7 +140,8 @@ int proc_append_title_v(const char *fmt, va_list ap)
     char *title;
     size_t size;
     
-    return_err_if_fail(proc_title && fmt, EINVAL, -1);
+    return_error_if_fail(proc_title, E_PROC_NOT_INITIALIZED, -1);
+    return_error_if_fail(fmt, E_PROC_INVALID_TITLE, -1);
     
     memcpy(proc_title->title, proc_title->data, proc_title->orig_len);
     title = proc_title->title + proc_title->orig_len;

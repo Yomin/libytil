@@ -24,7 +24,7 @@
 #define __YTIL_TEST_TEST_H__
 
 #include <ytil/test/state.h>
-#include <ytil/ext/errno.h>
+#include <ytil/gen/error.h>
 #include <stdint.h>
 #include <float.h>
 #include <math.h>
@@ -88,7 +88,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     if((rc = (expr)) < 0) \
-        test_abort("INT SUCCESS test failed: "#expr" (%jd, %s)", rc, strerrno(errno)); \
+        test_abort("INT SUCCESS test failed: "#expr" (%jd, %s)", rc, error_origin_get_name()); \
     else if(rc > 0) \
         test_msg_warn("INT SUCCESS test warning: "#expr" == 0 (%jd)", rc); \
     \
@@ -99,12 +99,12 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     intmax_t rc; \
     \
     test_begin(); \
-    errno = 0; \
+    error_clear(); \
     \
     if((rc = (expr)) >= 0) \
         test_abort("INT ERROR test failed: "#expr" (%jd)", rc); \
-    else if(errno != (err)) \
-        test_abort("INT ERROR test failed: "#expr" (%s == "#err")", strerrno(errno)); \
+    else if(!error_check(err)) \
+        test_abort("INT ERROR test failed: "#expr" (%s == "#err")", error_origin_get_name()); \
     \
     test_end(); \
 } while(0)
@@ -118,7 +118,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     intmax_t rc, _trc = (trc); \
     \
     if((rc = (expr)) < 0) \
-        test_abort("RC SUCCESS test failed: "#expr" (%jd, %s)", rc, strerrno(errno)); \
+        test_abort("RC SUCCESS test failed: "#expr" (%jd, %s)", rc, error_origin_get_name()); \
     else if(rc != _trc) \
         test_abort("RC SUCCESS test failed: "#expr" == "#trc" (%jd == %jd)", rc, _trc); \
     \
@@ -129,12 +129,12 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     intmax_t rc, _trc = (trc); \
-    errno = 0; \
+    error_clear(); \
     \
     if((rc = (expr)) != _trc) \
         test_abort("RC ERROR test failed: "#expr" == "#trc" (%jd == %jd)", rc, _trc); \
-    else if(errno != (err)) \
-        test_abort("RC ERROR test failed: "#expr" (%s == "#err")", strerrno(errno)); \
+    else if(!error_check(err)) \
+        test_abort("RC ERROR test failed: "#expr" (%s == "#err")", error_origin_get_name()); \
     \
     test_end(); \
 } while(0)
@@ -151,7 +151,7 @@ extern char **environ;
     test_begin(); \
     \
     if(!(ptr = (expr))) \
-        test_abort("PTR SUCCESS test failed: "#expr" (%s)", strerrno(errno)); \
+        test_abort("PTR SUCCESS test failed: "#expr" (%s)", error_origin_get_name()); \
     else if(ptr <= (void*)(intptr_t)main) \
         test_msg_warn("PTR SUCCESS test warning: "#expr" > main (%p > %p)", \
             ptr, (void*)(intptr_t)main); \
@@ -166,12 +166,12 @@ extern char **environ;
     void *ptr; \
     \
     test_begin(); \
-    errno = 0; \
+    error_clear(); \
     \
     if((ptr = (expr))) \
         test_abort("PTR ERROR test failed: "#expr" (%p)", ptr); \
-    else if(errno != (err)) \
-        test_abort("PTR ERROR test failed: "#expr" (%s == "#err")", strerrno(errno)); \
+    else if(!error_check(err)) \
+        test_abort("PTR ERROR test failed: "#expr" (%s == "#err")", error_origin_get_name()); \
     \
     test_end(); \
 } while(0)

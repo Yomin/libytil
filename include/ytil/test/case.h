@@ -29,6 +29,14 @@
 #include <signal.h>
 
 
+typedef enum test_case_error
+{
+      E_TEST_CASE_INVALID_OBJECT
+    , E_TEST_CASE_INVALID_NAME
+    , E_TEST_CASE_INVALID_CALLBACK
+} test_case_error_id;
+
+
 struct test_case;
 struct test_suite;
 

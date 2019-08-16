@@ -106,10 +106,21 @@ typedef struct test_match_state
     test_entry_id type;
 } test_match_st;
 
+static const error_info_st error_infos[] =
+{
+      ERROR_INFO(E_TEST_RUN_INVALID_OBJECT, "Invalid test run object.")
+    , ERROR_INFO(E_TEST_RUN_INVALID_SUITE, "Invalid suite.")
+    , ERROR_INFO(E_TEST_RUN_INVALID_FILTER, "Invalid filter.")
+    , ERROR_INFO(E_TEST_RUN_INVALID_OPTION, "Invalid option.")
+    , ERROR_INFO(E_TEST_RUN_MISSING_ARG, "Missing argument.")
+    , ERROR_INFO(E_TEST_RUN_MALFORMED_ARG, "Malformed argument.")
+    , ERROR_INFO(E_TEST_RUN_TRACE_CHECK, "Trace check failed.")
+};
+
 
 static void fperror(FILE *fp, const char *msg)
 {
-    fprintf(fp, "%s: %s\n", msg, strerror(errno));
+    fprintf(fp, "%s: %s\n", msg, error_origin_get_desc());
 }
 
 static int test_run_get_clock(clockid_t *clock, ...)
@@ -127,7 +138,7 @@ static int test_run_get_clock(clockid_t *clock, ...)
             return va_end(ap), 0;
         
         if(*clock == CLOCK_REALTIME)
-            return va_end(ap), -1;
+            return va_end(ap), error_set_errno(clock_gettime), -1;
     }
 }
 
@@ -157,7 +168,7 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
         CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC, CLOCK_REALTIME)
     || test_run_get_clock(&run->worker_clock,
         CLOCK_PROCESS_CPUTIME_ID, CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC, CLOCK_REALTIME))
-            return fperror(run->fp, "failed to get clock"), -1;
+            return error_propagate(), fperror(run->fp, "failed to get clock"), -1;
     
     if(argc <= 1)
         return 0;
@@ -167,7 +178,7 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
         {
         case 'h':
             fprintf(run->fp, "Usage: %s [-v] [--loglvl=<lvl>] [--[no]fork] [--[no]clean] [--[no]dump] [--[no]skip] [path/to1,to2/suite*/case [...]]\n", argv[0]);
-            return -1;
+            return 1;
         case 'f':
         case 'F':
             test_run_enable_fork(run, opt == 'f');
@@ -186,7 +197,10 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
             break;
         case 'l':
             if(strspn(optarg, "1234567890") != strlen(optarg))
-                return fprintf(run->fp, "loglvl argument not numeric\n"), -1;
+            {
+                fprintf(run->fp, "loglvl argument not numeric\n");
+                return error_set(E_TEST_RUN_MALFORMED_ARG), -1;
+            }
             run->loglvl = atoi(optarg);
             break;
         case 'v':
@@ -194,10 +208,10 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
             break;
         case '?':
             fprintf(run->fp, "invalid option '%s'\n", argv[optind-1]);
-            return -1;
+            return error_set(E_TEST_RUN_INVALID_OPTION), -1;
         case ':':
             fprintf(run->fp, "missing argument for '%s'\n", argv[optind-1]);
-            return -1;
+            return error_set(E_TEST_RUN_MISSING_ARG), -1;
         default:
             abort();
         }
@@ -205,9 +219,12 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
     for(; optind < argc; optind++)
         if(test_run_add_filter(run, argv[optind]))
         {
-            if(errno == EBADMSG)
-                return fprintf(run->fp, "invalid filter '%s'\n", argv[optind]), -1;
-            return fperror(run->fp, "failed to add filter"), -1;
+            if(error_check(E_TEST_RUN_INVALID_FILTER))
+                fprintf(run->fp, "invalid filter '%s'\n", argv[optind]);
+            else
+                fperror(run->fp, "failed to add filter");
+            
+            return error_propagate(), -1;
         }
     
     return 0;
@@ -217,7 +234,12 @@ static int test_run_msg(test_com_msg_id type, test_com_msg_un *msg, void *ctx);
 
 test_run_ct test_run_new(void)
 {
-    return test_run_new_with_args(0, NULL);
+    test_run_ct run;
+    
+    if(!(run = test_run_new_with_args(0, NULL)))
+        return error_propagate(), NULL;
+    
+    return run;
 }
 
 test_run_ct test_run_new_with_args(int argc, char *argv[])
@@ -225,7 +247,7 @@ test_run_ct test_run_new_with_args(int argc, char *argv[])
     test_run_ct run;
     
     if(!(run = calloc(1, sizeof(test_run_st))))
-        return perror("failed to init test run"), NULL;
+        return error_set_errno(calloc), perror("failed to init test run"), NULL;
     
     run->fp = stdout;
     run->fork = true;
@@ -233,13 +255,13 @@ test_run_ct test_run_new_with_args(int argc, char *argv[])
     run->check_traced = true;
     
     if(test_run_config(run, argc, argv))
-        return test_run_free(run), NULL;
+        return error_propagate(), test_run_free(run), NULL;
     
     if(!(run->state = test_state_new()))
-        return fperror(run->fp, "failed to init test state"), test_run_free(run), NULL;
+        return error_push(), fperror(run->fp, "failed to init test state"), test_run_free(run), NULL;
     
     if(!(run->com = test_com_new(test_run_msg, run)))
-        return fperror(run->fp, "failed to init com"), test_run_free(run), NULL;
+        return error_push(), fperror(run->fp, "failed to init com"), test_run_free(run), NULL;
     
     return run;
 }
@@ -288,7 +310,7 @@ void test_run_free(test_run_ct run)
 
 void test_run_enable_fork(test_run_ct run, bool fork)
 {
-    assert(run);
+    return_if_fail(run);
     
     run->fork = fork;
     run->check_traced = false;
@@ -302,20 +324,20 @@ int test_run_add_filter(test_run_ct run, const char *text)
     const char *start_node, *start_unit, *end_node, *end_unit;
     size_t len_node, len_unit;
     
-    assert(run);
-    return_err_if_fail(text, EINVAL, -1);
+    return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
+    return_error_if_fail(text, E_TEST_RUN_INVALID_FILTER, -1);
     
     if(text[0] == '/')
         text++;
     
-    return_err_if_fail(text[0], EBADMSG, -1);
+    return_error_if_fail(text[0], E_TEST_RUN_INVALID_FILTER, -1);
     
     if(!run->filters && !(run->filters = vec_new(2, sizeof(test_filter_st))))
-        return -1;
+        return error_push(), -1;
     
     if(!(filter = vec_push(run->filters))
     || !(filter->path = vec_new(3, sizeof(test_filter_node_st))))
-        return vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
+        return error_push(), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
     
     for(start_node = text, end_node = strchr(start_node, '/');
         start_node;
@@ -326,7 +348,7 @@ int test_run_add_filter(test_run_ct run, const char *text)
         
         if(!(node = vec_push(filter->path))
         || !(node->units = vec_new(2, sizeof(test_filter_unit_st))))
-            return vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
+            return error_push(), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
         
         for(start_unit = start_node, end_unit = memchr(start_unit, ',', len_node);
             start_unit;
@@ -337,10 +359,10 @@ int test_run_add_filter(test_run_ct run, const char *text)
             len_unit = end_unit ? (size_t)(end_unit - start_unit) : len_node;
             
             if(!len_unit)
-                return vec_pop_f(run->filters, test_run_free_filter, NULL), errno = EBADMSG, -1;
+                return error_set(E_TEST_RUN_INVALID_FILTER), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
             
             if(!(unit = vec_push(node->units)))
-                return vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
+                return error_push(), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
             
             unit->len = len_unit;
             
@@ -351,10 +373,10 @@ int test_run_add_filter(test_run_ct run, const char *text)
             }
             
             if(memchr(start_unit, '*', unit->len))
-                return vec_pop_f(run->filters, test_run_free_filter, NULL), errno = EBADMSG, -1;
+                return error_set(E_TEST_RUN_INVALID_FILTER), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
             
             if(unit->len && !(unit->name = strndup(start_unit, unit->len)))
-                return vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
+                return error_set_errno(strndup), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
         }
     }
     
@@ -368,16 +390,26 @@ static int test_run_check_traced(test_run_ct run)
     
     if((child = fork()) < 0)
     {
-        return fperror(run->fp, "failed to check trace status"), -1;
+        fperror(run->fp, "failed to check trace status");
+        return error_set_errno(fork), -1;
     }
     else if(child)
     {
         if(waitpid(child, &status, 0) < 0)
-            return fperror(run->fp, "failed to check trace status"), -1;
+        {
+            fperror(run->fp, "failed to check trace status");
+            return error_set_errno(waitpid), -1;
+        }
         else if(WIFSIGNALED(status))
-            return fprintf(run->fp, "failed to check trace status: %s\n", strsignal(WTERMSIG(status))), -1;
+        {
+            fprintf(run->fp, "failed to check trace status: %s\n", strsignal(WTERMSIG(status)));
+            return error_set(E_TEST_RUN_TRACE_CHECK), -1;
+        }
         else if((rc = WEXITSTATUS(status)) < 0)
-            return fprintf(run->fp, "failed to check trace status: %s\n", strerror(-rc)), -1;
+        {
+            fprintf(run->fp, "failed to check trace status: %s\n", strerror(-rc));
+            return error_set(E_TEST_RUN_TRACE_CHECK), -1;
+        }
         else switch(rc)
         {
         case TEST_CHILD_TRACED:        return TEST_PARENT_TRACED;
@@ -413,21 +445,21 @@ static int test_run_set_core_dump(test_run_ct run)
     struct rlimit limit;
     
     if(getrlimit(RLIMIT_CORE, &limit))
-        return fperror(run->fp, "failed to get core dump size"), -1;
+        return error_set_errno(getrlimit), fperror(run->fp, "failed to get core dump size"), -1;
     
     if(!run->core_dump && limit.rlim_cur)
     {
         limit.rlim_cur = 0;
         
         if(setrlimit(RLIMIT_CORE, &limit))
-            return fperror(run->fp, "failed to disable core dump"), -1;
+            return error_set_errno(setrlimit), fperror(run->fp, "failed to disable core dump"), -1;
     }
     else if(run->core_dump && !limit.rlim_cur)
     {
         limit.rlim_cur = limit.rlim_max;
         
         if(setrlimit(RLIMIT_CORE, &limit))
-            return fperror(run->fp, "failed to enable core dump"), -1;
+            return error_set_errno(setrlimit), fperror(run->fp, "failed to enable core dump"), -1;
     }
     
     return 0;
@@ -502,10 +534,10 @@ static bool test_run_filter(test_run_ct run, test_entry_id type, const char *nam
 static int test_run_push(test_run_ct run, const char *name)
 {
     if(!run->path && !(run->path = vec_new(10, sizeof(char*))))
-        return fperror(run->fp, "failed to init path"), -1;
+        return error_push(), fperror(run->fp, "failed to init path"), -1;
     
     if(!vec_push_p(run->path, name))
-        return fperror(run->fp, "failed to push path"), -1;
+        return error_push(), fperror(run->fp, "failed to push path"), -1;
     
     return 0;
 }
@@ -576,7 +608,8 @@ static int test_run_suite(test_run_ct run, test_suite_const_ct suite)
     memcpy(&count, &run->count, sizeof(test_count_st));
     memset(&run->count, 0, sizeof(test_count_st));
     
-    test_run_push(run, test_suite_get_name(suite));
+    if(test_run_push(run, test_suite_get_name(suite)))
+        return error_propagate(), -1;
     
     if(run->loglvl >= TEST_LOGLVL_CASE)
     {
@@ -690,7 +723,7 @@ static int test_run_msg(test_com_msg_id type, test_com_msg_un *msg, void *ctx)
     case TEST_COM_MSG:
         return test_state_add_msg(run->state, msg->msg.type, msg->msg.text);
     default:
-        return errno = EPROTO, -1;
+        abort();
     }
 }
 
@@ -819,7 +852,7 @@ static int test_run_collect(test_run_ct run, test_case_const_ct tcase, pid_t wor
     int status;
     
     if(waitpid(worker, &status, 0) < 0)
-        return fperror(run->fp, "failed to wait for test worker"), -1;
+        return error_set_errno(waitpid), fperror(run->fp, "failed to wait for test worker"), -1;
     
     test_run_eval_status(run, tcase,
         WIFSIGNALED(status), WTERMSIG(status), WIFEXITED(status), WEXITSTATUS(status));
@@ -831,10 +864,10 @@ static int test_run_kill(test_run_ct run, pid_t worker)
 {
     // kill whole process group
     if(killpg(worker, SIGKILL))
-        return fperror(run->fp, "failed to kill test worker"), -1;
+        return error_set_errno(killpg), fperror(run->fp, "failed to kill test worker"), -1;
     
     if(waitpid(worker, NULL, 0) < 0)
-        return fperror(run->fp, "failed to wait for test worker"), -1;
+        return error_set_errno(waitpid), fperror(run->fp, "failed to wait for test worker"), -1;
     
     return 0;
 }
@@ -872,7 +905,7 @@ static int test_run_control(test_run_ct run, test_case_const_ct tcase, pid_t wor
             poll_timeout = MIN((size_t)INT_MAX, time_ts_get_milli(&timeout));
         
         if((rc = poll(pfds, 1, poll_timeout)) < 0)
-            return tcperror(run, tcase, "failed to poll"), test_run_kill(run, worker), -1;
+            return error_set_errno(poll), tcperror(run, tcase, "failed to poll"), test_run_kill(run, worker), -1;
         
         if(!rc)
             break;
@@ -901,7 +934,7 @@ static int test_run_control(test_run_ct run, test_case_const_ct tcase, pid_t wor
     }
     
     if(test_run_kill(run, worker))
-        return -1;
+        return error_propagate(), -1;
     
     test_state_set_result(run->state, TEST_RESULT_TIMEOUT);
     test_run_eval(run, tcase);
@@ -936,10 +969,11 @@ static int test_run_case(test_run_ct run, test_case_const_ct tcase)
     else
     {
         if(socketpair(AF_UNIX, SOCK_STREAM|SOCK_NONBLOCK, 0, sv) == -1)
-            return tcperror(run, tcase, "failed to init com"), -1;
+            return error_set_errno(socketpair), tcperror(run, tcase, "failed to init com"), -1;
         
         if((pid = fork()) == -1)
         {
+            error_set_errno(fork);
             tcperror(run, tcase, "failed to fork");
             return close(sv[0]), close(sv[1]), -1;
         }
@@ -1012,8 +1046,8 @@ int test_run_exec(test_run_ct run, test_suite_const_ct suite)
 {
     int rc;
     
-    assert(run);
-    return_err_if_fail(suite, EINVAL, -1);
+    return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
+    return_error_if_fail(suite, E_TEST_RUN_INVALID_SUITE, -1);
     
     if(run->fork && run->check_traced)
         switch((rc = test_run_check_traced(run)))

@@ -30,6 +30,18 @@
 #include <stdbool.h>
 
 
+typedef enum test_com_error
+{
+      E_TEST_COM_INVALID_MSG_TYPE
+    , E_TEST_COM_INVALID_STATUS_TYPE
+    , E_TEST_COM_INVALID_RESULT_TYPE
+    , E_TEST_COM_INVALID_POS_TYPE
+    , E_TEST_COM_INVALID_TIMESTAMP
+    , E_TEST_COM_INVALID_TEXT_FORMAT
+    , E_TEST_COM_SHUTDOWN
+    , E_TEST_COM_WOULD_BLOCK
+} test_com_error_id;
+
 typedef enum test_com_msg_type
 {
       TEST_COM_STATUS

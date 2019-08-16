@@ -46,6 +46,17 @@ typedef struct vector
     size_t size, esize, cap, min_cap;
 } vec_st;
 
+static const error_info_st error_infos[] =
+{
+      ERROR_INFO(E_VEC_EMPTY, "Vector is empty.")
+    , ERROR_INFO(E_VEC_INVALID_ELEMSIZE, "Invalid element size.")
+    , ERROR_INFO(E_VEC_NO_BUFFER, "No buffer available.")
+    , ERROR_INFO(E_VEC_NOT_FOUND, "Element not found.")
+    , ERROR_INFO(E_VEC_NULL_REQUEST, "Nothing requested.")
+    , ERROR_INFO(E_VEC_OUT_OF_BOUNDS, "Out of bounds access.")
+    , ERROR_INFO(E_VEC_UNALIGNED, "Address of element not aligned.")
+};
+
 
 static inline void vec_set_buf(vec_ct vec, char *mem, size_t capacity, size_t size)
 {
@@ -70,7 +81,7 @@ static int vec_resize(vec_ct vec, size_t capacity)
     if(!vec->mem)
     {
         if(!(mem = calloc(1, OFFSET + capacity * vec->esize)))
-            return -1;
+            return error_set_errno(calloc), -1;
         
         vec_set_buf(vec, mem, capacity, 0);
     }
@@ -79,7 +90,12 @@ static int vec_resize(vec_ct vec, size_t capacity)
         mem = vec->mem - OFFSET;
         
         if(!(mem = realloc(mem, OFFSET + capacity * vec->esize)))
-            return capacity > vec->cap ? -1 : 0;
+        {
+            if(capacity > vec->cap)
+                return error_set_errno(realloc), -1;
+            else
+                return 0;
+        }
         
         vec_set_buf(vec, mem, capacity, vec->size);
     }
@@ -91,7 +107,7 @@ static inline int vec_grow(vec_ct vec, size_t n)
 {
     if(vec->size+n > vec->cap
     && vec_resize(vec, MAX3(vec->min_cap, vec->cap+n, vec->cap*RESIZE_FACTOR)))
-        return -1;
+        return error_propagate(), -1;
     
     return 0;
 }
@@ -107,9 +123,9 @@ static int vec_check_range(vec_const_ct vec, const void *velem)
 {
     const char *elem = velem;
     
-    return_err_if_fail(vec->mem, ERANGE, -1);
-    return_err_if_fail(elem >= vec->mem && elem < ELEM(vec->size), ERANGE, -1);
-    return_err_if_fail((elem - vec->mem) % vec->esize == 0, EFAULT, -1);
+    return_error_if_fail(vec->mem, E_VEC_OUT_OF_BOUNDS, -1);
+    return_error_if_fail(elem >= vec->mem && elem < ELEM(vec->size), E_VEC_OUT_OF_BOUNDS, -1);
+    return_error_if_fail((elem - vec->mem) % vec->esize == 0, E_VEC_UNALIGNED, -1);
     
     return 0;
 }
@@ -118,10 +134,10 @@ vec_ct vec_new(size_t capacity, size_t elemsize)
 {
     vec_ct vec;
     
-    return_err_if_fail(elemsize, EINVAL, NULL);
+    return_error_if_fail(elemsize, E_VEC_INVALID_ELEMSIZE, NULL);
     
     if(!(vec = calloc(1, sizeof(struct vector))))
-        return NULL;
+        return error_set_errno(calloc), NULL;
     
     init_magic(vec);
     vec->esize = elemsize;
@@ -187,7 +203,7 @@ void vec_clear_f(vec_ct vec, vec_dtor_cb dtor, void *ctx)
 
 vec_ct vec_clone(vec_const_ct vec)
 {
-    return vec_clone_f(vec, NULL, NULL, NULL);
+    return error_propagate_ptr(vec_clone_f(vec, NULL, NULL, NULL));
 }
 
 vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, void *ctx)
@@ -198,28 +214,28 @@ vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, void 
     assert_magic(vec);
     
     if(!(nvec = calloc(1, sizeof(vec_st))))
-        return NULL;
+        return error_set_errno(calloc), NULL;
     
     init_magic(nvec);
     nvec->esize = vec->esize;
     nvec->min_cap = vec->min_cap;
     
-    return_val_if_fail(vec->mem, nvec);
+    return_value_if_fail(vec->mem, nvec);
     
     if(!clone)
     {
         if(!vec_push_en(nvec, vec->size, vec->mem))
-            return free(nvec), NULL;
+            return error_propagate(), free(nvec), NULL;
         
         return nvec;
     }
     
     if(!vec_push_n(nvec, vec->size))
-        return free(nvec), NULL;
+        return error_propagate(), free(nvec), NULL;
     
     for(i=0; i < vec->size; i++)
         if(clone(vec, nvec->mem + i*nvec->esize, ELEM(i), ctx))
-            return vec_free_f(nvec, dtor, ctx), NULL;
+            return error_push(), vec_free_f(nvec, dtor, ctx), NULL;
     
     return nvec;
 }
@@ -286,7 +302,7 @@ void *vec_at(vec_const_ct vec, ssize_t pos)
     if(pos < 0)
         pos += vec->size;
     
-    return_err_if_fail(pos >= 0 && (size_t)pos < vec->size, ERANGE, NULL);
+    return_error_if_fail(pos >= 0 && (size_t)pos < vec->size, E_VEC_OUT_OF_BOUNDS, NULL);
     
     return ELEM(pos);
 }
@@ -299,7 +315,7 @@ void *vec_at_p(vec_const_ct vec, ssize_t pos)
     if(pos < 0)
         pos += vec->size;
     
-    return_err_if_fail(pos >= 0 && (size_t)pos < vec->size, ERANGE, NULL);
+    return_error_if_fail(pos >= 0 && (size_t)pos < vec->size, E_VEC_OUT_OF_BOUNDS, NULL);
     
     return *(void**)ELEM(pos);
 }
@@ -307,7 +323,7 @@ void *vec_at_p(vec_const_ct vec, ssize_t pos)
 void *vec_first(vec_const_ct vec)
 {
     assert_magic(vec);
-    return_err_if_fail(vec->size, ENOENT, NULL);
+    return_error_if_fail(vec->size, E_VEC_EMPTY, NULL);
     
     return ELEM(0);
 }
@@ -316,7 +332,7 @@ void *vec_first_p(vec_const_ct vec)
 {
     assert_magic(vec);
     assert(vec->esize == sizeof(void*));
-    return_err_if_fail(vec->size, ENOENT, NULL);
+    return_error_if_fail(vec->size, E_VEC_EMPTY, NULL);
     
     return *(void**)ELEM(0);
 }
@@ -324,7 +340,7 @@ void *vec_first_p(vec_const_ct vec)
 void *vec_last(vec_const_ct vec)
 {
     assert_magic(vec);
-    return_err_if_fail(vec->size, ENOENT, NULL);
+    return_error_if_fail(vec->size, E_VEC_EMPTY, NULL);
     
     return ELEM(vec->size-1);
 }
@@ -333,7 +349,7 @@ void *vec_last_p(vec_const_ct vec)
 {
     assert_magic(vec);
     assert(vec->esize == sizeof(void*));
-    return_err_if_fail(vec->size, ENOENT, NULL);
+    return_error_if_fail(vec->size, E_VEC_EMPTY, NULL);
     
     return *(void**)ELEM(vec->size-1);
 }
@@ -344,14 +360,14 @@ ssize_t vec_pos(vec_const_ct vec, const void *elem)
     assert(elem);
     
     if(vec_check_range(vec, elem))
-        return -1;
+        return error_propagate(), -1;
     
     return ((char*)elem-vec->mem) / vec->esize;
 }
 
 int vec_get(vec_const_ct vec, void *dst, ssize_t pos)
 {
-    return vec_get_n(vec, dst, pos, 1) == 1 ? 0 : -1;
+    return error_propagate_int(vec_get_n(vec, dst, pos, 1)) == 1 ? 0 : -1;
 }
 
 ssize_t vec_get_n(vec_const_ct vec, void *dst, ssize_t pos, size_t n)
@@ -361,16 +377,10 @@ ssize_t vec_get_n(vec_const_ct vec, void *dst, ssize_t pos, size_t n)
     if(pos < 0)
         pos += vec->size;
     
-    return_err_if_fail(pos >= 0 && (size_t)pos < vec->size, ERANGE, -1);
+    return_error_if_fail(pos >= 0 && (size_t)pos < vec->size, E_VEC_OUT_OF_BOUNDS, -1);
     
-    if(n > vec->size - pos)
-    {
-        errno = ENOENT;
-        n = vec->size - pos;
-    }
-    
-    if(!n)
-        return 0;
+    n = MIN(n, vec->size - pos);
+    return_error_if_fail(n, E_VEC_NULL_REQUEST, -1);
     
     if(dst)
         memcpy(dst, ELEM(pos), vec->esize*n);
@@ -380,29 +390,33 @@ ssize_t vec_get_n(vec_const_ct vec, void *dst, ssize_t pos, size_t n)
 
 int vec_get_first(vec_const_ct vec, void *dst)
 {
-    return vec_get_n(vec, dst, 0, 1) == 1 ? 0 : -1;
+    if(vec_get_n(vec, dst, 0, 1) != 1)
+        return error_set(E_VEC_EMPTY), -1;
+    
+    return 0;
 }
 
 int vec_get_last(vec_const_ct vec, void *dst)
 {
-    assert_magic(vec);
+    if(vec_get_n(vec, dst, vec->size-1, 1) != 1)
+        return error_set(E_VEC_EMPTY), -1;
     
-    return vec_get_n(vec, dst, vec->size-1, 1) == 1 ? 0 : -1;
+    return 0;
 }
 
 void *vec_push(vec_ct vec)
 {
-    return vec_push_en(vec, 1, NULL);
+    return error_propagate_ptr(vec_push_en(vec, 1, NULL));
 }
 
 void *vec_push_n(vec_ct vec, size_t n)
 {
-    return vec_push_en(vec, n, NULL);
+    return error_propagate_ptr(vec_push_en(vec, n, NULL));
 }
 
 void *vec_push_e(vec_ct vec, const void *elem)
 {
-    return vec_push_en(vec, 1, elem);
+    return error_propagate_ptr(vec_push_en(vec, 1, elem));
 }
 
 void *vec_push_p(vec_ct vec, const void *ptr)
@@ -410,15 +424,16 @@ void *vec_push_p(vec_ct vec, const void *ptr)
     assert_magic(vec);
     assert(vec->esize == sizeof(void*));
     
-    return vec_push_en(vec, 1, &ptr);
+    return error_propagate_ptr(vec_push_en(vec, 1, &ptr));
 }
 
 void *vec_push_en(vec_ct vec, size_t n, const void *elems)
 {
     assert_magic(vec);
+    return_error_if_fail(n, E_VEC_NULL_REQUEST, NULL);
     
-    if(!n || vec_grow(vec, n))
-        return NULL;
+    if(vec_grow(vec, n))
+        return error_propagate(), NULL;
     
     if(elems)
         memcpy(ELEM(vec->size), elems, vec->esize*n);
@@ -436,7 +451,7 @@ void *vec_push_args(vec_ct vec, size_t n, ...)
     void *elem;
     
     va_start(ap, n);
-    elem = vec_push_args_v(vec, n, ap);
+    elem = error_propagate_ptr(vec_push_args_v(vec, n, ap));
     va_end(ap);
     
     return elem;
@@ -448,7 +463,7 @@ void *vec_push_args_p(vec_ct vec, size_t n, ...)
     void *elem;
     
     va_start(ap, n);
-    elem = vec_push_args_pv(vec, n, ap);
+    elem = error_propagate_ptr(vec_push_args_pv(vec, n, ap));
     va_end(ap);
     
     return elem;
@@ -459,9 +474,10 @@ void *vec_push_args_v(vec_ct vec, size_t n, va_list ap)
     size_t i;
     
     assert_magic(vec);
+    return_error_if_fail(n, E_VEC_NULL_REQUEST, NULL);
     
-    if(!n || vec_grow(vec, n))
-        return NULL;
+    if(vec_grow(vec, n))
+        return error_propagate(), NULL;
     
     for(i=0; i < n; i++)
         memcpy(ELEM(vec->size+i), va_arg(ap, void*), vec->esize);
@@ -477,9 +493,10 @@ void *vec_push_args_pv(vec_ct vec, size_t n, va_list ap)
     
     assert_magic(vec);
     assert(vec->esize == sizeof(void*));
+    return_error_if_fail(n, E_VEC_NULL_REQUEST, NULL);
     
-    if(!n || vec_grow(vec, n))
-        return NULL;
+    if(vec_grow(vec, n))
+        return error_propagate(), NULL;
     
     for(i=0; i < n; i++)
         *(void**)ELEM(vec->size+i) = va_arg(ap, void*);
@@ -489,12 +506,18 @@ void *vec_push_args_pv(vec_ct vec, size_t n, va_list ap)
     return ELEM(vec->size-n);
 }
 
-static void *_vec_insert(vec_ct vec, size_t pos, size_t n, const void *elems)
+static void *_vec_insert(vec_ct vec, ssize_t pos, size_t n, const void *elems)
 {
     size_t size;
     
-    if(!n || vec_grow(vec, n))
-        return NULL;
+    if(pos < 0)
+        pos += vec->size;
+    
+    return_error_if_fail(pos >= 0 && (size_t)pos <= vec->size, E_VEC_OUT_OF_BOUNDS, NULL);
+    return_error_if_fail(n, E_VEC_NULL_REQUEST, NULL);
+    
+    if(vec_grow(vec, n))
+        return error_propagate(), NULL;
     
     if((size = vec->size - pos))
         memmove(ELEM(pos+n), ELEM(pos), size*vec->esize);
@@ -511,12 +534,16 @@ static void *_vec_insert(vec_ct vec, size_t pos, size_t n, const void *elems)
 
 void *vec_insert(vec_ct vec, ssize_t pos)
 {
-    return vec_insert_en(vec, pos, 1, NULL);
+    assert_magic(vec);
+    
+    return error_propagate_ptr(_vec_insert(vec, pos, 1, NULL));
 }
 
 void *vec_insert_e(vec_ct vec, ssize_t pos, const void *elem)
 {
-    return vec_insert_en(vec, pos, 1, elem);
+    assert_magic(vec);
+    
+    return error_propagate_ptr(_vec_insert(vec, pos, 1, elem));
 }
 
 void *vec_insert_p(vec_ct vec, ssize_t pos, const void *ptr)
@@ -524,39 +551,43 @@ void *vec_insert_p(vec_ct vec, ssize_t pos, const void *ptr)
     assert_magic(vec);
     assert(vec->esize == sizeof(void*));
     
-    if(pos < 0)
-        pos += vec->size;
-    
-    return_err_if_fail(pos >= 0 && (size_t)pos <= vec->size, ERANGE, NULL);
-    
-    return _vec_insert(vec, pos, 1, &ptr);
+    return error_propagate_ptr(_vec_insert(vec, pos, 1, &ptr));
 }
 
 void *vec_insert_n(vec_ct vec, ssize_t pos, size_t n)
 {
-    return vec_insert_en(vec, pos, n, NULL);
+    assert_magic(vec);
+    
+    return error_propagate_ptr(_vec_insert(vec, pos, n, NULL));
 }
 
 void *vec_insert_en(vec_ct vec, ssize_t pos, size_t n, const void *elems)
 {
     assert_magic(vec);
     
-    if(pos < 0)
-        pos += vec->size;
-    
-    return_err_if_fail(pos >= 0 && (size_t)pos <= vec->size, ERANGE, NULL);
-    
-    return _vec_insert(vec, pos, n, elems);
+    return error_propagate_ptr(_vec_insert(vec, pos, n, elems));
 }
 
 void *vec_insert_before(vec_ct vec, const void *dst)
 {
-    return vec_insert_before_en(vec, dst, 1, NULL);
+    assert_magic(vec);
+    assert(dst);
+    
+    if(vec_check_range(vec, dst))
+        return error_propagate(), NULL;
+    
+    return error_propagate_ptr(_vec_insert(vec, POS(dst), 1, NULL));
 }
 
 void *vec_insert_before_e(vec_ct vec, const void *dst, const void *elem)
 {
-    return vec_insert_before_en(vec, dst, 1, elem);
+    assert_magic(vec);
+    assert(dst);
+    
+    if(vec_check_range(vec, dst))
+        return error_propagate(), NULL;
+    
+    return error_propagate_ptr(_vec_insert(vec, POS(dst), 1, elem));
 }
 
 void *vec_insert_before_p(vec_ct vec, const void *dst, const void *ptr)
@@ -566,14 +597,20 @@ void *vec_insert_before_p(vec_ct vec, const void *dst, const void *ptr)
     assert(vec->esize == sizeof(void*));
     
     if(vec_check_range(vec, dst))
-        return NULL;
+        return error_propagate(), NULL;
     
-    return _vec_insert(vec, POS(dst), 1, &ptr);
+    return error_propagate_ptr(_vec_insert(vec, POS(dst), 1, &ptr));
 }
 
 void *vec_insert_before_n(vec_ct vec, const void *dst, size_t n)
 {
-    return vec_insert_before_en(vec, dst, n, NULL);
+    assert_magic(vec);
+    assert(dst);
+    
+    if(vec_check_range(vec, dst))
+        return error_propagate(), NULL;
+    
+    return error_propagate_ptr(_vec_insert(vec, POS(dst), n, NULL));
 }
 
 void *vec_insert_before_en(vec_ct vec, const void *dst, size_t n, const void *elems)
@@ -582,19 +619,31 @@ void *vec_insert_before_en(vec_ct vec, const void *dst, size_t n, const void *el
     assert(dst);
     
     if(vec_check_range(vec, dst))
-        return NULL;
+        return error_propagate(), NULL;
     
-    return _vec_insert(vec, POS(dst), n, elems);
+    return error_propagate_ptr(_vec_insert(vec, POS(dst), n, elems));
 }
 
 void *vec_insert_after(vec_ct vec, const void *dst)
 {
-    return vec_insert_after_en(vec, dst, 1, NULL);
+    assert_magic(vec);
+    assert(dst);
+    
+    if(vec_check_range(vec, dst))
+        return error_propagate(), NULL;
+    
+    return error_propagate_ptr(_vec_insert(vec, POS(dst)+1, 1, NULL));
 }
 
 void *vec_insert_after_e(vec_ct vec, const void *dst, const void *elem)
 {
-    return vec_insert_after_en(vec, dst, 1, elem);
+    assert_magic(vec);
+    assert(dst);
+    
+    if(vec_check_range(vec, dst))
+        return error_propagate(), NULL;
+    
+    return error_propagate_ptr(_vec_insert(vec, POS(dst)+1, 1, elem));
 }
 
 void *vec_insert_after_p(vec_ct vec, const void *dst, const void *ptr)
@@ -604,14 +653,20 @@ void *vec_insert_after_p(vec_ct vec, const void *dst, const void *ptr)
     assert(vec->esize == sizeof(void*));
     
     if(vec_check_range(vec, dst))
-        return NULL;
+        return error_propagate(), NULL;
     
-    return _vec_insert(vec, POS(dst)+1, 1, &ptr);
+    return error_propagate_ptr(_vec_insert(vec, POS(dst)+1, 1, &ptr));
 }
 
 void *vec_insert_after_n(vec_ct vec, const void *dst, size_t n)
 {
-    return vec_insert_after_en(vec, dst, n, NULL);
+    assert_magic(vec);
+    assert(dst);
+    
+    if(vec_check_range(vec, dst))
+        return error_propagate(), NULL;
+    
+    return error_propagate_ptr(_vec_insert(vec, POS(dst)+1, n, NULL));
 }
 
 void *vec_insert_after_en(vec_ct vec, const void *dst, size_t n, const void *elems)
@@ -620,23 +675,19 @@ void *vec_insert_after_en(vec_ct vec, const void *dst, size_t n, const void *ele
     assert(dst);
     
     if(vec_check_range(vec, dst))
-        return NULL;
+        return error_propagate(), NULL;
     
-    return _vec_insert(vec, POS(dst)+1, n, elems);
+    return error_propagate_ptr(_vec_insert(vec, POS(dst)+1, n, elems));
 }
 
-static size_t _vec_pop(vec_ct vec, void *dst, size_t n, vec_dtor_cb dtor, void *ctx)
+static ssize_t _vec_pop(vec_ct vec, void *dst, size_t n, vec_dtor_cb dtor, void *ctx)
 {
     size_t e;
     
-    if(n > vec->size)
-    {
-        errno = ENOENT;
-        n = vec->size;
-    }
+    return_error_if_fail(vec->size, E_VEC_EMPTY, -1);
     
-    if(!n)
-        return 0;
+    n = MIN(n, vec->size);
+    return_error_if_fail(n, E_VEC_NULL_REQUEST, -1);
     
     vec->size -= n;
     
@@ -656,21 +707,21 @@ int vec_pop(vec_ct vec)
 {
     assert_magic(vec);
     
-    return _vec_pop(vec, NULL, 1, NULL, NULL) == 1 ? 0 : -1;
+    return error_propagate_int(_vec_pop(vec, NULL, 1, NULL, NULL)) == 1 ? 0 : -1;
 }
 
-size_t vec_pop_n(vec_ct vec, size_t n)
+ssize_t vec_pop_n(vec_ct vec, size_t n)
 {
     assert_magic(vec);
     
-    return _vec_pop(vec, NULL, n, NULL, NULL);
+    return error_propagate_int(_vec_pop(vec, NULL, n, NULL, NULL));
 }
 
 int vec_pop_e(vec_ct vec, void *dst)
 {
     assert_magic(vec);
     
-    return _vec_pop(vec, dst, 1, NULL, NULL) == 1 ? 0 : -1;
+    return error_propagate_int(_vec_pop(vec, dst, 1, NULL, NULL)) == 1 ? 0 : -1;
 }
 
 void *vec_pop_p(vec_ct vec)
@@ -680,28 +731,31 @@ void *vec_pop_p(vec_ct vec)
     assert_magic(vec);
     assert(vec->esize == sizeof(void*));
     
-    return _vec_pop(vec, &p, 1, NULL, NULL) == 1 ? p : NULL;
+    if(_vec_pop(vec, &p, 1, NULL, NULL) != 1)
+        return error_propagate(), NULL;
+    
+    return p;
 }
 
-size_t vec_pop_en(vec_ct vec, void *dst, size_t n)
+ssize_t vec_pop_en(vec_ct vec, void *dst, size_t n)
 {
     assert_magic(vec);
     
-    return _vec_pop(vec, dst, n, NULL, NULL);
+    return error_propagate_int(_vec_pop(vec, dst, n, NULL, NULL));
 }
 
 int vec_pop_f(vec_ct vec, vec_dtor_cb dtor, void *ctx)
 {
     assert_magic(vec);
     
-    return _vec_pop(vec, NULL, 1, dtor, ctx) == 1 ? 0 : -1;
+    return error_propagate_int(_vec_pop(vec, NULL, 1, dtor, ctx)) == 1 ? 0 : -1;
 }
 
-size_t vec_pop_fn(vec_ct vec, size_t n, vec_dtor_cb dtor, void *ctx)
+ssize_t vec_pop_fn(vec_ct vec, size_t n, vec_dtor_cb dtor, void *ctx)
 {
     assert_magic(vec);
     
-    return _vec_pop(vec, NULL, n, dtor, ctx);
+    return error_propagate_int(_vec_pop(vec, NULL, n, dtor, ctx));
 }
 
 static ssize_t vec_rem(vec_ct vec, void *dst, ssize_t pos, size_t n, vec_dtor_cb dtor, void *ctx)
@@ -711,14 +765,10 @@ static ssize_t vec_rem(vec_ct vec, void *dst, ssize_t pos, size_t n, vec_dtor_cb
     if(pos < 0)
         pos += vec->size;
     
-    return_err_if_fail(pos >= 0 && (size_t)pos < vec->size, ERANGE, -1);
-    return_val_if_fail(n, 0);
+    return_error_if_fail(pos >= 0 && (size_t)pos < vec->size, E_VEC_OUT_OF_BOUNDS, -1);
     
-    if(n > vec->size - pos)
-    {
-        errno = ENOENT;
-        n = vec->size - pos;
-    }
+    n = MIN(n, vec->size - pos);
+    return_error_if_fail(n, E_VEC_NULL_REQUEST, -1);
     
     if(dst)
         memcpy(dst, ELEM(pos), vec->esize*n);
@@ -741,9 +791,11 @@ int vec_remove(vec_ct vec, void *elem)
     assert(elem);
     
     if(vec_check_range(vec, elem))
-        return -1;
+        return error_propagate(), -1;
     
-    return vec_rem(vec, NULL, POS(elem), 1, NULL, NULL) == 1 ? 0 : -1;
+    vec_rem(vec, NULL, POS(elem), 1, NULL, NULL);
+    
+    return 0;
 }
 
 ssize_t vec_remove_n(vec_ct vec, void *elem, size_t n)
@@ -752,30 +804,30 @@ ssize_t vec_remove_n(vec_ct vec, void *elem, size_t n)
     assert(elem);
     
     if(vec_check_range(vec, elem))
-        return -1;
+        return error_propagate(), -1;
     
-    return vec_rem(vec, NULL, POS(elem), n, NULL, NULL);
+    return error_propagate_int(vec_rem(vec, NULL, POS(elem), n, NULL, NULL));
 }
 
 int vec_remove_at(vec_ct vec, ssize_t pos)
 {
     assert_magic(vec);
     
-    return vec_rem(vec, NULL, pos, 1, NULL, NULL) == 1 ? 0 : -1;
+    return error_propagate_int(vec_rem(vec, NULL, pos, 1, NULL, NULL)) == 1 ? 0 : -1;
 }
 
 ssize_t vec_remove_at_n(vec_ct vec, ssize_t pos, size_t n)
 {
     assert_magic(vec);
     
-    return vec_rem(vec, NULL, pos, n, NULL, NULL);
+    return error_propagate_int(vec_rem(vec, NULL, pos, n, NULL, NULL));
 }
 
 int vec_remove_at_e(vec_ct vec, void *dst, ssize_t pos)
 {
     assert_magic(vec);
     
-    return vec_rem(vec, dst, pos, 1, NULL, NULL) == 1 ? 0 : -1;
+    return error_propagate_int(vec_rem(vec, dst, pos, 1, NULL, NULL)) == 1 ? 0 : -1;
 }
 
 void *vec_remove_at_p(vec_ct vec, ssize_t pos)
@@ -785,38 +837,41 @@ void *vec_remove_at_p(vec_ct vec, ssize_t pos)
     assert_magic(vec);
     assert(vec->esize == sizeof(void*));
     
-    return vec_rem(vec, &p, pos, 1, NULL, NULL) == 1 ? p : NULL;
+    if(vec_rem(vec, &p, pos, 1, NULL, NULL) < 0)
+        return error_propagate(), NULL;
+    
+    return p;
 }
 
 ssize_t vec_remove_at_en(vec_ct vec, void *dst, ssize_t pos, size_t n)
 {
     assert_magic(vec);
     
-    return vec_rem(vec, dst, pos, n, NULL, NULL);
+    return error_propagate_int(vec_rem(vec, dst, pos, n, NULL, NULL));
 }
 
 int vec_remove_at_f(vec_ct vec, ssize_t pos, vec_dtor_cb dtor, void *ctx)
 {
     assert_magic(vec);
     
-    return vec_rem(vec, NULL, pos, 1, dtor, ctx) == 1 ? 0 : -1;
+    return error_propagate_int(vec_rem(vec, NULL, pos, 1, dtor, ctx)) == 1 ? 0 : -1;
 }
 
 ssize_t vec_remove_at_fn(vec_ct vec, ssize_t pos, size_t n, vec_dtor_cb dtor, void *ctx)
 {
     assert_magic(vec);
     
-    return vec_rem(vec, NULL, pos, n, dtor, ctx);
+    return error_propagate_int(vec_rem(vec, NULL, pos, n, dtor, ctx));
 }
 
 void *vec_find(vec_const_ct vec, vec_pred_cb pred, void *ctx)
 {
     ssize_t pos;
     
-    if((pos = vec_find_pos(vec, pred, ctx)) >= 0)
-        return ELEM(pos);
+    if((pos = vec_find_pos(vec, pred, ctx)) < 0)
+        return error_propagate(), NULL;
     
-    return NULL;
+    return ELEM(pos);
 }
 
 void *vec_find_p(vec_const_ct vec, vec_pred_cb pred, void *ctx)
@@ -826,20 +881,20 @@ void *vec_find_p(vec_const_ct vec, vec_pred_cb pred, void *ctx)
     assert_magic(vec);
     assert(vec->esize == sizeof(void*));
     
-    if((pos = vec_find_pos(vec, pred, ctx)) >= 0)
-        return *(void**)ELEM(pos);
+    if((pos = vec_find_pos(vec, pred, ctx)) < 0)
+        return error_propagate(), NULL;
     
-    return NULL;
+    return *(void**)ELEM(pos);
 }
 
 void *vec_find_r(vec_const_ct vec, vec_pred_cb pred, void *ctx)
 {
     ssize_t pos;
     
-    if((pos = vec_find_pos_r(vec, pred, ctx)) >= 0)
-        return ELEM(pos);
+    if((pos = vec_find_pos_r(vec, pred, ctx)) < 0)
+        return error_propagate(), NULL;
     
-    return NULL;
+    return ELEM(pos);
 }
 
 void *vec_find_rp(vec_const_ct vec, vec_pred_cb pred, void *ctx)
@@ -849,10 +904,10 @@ void *vec_find_rp(vec_const_ct vec, vec_pred_cb pred, void *ctx)
     assert_magic(vec);
     assert(vec->esize == sizeof(void*));
     
-    if((pos = vec_find_pos_r(vec, pred, ctx)) >= 0)
-        return *(void**)ELEM(pos);
+    if((pos = vec_find_pos_r(vec, pred, ctx)) < 0)
+        return error_propagate(), NULL;
     
-    return NULL;
+    return *(void**)ELEM(pos);
 }
 
 ssize_t vec_find_pos(vec_const_ct vec, vec_pred_cb pred, void *ctx)
@@ -866,7 +921,7 @@ ssize_t vec_find_pos(vec_const_ct vec, vec_pred_cb pred, void *ctx)
         if(pred(vec, ELEM(i), ctx))
             return i;
     
-    return errno = ENOENT, -1;
+    return_error_if_reached(E_VEC_NOT_FOUND, -1);
 }
 
 ssize_t vec_find_pos_r(vec_const_ct vec, vec_pred_cb pred, void *ctx)
@@ -880,7 +935,7 @@ ssize_t vec_find_pos_r(vec_const_ct vec, vec_pred_cb pred, void *ctx)
         if(pred(vec, ELEM(i-1), ctx))
             return i-1;
     
-    return errno = ENOENT, -1;
+    return_error_if_reached(E_VEC_NOT_FOUND, -1);
 }
 
 int vec_find_get(vec_const_ct vec, void *dst, vec_pred_cb pred, void *ctx)
@@ -888,7 +943,7 @@ int vec_find_get(vec_const_ct vec, void *dst, vec_pred_cb pred, void *ctx)
     ssize_t pos;
     
     if((pos = vec_find_pos(vec, pred, ctx)) < 0)
-        return -1;
+        return error_propagate(), -1;
     
     if(dst)
         memcpy(dst, ELEM(pos), vec->esize);
@@ -901,7 +956,7 @@ int vec_find_get_r(vec_const_ct vec, void *dst, vec_pred_cb pred, void *ctx)
     ssize_t pos;
     
     if((pos = vec_find_pos_r(vec, pred, ctx)) < 0)
-        return -1;
+        return error_propagate(), -1;
     
     if(dst)
         memcpy(dst, ELEM(pos), vec->esize);
@@ -911,7 +966,14 @@ int vec_find_get_r(vec_const_ct vec, void *dst, vec_pred_cb pred, void *ctx)
 
 int vec_find_remove(vec_ct vec, vec_pred_cb pred, void *ctx)
 {
-    return vec_find_remove_f(vec, pred, ctx, NULL, NULL);
+    ssize_t pos;
+    
+    if((pos = vec_find_pos(vec, pred, ctx)) < 0)
+        return error_propagate(), -1;
+    
+    vec_rem(vec, NULL, pos, 1, NULL, NULL);
+    
+    return 0;
 }
 
 void *vec_find_remove_p(vec_ct vec, vec_pred_cb pred, void *ctx)
@@ -923,7 +985,7 @@ void *vec_find_remove_p(vec_ct vec, vec_pred_cb pred, void *ctx)
     assert(vec->esize == sizeof(void*));
     
     if((pos = vec_find_pos(vec, pred, ctx)) < 0)
-        return NULL;
+        return error_propagate(), NULL;
     
     vec_rem(vec, &p, pos, 1, NULL, NULL);
     
@@ -935,7 +997,7 @@ int vec_find_remove_f(vec_ct vec, vec_pred_cb pred, void *pred_ctx, vec_dtor_cb 
     ssize_t pos;
     
     if((pos = vec_find_pos(vec, pred, pred_ctx)) < 0)
-        return -1;
+        return error_propagate(), -1;
     
     vec_rem(vec, NULL, pos, 1, dtor, dtor_ctx);
     
@@ -944,7 +1006,14 @@ int vec_find_remove_f(vec_ct vec, vec_pred_cb pred, void *pred_ctx, vec_dtor_cb 
 
 int vec_find_remove_r(vec_ct vec, vec_pred_cb pred, void *ctx)
 {
-    return vec_find_remove_rf(vec, pred, ctx, NULL, NULL);
+    ssize_t pos;
+    
+    if((pos = vec_find_pos_r(vec, pred, ctx)) < 0)
+        return error_propagate(), -1;
+    
+    vec_rem(vec, NULL, pos, 1, NULL, NULL);
+    
+    return 0;
 }
 
 void *vec_find_remove_rp(vec_ct vec, vec_pred_cb pred, void *ctx)
@@ -956,7 +1025,7 @@ void *vec_find_remove_rp(vec_ct vec, vec_pred_cb pred, void *ctx)
     assert(vec->esize == sizeof(void*));
     
     if((pos = vec_find_pos_r(vec, pred, ctx)) < 0)
-        return NULL;
+        return error_propagate(), NULL;
     
     vec_rem(vec, &p, pos, 1, NULL, NULL);
     
@@ -968,7 +1037,7 @@ int vec_find_remove_rf(vec_ct vec, vec_pred_cb pred, void *pred_ctx, vec_dtor_cb
     ssize_t pos;
     
     if((pos = vec_find_pos_r(vec, pred, pred_ctx)) < 0)
-        return -1;
+        return error_propagate(), -1;
     
     vec_rem(vec, NULL, pos, 1, dtor, dtor_ctx);
     
@@ -1027,8 +1096,8 @@ int vec_swap(vec_ct vec, ssize_t pos1, ssize_t pos2)
     if(pos2 < 0)
         pos2 += vec->size;
     
-    return_err_if_fail(pos1 >= 0 && (size_t)pos1 < vec->size, ERANGE, -1);
-    return_err_if_fail(pos2 >= 0 && (size_t)pos2 < vec->size, ERANGE, -1);
+    return_error_if_fail(pos1 >= 0 && (size_t)pos1 < vec->size, E_VEC_OUT_OF_BOUNDS, -1);
+    return_error_if_fail(pos2 >= 0 && (size_t)pos2 < vec->size, E_VEC_OUT_OF_BOUNDS, -1);
     
     if(pos1 == pos2)
         return 0;
@@ -1046,7 +1115,7 @@ int vec_get_buffer(vec_ct vec, void **buf, size_t *size, size_t *capacity)
     assert_magic(vec);
     assert(buf);
     
-    return_err_if_fail(vec->mem, ENOENT, -1);
+    return_error_if_fail(vec->mem, E_VEC_NO_BUFFER, -1);
     
     if(size)
         *size = vec->size;
@@ -1091,7 +1160,7 @@ size_t vec_truncate_f(vec_ct vec, size_t size, vec_dtor_cb dtor, void *ctx)
 
 int vec_set_capacity(vec_ct vec, size_t capacity)
 {
-    return vec_set_capacity_f(vec, capacity, NULL, NULL);
+    return error_propagate_int(vec_set_capacity_f(vec, capacity, NULL, NULL));
 }
 
 int vec_set_capacity_f(vec_ct vec, size_t capacity, vec_dtor_cb dtor, void *ctx)
@@ -1111,7 +1180,10 @@ int vec_set_capacity_f(vec_ct vec, size_t capacity, vec_dtor_cb dtor, void *ctx)
         vec->size = capacity;
     }
     
-    return vec_resize(vec, capacity);
+    if(vec_resize(vec, capacity))
+        return error_propagate(), -1;
+    
+    return 0;
 }
 
 int vec_fold(vec_const_ct vec, vec_fold_cb fold, void *ctx)
@@ -1123,7 +1195,7 @@ int vec_fold(vec_const_ct vec, vec_fold_cb fold, void *ctx)
     assert(fold);
     
     for(i=0; i < vec->size; i++)
-        if((rc = fold(vec, i, ELEM(i), ctx)))
+        if((rc = error_push_int(fold(vec, i, ELEM(i), ctx))))
             return rc;
     
     return 0;
@@ -1138,7 +1210,7 @@ int vec_fold_r(vec_const_ct vec, vec_fold_cb fold, void *ctx)
     assert(fold);
     
     for(i=0; i < vec->size; i++)
-        if((rc = fold(vec, i, ELEM(vec->size-i-1), ctx)))
+        if((rc = error_push_int(fold(vec, i, ELEM(vec->size-i-1), ctx))))
             return rc;
     
     return 0;

@@ -42,10 +42,26 @@ typedef struct test_fold_state
     void *ctx;
 } test_fold_state_st;
 
+static const error_info_st error_infos[] =
+{
+      ERROR_INFO(E_TEST_STATE_INVALID_OBJECT, "Invalid test state object.")
+    , ERROR_INFO(E_TEST_STATE_INVALID_STATUS_TYPE, "Invalid status type.")
+    , ERROR_INFO(E_TEST_STATE_INVALID_RESULT_TYPE, "Invalid result type.")
+    , ERROR_INFO(E_TEST_STATE_INVALID_FILE, "Invalid file.")
+    , ERROR_INFO(E_TEST_STATE_INVALID_MSG, "Invalid message.")
+    , ERROR_INFO(E_TEST_STATE_INVALID_MSG_TYPE, "Invalid message type.")
+    , ERROR_INFO(E_TEST_STATE_INVALID_CALLBACK, "Invalid callback.")
+};
+
 
 test_state_ct test_state_new(void)
 {
-    return calloc(1, sizeof(test_state_st));
+    test_state_ct state;
+    
+    if(!(state = calloc(1, sizeof(test_state_st))))
+        return error_set_errno(calloc), NULL;
+    
+    return state;
 }
 
 void test_state_free(test_state_ct state)
@@ -87,7 +103,8 @@ void test_state_reset(test_state_ct state)
 
 int test_state_set_status(test_state_ct state, test_status_id status)
 {
-    return_err_if_fail(state && status < TEST_STATUSES, EINVAL, -1);
+    return_error_if_fail(state, E_TEST_STATE_INVALID_OBJECT, -1);
+    return_error_if_fail(status < TEST_STATUSES, E_TEST_STATE_INVALID_STATUS_TYPE, -1);
     
     state->status = status;
     
@@ -96,7 +113,8 @@ int test_state_set_status(test_state_ct state, test_status_id status)
 
 int test_state_set_result(test_state_ct state, test_result_id result)
 {
-   return_err_if_fail(state && result < TEST_RESULTS, EINVAL, -1);
+    return_error_if_fail(state, E_TEST_STATE_INVALID_OBJECT, -1);
+    return_error_if_fail(result < TEST_RESULTS, E_TEST_STATE_INVALID_RESULT_TYPE, -1);
     
     state->result = MAX(state->result, result);
     
@@ -105,7 +123,7 @@ int test_state_set_result(test_state_ct state, test_result_id result)
 
 int test_state_add_duration(test_state_ct state, size_t duration)
 {
-    return_err_if_fail(state, EINVAL, -1);
+    return_error_if_fail(state, E_TEST_STATE_INVALID_OBJECT, -1);
     
     state->duration += duration;
     
@@ -114,13 +132,14 @@ int test_state_add_duration(test_state_ct state, size_t duration)
 
 int test_state_set_position(test_state_ct state, test_pos_id type, const char *file, size_t line)
 {
-    return_err_if_fail(state && file, EINVAL, -1);
+    return_error_if_fail(state, E_TEST_STATE_INVALID_OBJECT, -1);
+    return_error_if_fail(file, E_TEST_STATE_INVALID_FILE, -1);
     
     if(state->pos.file)
         free(state->pos.file);
     
     if(!(state->pos.file = strdup(file)))
-        return -1;
+        return error_set_errno(strdup), -1;
     
     state->pos.type = type;
     state->pos.line = line;
@@ -130,7 +149,7 @@ int test_state_set_position(test_state_ct state, test_pos_id type, const char *f
 
 int test_state_inc_asserts(test_state_ct state)
 {
-    return_err_if_fail(state, EINVAL, -1);
+    return_error_if_fail(state, E_TEST_STATE_INVALID_OBJECT, -1);
     
     state->asserts++;
     
@@ -148,7 +167,7 @@ const char *test_state_get_strstatus(test_state_ct state)
 {
     assert(state);
     
-    return test_state_strstatus(state->status);
+    return error_propagate_ptr(test_state_strstatus(state->status));
 }
 
 test_result_id test_state_get_result(test_state_ct state)
@@ -162,7 +181,7 @@ const char *test_state_get_strresult(test_state_ct state)
 {
     assert(state);
     
-    return test_state_strresult(state->result);
+    return error_propagate_ptr(test_state_strresult(state->result));
 }
 
 size_t test_state_get_duration(test_state_ct state)
@@ -195,7 +214,7 @@ const char *test_state_strstatus(test_status_id status)
     case TEST_STATUS_RUN:       return "run";
     case TEST_STATUS_TEARDOWN:  return "teardown";
     case TEST_STATUS_FINISH:    return "finish";
-    default:                    return errno = EINVAL, NULL;
+    default:                    return_error_if_reached(E_TEST_STATE_INVALID_STATUS_TYPE, NULL);
     }
 }
 
@@ -209,7 +228,7 @@ const char *test_state_strresult(test_result_id result)
     case TEST_RESULT_TIMEOUT:   return "timeout";
     case TEST_RESULT_ERROR:     return "error";
     case TEST_RESULT_SKIP:      return "skip";
-    default:                    return errno = EINVAL, NULL;
+    default:                    return_error_if_reached(E_TEST_STATE_INVALID_RESULT_TYPE, NULL);
     }
 }
 
@@ -219,13 +238,13 @@ static int _test_state_add_msg(test_state_ct state, test_msg_id type, size_t lev
     char *text;
     
     if((!len && !(text = strdup(msgtext))) || (len && !(text = strndup(msgtext, len))))
-        return -1;
+        return error_set_errno(strdup), -1;
     
     if(!state->msg && !(state->msg = vec_new(10, sizeof(test_msg_st))))
-        return free(text), -1;
+        return error_push(), free(text), -1;
     
     if(!(msg = vec_push(state->msg)))
-        return free(text), -1;
+        return error_push(), free(text), -1;
     
     msg->type = type;
     msg->level = level;
@@ -248,7 +267,9 @@ int test_state_add_msg(test_state_ct state, test_msg_id type, const char *msg)
     size_t level = 0;
     int rc = 0;
     
-    return_err_if_fail(state && msg && type < TEST_MSG_TYPES, EINVAL, -1);
+    return_error_if_fail(state, E_TEST_STATE_INVALID_OBJECT, -1);
+    return_error_if_fail(msg, E_TEST_STATE_INVALID_MSG, -1);
+    return_error_if_fail(type < TEST_MSG_TYPES, E_TEST_STATE_INVALID_MSG_TYPE, -1);
     
     switch(type)
     {
@@ -259,25 +280,25 @@ int test_state_add_msg(test_state_ct state, test_msg_id type, const char *msg)
     }
     
     if(rc)
-        return rc;
+        return error_propagate(), rc;
     
     for(; (ptr = strchr(msg, '\n')); msg = ptr+1)
         if(ptr == msg)
             continue;
         else if(_test_state_add_msg(state, type, level, msg, ptr-msg))
-            return -1;
+            return error_propagate(), -1;
         else
             level = 1;
     
     if(!msg[0])
         return 0;
     
-    return _test_state_add_msg(state, type, level, msg, 0);
+    return error_propagate_int(_test_state_add_msg(state, type, level, msg, 0));
 }
 
 int test_state_add_msg_f(test_state_ct state, test_msg_id type, const char *fmt, ...)
 {
-    return test_state_add_msg(state, type, VVFMT(fmt));
+    return error_propagate_int(test_state_add_msg(state, type, VVFMT(fmt)));
 }
 
 static int test_state_vec_fold_msg(vec_const_ct vec, size_t index, void *elem, void *ctx)
@@ -285,17 +306,18 @@ static int test_state_vec_fold_msg(vec_const_ct vec, size_t index, void *elem, v
     test_fold_state_st *fstate = ctx;
     test_msg_st *msg = elem;
     
-    return fstate->fold(&msg->pos, msg->type, msg->level, msg->text, fstate->ctx);
+    return error_push_int(fstate->fold(&msg->pos, msg->type, msg->level, msg->text, fstate->ctx));
 }
 
 int test_state_fold_msg(test_state_ct state, test_state_msg_cb fold, void *ctx)
 {
     test_fold_state_st fstate = { .fold = fold, .ctx = ctx };
     
-    return_err_if_fail(state && fold, EINVAL, -1);
+    return_error_if_fail(state, E_TEST_STATE_INVALID_OBJECT, -1);
+    return_error_if_fail(fold, E_TEST_STATE_INVALID_CALLBACK, -1);
     
     if(!state->msg)
         return 0;
     
-    return vec_fold(state->msg, test_state_vec_fold_msg, &fstate);
+    return error_push_int(vec_fold(state->msg, test_state_vec_fold_msg, &fstate));
 }

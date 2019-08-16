@@ -39,15 +39,23 @@ typedef struct test_case
     int endval;
 } test_case_st;
 
+static const error_info_st error_infos[] =
+{
+      ERROR_INFO(E_TEST_CASE_INVALID_OBJECT, "Invalid test case object.")
+    , ERROR_INFO(E_TEST_CASE_INVALID_NAME, "Invalid test case name.")
+    , ERROR_INFO(E_TEST_CASE_INVALID_CALLBACK, "Invalid test case callback.")
+};
+
 
 test_case_ct _test_case_new(const char *name, test_case_cb run, const test_case_config_st *config)
 {
     test_case_ct tcase;
     
-    return_err_if_fail(name && run, EINVAL, NULL);
+    return_error_if_fail(name, E_TEST_CASE_INVALID_NAME, NULL);
+    return_error_if_fail(run, E_TEST_CASE_INVALID_CALLBACK, NULL);
     
     if(!(tcase = calloc(1, sizeof(test_case_st))))
-        return NULL;
+        return error_set_errno(calloc), NULL;
     
     tcase->name = name;
     tcase->run = run;
@@ -96,7 +104,8 @@ void test_case_set_signal(test_case_ct tcase, int signal)
 
 int test_case_set_fixture(test_case_ct tcase, test_case_cb setup, test_case_cb teardown)
 {
-    return_err_if_fail(tcase && setup && teardown, EINVAL, -1);
+    return_error_if_fail(tcase, E_TEST_CASE_INVALID_OBJECT, -1);
+    return_error_if_fail(setup && teardown, E_TEST_CASE_INVALID_CALLBACK, -1);
     
     tcase->setup = setup;
     tcase->teardown = teardown;
@@ -116,49 +125,49 @@ bool test_case_expects_signal(test_case_const_ct tcase)
 
 const char *test_case_get_name(test_case_const_ct tcase)
 {
-    return_err_if_fail(tcase, EINVAL, NULL);
+    return_error_if_fail(tcase, E_TEST_CASE_INVALID_OBJECT, NULL);
     
     return tcase->name;
 }
 
 size_t test_case_get_timeout(test_case_const_ct tcase)
 {
-    return_val_if_fail(tcase, TEST_CASE_TIMEOUT);
+    return_value_if_fail(tcase, TEST_CASE_TIMEOUT);
     
     return tcase->timeout;
 }
 
 int test_case_get_exit(test_case_const_ct tcase)
 {
-    return_err_if_fail(tcase && tcase->end == TEST_CASE_END_EXIT, EINVAL, 123);
+    return_value_if_fail(tcase && tcase->end == TEST_CASE_END_EXIT, 0);
     
     return tcase->endval;
 }
 
 int test_case_get_signal(test_case_const_ct tcase)
 {
-    return_err_if_fail(tcase && tcase->end == TEST_CASE_END_SIGNAL, EINVAL, 0);
+    return_value_if_fail(tcase && tcase->end == TEST_CASE_END_SIGNAL, 0);
     
     return tcase->endval;
 }
 
 test_case_cb test_case_get_run(test_case_const_ct tcase)
 {
-    return_err_if_fail(tcase, EINVAL, NULL);
+    return_error_if_fail(tcase, E_TEST_CASE_INVALID_OBJECT, NULL);
     
     return tcase->run;
 }
 
 test_case_cb test_case_get_setup(test_case_const_ct tcase)
 {
-    return_err_if_fail(tcase, EINVAL, NULL);
+    return_error_if_fail(tcase, E_TEST_CASE_INVALID_OBJECT, NULL);
     
     return tcase->setup;
 }
 
 test_case_cb test_case_get_teardown(test_case_const_ct tcase)
 {
-    return_err_if_fail(tcase, EINVAL, NULL);
+    return_error_if_fail(tcase, E_TEST_CASE_INVALID_OBJECT, NULL);
     
     return tcase->teardown;
 }
