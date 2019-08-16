@@ -23,8 +23,8 @@
 #ifndef __YTIL_DEF_H__
 #define __YTIL_DEF_H__
 
+#include <ytil/gen/error.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <endian.h>
 #include <assert.h>
 
@@ -115,23 +115,31 @@
     (type)(intptr_t)(value); })
 
 // return if !condition
-#define return_if_fail(condition) \
+#define return_if_fail(condition) do { \
     if(!(condition)) \
-        do { return; } while(0)
+        return; \
+} while(0)
 
 // return value if !condition
-#define return_val_if_fail(condition, value) \
+#define return_value_if_fail(condition, value) do { \
     if(!(condition)) \
-        do { return (value); } while(0)
+        return (value); \
+} while(0)
 
-// set errno and return value if !condition
-#define return_err_if_fail(condition, error, value) \
+// set error and return value if !condition
+#define return_error_if_fail(condition, error, value) do { \
     if(!(condition)) \
-        do { errno = (error); return (value); } while(0)
+    { \
+        error_set(error); \
+        return (value); \
+    } \
+} while(0)
 
-// set errno and return value if reached
-#define return_err_if_reached(error, value) \
-    do { errno = (error); return (value); } while(0)
+// set error and return value if reached
+#define return_error_if_reached(error, value) do { \
+    error_set(error); \
+    return (value); \
+} while(0)
 
 #ifdef NDEBUG
     
