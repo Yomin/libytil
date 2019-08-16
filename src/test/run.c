@@ -24,6 +24,9 @@
 #include <ytil/test/com.h>
 #include <ytil/test/state.h>
 #include <ytil/test/ctx.h>
+#include <ytil/con/vec.h>
+#include <ytil/sys/proc.h>
+#include <ytil/def.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -38,9 +41,6 @@
 #include <sys/socket.h>
 #include <sys/ptrace.h>
 #include <sys/resource.h>
-#include <ytil/con/vec.h>
-#include <ytil/sys/proc.h>
-#include <ytil/def.h>
 
 #define COLOR_DEFAULT   "\033[0m"
 #define COLOR_RED       "\033[1;31;40m"
@@ -170,7 +170,7 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
             return -1;
         case 'f':
         case 'F':
-            run->fork = opt == 'f';
+            test_run_enable_fork(run, opt == 'f');
             break;
         case 'c':
         case 'C':
