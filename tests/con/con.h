@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_TEST_CON_TEST_H__
-#define __YTIL_TEST_CON_TEST_H__
+#ifndef __YTIL_TEST_CON_H__
+#define __YTIL_TEST_CON_H__
 
 #include <ytil/test/suite.h>
 
