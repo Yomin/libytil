@@ -22,6 +22,7 @@
 
 #include <ytil/gen/error.h>
 #include <ytil/ext/errno.h>
+#include <ytil/def.h>
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -135,7 +136,7 @@ const char *error_origin_get_name(void)
     switch(error.origin.type)
     {
     case ERROR_TYPE_ERROR:  return error.origin.infos[error.origin.error].name;
-    case ERROR_TYPE_ERRNO:  return strerrno(error.origin.error);
+    case ERROR_TYPE_ERRNO:  return IFNULL(strerrno(error.origin.error), "UNKNOWN");
     default:                return NULL;
     }
 }
