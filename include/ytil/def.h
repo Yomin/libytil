@@ -74,6 +74,11 @@
     __auto_type _max = (max); \
     _n < _min ? _min : _n > _max ? _max : _n; })
 
+// return default value if expr NULL
+#define IFNULL(expr, value) __extension__({ \
+    __auto_type _expr = (expr); \
+    _expr ? _expr : (value); })
+
 // return number of static array elements
 #define ELEMS(array) \
     (sizeof(array) / sizeof(array[0]))
