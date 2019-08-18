@@ -119,19 +119,40 @@
     assert(sizeof(type) >= sizeof(intptr_t)); \
     (type)(intptr_t)(value); })
 
-// return if !condition
+// return if condition true
+#define return_if_pass(condition) do { \
+    if((condition)) \
+        return; \
+} while(0)
+
+// return if condition false
 #define return_if_fail(condition) do { \
     if(!(condition)) \
         return; \
 } while(0)
 
-// return value if !condition
+// return value if condition true
+#define return_value_if_pass(condition, value) do { \
+    if((condition)) \
+        return (value); \
+} while(0)
+
+// return value if condition false
 #define return_value_if_fail(condition, value) do { \
     if(!(condition)) \
         return (value); \
 } while(0)
 
-// set error and return value if !condition
+// set error and return value if condition true
+#define return_error_if_pass(condition, error, value) do { \
+    if((condition)) \
+    { \
+        error_set(error); \
+        return (value); \
+    } \
+} while(0)
+
+// set error and return value if condition false
 #define return_error_if_fail(condition, error, value) do { \
     if(!(condition)) \
     { \
