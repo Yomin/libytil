@@ -28,6 +28,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <alloca.h>
+#include <sys/types.h>
 
 
 typedef enum str_error
@@ -123,9 +124,11 @@ str_ct str_clear(str_ct str);
 // truncate str capacity to length
 str_ct str_truncate(str_const_ct str);
 
-// resize str, convert const data to heap if neccessary
+// resize str, afterwards str is writeable
+// convert const/transient data to heap if neccessary
 str_ct str_resize(str_ct str, size_t len);
-// resize str, convert const data to heap if neccessary, initialize with c if grown
+// resize str, afterwards str is writeable, initialize with c if grown
+// convert const/transient data to heap if neccessary
 str_ct str_resize_set(str_ct str, size_t len, char c);
 
 
@@ -256,6 +259,99 @@ str_ct  str_set_bh(str_ct str, void *data, size_t len);
 str_ct  str_set_bhc(str_ct str, void *data, size_t len, size_t cap);
 // set str with binary const data
 str_ct  str_set_bc(str_ct str, const void *data, size_t len);
+
+
+// copy src str to dst str at pos, resize dst if necessary
+str_ct  str_copy(str_ct dst, size_t pos, str_const_ct src);
+// copy max n chars of src str to dst str at pos, resize dst if necessary
+str_ct  str_copy_n(str_ct dst, size_t pos, str_const_ct src, size_t len);
+// copy src cstr to dst str at pos, resize dst if necessary
+str_ct  str_copy_c(str_ct dst, size_t pos, const char *src);
+// copy max n chars of src cstr to dst str at pos, resize dst if necessary
+str_ct  str_copy_cn(str_ct dst, size_t pos, const char *src, size_t len);
+#define str_copy_l(dst, pos, lit) str_copy_cn(dst, pos, lit, sizeof(lit)-1)
+// copy src data to dst str at pos, resize dst if necessary, dst is marked binary
+str_ct  str_copy_b(str_ct dst, size_t pos, const void *src, size_t len);
+// copy format cstr to dst str at pos, resize dst if necessary
+str_ct  str_copy_f(str_ct dst, size_t pos, const char *fmt, ...) __attribute__((format(gnu_printf, 3, 4)));
+// copy format cstr with va_list to dst str at pos, resize dst if necessary
+str_ct  str_copy_vf(str_ct dst, size_t pos, const char *fmt, va_list ap) __attribute__((format(gnu_printf, 3, 0)));
+
+
+// overwrite dst str at pos with src str
+ssize_t str_overwrite(str_ct dst, size_t pos, str_const_ct src);
+// overwrite max n chars in dst str at pos with src str
+ssize_t str_overwrite_n(str_ct dst, size_t pos, str_const_ct src, size_t len);
+// overwrite dst str at pos with src cstr
+ssize_t str_overwrite_c(str_ct dst, size_t pos, const char *src);
+// overwrite max n chars in dst str at pos with src cstr
+ssize_t str_overwrite_cn(str_ct dst, size_t pos, const char *src, size_t len);
+#define str_overwrite_l(dst, pos, lit) str_overwrite_cn(dst, pos, lit, sizeof(lit)-1)
+// overwrite dst str at pos with src data, dst is marked binary
+ssize_t str_overwrite_b(str_ct dst, size_t pos, const void *src, size_t len);
+// overwrite dst str at pos with format cstr
+ssize_t str_overwrite_f(str_ct dst, size_t pos, const char *fmt, ...) __attribute__((format(gnu_printf, 3, 4)));
+// overwrite max n chars in dst str at pos with format cstr
+ssize_t str_overwrite_fn(str_ct dst, size_t pos, size_t len, const char *fmt, ...) __attribute__((format(gnu_printf, 4, 5)));
+// overwrite dst str at pos with format cstr with va_list
+ssize_t str_overwrite_vf(str_ct dst, size_t pos, const char *fmt, va_list ap) __attribute__((format(gnu_printf, 3, 0)));
+// overwrite max n chars in dst str at pos with format cstr with va_list
+ssize_t str_overwrite_vfn(str_ct dst, size_t pos, size_t len, const char *fmt, va_list ap) __attribute__((format(gnu_printf, 4, 0)));
+
+
+// prepend prefix str to str
+str_ct  str_prepend(str_ct str, str_const_ct prefix);
+// prepend max n chars of prefix str to str
+str_ct  str_prepend_n(str_ct str, str_const_ct prefix, size_t len);
+// prepend prefix cstr to str
+str_ct  str_prepend_c(str_ct str, const char *prefix);
+// prepend max n chars of prefix cstr to str
+str_ct  str_prepend_cn(str_ct str, const char *prefix, size_t len);
+#define str_prepend_l(str, prefix) str_prepend_cn(str, prefix, sizeof(prefix)-1)
+// prepend prefix data to str, mark str binary
+str_ct  str_prepend_b(str_ct str, const void *prefix, size_t len);
+// prepend n chars to str, initialize with c
+str_ct  str_prepend_set(str_ct str, size_t len, char c);
+// prepend format cstr to str
+str_ct  str_prepend_f(str_ct str, const char *fmt, ...) __attribute__((format(gnu_printf, 2, 3)));
+// prepend format cstr with va_list to str
+str_ct  str_prepend_vf(str_ct str, const char *fmt, va_list ap) __attribute__((format(gnu_printf, 2, 0)));
+
+// append suffix str to str
+str_ct  str_append(str_ct str, str_const_ct suffix);
+// append max n chars of suffix str to str
+str_ct  str_append_n(str_ct str, str_const_ct suffix, size_t len);
+// append suffix cstr to str
+str_ct  str_append_c(str_ct str, const char *suffix);
+// append max n chars of suffix cstr to str
+str_ct  str_append_cn(str_ct str, const char *suffix, size_t len);
+#define str_append_l(str, suffix) str_append_cn(str, suffix, sizeof(suffix)-1)
+// append suffix data to str, mark str binary
+str_ct  str_append_b(str_ct str, const void *suffix, size_t len);
+// append n chars to str, initialize with c
+str_ct  str_append_set(str_ct str, size_t len, char c);
+// append format cstr to str
+str_ct  str_append_f(str_ct str, const char *fmt, ...) __attribute__((format(gnu_printf, 2, 3)));
+// append format cstr with va_list to str
+str_ct  str_append_vf(str_ct str, const char *fmt, va_list ap) __attribute__((format(gnu_printf, 2, 0)));
+
+// insert sub str into str at pos
+str_ct  str_insert(str_ct str, size_t pos, str_const_ct sub);
+// insert max n chars of sub str into str at pos
+str_ct  str_insert_n(str_ct str, size_t pos, str_const_ct sub, size_t len);
+// insert sub cstr into str at pos
+str_ct  str_insert_c(str_ct str, size_t pos, const char *sub);
+// insert max n chars of sub cstr into str at pos
+str_ct  str_insert_cn(str_ct str, size_t pos, const char *sub, size_t len);
+#define str_insert_l(str, pos, sub) str_insert_cn(str, pos, sub, sizeof(sub)-1)
+// insert sub data into str at pos, mark str binary
+str_ct  str_insert_b(str_ct str, size_t pos, const void *sub, size_t len);
+// insert n chars into str at pos, initialize with c
+str_ct  str_insert_set(str_ct str, size_t pos, size_t len, char c);
+// insert format cstr into str at pos
+str_ct  str_insert_f(str_ct str, size_t pos, const char *fmt, ...) __attribute__((format(gnu_printf, 3, 4)));
+// insert format cstr with va_list into str at pos
+str_ct  str_insert_vf(str_ct str, size_t pos, const char *fmt, va_list ap) __attribute__((format(gnu_printf, 3, 0)));
 
 
 #endif

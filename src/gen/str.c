@@ -555,19 +555,10 @@ str_ct str_resize(str_ct str, size_t len)
     
     assert_str(str);
     
-    if(len == _str_get_len(str))
-        return str;
-    
     switch(str->type)
     {
     case DATA_CONST:
-        if(!len)
-        {
-            str->data = (unsigned char*)"";
-            _str_set_len(str, 0);
-            return str;
-        }
-        else if(!str->ref)
+        if(!str->ref)
             return error_set(E_STR_UNREFERENCED), NULL;
         else if(!(data = calloc(1, len+1)))
             return error_set_errno(calloc), NULL;
@@ -1007,4 +998,509 @@ str_ct str_set_bc(str_ct str, const void *data, size_t len)
     return_error_if_fail(data, E_STR_INVALID_DATA, NULL);
     
     return _str_set(str, DATA_CONST, (void*)data, len, 0, FLAG_BINARY);
+}
+
+str_ct str_copy(str_ct dst, size_t pos, str_const_ct src)
+{
+    assert_str(src);
+    
+    if(_str_is_binary(src))
+        return error_propagate_ptr(str_copy_b(dst, pos, src->data, _str_get_len(src)));
+    else
+        return error_propagate_ptr(str_copy_cn(dst, pos, (void*)src->data, _str_get_len(src)));
+}
+
+str_ct str_copy_n(str_ct dst, size_t pos, str_const_ct src, size_t len)
+{
+    assert_str(src);
+    
+    len = MIN(len, _str_get_len(src));
+    
+    if(_str_is_binary(src))
+        return error_propagate_ptr(str_copy_b(dst, pos, src->data, len));
+    else
+        return error_propagate_ptr(str_copy_cn(dst, pos, (void*)src->data, len));
+}
+
+str_ct str_copy_c(str_ct dst, size_t pos, const char *src)
+{
+    return_error_if_fail(src, E_STR_INVALID_CSTR, NULL);
+    
+    return error_propagate_ptr(str_copy_cn(dst, pos, src, strlen(src)));
+}
+
+str_ct str_copy_cn(str_ct dst, size_t pos, const char *src, size_t len)
+{
+    assert_str(dst);
+    return_error_if_fail(src, E_STR_INVALID_CSTR, NULL);
+    return_error_if_fail(pos <= _str_get_len(dst), E_STR_OUT_OF_BOUNDS, NULL);
+    
+    if(!(dst = str_resize(dst, pos + len)))
+        return error_propagate(), NULL;
+    
+    memcpy(&dst->data[pos], src, len);
+    
+    return dst;
+}
+
+str_ct str_copy_b(str_ct dst, size_t pos, const void *src, size_t len)
+{
+    return_error_if_fail(src, E_STR_INVALID_DATA, NULL);
+    
+    if(!(dst = str_copy_cn(dst, pos, src, len)))
+        return error_propagate(), NULL;
+    
+    _str_set_flags(dst, FLAG_BINARY);
+    
+    return dst;
+}
+
+str_ct str_copy_f(str_ct dst, size_t pos, const char *fmt, ...)
+{
+    va_list ap;
+    
+    va_start(ap, fmt);
+    dst = error_propagate_ptr(str_copy_vf(dst, pos, fmt, ap));
+    va_end(ap);
+    
+    return dst;
+}
+
+str_ct str_copy_vf(str_ct dst, size_t pos, const char *fmt, va_list ap)
+{
+    va_list ap2;
+    size_t len;
+    
+    assert_str(dst);
+    return_error_if_fail(fmt, E_STR_INVALID_FORMAT, NULL);
+    return_error_if_fail(pos <= _str_get_len(dst), E_STR_OUT_OF_BOUNDS, NULL);
+    
+    va_copy(ap2, ap);
+    len = vsnprintf(NULL, 0, fmt, ap2);
+    va_end(ap2);
+    
+    if(!(dst = str_resize(dst, pos + len)))
+        return error_propagate(), NULL;
+    
+    vsnprintf((char*)&dst->data[pos], len+1, fmt, ap);
+    
+    return dst;
+}
+
+ssize_t str_overwrite(str_ct dst, size_t pos, str_const_ct src)
+{
+    assert_str(src);
+    
+    if(_str_is_binary(src))
+        return error_propagate_int(str_overwrite_b(dst, pos, src->data, _str_get_len(src)));
+    else
+        return error_propagate_int(str_overwrite_cn(dst, pos, (char*)src->data, _str_get_len(src)));
+}
+
+ssize_t str_overwrite_n(str_ct dst, size_t pos, str_const_ct src, size_t len)
+{
+    assert_str(src);
+    
+    len = MIN(len, _str_get_len(src));
+    
+    if(_str_is_binary(src))
+        return error_propagate_int(str_overwrite_b(dst, pos, src->data, len));
+    else
+        return error_propagate_int(str_overwrite_cn(dst, pos, (char*)src->data, len));
+}
+
+ssize_t str_overwrite_c(str_ct dst, size_t pos, const char *src)
+{
+    return_error_if_fail(src, E_STR_INVALID_CSTR, -1);
+    
+    return error_propagate_int(str_overwrite_cn(dst, pos, src, strlen(src)));
+}
+
+ssize_t str_overwrite_cn(str_ct dst, size_t pos, const char *src, size_t len)
+{
+    assert_str(dst);
+    return_error_if_fail(src, E_STR_INVALID_CSTR, -1);
+    return_error_if_fail(pos < _str_get_len(dst), E_STR_OUT_OF_BOUNDS, -1);
+    
+    if(!(dst = _str_get_writeable(dst)))
+        return error_propagate(), -1;
+    
+    len = MIN(len, _str_get_len(dst) - pos);
+    memcpy(&dst->data[pos], src, len);
+    
+    return len;
+}
+
+ssize_t str_overwrite_b(str_ct dst, size_t pos, const void *src, size_t len)
+{
+    ssize_t count;
+    
+    return_error_if_fail(src, E_STR_INVALID_DATA, -1);
+    
+    if((count = str_overwrite_cn(dst, pos, src, len)) < 0)
+        return error_propagate(), -1;
+    
+    _str_set_flags(dst, FLAG_BINARY);
+    
+    return count;
+}
+
+ssize_t str_overwrite_f(str_ct dst, size_t pos, const char *fmt, ...)
+{
+    va_list ap;
+    ssize_t len;
+    
+    va_start(ap, fmt);
+    len = error_propagate_int(str_overwrite_vfn(dst, pos, str_len(dst), fmt, ap));
+    va_end(ap);
+    
+    return len;
+}
+
+ssize_t str_overwrite_fn(str_ct dst, size_t pos, size_t len, const char *fmt, ...)
+{
+    va_list ap;
+    
+    va_start(ap, fmt);
+    len = error_propagate_int(str_overwrite_vfn(dst, pos, len, fmt, ap));
+    va_end(ap);
+    
+    return len;
+}
+
+ssize_t str_overwrite_vf(str_ct dst, size_t pos, const char *fmt, va_list ap)
+{
+    return error_propagate_int(str_overwrite_vfn(dst, pos, str_len(dst), fmt, ap));
+}
+
+ssize_t str_overwrite_vfn(str_ct dst, size_t pos, size_t len, const char *fmt, va_list ap)
+{
+    va_list ap2;
+    unsigned char tmp;
+    
+    assert_str(dst);
+    return_error_if_fail(fmt, E_STR_INVALID_FORMAT, -1);
+    return_error_if_fail(pos < _str_get_len(dst), E_STR_OUT_OF_BOUNDS, -1);
+    
+    if(!(dst = _str_get_writeable(dst)))
+        return error_propagate(), -1;
+    
+    va_copy(ap2, ap);
+    len = MIN(len, _str_get_len(dst) - pos);
+    len = MIN(len, (size_t)vsnprintf(NULL, 0, fmt, ap2));
+    va_end(ap2);
+    
+    tmp = dst->data[pos + len];
+    vsnprintf((char*)&dst->data[pos], len+1, fmt, ap);
+    dst->data[pos + len] = tmp;
+    
+    return len;
+}
+
+static str_ct _str_insert(str_ct str, size_t pos, const char *sub, size_t sub_len)
+{
+    size_t len;
+    
+    len = _str_get_len(str);
+    
+    if(!(str = str_resize(str, len + sub_len)))
+        return error_propagate(), NULL;
+    
+    if(pos < len)
+        memmove(&str->data[pos + sub_len], &str->data[pos], len - pos);
+    
+    if(sub)
+        memcpy(&str->data[pos], sub, sub_len);
+    
+    return str;
+}
+
+static str_ct _str_insert_f(str_ct str, size_t pos, const char *fmt, va_list ap)
+{
+    size_t len, fmt_len;
+    va_list ap2;
+    char tmp;
+    
+    va_copy(ap2, ap);
+    fmt_len = vsnprintf(NULL, 0, fmt, ap2);
+    va_end(ap2);
+    
+    len = _str_get_len(str);
+    
+    if(!(str = str_resize(str, len + fmt_len)))
+        return error_propagate(), NULL;
+    
+    if(pos < len)
+        memmove(&str->data[pos + fmt_len], &str->data[pos], len - pos);
+    
+    tmp = str->data[pos + fmt_len];
+    vsnprintf((char*)&str->data[pos], fmt_len+1, fmt, ap);
+    str->data[pos + fmt_len] = tmp;
+    
+    return str;
+}
+
+str_ct str_prepend(str_ct str, str_const_ct prefix)
+{
+    assert_str(prefix);
+    
+    if(_str_is_binary(prefix))
+        return error_propagate_ptr(str_prepend_b(str, prefix->data, _str_get_len(prefix)));
+    else
+        return error_propagate_ptr(str_prepend_cn(str, (char*)prefix->data, _str_get_len(prefix)));
+}
+
+str_ct str_prepend_n(str_ct str, str_const_ct prefix, size_t len)
+{
+    assert_str(prefix);
+    
+    len = MIN(len, _str_get_len(prefix));
+    
+    if(_str_is_binary(prefix))
+        return error_propagate_ptr(str_prepend_b(str, prefix->data, len));
+    else
+        return error_propagate_ptr(str_prepend_cn(str, (char*)prefix->data, len));
+}
+
+str_ct str_prepend_c(str_ct str, const char *prefix)
+{
+    assert_str(str);
+    return_error_if_fail(prefix, E_STR_INVALID_CSTR, NULL);
+    
+    return error_propagate_ptr(_str_insert(str, 0, prefix, strlen(prefix)));
+}
+
+str_ct str_prepend_cn(str_ct str, const char *prefix, size_t len)
+{
+    assert_str(str);
+    return_error_if_fail(prefix, E_STR_INVALID_CSTR, NULL);
+    
+    return error_propagate_ptr(_str_insert(str, 0, prefix, len));
+}
+
+str_ct str_prepend_b(str_ct str, const void *prefix, size_t len)
+{
+    assert_str(str);
+    return_error_if_fail(prefix, E_STR_INVALID_DATA, NULL);
+    
+    if(!(str = _str_insert(str, 0, prefix, len)))
+        return error_propagate(), NULL;
+    
+    _str_set_flags(str, FLAG_BINARY);
+    
+    return str;
+}
+
+str_ct str_prepend_set(str_ct str, size_t len, char c)
+{
+    assert_str(str);
+    
+    if(!(str = _str_insert(str, 0, NULL, len)))
+        return error_propagate(), NULL;
+    
+    memset(str->data, c, len);
+    
+    return str;
+}
+
+str_ct str_prepend_f(str_ct str, const char *fmt, ...)
+{
+    va_list ap;
+    
+    assert_str(str);
+    return_error_if_fail(fmt, E_STR_INVALID_FORMAT, NULL);
+    
+    va_start(ap, fmt);
+    str = error_propagate_ptr(_str_insert_f(str, 0, fmt, ap));
+    va_end(ap);
+    
+    return str;
+}
+
+str_ct str_prepend_vf(str_ct str, const char *fmt, va_list ap)
+{
+    assert_str(str);
+    return_error_if_fail(fmt, E_STR_INVALID_FORMAT, NULL);
+    
+    return error_propagate_ptr(_str_insert_f(str, 0, fmt, ap));
+}
+
+str_ct str_append(str_ct str, str_const_ct suffix)
+{
+    assert_str(suffix);
+    
+    if(_str_is_binary(suffix))
+        return error_propagate_ptr(str_append_b(str, suffix->data, _str_get_len(suffix)));
+    else
+        return error_propagate_ptr(str_append_cn(str, (char*)suffix->data, _str_get_len(suffix)));
+}
+
+str_ct str_append_n(str_ct str, str_const_ct suffix, size_t len)
+{
+    assert_str(suffix);
+    
+    len = MIN(len, _str_get_len(suffix));
+    
+    if(_str_is_binary(suffix))
+        return error_propagate_ptr(str_append_b(str, suffix->data, len));
+    else
+        return error_propagate_ptr(str_append_cn(str, (char*)suffix->data, len));
+}
+
+str_ct str_append_c(str_ct str, const char *suffix)
+{
+    assert_str(str);
+    return_error_if_fail(suffix, E_STR_INVALID_CSTR, NULL);
+    
+    return _str_insert(str, _str_get_len(str), suffix, strlen(suffix));
+}
+
+str_ct str_append_cn(str_ct str, const char *suffix, size_t len)
+{
+    assert_str(str);
+    return_error_if_fail(suffix, E_STR_INVALID_CSTR, NULL);
+    
+    return _str_insert(str, _str_get_len(str), suffix, len);
+}
+
+str_ct str_append_b(str_ct str, const void *suffix, size_t len)
+{
+    assert_str(str);
+    return_error_if_fail(suffix, E_STR_INVALID_DATA, NULL);
+    
+    if(!(str = _str_insert(str, _str_get_len(str), suffix, len)))
+        return error_propagate(), NULL;
+    
+    _str_set_flags(str, FLAG_BINARY);
+    
+    return str;
+}
+
+str_ct str_append_set(str_ct str, size_t suffix_len, char c)
+{
+    size_t len;
+    
+    assert_str(str);
+    
+    len = _str_get_len(str);
+    
+    if(!(str = _str_insert(str, len, NULL, suffix_len)))
+        return error_propagate(), NULL;
+    
+    memset(&str->data[len], c, suffix_len);
+    
+    return str;
+}
+
+str_ct str_append_f(str_ct str, const char *fmt, ...)
+{
+    va_list ap;
+    
+    assert_str(str);
+    return_error_if_fail(fmt, E_STR_INVALID_FORMAT, NULL);
+    
+    va_start(ap, fmt);
+    str = error_propagate_ptr(_str_insert_f(str, _str_get_len(str), fmt, ap));
+    va_end(ap);
+    
+    return str;
+}
+
+str_ct str_append_vf(str_ct str, const char *fmt, va_list ap)
+{
+    assert_str(str);
+    return_error_if_fail(fmt, E_STR_INVALID_FORMAT, NULL);
+    
+    return error_propagate_ptr(_str_insert_f(str, _str_get_len(str), fmt, ap));
+}
+
+str_ct str_insert(str_ct str, size_t pos, str_const_ct sub)
+{
+    assert_str(sub);
+    
+    if(_str_is_binary(sub))
+        return error_propagate_ptr(str_insert_b(str, pos, sub->data, _str_get_len(sub)));
+    else
+        return error_propagate_ptr(str_insert_cn(str, pos, (char*)sub->data, _str_get_len(sub)));
+}
+
+str_ct str_insert_n(str_ct str, size_t pos, str_const_ct sub, size_t len)
+{
+    assert_str(sub);
+    
+    len = MIN(len, _str_get_len(sub));
+    
+    if(_str_is_binary(sub))
+        return error_propagate_ptr(str_insert_b(str, pos, sub->data, len));
+    else
+        return error_propagate_ptr(str_insert_cn(str, pos, (char*)sub->data, len));
+}
+
+str_ct str_insert_c(str_ct str, size_t pos, const char *sub)
+{
+    assert_str(str);
+    return_error_if_fail(sub, E_STR_INVALID_CSTR, NULL);
+    return_error_if_fail(pos <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
+    
+    return _str_insert(str, pos, sub, strlen(sub));
+}
+
+str_ct str_insert_cn(str_ct str, size_t pos, const char *sub, size_t len)
+{
+    assert_str(str);
+    return_error_if_fail(sub, E_STR_INVALID_CSTR, NULL);
+    return_error_if_fail(pos <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
+    
+    return _str_insert(str, pos, sub, len);
+}
+
+str_ct str_insert_b(str_ct str, size_t pos, const void *sub, size_t len)
+{
+    assert_str(str);
+    return_error_if_fail(sub, E_STR_INVALID_DATA, NULL);
+    return_error_if_fail(pos <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
+    
+    if(!(str = _str_insert(str, pos, sub, len)))
+        return error_propagate(), NULL;
+    
+    _str_set_flags(str, FLAG_BINARY);
+    
+    return str;
+}
+
+str_ct str_insert_set(str_ct str, size_t pos, size_t len, char c)
+{
+    assert_str(str);
+    return_error_if_fail(pos <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
+    
+    if(!(str = _str_insert(str, pos, NULL, len)))
+        return error_propagate(), NULL;
+    
+    memset(&str->data[pos], c, len);
+    
+    return str;
+}
+
+str_ct str_insert_f(str_ct str, size_t pos, const char *fmt, ...)
+{
+    va_list ap;
+    
+    assert_str(str);
+    return_error_if_fail(fmt, E_STR_INVALID_FORMAT, NULL);
+    return_error_if_fail(pos <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
+    
+    va_start(ap, fmt);
+    str = error_propagate_ptr(_str_insert_f(str, pos, fmt, ap));
+    va_end(ap);
+    
+    return str;
+}
+
+str_ct str_insert_vf(str_ct str, size_t pos, const char *fmt, va_list ap)
+{
+    assert_str(str);
+    return_error_if_fail(fmt, E_STR_INVALID_FORMAT, NULL);
+    return_error_if_fail(pos <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
+    
+    return error_propagate_ptr(_str_insert_f(str, pos, fmt, ap));
 }
