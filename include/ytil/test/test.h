@@ -146,7 +146,7 @@ extern int main(int argc, char *argv[], char **env);
 extern char **environ;
 
 #define test_ptr_success(expr) do { \
-    void *ptr; \
+    const void *ptr; \
     \
     test_begin(); \
     \
@@ -163,7 +163,7 @@ extern char **environ;
 } while(0)
 
 #define test_ptr_error(expr, err) do { \
-    void *ptr; \
+    const void *ptr; \
     \
     test_begin(); \
     error_clear(); \
