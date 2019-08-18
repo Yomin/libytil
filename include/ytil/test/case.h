@@ -91,6 +91,11 @@ typedef struct test_case_config
 #define TEST_STATE \
     (*_test_case_state)
 
+// TEST_CASE_FIXTURE(foo, NULL, NULL)
+// replace NULL setup/teardown names with NULL to allow letting them unspecified
+#define _test_setup_NULL NULL
+#define _test_teardown_NULL NULL
+
 
 #define       test_case_new(name) \
              _test_case_new(#name, _test_case_##name, &_test_config_##name)
