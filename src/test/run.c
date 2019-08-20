@@ -770,7 +770,8 @@ static void test_run_eval(test_run_ct run, test_case_const_ct tcase)
     run->count.results[result]++;
     run->count.asserts += asserts;
     
-    if(run->loglvl >= TEST_LOGLVL_CASE || result != TEST_RESULT_PASS)
+    if(run->loglvl >= TEST_LOGLVL_CASE
+    || (result != TEST_RESULT_PASS && result != TEST_RESULT_SKIP))
     {
         if(run->loglvl < TEST_LOGLVL_CASE)
         {
