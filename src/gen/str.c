@@ -24,6 +24,7 @@
 #include <ytil/def.h>
 #include <ytil/magic.h>
 #include <ytil/ext/string.h>
+#include <ytil/con/vec.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -59,6 +60,21 @@ typedef struct str
     uint16_t ref;
     uint8_t flags, type;
 } str_st;
+
+typedef enum str_cat_mode
+{
+      CAT_STR
+    , CAT_STR_N
+    , CAT_CSTR
+    , CAT_CSTR_N
+    , CAT_BIN
+} str_cat_id;
+
+typedef struct str_cat
+{
+    const unsigned char *data;
+    size_t len;
+} str_cat_st;
 
 
 static const error_info_st error_infos[] =
@@ -624,6 +640,41 @@ str_ct str_resize_set(str_ct str, size_t new_len, char c)
         memset(&str->data[len], c, new_len-len);
     
     return str;
+}
+
+str_ct str_grow(str_ct str, size_t len)
+{
+    assert_str(str);
+    
+    return error_propagate_ptr(str_resize(str, _str_get_len(str)+len));
+}
+
+str_ct str_grow_set(str_ct str, size_t len, char c)
+{
+    size_t cur_len;
+    
+    assert_str(str);
+    
+    cur_len = _str_get_len(str);
+    
+    if(!str_resize(str, cur_len+len))
+        return error_propagate(), NULL;
+    
+    memset(&str->data[cur_len], c, len);
+    
+    return str;
+}
+
+str_ct str_shrink(str_ct str, size_t len)
+{
+    size_t cur_len;
+    
+    assert_str(str);
+    
+    cur_len = _str_get_len(str);
+    len = cur_len <= len ? 0 : cur_len - len;
+    
+    return error_propagate_ptr(str_resize(str, len));
 }
 
 str_ct str_prepare(size_t len)
@@ -1505,4 +1556,300 @@ str_ct str_insert_vf(str_ct str, size_t pos, const char *fmt, va_list ap)
     return_error_if_fail(pos <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
     
     return error_propagate_ptr(_str_insert_f(str, pos, fmt, ap));
+}
+
+static str_ct _str_cat(size_t n, va_list ap, str_cat_id mode)
+{
+    str_const_ct str;
+    const char *cstr;
+    str_ct cat;
+    size_t i, len, cat_len;
+    str_cat_st *info;
+    bool binary = mode == CAT_BIN;
+    
+    info = alloca(n*sizeof(str_cat_st));
+    
+    for(cat_len=0, i=0; i < n; cat_len += info[i].len, i++)
+        switch(mode)
+        {
+        case CAT_STR:
+            str = va_arg(ap, str_const_ct);
+            assert_str(str);
+            info[i].data = str->data;
+            info[i].len = _str_get_len(str);
+            binary = binary || _str_is_binary(str);
+            break;
+        case CAT_STR_N:
+            str = va_arg(ap, str_const_ct);
+            len = va_arg(ap, size_t);
+            assert_str(str);
+            info[i].data = str->data;
+            info[i].len = MIN(len, _str_get_len(str));
+            binary = binary || _str_is_binary(str);
+            break;
+        case CAT_CSTR:
+            cstr = va_arg(ap, const char*);
+            return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
+            info[i].data = (unsigned char*)cstr;
+            info[i].len = strlen(cstr);
+            break;
+        case CAT_CSTR_N:
+            cstr = va_arg(ap, const char*);
+            len = va_arg(ap, size_t);
+            return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
+            info[i].data = (unsigned char*)cstr;
+            info[i].len = MIN(len, strlen(cstr));
+            break;
+        case CAT_BIN:
+            info[i].data = va_arg(ap, const void*);
+            info[i].len = va_arg(ap, size_t);
+            return_error_if_fail(info[i].data, E_STR_INVALID_DATA, NULL);
+            break;
+        default:
+            abort();
+        }
+    
+    if(!(cat = str_prepare(cat_len)))
+        return error_propagate(), NULL;
+    
+    for(cat_len=0, i=0; i < n; cat_len += info[i].len, i++)
+        memcpy(&cat->data[cat_len], info[i].data, info[i].len);
+    
+    if(binary)
+        _str_set_flags(cat, FLAG_BINARY);
+    
+    return cat;
+}
+
+str_ct str_cat(size_t n, ...)
+{
+    va_list ap;
+    str_ct cat;
+    
+    va_start(ap, n);
+    cat = error_propagate_ptr(_str_cat(n, ap, CAT_STR));
+    va_end(ap);
+    
+    return cat;
+}
+
+str_ct str_cat_v(size_t n, va_list ap)
+{
+    return error_propagate_ptr(_str_cat(n, ap, CAT_STR));
+}
+
+str_ct str_cat_n(size_t n, ...)
+{
+    va_list ap;
+    str_ct cat;
+    
+    va_start(ap, n);
+    cat = error_propagate_ptr(_str_cat(n, ap, CAT_STR_N));
+    va_end(ap);
+    
+    return cat;
+}
+
+str_ct str_cat_vn(size_t n, va_list ap)
+{
+    return error_propagate_ptr(_str_cat(n, ap, CAT_STR_N));
+}
+
+str_ct str_cat_c(size_t n, ...)
+{
+    va_list ap;
+    str_ct cat;
+    
+    va_start(ap, n);
+    cat = error_propagate_ptr(_str_cat(n, ap, CAT_CSTR));
+    va_end(ap);
+    
+    return cat;
+}
+
+str_ct str_cat_vc(size_t n, va_list ap)
+{
+    return error_propagate_ptr(_str_cat(n, ap, CAT_CSTR));
+}
+
+str_ct str_cat_cn(size_t n, ...)
+{
+    va_list ap;
+    str_ct cat;
+    
+    va_start(ap, n);
+    cat = error_propagate_ptr(_str_cat(n, ap, CAT_CSTR_N));
+    va_end(ap);
+    
+    return cat;
+}
+
+str_ct str_cat_vcn(size_t n, va_list ap)
+{
+    return error_propagate_ptr(_str_cat(n, ap, CAT_CSTR_N));
+}
+
+str_ct str_cat_b(size_t n, ...)
+{
+    va_list ap;
+    str_ct cat;
+    
+    va_start(ap, n);
+    cat = error_propagate_ptr(_str_cat(n, ap, CAT_BIN));
+    va_end(ap);
+    
+    return cat;
+}
+
+str_ct str_cat_vb(size_t n, va_list ap)
+{
+    return error_propagate_ptr(_str_cat(n, ap, CAT_BIN));
+}
+
+str_ct str_remove(str_ct str, str_const_ct sub)
+{
+    return error_propagate_ptr(str_replace(str, sub, LIT("")));
+}
+
+str_ct str_remove_n(str_ct str, str_const_ct sub, size_t len)
+{
+    return error_propagate_ptr(str_replace_n(str, sub, len, LIT(""), 0));
+}
+
+str_ct str_remove_c(str_ct str, const char *sub)
+{
+    return error_propagate_ptr(str_replace_c(str, sub, ""));
+}
+
+str_ct str_remove_cn(str_ct str, const char *sub, size_t len)
+{
+    return error_propagate_ptr(str_replace_cn(str, sub, len, "", 0));
+}
+
+str_ct str_replace(str_ct str, str_const_ct sub, str_const_ct nsub)
+{
+    assert_str(sub);
+    assert_str(nsub);
+    
+    if(_str_is_binary(nsub))
+        return error_propagate_ptr(str_replace_b(
+            str, sub->data, _str_get_len(sub), nsub->data, _str_get_len(nsub)));
+    else
+        return error_propagate_ptr(str_replace_cn(
+            str, (char*)sub->data, _str_get_len(sub), (char*)nsub->data, _str_get_len(nsub)));
+}
+
+str_ct str_replace_n(str_ct str, str_const_ct sub, size_t sublen, str_const_ct nsub, size_t nsublen)
+{
+    assert_str(sub);
+    assert_str(nsub);
+    
+    sublen = MIN(sublen, _str_get_len(sub));
+    nsublen = MIN(nsublen, _str_get_len(nsub));
+    
+    if(_str_is_binary(nsub))
+        return error_propagate_ptr(str_replace_b(
+            str, sub->data, sublen, nsub->data, nsublen));
+    else
+        return error_propagate_ptr(str_replace_cn(
+            str, (char*)sub->data, sublen, (char*)nsub->data, nsublen));
+}
+
+str_ct str_replace_c(str_ct str, const char *sub, const char *nsub)
+{
+    return_error_if_fail(sub && nsub, E_STR_INVALID_CSTR, NULL);
+    
+    return error_propagate_ptr(str_replace_cn(str, sub, strlen(sub), nsub, strlen(nsub)));
+}
+
+str_ct str_replace_cn(str_ct str, const char *sub, size_t sublen, const char *nsub, size_t nsublen)
+{
+    vec_ct positions;
+    unsigned char *ptr;
+    size_t len, pos, ins, data, i, size;
+    
+    assert_str(str);
+    return_error_if_fail(sub && nsub, E_STR_INVALID_CSTR, NULL);
+    
+    if(!_str_get_len(str) || !sublen)
+        return str;
+    
+    if(!(positions = vec_new(2, sizeof(size_t))))
+        return error_push(), NULL;
+    
+    for(ptr = str->data, len = str->len;
+        len && (ptr = memmem(ptr, len, sub, sublen));
+        ptr += sublen, len -= sublen)
+    {
+        pos = ptr - str->data;
+        
+        if(!vec_push_e(positions, &pos))
+            return error_push(), vec_free(positions), NULL;
+    }
+    
+    if(vec_is_empty(positions))
+        return vec_free(positions), str;
+    
+    if(nsublen <= sublen) // replace left to right
+    {
+        if(!_str_get_writeable(str))
+            return error_propagate(), vec_free(positions), NULL;
+        
+        len = str->len - vec_size(positions)*(sublen-nsublen);
+        vec_get_first(positions, &ins);
+        data = ins + sublen;
+        
+        for(i=1, size = vec_size(positions); i <= size; i++)
+        {
+            memcpy(&str->data[ins], nsub, nsublen);
+            ins += nsublen;
+            
+            pos = i < size ? *(size_t*)vec_at(positions, i) : str->len;
+            memmove(&str->data[ins], &str->data[data], pos - data);
+            ins += pos - data;
+            data = pos + sublen;
+        }
+        
+        str->len = len;
+        
+        if(!_str_is_binary(str))
+            str->data[str->len] = '\0';
+    }
+    else // replace right to left
+    {
+        data = str->len; // data position at end of old str
+        
+        if(!str_grow(str, vec_size(positions)*(nsublen-sublen)))
+            return error_propagate(), vec_free(positions), NULL;
+        
+        ins = str->len; // insert position at end of new str
+        
+        for(i = vec_size(positions); i > 0; i--)
+        {
+            pos = *(size_t*)vec_at(positions, i-1);
+            len = data - (pos+sublen);
+            ins -= len;
+            memmove(&str->data[ins], &str->data[pos+sublen], len);
+            data = pos;
+            
+            ins -= nsublen;
+            memcpy(&str->data[ins], nsub, nsublen);
+        }
+    }
+    
+    vec_free(positions);
+    
+    return str;
+}
+
+str_ct str_replace_b(str_ct str, const void *sub, size_t sublen, const void *nsub, size_t nsublen)
+{
+    return_error_if_fail(sub && nsub, E_STR_INVALID_DATA, NULL);
+    
+    if(!(str = str_replace_cn(str, sub, sublen, nsub, nsublen)))
+        return error_propagate(), NULL;
+    
+    _str_set_flags(str, FLAG_BINARY);
+    
+    return str;
 }

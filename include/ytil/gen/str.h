@@ -130,6 +130,15 @@ str_ct str_resize(str_ct str, size_t len);
 // resize str, afterwards str is writeable, initialize with c if grown
 // convert const/transient data to heap if neccessary
 str_ct str_resize_set(str_ct str, size_t len, char c);
+// grow str, afterwards str is writeable
+// convert const/transient data to heap if neccessary
+str_ct str_grow(str_ct str, size_t len);
+// grow str, afterwards str is writeable, initialize with c
+// convert const/transient data to heap if neccessary
+str_ct str_grow_set(str_ct str, size_t len, char c);
+// shrink str, afterwards str is writeable
+// convert const/transient data to heap if neccessary
+str_ct str_shrink(str_ct str, size_t len);
 
 
 // prepare new heap str of len
@@ -352,6 +361,51 @@ str_ct  str_insert_set(str_ct str, size_t pos, size_t len, char c);
 str_ct  str_insert_f(str_ct str, size_t pos, const char *fmt, ...) __attribute__((format(gnu_printf, 3, 4)));
 // insert format cstr with va_list into str at pos
 str_ct  str_insert_vf(str_ct str, size_t pos, const char *fmt, va_list ap) __attribute__((format(gnu_printf, 3, 0)));
+
+
+// concat n strs into new str
+str_ct str_cat(size_t n, ...); // str_ct, ...
+// concat n strs as va_list into new str
+str_ct str_cat_v(size_t n, va_list ap);
+// concat n strs with separate sizes into new str
+str_ct str_cat_n(size_t n, ...); // str_ct, size_t len, ...
+// concat n strs with separate sizes as va_list into new str
+str_ct str_cat_vn(size_t n, va_list ap);
+// concat n cstrs into new str
+str_ct str_cat_c(size_t n, ...); // char*, ...
+// concat n cstrs as va_list into new str
+str_ct str_cat_vc(size_t n, va_list ap);
+// concat n cstrs with separate sizes into new str
+str_ct str_cat_cn(size_t n, ...); // char*, size_t, ...
+// concat n strs with separate sizes as va_list into new str
+str_ct str_cat_vcn(size_t n, va_list ap);
+// concat n binaries with separate sizes into new binary str
+str_ct str_cat_b(size_t n, ...); // void*, size_t, ...
+// concat n binaries with separate sizes as va_list into new binary str
+str_ct str_cat_vb(size_t n, va_list ap);
+
+
+// remove sub str from str
+str_ct  str_remove(str_ct str, str_const_ct sub);
+// remove sub str[0:len] from str
+str_ct  str_remove_n(str_ct str, str_const_ct sub, size_t len);
+// remove sub cstr from str
+str_ct  str_remove_c(str_ct str, const char *sub);
+// remove sub cstr[0:len] from str
+str_ct  str_remove_cn(str_ct str, const char *sub, size_t len);
+#define str_remove_l(str, sub) str_remove_cn(str, sub, sizeof(sub)-1)
+
+// replace sub str in str with nsub str
+str_ct  str_replace(str_ct str, str_const_ct sub, str_const_ct nsub);
+// replace sub str[0:sublen] in str with nsub str[0:nsublen]
+str_ct  str_replace_n(str_ct str, str_const_ct sub, size_t sublen, str_const_ct nsub, size_t nsublen);
+// replace sub cstr in str with nsub cstr
+str_ct  str_replace_c(str_ct str, const char *sub, const char *nsub);
+// replace sub cstr[0:sublen] in str with nsub cstr[0:nsublen]
+str_ct  str_replace_cn(str_ct str, const char *sub, size_t sublen, const char *nsub, size_t nsublen);
+#define str_replace_l(str, sub, nsub) str_replace_cn(str, sub, sizeof(sub)-1, nsub, sizeof(nsub)-1)
+// replace sub data in str with nsub data, mark str binary
+str_ct  str_replace_b(str_ct str, const void *sub, size_t sublen, const void *nsub, size_t nsublen);
 
 
 #endif
