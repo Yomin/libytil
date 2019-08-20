@@ -184,7 +184,7 @@ str_ct _str_init(str_ct str, str_flag_fs flags, uint16_t ref, str_type_id type, 
     }
     else
     {
-        if(type != DATA_CONST)
+        if(type != DATA_CONST && !_str_is_binary(str))
             data[len] = '\0';
         
         str->len = len;
@@ -395,7 +395,7 @@ str_ct str_set_len(str_const_ct str, size_t len)
     
     _str_set_len(str, len);
     
-    if(str->type != DATA_CONST)
+    if(str->type != DATA_CONST && !_str_is_binary(str))
         str->data[len] = '\0';
     
     return (str_ct)str;
@@ -514,7 +514,7 @@ str_ct str_clear(str_ct str)
     
     if(str->type == DATA_CONST)
         str->data = (unsigned char*)"";
-    else
+    else if(!_str_is_binary(str))
         str->data[0] = '\0';
     
     _str_set_len(str, 0);
@@ -602,7 +602,9 @@ str_ct str_resize(str_ct str, size_t len)
     }
     
     _str_set_len(str, len);
-    str->data[len] = '\0';
+    
+    if(!_str_is_binary(str))
+        str->data[len] = '\0';
     
     return str;
 }
