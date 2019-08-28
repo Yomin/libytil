@@ -624,90 +624,7 @@ void *memrtrim_pred(const void *mem, size_t *size, ctype_pred_cb pred)
     return (void*)m1;
 }
 
-char *strupper(char *str)
-{
-    char *s;
-    
-    for(s=str; s[0]; s[0] = toupper(s[0]), s++);
-    
-    return str;
-}
-
-char *strnupper(char *str, size_t n)
-{
-    char *s;
-    
-    for(s=str; s[0] && n; s[0] = toupper(s[0]), s++, n--);
-    
-    return str;
-}
-
-void *memupper(void *vmem, size_t size)
-{
-    unsigned char *mem = vmem, *mend = mem + size;
-    
-    for(; mem < mend; mem[0] = toupper(mem[0]), mem++);
-    
-    return vmem;
-}
-
-char *strlower(char *str)
-{
-    char *s;
-    
-    for(s=str; s[0]; s[0] = tolower(s[0]), s++);
-    
-    return str;
-}
-
-char *strnlower(char *str, size_t n)
-{
-    char *s;
-    
-    for(s=str; s[0] && n; s[0] = tolower(s[0]), s++, n--);
-    
-    return str;
-}
-
-void *memlower(void *vmem, size_t size)
-{
-    unsigned char *mem = vmem, *mend = mem + size;
-    
-    for(; mem < mend; mem[0] = tolower(mem[0]), mem++);
-    
-    return vmem;
-}
-
-char *strflat(char *str)
-{
-    for(; str[0]; str++)
-        if(!isprint(str[0]))
-            str[0] = ' ';
-    
-    return str;
-}
-
-char *strnflat(char *str, size_t n)
-{
-    for(; str[0] && n; str++, n--)
-        if(!isprint(str[0]))
-            str[0] = ' ';
-    
-    return str;
-}
-
-void *memflat(void *vmem, size_t size)
-{
-    unsigned char *mem = vmem;
-    
-    for(; size; mem++, size--)
-        if(!isprint(mem[0]))
-            mem[0] = ' ';
-    
-    return vmem;
-}
-
-char *strtrans(char *str, const char *from, const char *to)
+char *strtranspose(char *str, const char *from, const char *to)
 {
     char *s;
     size_t t;
@@ -723,16 +640,66 @@ char *strtrans(char *str, const char *from, const char *to)
     return str;
 }
 
-void *memtrans(void *vmem, size_t msize, const void *vfrom, const void *vto, size_t tsize)
+char *strtranspose_f(char *str, ctype_transpose_cb trans)
 {
-    unsigned char *mem = vmem, *mend = mem + msize;
+    char *s;
+    
+    for(s=str; s[0]; s++)
+        s[0] = trans(s[0]);
+    
+    return str;
+}
+
+char *strtranspose_fn(char *str, ctype_transpose_cb trans, size_t n)
+{
+    char *s;
+    
+    for(s=str; n && s[0]; n--, s++)
+        s[0] = trans(s[0]);
+    
+    return str;
+}
+
+char *strtranspose_upper(char *str)
+{
+    return strtranspose_f(str, toupper);
+}
+
+char *strtranspose_upper_n(char *str, size_t n)
+{
+    return strtranspose_fn(str, toupper, n);
+}
+
+char *strtranspose_lower(char *str)
+{
+    return strtranspose_f(str, tolower);
+}
+
+char *strtranspose_lower_n(char *str, size_t n)
+{
+    return strtranspose_fn(str, tolower, n);
+}
+
+char *strtranspose_flatten(char *str)
+{
+    return strtranspose_f(str, flatten);
+}
+
+char *strtranspose_flatten_n(char *str, size_t n)
+{
+    return strtranspose_fn(str, flatten, n);
+}
+
+void *memtranspose(void *vmem, size_t msize, const void *vfrom, const void *vto, size_t tsize)
+{
+    unsigned char *mem = vmem;
     const unsigned char *from = vfrom, *to = vto;
     size_t t;
     
     if(!tsize)
         return vmem;
     
-    for(; mem < mend; mem++)
+    for(; msize; mem++, msize--)
         for(t=0; t < tsize; t++)
             if(mem[0] == from[t])
                 mem[0] = to[t];
@@ -740,122 +707,173 @@ void *memtrans(void *vmem, size_t msize, const void *vfrom, const void *vto, siz
     return vmem;
 }
 
-size_t strescape(char *dst, const char *src, int esc, ctype_pred_cb keep)
+void *memtranspose_f(void *vmem, size_t size, ctype_transpose_cb trans)
 {
-    size_t n;
-    char tmp;
+    unsigned char *mem = vmem;
     
-    assert(!dst || dst != src);
+    for(; size; mem++, size--)
+        mem[0] = trans(mem[0]);
     
-    for(n=0; src[0]; src++, n++)
-        if(src[0] == esc)
-        {
-            if(dst)
-            {
-                dst[n] = esc;
-                dst[n+1] = esc;
-            }
-            n++;
-        }
-        else if(!keep(src[0]))
-        {
-            switch(src[0])
-            {
-            case '\0':   tmp = '0'; break;
-            case '\a':   tmp = 'a'; break;
-            case '\b':   tmp = 'b'; break;
-            case '\x1b': tmp = 'e'; break;
-            case '\f':   tmp = 'f'; break;
-            case '\n':   tmp = 'n'; break;
-            case '\r':   tmp = 'r'; break;
-            case '\t':   tmp = 't'; break;
-            case '\v':   tmp = 'v'; break;
-            default:     tmp = 0; break;
-            }
-            
-            if(dst)
-            {
-                dst[n] = esc;
-                
-                if(tmp)
-                    dst[n+1] = tmp;
-                else
-                    snprintf(&dst[n+1], 4, "x%02hhX", (unsigned char)src[0]);
-            }
-            
-            n += tmp ? 1 : 3;
-        }
-        else if(dst)
-            dst[n] = src[0];
-    
-    dst[n] = '\0';
-    
-    return n;
+    return mem;
 }
 
-ssize_t strunescape(char *dst, const char *src, int esc)
+void *memtranspose_upper(void *mem, size_t size)
 {
-    size_t n;
-    unsigned char tmp;
-    
-    for(n=0; src[0]; src++, n++)
-        if(src[0] == esc)
-        {
-            src++;
-            
-            switch(src[0])
-            {
-            case '0': tmp = '\0'; break;
-            case 'a': tmp = '\a'; break;
-            case 'b': tmp = '\b'; break;
-            case 'e': tmp = '\x1b'; break;
-            case 'f': tmp = '\f'; break;
-            case 'n': tmp = '\n'; break;
-            case 'r': tmp = '\r'; break;
-            case 't': tmp = '\t'; break;
-            case 'v': tmp = '\v'; break;
-            default:
-                if(src[0] == esc)
-                    tmp = esc;
-                else if(sscanf(src, "x%02hhx", &tmp) != 1)
-                    return errno = EINVAL, -1;
-                else
-                    src += 2;
-            }
-            
-            if(dst)
-                dst[n] = tmp;
-        }
-        else if(dst)
-            dst[n] = src[0];
-    
-    dst[n] = '\0';
-    
-    return n;
+    return memtranspose_f(mem, size, toupper);
 }
 
-char *strdup_escape(const char *src, int esc, ctype_pred_cb keep)
+void *memtranspose_lower(void *mem, size_t size)
 {
-    char *dst;
-    
-    if(!(dst = malloc(strescape(NULL, src, esc, keep)+1)))
-        return NULL;
-    
-    strescape(dst, src, esc, keep);
-    
-    return dst;
+    return memtranspose_f(mem, size, tolower);
 }
 
-char *strdup_unescape(const char *src, int esc)
+void *memtranspose_flatten(void *mem, size_t size)
 {
-    char *dst;
-    ssize_t len;
+    return memtranspose_f(mem, size, flatten);
+}
+
+ssize_t strtranslate(char *sdst, const char *ssrc, ctype_translate_cb trans)
+{
+    unsigned char *dst = (unsigned char*)sdst;
+    const unsigned char *src = (const unsigned char *)ssrc;
+    size_t written = 0, read = 0;
+    ssize_t rc;
     
-    if((len = strunescape(NULL, src, esc)) < 0
-    || !(dst = malloc(len+1)))
-        return NULL;
+    assert(dst != src);
     
-    strunescape(dst, src, esc);
+    while((rc = trans(dst ? &dst[written] : NULL, &written, &src[read], &read, -1, true)) > 0);
     
-    return dst;
+    if(rc < 0)
+        return rc;
+    
+    if(dst)
+        dst[written] = '\0';
+    
+    return written;
+}
+
+ssize_t strtranslate_n(char *sdst, const char *ssrc, ctype_translate_cb trans, size_t n)
+{
+    unsigned char *dst = (unsigned char*)sdst;
+    const unsigned char *src = (const unsigned char *)ssrc;
+    size_t written = 0, read = 0;
+    ssize_t rc;
+    
+    assert(dst != src);
+    
+    while((rc = trans(dst ? &dst[written] : NULL, &written, &src[read], &read, n-read, true)) > 0);
+    
+    if(rc < 0)
+        return rc;
+    
+    if(dst)
+        dst[written] = '\0';
+    
+    return written;
+}
+
+ssize_t strtranslate_mem(char *sdst, const void *vsrc, size_t size, ctype_translate_cb trans)
+{
+    unsigned char *dst = (unsigned char*)sdst;
+    const unsigned char *src = vsrc;
+    size_t written = 0, read = 0;
+    ssize_t rc;
+    
+    assert(dst != src);
+    
+    while((rc = trans(dst ? &dst[written] : NULL, &written, &src[read], &read, size-read, false)) > 0);
+    
+    if(rc < 0)
+        return rc;
+    
+    if(dst)
+        dst[written] = '\0';
+    
+    return written;
+}
+
+ssize_t memtranslate(void *vdst, const void *vsrc, size_t size, ctype_translate_cb trans)
+{
+    unsigned char *dst = vdst;
+    const unsigned char *src = vsrc;
+    size_t written = 0, read = 0;
+    ssize_t rc;
+    
+    assert(dst != src);
+    
+    while((rc = trans(dst ? &dst[written] : NULL, &written, &src[read], &read, size-read, false)) > 0);
+    
+    if(rc < 0)
+        return rc;
+    
+    return written;
+}
+
+ssize_t memtranslate_str(void *vdst, const char *ssrc, ctype_translate_cb trans)
+{
+    unsigned char *dst = vdst;
+    const unsigned char *src = (const unsigned char*)ssrc;
+    size_t written = 0, read = 0;
+    ssize_t rc;
+    
+    assert(dst != src);
+    
+    while((rc = trans(dst ? &dst[written] : NULL, &written, &src[read], &read, -1, true)) > 0);
+    
+    if(rc < 0)
+        return rc;
+    
+    return written;
+}
+
+ssize_t memtranslate_str_n(void *vdst, const char *ssrc, ctype_translate_cb trans, size_t n)
+{
+    unsigned char *dst = vdst;
+    const unsigned char *src = (const unsigned char*)ssrc;
+    size_t written = 0, read = 0;
+    ssize_t rc;
+    
+    assert(dst != src);
+    
+    while((rc = trans(dst ? &dst[written] : NULL, &written, &src[read], &read, n-read, true)) > 0);
+    
+    if(rc < 0)
+        return rc;
+    
+    return written;
+}
+
+size_t strescape(char *dst, const char *src)
+{
+    return strtranslate(dst, src, translate_escape);
+}
+
+size_t strescape_n(char *dst, const char *src, size_t n)
+{
+    return strtranslate_n(dst, src, translate_escape, n);
+}
+
+size_t strescape_mem(char *dst, const void *src, size_t size)
+{
+    return strtranslate_mem(dst, src, size, translate_escape);
+}
+
+ssize_t strunescape(char *dst, const char *src)
+{
+    return strtranslate(dst, src, translate_unescape);
+}
+
+ssize_t strunescape_n(char *dst, const char *src, size_t n)
+{
+    return strtranslate_n(dst, src, translate_unescape, n);
+}
+
+ssize_t strunescape_mem(void *dst, const char *src)
+{
+    return memtranslate_str(dst, src, translate_unescape);
+}
+
+ssize_t strunescape_mem_n(void *dst, const char *src, size_t n)
+{
+    return memtranslate_str_n(dst, src, translate_unescape, n);
 }

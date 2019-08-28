@@ -186,39 +186,75 @@ void *memrtrim(const void *mem, size_t *msize, const void *reject, size_t rsize)
 // remove any bytes satisfying pred trailing mem on the right, size is modified
 void *memrtrim_pred(const void *mem, size_t *size, ctype_pred_cb pred);
 
-// convert every char in str to uppercase
-char *strupper(char *str);
-// convert max n chars in str to uppercase
-char *strnupper(char *str, size_t n);
-// convert every char in mem to uppercase (where applicable)
-void *memupper(void *mem, size_t size);
-
-// convert every char in str to lowercase
-char *strlower(char *str);
-// convert max n chars in str to lowercase
-char *strnlower(char *str, size_t n);
-// convert every char in mem to lowercase (where applicable)
-void *memlower(void *mem, size_t size);
-
-// convert every non-print char in str to space
-char *strflat(char *str);
-// convert every non-print char in first n chars of str to space
-char *strnflat(char *str, size_t n);
-// convert every non-print char in mem to space
-void *memflat(void *mem, size_t size);
-
 // transpose chars from str occuring in 'from' with chars in 'to' using the same index
-char *strtrans(char *str, const char *from, const char *to);
-// transpose bytes from mem occuring in 'from' with bytes in 'to' using the same index
-void *memtrans(void *mem, size_t msize, const void *from, const void *to, size_t tsize);
+char *strtranspose(char *str, const char *from, const char *to);
+// transpose chars from str by appying trans to every character
+char *strtranspose_f(char *str, ctype_transpose_cb trans);
+// convert every char in str to uppercase
+char *strtranspose_upper(char *str);
+// convert max n chars in str to uppercase
+char *strtranspose_upper_n(char *str, size_t n);
+// convert every char in str to lowercase
+char *strtranspose_lower(char *str);
+// convert max n chars in str to lowercase
+char *strtranspose_lower_n(char *str, size_t n);
+// convert every non-print char in str to space
+char *strtranspose_flatten(char *str);
+// convert every non-print char in first n chars of str to space
+char *strtranspose_flatten_n(char *str, size_t n);
 
-// escape all chars not satisfying 'keep' with 'esc' into dst
-size_t strescape(char *dst, const char *src, int esc, ctype_pred_cb keep);
-// unescape all chars preceeded by 'esc'
-ssize_t strunescape(char *dst, const char *src, int esc);
-// strescape into allocated buffer
-char *strdup_escape(const char *src, int esc, ctype_pred_cb keep);
-// strunescape into allocated buffer
-char *strdup_unescape(const char *src, int esc);
+// transpose bytes from mem occuring in 'from' with bytes in 'to' using the same index
+void *memtranspose(void *mem, size_t msize, const void *from, const void *to, size_t tsize);
+// transpose bytes from mem by appying trans to every byte
+void *memtranspose_f(void *mem, size_t size, ctype_transpose_cb trans);
+// convert every char in mem to uppercase (where applicable)
+void *memtranspose_upper(void *mem, size_t size);
+// convert every char in mem to lowercase (where applicable)
+void *memtranspose_lower(void *mem, size_t size);
+// convert every non-print char in mem to space
+void *memtranspose_flatten(void *mem, size_t size);
+
+
+// translate src string into dst string using trans
+// returns length of translated string, dst must have one extra byte for terminator
+ssize_t strtranslate(char *dst, const char *src, ctype_translate_cb trans);
+// translate max n chars of src string into dst string using trans
+// returns length of translated string, dst must have one extra byte for terminator
+ssize_t strtranslate_n(char *dst, const char *src, ctype_translate_cb trans, size_t n);
+// translate src memory into dst string using trans
+// returns length of translated string, dst must have one extra byte for terminator
+ssize_t strtranslate_mem(char *dst, const void *src, size_t size, ctype_translate_cb trans);
+
+// translate src memory into dst memory using trans
+// returns length of translated memory
+ssize_t memtranslate(void *dst, const void *src, size_t size, ctype_translate_cb trans);
+// translate src string into dst memory using trans
+// returns length of translated memory
+ssize_t memtranslate_str(void *dst, const char *src, ctype_translate_cb trans);
+// translate max n chars of src string into dst memory using trans
+// returns length of translated memory
+ssize_t memtranslate_str_n(void *dst, const char *src, ctype_translate_cb trans, size_t n);
+
+// translate src into dst escaping all backslash or !isprint chars
+// returns length of escaped str, dst must have one extra byte for terminator
+size_t strescape(char *dst, const char *src);
+// translate max n chars of src into dst escaping all backslash or !isprint chars
+// returns length of escaped str, dst must have one extra byte for terminator
+size_t strescape_n(char *dst, const char *src, size_t n);
+// translate src into dst escaping all backslash or !isprint chars
+// returns length of escaped str, dst must have one extra byte for terminator
+size_t strescape_mem(char *dst, const void *src, size_t size);
+// translate src into dst unescaping all chars preceeded by backslash
+// returns length of unescaped str, dst must have one extra byte for terminator
+ssize_t strunescape(char *dst, const char *src);
+// translate max n chars of src into dst unescaping all chars preceeded by backslash
+// returns length of unescaped str, dst must have one extra byte for terminator
+ssize_t strunescape_n(char *dst, const char *src, size_t n);
+// translate src into dst unescaping all chars preceeded by backslash
+// returns length of unescaped memory
+ssize_t strunescape_mem(void *dst, const char *src);
+// translate max n chars of src into dst unescaping all chars preceeded by backslash
+// returns length of unescaped memory
+ssize_t strunescape_mem_n(void *dst, const char *src, size_t n);
 
 #endif

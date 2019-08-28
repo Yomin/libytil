@@ -21,6 +21,8 @@
  */
 
 #include <ytil/ext/ctype.h>
+#include <stdio.h>
+#include <errno.h>
 
 
 int isword(int c)
@@ -41,4 +43,115 @@ int isodigit(int c)
 int isbdigit(int c)
 {
     return c == '0' || c == '1';
+}
+
+int flatten(int c)
+{
+    return isprint(c) ? c : ' ';
+}
+
+ssize_t translate_escape(unsigned char *dst, size_t *written, const unsigned char *src, size_t *read, ssize_t len, bool null_stop)
+{
+    unsigned char tmp;
+    
+    if(len < 0 && !null_stop)
+        return errno = EINVAL, -1;
+    
+    if(!len || (null_stop && !src[0]))
+        return 0;
+    
+    *read += 1;
+    
+    if(isprint(src[0]))
+    {
+        if(dst)
+            dst[0] = src[0];
+        
+        *written += 1;
+        return 1;
+    }
+    
+    switch(src[0])
+    {
+    case '\0':   tmp = '0'; break;
+    case '\a':   tmp = 'a'; break;
+    case '\b':   tmp = 'b'; break;
+    case '\x1b': tmp = 'e'; break;
+    case '\f':   tmp = 'f'; break;
+    case '\n':   tmp = 'n'; break;
+    case '\r':   tmp = 'r'; break;
+    case '\t':   tmp = 't'; break;
+    case '\v':   tmp = 'v'; break;
+    case '\\':   tmp = '\\'; break;
+    default:     tmp = 0; break;
+    }
+    
+    if(dst)
+    {
+        dst[0] = '\\';
+        
+        if(tmp)
+            dst[1] = tmp;
+        else
+            snprintf((char*)&dst[1], 4, "x%02hhX", src[0]);
+    }
+    
+    *written += tmp ? 2 : 4;
+    
+    return 1;
+}
+
+ssize_t translate_unescape(unsigned char *dst, size_t *written, const unsigned char *src, size_t *read, ssize_t len, bool null_stop)
+{
+    unsigned char tmp;
+    
+    if(len < 0 && !null_stop)
+        return errno = EINVAL, -1;
+    
+    if(!len || (null_stop && !src[0]))
+        return 0;
+    
+    if(src[0] != '\\')
+    {
+        if(dst)
+            dst[0] = src[0];
+        
+        *read += 1;
+        *written += 1;
+        return 1;
+    }
+    
+    if(len == 1 || (null_stop && !src[1]))
+        return errno = EBADMSG, -1;
+    
+    switch(src[1])
+    {
+    case '0':  tmp = '\0'; break;
+    case 'a':  tmp = '\a'; break;
+    case 'b':  tmp = '\b'; break;
+    case 'e':  tmp = '\x1b'; break;
+    case 'f':  tmp = '\f'; break;
+    case 'n':  tmp = '\n'; break;
+    case 'r':  tmp = '\r'; break;
+    case 't':  tmp = '\t'; break;
+    case 'v':  tmp = '\v'; break;
+    case '\\': tmp = '\\'; break;
+    default:   tmp = 'x'; break;
+    }
+    
+    if(tmp != 'x')
+        *read += 2;
+    else if(src[1] == 'x'
+    && (len >= 4 || (null_stop && src[2] && src[3]))
+    && sscanf((const char*)&src[2], "%02hhx", &tmp) == 1)
+        *read += 4;
+    else
+        return errno = EBADMSG, -1;
+    
+    if(dst)
+        dst[0] = tmp;
+    
+    *written += 1;
+    
+    return 1;
 }
