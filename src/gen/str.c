@@ -31,7 +31,7 @@
 
 enum str_def
 {
-      MAGIC     = define_magic('S', 'T', 'R')
+      MAGIC = define_magic('S', 'T', 'R')
 };
 
 typedef enum str_flags
@@ -40,15 +40,16 @@ typedef enum str_flags
     , FLAG_TRANSIENT    = BV(0) // str is stack allocated
     , FLAG_UPDATE_LEN   = BV(1) // len is unset and has to be calculated
     , FLAG_UPDATE_CAP   = BV(2) // cap is unset and has to be calculated
-    , FLAG_BINARY       = BV(3) // data my contain control chars
-    , FLAG_REDIRECT     = BV(4) // transient str points to heap allocated str
+    , FLAG_CONST        = BV(3) // data is const resp. not to be modified
+    , FLAG_BINARY       = BV(4) // data my contain control chars and/or no null terminator
+    , FLAG_REDIRECT     = BV(5) // transient str points to heap allocated str
 } str_flag_fs;
 
 typedef enum str_type
 {
       DATA_HEAP         // data is heap allocated
-    , DATA_CONST        // data is not to be modified
     , DATA_TRANSIENT    // data is stack allocated
+    , DATA_STATIC       // data is static
     , DATA_TYPES
 } str_type_id;
 
@@ -80,6 +81,7 @@ typedef struct str_cat
 static const error_info_st error_infos[] =
 {
       ERROR_INFO(E_STR_BINARY, "Operation not supported on binary data str.")
+    , ERROR_INFO(E_STR_CONST, "Operation not supported on constant str.")
     , ERROR_INFO(E_STR_EMPTY, "Operation not supported on empty str.")
     , ERROR_INFO(E_STR_INVALID_CSTR, "Invalid str data.")
     , ERROR_INFO(E_STR_INVALID_DATA, "Invalid binary data.")
@@ -113,6 +115,11 @@ static inline void _str_clear_flags(str_const_ct str, str_flag_fs flags)
 static inline bool _str_is_transient(str_const_ct str)
 {
     return _str_get_flags(str, FLAG_TRANSIENT);
+}
+
+static inline bool _str_is_const(str_const_ct str)
+{
+    return _str_get_flags(str, FLAG_CONST);
 }
 
 static inline bool _str_is_binary(str_const_ct str)
@@ -164,7 +171,9 @@ static str_ct _str_get_writeable(str_ct str)
 {
     unsigned char *data;
     
-    if(str->type != DATA_CONST)
+    return_error_if_pass(_str_is_const(str), E_STR_CONST, NULL);
+    
+    if(str->type != DATA_STATIC)
         return str;
     
     // heap data is only allowed on strings which are referenced
@@ -185,6 +194,7 @@ static str_ct _str_get_writeable(str_ct str)
 str_ct _str_init(str_ct str, str_flag_fs flags, uint16_t ref, str_type_id type, unsigned char *data, ssize_t len, ssize_t cap)
 {
     assert(str && type < DATA_TYPES && data && (!cap || len <= cap));
+    assert(!(flags & ~(FLAG_TRANSIENT|FLAG_CONST|FLAG_BINARY)));
     
     init_magic(str);
     
@@ -200,7 +210,7 @@ str_ct _str_init(str_ct str, str_flag_fs flags, uint16_t ref, str_type_id type, 
     }
     else
     {
-        if(type != DATA_CONST && !_str_is_binary(str))
+        if(type != DATA_STATIC && !_str_is_binary(str))
             data[len] = '\0';
         
         str->len = len;
@@ -221,8 +231,6 @@ str_ct _str_new(str_type_id type, unsigned char *data, ssize_t len, ssize_t cap,
 {
     str_ct str;
     
-    assert(!(flags & ~FLAG_BINARY));
-    
     if(!(str = calloc(1, sizeof(str_st))))
         return error_set_errno(calloc), NULL;
     
@@ -232,8 +240,8 @@ str_ct _str_new(str_type_id type, unsigned char *data, ssize_t len, ssize_t cap,
 str_ct _str_set(str_ct str, str_type_id type, unsigned char *data, ssize_t len, ssize_t cap, str_flag_fs flags)
 {
     // heap data is only allowed on strings which are referenced
-    assert(str->ref || type != DATA_HEAP);
-    assert(!(flags & ~FLAG_BINARY));
+    return_error_if_fail(str->ref || type != DATA_HEAP, E_STR_UNREFERENCED, NULL);
+    return_error_if_pass(_str_is_const(str), E_STR_CONST, NULL);
     
     if(str->type == DATA_HEAP)
         free(str->data);
@@ -307,6 +315,20 @@ bool str_is_redirected(str_const_ct str)
     return _str_get_flags(str, FLAG_REDIRECT);
 }
 
+bool str_is_const(str_const_ct str)
+{
+    assert_str(str);
+    
+    return _str_is_const(str);
+}
+
+bool str_is_binary(str_const_ct str)
+{
+    assert_str(str);
+    
+    return _str_is_binary(str);
+}
+
 bool str_data_is_heap(str_const_ct str)
 {
     assert_str(str);
@@ -314,11 +336,11 @@ bool str_data_is_heap(str_const_ct str)
     return str->type == DATA_HEAP;
 }
 
-bool str_data_is_const(str_const_ct str)
+bool str_data_is_static(str_const_ct str)
 {
     assert_str(str);
     
-    return str->type == DATA_CONST;
+    return str->type == DATA_STATIC;
 }
 
 bool str_data_is_transient(str_const_ct str)
@@ -328,11 +350,24 @@ bool str_data_is_transient(str_const_ct str)
     return str->type == DATA_TRANSIENT;
 }
 
-bool str_data_is_binary(str_const_ct str)
+void str_mark_const(str_const_ct str, bool isconst)
 {
     assert_str(str);
     
-    return _str_is_binary(str);
+    if(isconst)
+        _str_set_flags(str, FLAG_CONST);
+    else
+        _str_clear_flags(str, FLAG_CONST);
+}
+
+void str_mark_binary(str_const_ct str, bool isconst)
+{
+    assert_str(str);
+    
+    if(isconst)
+        _str_set_flags(str, FLAG_BINARY);
+    else
+        _str_clear_flags(str, FLAG_BINARY);
 }
 
 const char *str_c(str_const_ct str)
@@ -407,11 +442,12 @@ str_ct str_set_len(str_const_ct str, size_t len)
 {
     assert_str(str);
     return_error_if_fail(_str_get_flags(str, FLAG_UPDATE_CAP) || len <= str->cap, E_STR_INVALID_LENGTH, NULL);
-    return_error_if_fail(str->type != DATA_CONST || !str->data[len], E_STR_INVALID_LENGTH, NULL);
+    return_error_if_fail(str->type != DATA_STATIC || !str->data[len], E_STR_INVALID_LENGTH, NULL);
+    return_error_if_pass(_str_is_const(str), E_STR_CONST, NULL);
     
     _str_set_len(str, len);
     
-    if(str->type != DATA_CONST && !_str_is_binary(str))
+    if(str->type != DATA_STATIC && !_str_is_binary(str))
         str->data[len] = '\0';
     
     return (str_ct)str;
@@ -462,7 +498,7 @@ str_ct str_ref(str_const_ct str)
     if(!_str_is_transient(str))
         return ++vstr->ref, vstr;
     
-    flags = str->flags & FLAG_BINARY;
+    flags = str->flags & (FLAG_CONST|FLAG_BINARY);
     len = _str_get_len(str);
     
     if(str->type != DATA_TRANSIENT)
@@ -494,6 +530,8 @@ str_ct str_ref(str_const_ct str)
         vstr->data = (void*)nstr;
         nstr->ref += str->ref;
     }
+    else // no need to keep const flag if only owner
+        _str_clear_flags(nstr, FLAG_CONST);
     
     return nstr;
 }
@@ -527,8 +565,9 @@ size_t str_get_refs(str_const_ct str)
 str_ct str_clear(str_ct str)
 {
     assert_str(str);
+    return_error_if_pass(_str_is_const(str), E_STR_CONST, NULL);
     
-    if(str->type == DATA_CONST)
+    if(str->type == DATA_STATIC)
         str->data = (unsigned char*)"";
     else if(!_str_is_binary(str))
         str->data[0] = '\0';
@@ -544,10 +583,11 @@ str_ct str_truncate(str_const_ct str)
     unsigned char *data;
     
     assert_str(str);
+    return_error_if_pass(_str_is_const(str), E_STR_CONST, NULL);
     
     switch(str->type)
     {
-    case DATA_CONST:
+    case DATA_STATIC:
         break;
     case DATA_TRANSIENT:
         _str_set_cap(str, _str_get_len(str));
@@ -570,10 +610,11 @@ str_ct str_resize(str_ct str, size_t len)
     unsigned char *data;
     
     assert_str(str);
+    return_error_if_pass(_str_is_const(str), E_STR_CONST, NULL);
     
     switch(str->type)
     {
-    case DATA_CONST:
+    case DATA_STATIC:
         if(!str->ref)
             return error_set(E_STR_UNREFERENCED), NULL;
         else if(!(data = calloc(1, len+1)))
@@ -775,18 +816,18 @@ str_ct str_new_hnc(char *cstr, size_t len, size_t cap)
     return error_propagate_ptr(_str_new(DATA_HEAP, (unsigned char*)cstr, len, cap, NO_FLAGS));
 }
 
-str_ct str_new_c(const char *cstr)
+str_ct str_new_s(const char *cstr)
 {
     return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
     
-    return error_propagate_ptr(_str_new(DATA_CONST, (unsigned char*)cstr, -1, 0, NO_FLAGS));
+    return error_propagate_ptr(_str_new(DATA_STATIC, (unsigned char*)cstr, -1, 0, NO_FLAGS));
 }
 
-str_ct str_new_cn(const char *cstr, size_t len)
+str_ct str_new_sn(const char *cstr, size_t len)
 {
     return_error_if_fail(cstr && !cstr[len], E_STR_INVALID_CSTR, NULL);
     
-    return error_propagate_ptr(_str_new(DATA_CONST, (unsigned char*)cstr, len, 0, NO_FLAGS));
+    return error_propagate_ptr(_str_new(DATA_STATIC, (unsigned char*)cstr, len, 0, NO_FLAGS));
 }
 
 str_ct str_new_bh(void *data, size_t len)
@@ -804,11 +845,11 @@ str_ct str_new_bhc(void *data, size_t len, size_t cap)
     return error_propagate_ptr(_str_new(DATA_HEAP, data, len, cap, FLAG_BINARY));
 }
 
-str_ct str_new_bc(const void *data, size_t len)
+str_ct str_new_bs(const void *data, size_t len)
 {
     return_error_if_fail(data, E_STR_INVALID_DATA, NULL);
     
-    return error_propagate_ptr(_str_new(DATA_CONST, (void*)data, len, 0, FLAG_BINARY));
+    return error_propagate_ptr(_str_new(DATA_STATIC, (void*)data, len, 0, FLAG_BINARY));
 }
 
 str_ct tstr_init_h(str_ct str, char *hstr)
@@ -833,18 +874,18 @@ str_ct tstr_init_hnc(str_ct str, char *hstr, size_t len, size_t cap)
     return _str_init(str, FLAG_TRANSIENT, 1, DATA_HEAP, (unsigned char*)hstr, len, cap);
 }
 
-str_ct tstr_init_c(str_ct str, const char *cstr)
+str_ct tstr_init_s(str_ct str, const char *cstr)
 {
     return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
     
-    return _str_init(str, FLAG_TRANSIENT, 0, DATA_CONST, (unsigned char*)cstr, -1, 0);
+    return _str_init(str, FLAG_TRANSIENT, 0, DATA_STATIC, (unsigned char*)cstr, -1, 0);
 }
 
-str_ct tstr_init_cn(str_ct str, const char *cstr, size_t len)
+str_ct tstr_init_sn(str_ct str, const char *cstr, size_t len)
 {
     return_error_if_fail(cstr && !cstr[len], E_STR_INVALID_CSTR, NULL);
     
-    return _str_init(str, FLAG_TRANSIENT, 0, DATA_CONST, (unsigned char*)cstr, len, 0);
+    return _str_init(str, FLAG_TRANSIENT, 0, DATA_STATIC, (unsigned char*)cstr, len, 0);
 }
 
 str_ct tstr_init_bh(str_ct str, void *bin, size_t len)
@@ -862,11 +903,11 @@ str_ct tstr_init_bhc(str_ct str, void *bin, size_t len, size_t cap)
     return _str_init(str, FLAG_TRANSIENT|FLAG_BINARY, 1, DATA_HEAP, bin, len, cap);
 }
 
-str_ct tstr_init_bc(str_ct str, const void *bin, size_t len)
+str_ct tstr_init_bs(str_ct str, const void *bin, size_t len)
 {
     return_error_if_fail(bin, E_STR_INVALID_DATA, NULL);
     
-    return _str_init(str, FLAG_TRANSIENT|FLAG_BINARY, 0, DATA_CONST, (void*)bin, len, 0);
+    return _str_init(str, FLAG_TRANSIENT|FLAG_BINARY, 0, DATA_STATIC, (void*)bin, len, 0);
 }
 
 str_ct tstr_init_tn(str_ct str, char *cstr, size_t len)
@@ -895,14 +936,14 @@ str_ct str_dup_n(str_const_ct str, size_t len)
     
     len = MIN(len, _str_get_len(str));
     
-    if(str->type == DATA_CONST)
+    if(str->type == DATA_STATIC)
     {
         if(_str_is_binary(str)) // no terminator for binary required
-            return error_propagate_ptr(str_new_bc(str->data, len));
+            return error_propagate_ptr(str_new_bs(str->data, len));
         else if(!len) // zero length const data can be statically provided
             return error_propagate_ptr(str_new_l(""));
         else if(len == _str_get_len(str)) // just reference it
-            return error_propagate_ptr(str_new_cn((char*)str->data, len));
+            return error_propagate_ptr(str_new_sn((char*)str->data, len));
         else // heap dup to ensure terminator
             return error_propagate_ptr(str_dup_cn((char*)str->data, len));
     }
@@ -985,7 +1026,6 @@ str_ct str_dup_vf(const char *fmt, va_list ap)
 str_ct str_set_h(str_ct str, char *cstr)
 {
     assert_str(str);
-    return_error_if_fail(str->ref, E_STR_UNREFERENCED, NULL);
     return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
     
     return _str_set(str, DATA_HEAP, (unsigned char*)cstr, -1, -1, NO_FLAGS);
@@ -994,7 +1034,6 @@ str_ct str_set_h(str_ct str, char *cstr)
 str_ct str_set_hn(str_ct str, char *cstr, size_t len)
 {
     assert_str(str);
-    return_error_if_fail(str->ref, E_STR_UNREFERENCED, NULL);
     return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
     
     return _str_set(str, DATA_HEAP, (unsigned char*)cstr, len, len, NO_FLAGS);
@@ -1003,33 +1042,31 @@ str_ct str_set_hn(str_ct str, char *cstr, size_t len)
 str_ct str_set_hnc(str_ct str, char *cstr, size_t len, size_t cap)
 {
     assert_str(str);
-    return_error_if_fail(str->ref, E_STR_UNREFERENCED, NULL);
     return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
     return_error_if_fail(len <= cap, E_STR_INVALID_LENGTH, NULL);
     
     return _str_set(str, DATA_HEAP, (unsigned char*)cstr, len, cap, NO_FLAGS);
 }
 
-str_ct str_set_c(str_ct str, const char *cstr)
+str_ct str_set_s(str_ct str, const char *cstr)
 {
     assert_str(str);
     return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
     
-    return _str_set(str, DATA_CONST, (unsigned char*)cstr, -1, 0, NO_FLAGS);
+    return _str_set(str, DATA_STATIC, (unsigned char*)cstr, -1, 0, NO_FLAGS);
 }
 
-str_ct str_set_cn(str_ct str, const char *cstr, size_t len)
+str_ct str_set_sn(str_ct str, const char *cstr, size_t len)
 {
     assert_str(str);
     return_error_if_fail(cstr && !cstr[len], E_STR_INVALID_CSTR, NULL);
     
-    return _str_set(str, DATA_CONST, (unsigned char*)cstr, len, 0, NO_FLAGS);
+    return _str_set(str, DATA_STATIC, (unsigned char*)cstr, len, 0, NO_FLAGS);
 }
 
 str_ct str_set_bh(str_ct str, void *data, size_t len)
 {
     assert_str(str);
-    return_error_if_fail(str->ref, E_STR_UNREFERENCED, NULL);
     return_error_if_fail(data, E_STR_INVALID_DATA, NULL);
     
     return _str_set(str, DATA_HEAP, data, len, len, FLAG_BINARY);
@@ -1038,19 +1075,18 @@ str_ct str_set_bh(str_ct str, void *data, size_t len)
 str_ct str_set_bhc(str_ct str, void *data, size_t len, size_t cap)
 {
     assert_str(str);
-    return_error_if_fail(str->ref, E_STR_UNREFERENCED, NULL);
     return_error_if_fail(data, E_STR_INVALID_DATA, NULL);
     return_error_if_fail(len <= cap, E_STR_INVALID_LENGTH, NULL);
     
     return _str_set(str, DATA_HEAP, data, len, cap, FLAG_BINARY);
 }
 
-str_ct str_set_bc(str_ct str, const void *data, size_t len)
+str_ct str_set_bs(str_ct str, const void *data, size_t len)
 {
     assert_str(str);
     return_error_if_fail(data, E_STR_INVALID_DATA, NULL);
     
-    return _str_set(str, DATA_CONST, (void*)data, len, 0, FLAG_BINARY);
+    return _str_set(str, DATA_STATIC, (void*)data, len, 0, FLAG_BINARY);
 }
 
 str_ct str_copy(str_ct dst, size_t pos, str_const_ct src)
