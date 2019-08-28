@@ -474,4 +474,27 @@ extern char **environ;
 #define test_istrn_gt(s1, s2, n) _test_istrn((s1), #s1,  >, (s2), #s2, n)
 
 
+// --- [MEM] ---
+
+// todo dump some memory
+#define _test_mem(m1, e1, op, m2, e2, n) do { \
+    test_begin(); \
+    \
+    const void *_m1 = m1, *_m2 = m2; \
+    \
+    if(!_m1 || !_m2 || !(memcmp(_m1, _m2, n) op 0)) \
+        test_abort("MEM test failed: "e1" "#op" "e2 \
+            " (0x%s "#op" 0x%s)", _m1 ? "?" : "null", _m2 ? "?" : "null"); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_mem_lt(m1, m2, n) _test_mem((m1), #m1,  <, (m2), #m2, n)
+#define test_mem_le(m1, m2, n) _test_mem((m1), #m1, <=, (m2), #m2, n)
+#define test_mem_eq(m1, m2, n) _test_mem((m1), #m1, ==, (m2), #m2, n)
+#define test_mem_ne(m1, m2, n) _test_mem((m1), #m1, !=, (m2), #m2, n)
+#define test_mem_ge(m1, m2, n) _test_mem((m1), #m1, >=, (m2), #m2, n)
+#define test_mem_gt(m1, m2, n) _test_mem((m1), #m1,  >, (m2), #m2, n)
+
+
 #endif
