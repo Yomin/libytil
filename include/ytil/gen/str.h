@@ -23,6 +23,7 @@
 #ifndef __YTIL_GEN_STR_H__
 #define __YTIL_GEN_STR_H__
 
+#include <ytil/ext/ctype.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdarg.h>
@@ -37,6 +38,7 @@ typedef enum str_error
     , E_STR_CONST
     , E_STR_EMPTY
     , E_STR_INVALID_CSTR
+    , E_STR_INVALID_CALLBACK
     , E_STR_INVALID_DATA
     , E_STR_INVALID_FORMAT
     , E_STR_INVALID_LENGTH
@@ -424,5 +426,99 @@ str_ct  str_replace_cn(str_ct str, const char *sub, size_t sublen, const char *n
 // replace sub data in str with nsub data, mark str binary
 str_ct  str_replace_b(str_ct str, const void *sub, size_t sublen, const void *nsub, size_t nsublen);
 #define str_replace_bl(str, sub, nsub) str_replace_b(str, sub, sizeof(sub)-1, nsub, sizeof(nsub)-1)
+
+// create new heap str from data[pos] of len
+// duplicate data if not static or (not binary and not suffix)
+str_ct str_substr(str_const_ct str, ssize_t pos, size_t len);
+// like str_substr but only reference it if pos == 0 and len == str_len(str)
+str_ct str_substr_r(str_const_ct str, ssize_t pos, size_t len);
+
+// like str_substr but modify actual str, ie keep only given part
+str_ct str_slice(str_ct str, ssize_t pos, size_t len);
+
+// reverse str_slice, ie remove given part
+str_ct str_cut(str_ct str, ssize_t pos, size_t len);
+
+
+// remove chars matching pred at front and back of str
+str_ct str_trim_pred(str_ct str, ctype_pred_cb pred);
+// remove chars matching isblank at front and back of str
+str_ct str_trim_blank(str_ct str);
+// remove chars matching isspace at front and back of str
+str_ct str_trim_space(str_ct str);
+
+
+// convert all characters in str with trans
+str_ct str_transpose_f(str_ct str, ctype_transpose_cb trans);
+// convert all uppercase characters in str to lowercase
+str_ct str_transpose_lower(str_ct str);
+// convert all lowercase characters in str to uppercase
+str_ct str_transpose_upper(str_ct str);
+
+
+// translate str (substitute one group of chars/bytes for another one)
+str_ct str_translate(str_ct str, ctype_translate_cb trans);
+// str_translate, mark str binary
+str_ct str_translate_b(str_ct str, ctype_translate_cb trans);
+// str_translate into new str
+str_ct str_dup_translate(str_ct str, ctype_translate_cb trans);
+// str_dup_translate, mark str binary
+str_ct str_dup_translate_b(str_ct str, ctype_translate_cb trans);
+
+// translate str escaping all backslash or !isprint chars
+// binary flag is unset
+str_ct str_escape(str_ct str);
+// translate str unescaping all chars preceeded by blackslash
+// if any char is !isprint && !isspace str is marked binary
+str_ct str_unescape(str_ct str);
+// str_unescape, mark str binary
+str_ct str_unescape_b(str_ct str);
+// str_escape into new str
+str_ct str_dup_escape(str_ct str);
+// str_unescape into new str
+str_ct str_dup_unescape(str_ct str);
+// str_dup_unescape, mark str binary
+str_ct str_dup_unescape_b(str_ct str);
+
+
+// compare str1 and str2 like strcmp/memcmp
+int     str_cmp(str_const_ct str1, str_const_ct str2);
+// compare at most n bytes of str1 and str2 like strncmp/memcmp
+int     str_cmp_n(str_const_ct str1, str_const_ct str2, size_t n);
+// compare str and cstr like strcmp/memcmp
+int     str_cmp_c(str_const_ct str, const char *cstr);
+// compare str and cstr of len like strcmp/memcmp
+int     str_cmp_cn(str_const_ct str, const char *cstr, size_t len);
+#define str_cmp_l(str, lit) str_cmp_cn(str, lit, sizeof(lit)-1)
+// compare at most n bytes of str and cstr like strncmp/memcmp
+int     str_cmp_nc(str_const_ct str, const char *cstr, size_t n);
+// compare at most n bytes of str and cstr of len like strncmp/memcmp
+int     str_cmp_ncn(str_const_ct str, const char *cstr, size_t len, size_t n);
+#define str_cmp_nl(str, lit, n) str_cmp_cn(str, lit, sizeof(lit)-1, n)
+// compare str and mem like memcmp
+int     str_cmp_b(str_const_ct str, const void *mem, size_t size);
+#define str_cmp_bl(str, bin) str_cmp_b(str, bin, sizeof(bin)-1)
+// compare at most n bytes of str and mem like memcmp, mem must have at least n bytes
+int     str_cmp_nb(str_const_ct str, const void *mem, size_t n);
+
+// compare str1 and str2 like strcasecmp/memcasecmp
+int     str_casecmp(str_const_ct str1, str_const_ct str2);
+// compare at most n bytes of str1 and str2 like strncasecmp/memcasecmp
+int     str_casecmp_n(str_const_ct str1, str_const_ct str2, size_t n);
+// compare str and cstr like strcasecmp/memcasecmp
+int     str_casecmp_c(str_const_ct str, const char *cstr);
+// compare str and cstr of len like strcasecmp/memcasecmp
+int     str_casecmp_cn(str_const_ct str, const char *cstr, size_t len);
+#define str_casecmp_l(str, lit) str_casecmp_cn(str, lit, sizeof(lit)-1)
+// compare at most n bytes of str and cstr like strncasecmp/memcasecmp
+int     str_casecmp_nc(str_const_ct str, const char *cstr, size_t n);
+// compare at most n bytes of str and cstr of len like strncasecmp/memcasecmp
+int     str_casecmp_ncn(str_const_ct str, const char *cstr, size_t len, size_t n);
+#define str_casecmp_nl(str, lit, n) str_casecmp_cn(str, lit, sizeof(lit)-1, n)
+// compare str and mem like memcasecmp
+int     str_casecmp_b(str_const_ct str, const void *mem, size_t size);
+#define str_casecmp_bl(str, bin) str_casecmp_b(str, bin, sizeof(bin)-1)
+// compare at most n bytes of str and mem like memcasecmp, mem must have at least n bytes
+int     str_casecmp_nb(str_const_ct str, const void *mem, size_t n);
 
 #endif

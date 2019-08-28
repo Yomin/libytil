@@ -32,9 +32,11 @@ static const struct not_a_str
 } not_a_str = { 123 };
 
 static const char *lit = "1234567890", *bin = "1" "\0" "23456789";
+static const char *unescaped = "\nabc\x01xyz\r\n", *escaped = "\\nabc\\x01xyz\\r\\n";
+static const char *unescaped_b = "\0\x01\x02\x03", *escaped_b = "\\0\\x01\\x02\\x03";
 static char *cstr;
 static void *data;
-static str_ct str, str2;
+static str_ct str, str1, str2;
 
 
 TEST_SETUP(str_new_h)
@@ -63,6 +65,41 @@ TEST_SETUP(str_new_const)
     test_ptr_success(cstr = strdup(lit));
     test_ptr_success(str = str_new_h(cstr));
     str_mark_const(str, true);
+}
+
+TEST_SETUP(str_new_lower)
+{
+    test_ptr_success(str = str_new_s("abcdef"));
+}
+
+TEST_SETUP(str_new_unescaped)
+{
+    test_ptr_success(str = str_new_s(unescaped));
+}
+
+TEST_SETUP(str_new_escaped)
+{
+    test_ptr_success(str = str_new_s(escaped));
+}
+
+TEST_SETUP(str_new_unescaped_b)
+{
+    test_ptr_success(str = str_new_bs(unescaped_b, 4));
+}
+
+TEST_SETUP(str_new_escaped_b)
+{
+    test_ptr_success(str = str_new_s(escaped_b));
+}
+
+TEST_SETUP(str_new_foo)
+{
+    test_ptr_success(str = str_new_s("foo"));
+}
+
+TEST_SETUP(str_new_foo_b)
+{
+    test_ptr_success(str = str_new_bl("foo"));
 }
 
 TEST_TEARDOWN(str_unref)
@@ -3933,6 +3970,1623 @@ test_suite_ct test_suite_str_add_remove_replace(test_suite_ct suite)
     );
 }
 
+TEST_CASE_SIGNAL(str_substr_invalid_magic, SIGABRT)
+{
+    str_substr((str_ct)&not_a_str, 0, 0);
+}
+
+TEST_CASE_FIXTURE(str_substr_oob, str_new_s, str_unref)
+{
+    test_ptr_error(str_substr(str, 10, 1), E_STR_OUT_OF_BOUNDS);
+}
+
+TEST_CASE_FIXTURE(str_substr_front, str_new_s, str_unref)
+{
+    test_ptr_success(str2 = str_substr(str, 0, 5));
+    test_uint_eq(str_len(str2), 5);
+    test_strn_eq(str_c(str2), str_c(str), 5);
+    test_true(str_data_is_heap(str2));
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE(str_substr_center, str_new_s, str_unref)
+{
+    test_ptr_success(str2 = str_substr(str, 2, 5));
+    test_uint_eq(str_len(str2), 5);
+    test_strn_eq(str_c(str2), str_c(str)+2, 5);
+    test_true(str_data_is_heap(str2));
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE(str_substr_back, str_new_h, str_unref)
+{
+    test_ptr_success(str2 = str_substr(str, 5, 5));
+    test_uint_eq(str_len(str2), 5);
+    test_strn_eq(str_c(str2), str_c(str)+5, 5);
+    test_true(str_data_is_heap(str2));
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE(str_substr_all, str_new_h, str_unref)
+{
+    test_ptr_success(str2 = str_substr(str, 0, 10));
+    test_uint_eq(str_len(str2), 10);
+    test_str_eq(str_c(str2), str_c(str));
+    test_true(str_data_is_heap(str2));
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE(str_substr_static_suffix, str_new_s, str_unref)
+{
+    test_ptr_success(str2 = str_substr(str, 5, 5));
+    test_uint_eq(str_len(str2), 5);
+    test_ptr_eq(str_c(str2), str_c(str)+5);
+    test_true(str_data_is_static(str2));
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE(str_substr_static_binary, str_new_b, str_unref)
+{
+    test_ptr_success(str2 = str_substr(str, 2, 5));
+    test_uint_eq(str_len(str2), 5);
+    test_ptr_eq(str_buc(str2), str_buc(str)+2);
+    test_true(str_data_is_static(str2));
+    str_unref(str2);
+}
+
+TEST_CASE_SIGNAL(str_substr_r_invalid_magic, SIGABRT)
+{
+    str_substr_r((str_ct)&not_a_str, 0, 0);
+}
+
+TEST_CASE_FIXTURE(str_substr_r_oob, str_new_s, str_unref)
+{
+    test_ptr_error(str_substr_r(str, 10, 1), E_STR_OUT_OF_BOUNDS);
+}
+
+TEST_CASE_FIXTURE(str_substr_r_front, str_new_s, str_unref)
+{
+    test_ptr_success(str2 = str_substr_r(str, 0, 5));
+    test_uint_eq(str_len(str2), 5);
+    test_strn_eq(str_c(str2), str_c(str), 5);
+    test_true(str_data_is_heap(str2));
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE(str_substr_r_center, str_new_s, str_unref)
+{
+    test_ptr_success(str2 = str_substr_r(str, 2, 5));
+    test_uint_eq(str_len(str2), 5);
+    test_strn_eq(str_c(str2), str_c(str)+2, 5);
+    test_true(str_data_is_heap(str2));
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE(str_substr_r_back, str_new_h, str_unref)
+{
+    test_ptr_success(str2 = str_substr_r(str, 5, 5));
+    test_uint_eq(str_len(str2), 5);
+    test_strn_eq(str_c(str2), str_c(str)+5, 5);
+    test_true(str_data_is_heap(str2));
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE(str_substr_r_all, str_new_h, str_unref)
+{
+    test_ptr_success(str2 = str_substr_r(str, 0, 10));
+    test_ptr_eq(str, str2);
+    test_uint_eq(str_get_refs(str), 2);
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE(str_substr_r_static_suffix, str_new_s, str_unref)
+{
+    test_ptr_success(str2 = str_substr_r(str, 5, 5));
+    test_uint_eq(str_len(str2), 5);
+    test_ptr_eq(str_c(str2), str_c(str)+5);
+    test_true(str_data_is_static(str2));
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE(str_substr_r_static_binary, str_new_b, str_unref)
+{
+    test_ptr_success(str2 = str_substr_r(str, 2, 5));
+    test_uint_eq(str_len(str2), 5);
+    test_ptr_eq(str_buc(str2), str_buc(str)+2);
+    test_true(str_data_is_static(str2));
+    str_unref(str2);
+}
+
+TEST_CASE_SIGNAL(str_slice_invalid_magic, SIGABRT)
+{
+    str_slice((str_ct)&not_a_str, 0, 0);
+}
+
+TEST_CASE_FIXTURE(str_slice_oob, str_new_s, str_unref)
+{
+    test_ptr_error(str_slice(str, 10, 1), E_STR_OUT_OF_BOUNDS);
+}
+
+TEST_CASE_FIXTURE(str_slice_const, str_new_const, str_unref)
+{
+    test_ptr_error(str_slice(str, 1, 9), E_STR_CONST);
+}
+
+TEST_CASE_FIXTURE(str_slice_front, str_new_s, str_unref)
+{
+    test_ptr_success(str_slice(str, 0, 5));
+    test_uint_eq(str_len(str), 5);
+    test_strn_eq(str_c(str), lit, 5);
+}
+
+TEST_CASE_FIXTURE(str_slice_center, str_new_s, str_unref)
+{
+    test_ptr_success(str_slice(str, 2, 5));
+    test_uint_eq(str_len(str), 5);
+    test_strn_eq(str_c(str), lit+2, 5);
+}
+
+TEST_CASE_FIXTURE(str_slice_back, str_new_s, str_unref)
+{
+    test_ptr_success(str_slice(str, 5, 5));
+    test_uint_eq(str_len(str), 5);
+    test_str_eq(str_c(str), lit+5);
+}
+
+TEST_CASE_FIXTURE(str_slice_all, str_new_s, str_unref)
+{
+    test_ptr_success(str_slice(str, 0, 10));
+    test_uint_eq(str_len(str), 10);
+    test_str_eq(str_c(str), lit);
+}
+
+TEST_CASE_FIXTURE(str_slice_negative_pos, str_new_s, str_unref)
+{
+    test_ptr_success(str_slice(str, -8, 5));
+    test_uint_eq(str_len(str), 5);
+    test_strn_eq(str_c(str), lit+2, 5);
+}
+
+TEST_CASE_SIGNAL(str_cut_invalid_magic, SIGABRT)
+{
+    str_cut((str_ct)&not_a_str, 0, 0);
+}
+
+TEST_CASE_FIXTURE(str_cut_oob, str_new_s, str_unref)
+{
+    test_ptr_error(str_cut(str, 10, 1), E_STR_OUT_OF_BOUNDS);
+}
+
+TEST_CASE_FIXTURE(str_cut_const, str_new_const, str_unref)
+{
+    test_ptr_error(str_cut(str, 1, 9), E_STR_CONST);
+}
+
+TEST_CASE_FIXTURE(str_cut_front, str_new_s, str_unref)
+{
+    test_ptr_success(str_cut(str, 0, 5));
+    test_uint_eq(str_len(str), 5);
+    test_str_eq(str_c(str), lit+5);
+}
+
+TEST_CASE_FIXTURE(str_cut_center, str_new_s, str_unref)
+{
+    test_ptr_success(str_cut(str, 2, 5));
+    test_uint_eq(str_len(str), 5);
+    test_strn_eq(str_c(str)+0, lit+0, 2);
+    test_strn_eq(str_c(str)+2, lit+7, 3);
+}
+
+TEST_CASE_FIXTURE(str_cut_back, str_new_s, str_unref)
+{
+    test_ptr_success(str_cut(str, 5, 5));
+    test_uint_eq(str_len(str), 5);
+    test_strn_eq(str_c(str), lit, 5);
+}
+
+TEST_CASE_FIXTURE(str_cut_all, str_new_s, str_unref)
+{
+    test_ptr_success(str_cut(str, 0, 10));
+    test_uint_eq(str_len(str), 0);
+}
+
+TEST_CASE_FIXTURE(str_cut_negative_pos, str_new_s, str_unref)
+{
+    test_ptr_success(str_cut(str, -8, 5));
+    test_uint_eq(str_len(str), 5);
+    test_strn_eq(str_c(str)+0, lit+0, 2);
+    test_strn_eq(str_c(str)+2, lit+7, 3);
+}
+
+test_suite_ct test_suite_str_add_sub(test_suite_ct suite)
+{
+    return test_suite_add_cases(suite
+        , test_case_new(str_substr_invalid_magic)
+        , test_case_new(str_substr_oob)
+        , test_case_new(str_substr_front)
+        , test_case_new(str_substr_center)
+        , test_case_new(str_substr_back)
+        , test_case_new(str_substr_all)
+        , test_case_new(str_substr_static_suffix)
+        , test_case_new(str_substr_static_binary)
+        
+        , test_case_new(str_substr_r_invalid_magic)
+        , test_case_new(str_substr_r_oob)
+        , test_case_new(str_substr_r_front)
+        , test_case_new(str_substr_r_center)
+        , test_case_new(str_substr_r_back)
+        , test_case_new(str_substr_r_all)
+        , test_case_new(str_substr_r_static_suffix)
+        , test_case_new(str_substr_r_static_binary)
+        
+        , test_case_new(str_slice_invalid_magic)
+        , test_case_new(str_slice_oob)
+        , test_case_new(str_slice_const)
+        , test_case_new(str_slice_front)
+        , test_case_new(str_slice_center)
+        , test_case_new(str_slice_back)
+        , test_case_new(str_slice_all)
+        , test_case_new(str_slice_negative_pos)
+        
+        , test_case_new(str_cut_invalid_magic)
+        , test_case_new(str_cut_oob)
+        , test_case_new(str_cut_const)
+        , test_case_new(str_cut_front)
+        , test_case_new(str_cut_center)
+        , test_case_new(str_cut_back)
+        , test_case_new(str_cut_all)
+        , test_case_new(str_cut_negative_pos)
+    );
+}
+
+TEST_CASE_SIGNAL(str_trim_pred_invalid_magic, SIGABRT)
+{
+    str_trim_pred((str_ct)&not_a_str, isspace);
+}
+
+TEST_CASE_FIXTURE(str_trim_pred_invalid_pred, str_new_s, str_unref)
+{
+    test_ptr_error(str_trim_pred(str, NULL), E_STR_INVALID_CALLBACK);
+}
+
+TEST_CASE_FIXTURE(str_trim_pred_const, str_new_const, str_unref)
+{
+    test_ptr_error(str_trim_pred(str, isspace), E_STR_CONST);
+}
+
+TEST_CASE_FIXTURE(str_trim_pred, NULL, str_unref)
+{
+    test_ptr_success(str = str_new_l("   foo   bar   "));
+    test_ptr_success(str_trim_pred(str, isspace));
+    test_uint_eq(str_len(str), 9);
+    test_str_eq(str_c(str), "foo   bar");
+}
+
+TEST_CASE_SIGNAL(str_transpose_f_invalid_magic, SIGABRT)
+{
+    str_transpose_f((str_ct)&not_a_str, toupper);
+}
+
+TEST_CASE_FIXTURE(str_transpose_f_invalid_callback, str_new_lower, str_unref)
+{
+    test_ptr_error(str_transpose_f(str, NULL), E_STR_INVALID_CALLBACK);
+}
+
+TEST_CASE_FIXTURE(str_transpose_f_const, str_new_const, str_unref)
+{
+    test_ptr_error(str_transpose_f(str, toupper), E_STR_CONST);
+}
+
+TEST_CASE_FIXTURE(str_transpose_f, str_new_lower, str_unref)
+{
+    test_ptr_success(str_transpose_f(str, toupper));
+    test_uint_eq(str_len(str), 6);
+    test_str_eq(str_c(str), "ABCDEF");
+}
+
+TEST_CASE_SIGNAL(str_translate_invalid_magic, SIGABRT)
+{
+    str_translate((str_ct)&not_a_str, translate_escape);
+}
+
+TEST_CASE_FIXTURE(str_translate_invalid_callback, str_new_unescaped, str_unref)
+{
+    test_ptr_error(str_translate(str, NULL), E_STR_INVALID_CALLBACK);
+}
+
+TEST_CASE_FIXTURE(str_translate_const, str_new_const, str_unref)
+{
+    test_ptr_error(str_translate(str, translate_escape), E_STR_CONST);
+}
+
+TEST_CASE_FIXTURE(str_translate_escape, str_new_unescaped, str_unref)
+{
+    test_ptr_success(str_translate(str, translate_escape));
+    test_uint_eq(str_len(str), strlen(escaped));
+    test_str_eq(str_c(str), escaped);
+}
+
+TEST_CASE_FIXTURE(str_translate_unescape, str_new_escaped, str_unref)
+{
+    test_ptr_success(str_translate(str, translate_unescape));
+    test_uint_eq(str_len(str), strlen(unescaped));
+    test_str_eq(str_c(str), unescaped);
+}
+
+TEST_CASE_FIXTURE(str_translate_escape_bin, str_new_unescaped_b, str_unref)
+{
+    test_ptr_success(str_translate(str, translate_escape));
+    test_uint_eq(str_len(str), strlen(escaped_b));
+    test_str_eq(str_c(str), escaped_b);
+}
+
+TEST_CASE_SIGNAL(str_translate_b_invalid_magic, SIGABRT)
+{
+    str_translate_b((str_ct)&not_a_str, translate_escape);
+}
+
+TEST_CASE_FIXTURE(str_translate_b_invalid_callback, str_new_unescaped, str_unref)
+{
+    test_ptr_error(str_translate_b(str, NULL), E_STR_INVALID_CALLBACK);
+}
+
+TEST_CASE_FIXTURE(str_translate_b_const, str_new_const, str_unref)
+{
+    test_ptr_error(str_translate_b(str, translate_escape), E_STR_CONST);
+}
+
+TEST_CASE_FIXTURE(str_translate_b_unescape, str_new_escaped_b, str_unref)
+{
+    test_ptr_success(str_translate_b(str, translate_unescape));
+    test_uint_eq(str_len(str), 4);
+    test_true(str_is_binary(str));
+    test_mem_eq(str_bc(str), unescaped_b, 4);
+}
+
+TEST_CASE_SIGNAL(str_dup_translate_invalid_magic, SIGABRT)
+{
+    str_dup_translate((str_ct)&not_a_str, translate_escape);
+}
+
+TEST_CASE_FIXTURE(str_dup_translate_invalid_callback, str_new_unescaped, str_unref)
+{
+    test_ptr_error(str_dup_translate(str, NULL), E_STR_INVALID_CALLBACK);
+}
+
+TEST_CASE_FIXTURE(str_dup_translate_escape, str_new_unescaped, str_unref)
+{
+    test_ptr_success(str2 = str_dup_translate(str, translate_escape));
+    test_ptr_ne(str2, str);
+    test_uint_eq(str_len(str2), strlen(escaped));
+    test_str_eq(str_c(str2), escaped);
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE(str_dup_translate_unescape, str_new_escaped, str_unref)
+{
+    test_ptr_success(str2 = str_dup_translate(str, translate_unescape));
+    test_ptr_ne(str2, str);
+    test_uint_eq(str_len(str2), strlen(unescaped));
+    test_str_eq(str_c(str2), unescaped);
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE(str_dup_translate_escape_bin, str_new_unescaped_b, str_unref)
+{
+    test_ptr_success(str2 = str_dup_translate(str, translate_escape));
+    test_ptr_ne(str2, str);
+    test_uint_eq(str_len(str2), strlen(escaped_b));
+    test_str_eq(str_c(str2), escaped_b);
+    str_unref(str2);
+}
+
+TEST_CASE_SIGNAL(str_dup_translate_b_invalid_magic, SIGABRT)
+{
+    str_dup_translate_b((str_ct)&not_a_str, translate_escape);
+}
+
+TEST_CASE_FIXTURE(str_dup_translate_b_invalid_callback, str_new_unescaped, str_unref)
+{
+    test_ptr_error(str_dup_translate_b(str, NULL), E_STR_INVALID_CALLBACK);
+}
+
+TEST_CASE_FIXTURE(str_dup_translate_b_unescape, str_new_escaped_b, str_unref)
+{
+    test_ptr_success(str2 = str_dup_translate_b(str, translate_unescape));
+    test_ptr_ne(str2, str);
+    test_uint_eq(str_len(str2), 4);
+    test_true(str_is_binary(str2));
+    test_mem_eq(str_bc(str2), unescaped_b, 4);
+    str_unref(str2);
+}
+
+test_suite_ct test_suite_str_add_mod(test_suite_ct suite)
+{
+    return test_suite_add_cases(suite
+        , test_case_new(str_trim_pred_invalid_magic)
+        , test_case_new(str_trim_pred_invalid_pred)
+        , test_case_new(str_trim_pred_const)
+        , test_case_new(str_trim_pred)
+        
+        , test_case_new(str_transpose_f_invalid_magic)
+        , test_case_new(str_transpose_f_invalid_callback)
+        , test_case_new(str_transpose_f_const)
+        , test_case_new(str_transpose_f)
+        
+        , test_case_new(str_translate_invalid_magic)
+        , test_case_new(str_translate_invalid_callback)
+        , test_case_new(str_translate_const)
+        , test_case_new(str_translate_escape)
+        , test_case_new(str_translate_unescape)
+        , test_case_new(str_translate_escape_bin)
+        
+        , test_case_new(str_translate_b_invalid_magic)
+        , test_case_new(str_translate_b_invalid_callback)
+        , test_case_new(str_translate_b_const)
+        , test_case_new(str_translate_b_unescape)
+        
+        , test_case_new(str_dup_translate_invalid_magic)
+        , test_case_new(str_dup_translate_invalid_callback)
+        , test_case_new(str_dup_translate_escape)
+        , test_case_new(str_dup_translate_unescape)
+        , test_case_new(str_dup_translate_escape_bin)
+        , test_case_new(str_dup_translate_invalid_magic)
+        
+        , test_case_new(str_dup_translate_b_invalid_magic)
+        , test_case_new(str_dup_translate_b_invalid_callback)
+        , test_case_new(str_dup_translate_b_unescape)
+    );
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_cmp_invalid_str1_magic, str_new_s, str_unref, SIGABRT)
+{
+    str_cmp((str_ct)&not_a_str, str);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_cmp_invalid_str2_magic, str_new_s, str_unref, SIGABRT)
+{
+    str_cmp(str, (str_ct)&not_a_str);
+}
+
+TEST_CASE(str_cmp_cstr_cstr_lt)
+{
+    test_ptr_success(str1 = str_new_s("fo"));
+    test_ptr_success(str2 = str_new_s("foo"));
+    test_int_lt(str_cmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_cstr_cstr_eq)
+{
+    test_ptr_success(str1 = str_new_s("foo"));
+    test_ptr_success(str2 = str_new_s("foo"));
+    test_int_eq(str_cmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_cstr_cstr_gt)
+{
+    test_ptr_success(str1 = str_new_s("foob"));
+    test_ptr_success(str2 = str_new_s("foo"));
+    test_int_gt(str_cmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_cstr_bin_lt)
+{
+    test_ptr_success(str1 = str_new_s("foo"));
+    test_ptr_success(str2 = str_new_bl("foo\0"));
+    test_int_lt(str_cmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_cstr_bin_eq)
+{
+    test_ptr_success(str1 = str_new_s("foo"));
+    test_ptr_success(str2 = str_new_bl("foo"));
+    test_int_eq(str_cmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_cstr_bin_gt)
+{
+    test_ptr_success(str1 = str_new_s("foob"));
+    test_ptr_success(str2 = str_new_bl("foo"));
+    test_int_gt(str_cmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_bin_cstr_lt)
+{
+    test_ptr_success(str1 = str_new_bl("fo"));
+    test_ptr_success(str2 = str_new_s("foo"));
+    test_int_lt(str_cmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_bin_cstr_eq)
+{
+    test_ptr_success(str1 = str_new_bl("foo"));
+    test_ptr_success(str2 = str_new_s("foo"));
+    test_int_eq(str_cmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_bin_cstr_gt)
+{
+    test_ptr_success(str1 = str_new_bl("foob"));
+    test_ptr_success(str2 = str_new_s("foo"));
+    test_int_gt(str_cmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_bin_bin_lt)
+{
+    test_ptr_success(str1 = str_new_bl("f\x00o"));
+    test_ptr_success(str2 = str_new_bl("f\x00oo"));
+    test_int_lt(str_cmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_bin_bin_eq)
+{
+    test_ptr_success(str1 = str_new_bl("f\x00oo"));
+    test_ptr_success(str2 = str_new_bl("f\x00oo"));
+    test_int_eq(str_cmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_bin_bin_gt)
+{
+    test_ptr_success(str1 = str_new_bl("f\x00oob"));
+    test_ptr_success(str2 = str_new_bl("f\x00oo"));
+    test_int_gt(str_cmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_cmp_n_invalid_str1_magic, str_new_s, str_unref, SIGABRT)
+{
+    str_cmp_n((str_ct)&not_a_str, str, 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_cmp_n_invalid_str2_magic, str_new_s, str_unref, SIGABRT)
+{
+    str_cmp_n(str, (str_ct)&not_a_str, 3);
+}
+
+TEST_CASE(str_cmp_n_cstr_cstr_lt)
+{
+    test_ptr_success(str1 = str_new_s("fo"));
+    test_ptr_success(str2 = str_new_s("foo"));
+    test_int_lt(str_cmp_n(str1, str2, 3), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_n_cstr_cstr_eq)
+{
+    test_ptr_success(str1 = str_new_s("foa"));
+    test_ptr_success(str2 = str_new_s("fob"));
+    test_int_eq(str_cmp_n(str1, str2, 2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_n_cstr_cstr_gt)
+{
+    test_ptr_success(str1 = str_new_s("foob"));
+    test_ptr_success(str2 = str_new_s("foo"));
+    test_int_gt(str_cmp_n(str1, str2, 4), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_n_cstr_bin_lt)
+{
+    test_ptr_success(str1 = str_new_s("foo"));
+    test_ptr_success(str2 = str_new_bl("foo\0"));
+    test_int_lt(str_cmp_n(str1, str2, 4), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_n_cstr_bin_eq)
+{
+    test_ptr_success(str1 = str_new_s("foa"));
+    test_ptr_success(str2 = str_new_bl("fob"));
+    test_int_eq(str_cmp_n(str1, str2, 2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_n_cstr_bin_gt)
+{
+    test_ptr_success(str1 = str_new_s("foob"));
+    test_ptr_success(str2 = str_new_bl("foo"));
+    test_int_gt(str_cmp_n(str1, str2, 4), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_n_bin_cstr_lt)
+{
+    test_ptr_success(str1 = str_new_bl("fo"));
+    test_ptr_success(str2 = str_new_s("foo"));
+    test_int_lt(str_cmp_n(str1, str2, 3), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_n_bin_cstr_eq)
+{
+    test_ptr_success(str1 = str_new_bl("foa"));
+    test_ptr_success(str2 = str_new_s("fob"));
+    test_int_eq(str_cmp_n(str1, str2, 2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_n_bin_cstr_gt)
+{
+    test_ptr_success(str1 = str_new_bl("foob"));
+    test_ptr_success(str2 = str_new_s("foo"));
+    test_int_gt(str_cmp_n(str1, str2, 4), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_n_bin_bin_lt)
+{
+    test_ptr_success(str1 = str_new_bl("f\x00o"));
+    test_ptr_success(str2 = str_new_bl("f\x00oo"));
+    test_int_lt(str_cmp_n(str1, str2, 4), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_n_bin_bin_eq)
+{
+    test_ptr_success(str1 = str_new_bl("f\x00oa"));
+    test_ptr_success(str2 = str_new_bl("f\x00ob"));
+    test_int_eq(str_cmp_n(str1, str2, 3), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_cmp_n_bin_bin_gt)
+{
+    test_ptr_success(str1 = str_new_bl("f\x00oob"));
+    test_ptr_success(str2 = str_new_bl("f\x00oo"));
+    test_int_gt(str_cmp_n(str1, str2, 5), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE_SIGNAL(str_cmp_c_invalid_str_magic, SIGABRT)
+{
+    str_cmp_c((str_ct)&not_a_str, "foo");
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_cmp_c_invalid_cstr, str_new_foo, str_unref, SIGABRT)
+{
+    str_cmp_c(str, NULL);
+}
+
+TEST_CASE_FIXTURE(str_cmp_c_str_lt, str_new_foo, str_unref)
+{
+    test_int_lt(str_cmp_c(str, "foob"), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_c_str_eq, str_new_foo, str_unref)
+{
+    test_int_eq(str_cmp_c(str, "foo"), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_c_str_gt, str_new_foo, str_unref)
+{
+    test_int_gt(str_cmp_c(str, "fo"), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_c_bin_lt, str_new_foo_b, str_unref)
+{
+    test_int_lt(str_cmp_c(str, "foob"), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_c_bin_eq, str_new_foo_b, str_unref)
+{
+    test_int_eq(str_cmp_c(str, "foo"), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_c_bin_gt, str_new_foo_b, str_unref)
+{
+    test_int_gt(str_cmp_c(str, "fo"), 0);
+}
+
+TEST_CASE_SIGNAL(str_cmp_cn_invalid_str_magic, SIGABRT)
+{
+    str_cmp_cn((str_ct)&not_a_str, "foo", 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_cmp_cn_invalid_cstr, str_new_foo, str_unref, SIGABRT)
+{
+    str_cmp_cn(str, NULL, 0);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_cmp_cn_missing_terminator, str_new_foo, str_unref, SIGABRT)
+{
+    str_cmp_cn(str, "foo", 2);
+}
+
+TEST_CASE_FIXTURE(str_cmp_cn_str_lt, str_new_foo, str_unref)
+{
+    test_int_lt(str_cmp_cn(str, "foob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_cn_str_eq, str_new_foo, str_unref)
+{
+    test_int_eq(str_cmp_cn(str, "foo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_cn_str_gt, str_new_foo, str_unref)
+{
+    test_int_gt(str_cmp_cn(str, "fo", 2), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_cn_bin_lt, str_new_foo_b, str_unref)
+{
+    test_int_lt(str_cmp_cn(str, "foob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_cn_bin_eq, str_new_foo_b, str_unref)
+{
+    test_int_eq(str_cmp_cn(str, "foo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_cn_bin_gt, str_new_foo_b, str_unref)
+{
+    test_int_gt(str_cmp_cn(str, "fo", 2), 0);
+}
+
+TEST_CASE_SIGNAL(str_cmp_nc_invalid_str_magic, SIGABRT)
+{
+    str_cmp_nc((str_ct)&not_a_str, "foo", 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_cmp_nc_invalid_cstr, str_new_foo, str_unref, SIGABRT)
+{
+    str_cmp_nc(str, NULL, 3);
+}
+
+TEST_CASE_FIXTURE(str_cmp_nc_str_lt, str_new_foo, str_unref)
+{
+    test_int_lt(str_cmp_nc(str, "foob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_nc_str_eq, str_new_foo, str_unref)
+{
+    test_int_eq(str_cmp_nc(str, "foo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_nc_str_gt, str_new_foo, str_unref)
+{
+    test_int_gt(str_cmp_nc(str, "fo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_nc_bin_lt, str_new_foo_b, str_unref)
+{
+    test_int_lt(str_cmp_nc(str, "foob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_nc_bin_eq, str_new_foo_b, str_unref)
+{
+    test_int_eq(str_cmp_nc(str, "foo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_nc_bin_gt, str_new_foo_b, str_unref)
+{
+    test_int_gt(str_cmp_nc(str, "fo", 3), 0);
+}
+
+TEST_CASE_SIGNAL(str_cmp_ncn_invalid_str_magic, SIGABRT)
+{
+    str_cmp_ncn((str_ct)&not_a_str, "foo", 3, 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_cmp_ncn_invalid_cstr, str_new_foo, str_unref, SIGABRT)
+{
+    str_cmp_ncn(str, NULL, 0, 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_cmp_ncn_missing_terminator, str_new_foo, str_unref, SIGABRT)
+{
+    str_cmp_ncn(str, "foo", 2, 3);
+}
+
+TEST_CASE_FIXTURE(str_cmp_ncn_str_lt, str_new_foo, str_unref)
+{
+    test_int_lt(str_cmp_ncn(str, "foob", 4, 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_ncn_str_eq, str_new_foo, str_unref)
+{
+    test_int_eq(str_cmp_ncn(str, "foo", 3, 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_ncn_str_gt, str_new_foo, str_unref)
+{
+    test_int_gt(str_cmp_ncn(str, "fo", 2, 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_ncn_bin_lt, str_new_foo_b, str_unref)
+{
+    test_int_lt(str_cmp_ncn(str, "foob", 4, 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_ncn_bin_eq, str_new_foo_b, str_unref)
+{
+    test_int_eq(str_cmp_ncn(str, "foo", 3, 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_ncn_bin_gt, str_new_foo_b, str_unref)
+{
+    test_int_gt(str_cmp_ncn(str, "fo", 2, 3), 0);
+}
+
+TEST_CASE_SIGNAL(str_cmp_b_invalid_str_magic, SIGABRT)
+{
+    str_cmp_b((str_ct)&not_a_str, "foo", 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_cmp_b_invalid_cstr, str_new_foo, str_unref, SIGABRT)
+{
+    str_cmp_b(str, NULL, 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_b_str_lt, str_new_foo, str_unref)
+{
+    test_int_lt(str_cmp_b(str, "foob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_b_str_eq, str_new_foo, str_unref)
+{
+    test_int_eq(str_cmp_b(str, "foo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_b_str_gt, str_new_foo, str_unref)
+{
+    test_int_gt(str_cmp_b(str, "fo", 2), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_b_bin_lt, str_new_foo_b, str_unref)
+{
+    test_int_lt(str_cmp_b(str, "foob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_b_bin_eq, str_new_foo_b, str_unref)
+{
+    test_int_eq(str_cmp_b(str, "foo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_b_bin_gt, str_new_foo_b, str_unref)
+{
+    test_int_gt(str_cmp_b(str, "fo", 2), 0);
+}
+
+TEST_CASE_SIGNAL(str_cmp_nb_invalid_str_magic, SIGABRT)
+{
+    str_cmp_nb((str_ct)&not_a_str, "foo", 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_cmp_nb_invalid_cstr, str_new_foo, str_unref, SIGABRT)
+{
+    str_cmp_nb(str, NULL, 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_nb_str_lt, str_new_foo, str_unref)
+{
+    test_int_lt(str_cmp_nb(str, "foob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_nb_str_eq, str_new_foo, str_unref)
+{
+    test_int_eq(str_cmp_nb(str, "foo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_nb_str_gt, str_new_foo, str_unref)
+{
+    test_int_gt(str_cmp_nb(str, "faa", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_nb_bin_lt, str_new_foo_b, str_unref)
+{
+    test_int_lt(str_cmp_nb(str, "foob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_nb_bin_eq, str_new_foo_b, str_unref)
+{
+    test_int_eq(str_cmp_nb(str, "foo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_cmp_nb_bin_gt, str_new_foo_b, str_unref)
+{
+    test_int_gt(str_cmp_nb(str, "faa", 3), 0);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_casecmp_invalid_str1_magic, str_new_s, str_unref, SIGABRT)
+{
+    str_casecmp((str_ct)&not_a_str, str);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_casecmp_invalid_str2_magic, str_new_s, str_unref, SIGABRT)
+{
+    str_casecmp(str, (str_ct)&not_a_str);
+}
+
+TEST_CASE(str_casecmp_cstr_cstr_lt)
+{
+    test_ptr_success(str1 = str_new_s("fo"));
+    test_ptr_success(str2 = str_new_s("FOo"));
+    test_int_lt(str_casecmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_cstr_cstr_eq)
+{
+    test_ptr_success(str1 = str_new_s("foo"));
+    test_ptr_success(str2 = str_new_s("FOo"));
+    test_int_eq(str_casecmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_cstr_cstr_gt)
+{
+    test_ptr_success(str1 = str_new_s("foob"));
+    test_ptr_success(str2 = str_new_s("FOo"));
+    test_int_gt(str_casecmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_cstr_bin_lt)
+{
+    test_ptr_success(str1 = str_new_s("foo"));
+    test_ptr_success(str2 = str_new_bl("FOo\0"));
+    test_int_lt(str_casecmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_cstr_bin_eq)
+{
+    test_ptr_success(str1 = str_new_s("foo"));
+    test_ptr_success(str2 = str_new_bl("FOo"));
+    test_int_eq(str_casecmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_cstr_bin_gt)
+{
+    test_ptr_success(str1 = str_new_s("foob"));
+    test_ptr_success(str2 = str_new_bl("FOo"));
+    test_int_gt(str_casecmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_bin_cstr_lt)
+{
+    test_ptr_success(str1 = str_new_bl("fo"));
+    test_ptr_success(str2 = str_new_s("FOo"));
+    test_int_lt(str_casecmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_bin_cstr_eq)
+{
+    test_ptr_success(str1 = str_new_bl("foo"));
+    test_ptr_success(str2 = str_new_s("FOo"));
+    test_int_eq(str_casecmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_bin_cstr_gt)
+{
+    test_ptr_success(str1 = str_new_bl("foob"));
+    test_ptr_success(str2 = str_new_s("FOo"));
+    test_int_gt(str_casecmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_bin_bin_lt)
+{
+    test_ptr_success(str1 = str_new_bl("f\x00o"));
+    test_ptr_success(str2 = str_new_bl("f\x00oo"));
+    test_int_lt(str_casecmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_bin_bin_eq)
+{
+    test_ptr_success(str1 = str_new_bl("f\x00oo"));
+    test_ptr_success(str2 = str_new_bl("f\x00oo"));
+    test_int_eq(str_casecmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_bin_bin_gt)
+{
+    test_ptr_success(str1 = str_new_bl("f\x00oob"));
+    test_ptr_success(str2 = str_new_bl("f\x00oo"));
+    test_int_gt(str_casecmp(str1, str2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_casecmp_n_invalid_str1_magic, str_new_s, str_unref, SIGABRT)
+{
+    str_casecmp_n((str_ct)&not_a_str, str, 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_casecmp_n_invalid_str2_magic, str_new_s, str_unref, SIGABRT)
+{
+    str_casecmp_n(str, (str_ct)&not_a_str, 3);
+}
+
+TEST_CASE(str_casecmp_n_cstr_cstr_lt)
+{
+    test_ptr_success(str1 = str_new_s("fo"));
+    test_ptr_success(str2 = str_new_s("FOo"));
+    test_int_lt(str_casecmp_n(str1, str2, 3), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_n_cstr_cstr_eq)
+{
+    test_ptr_success(str1 = str_new_s("foa"));
+    test_ptr_success(str2 = str_new_s("FOb"));
+    test_int_eq(str_casecmp_n(str1, str2, 2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_n_cstr_cstr_gt)
+{
+    test_ptr_success(str1 = str_new_s("foob"));
+    test_ptr_success(str2 = str_new_s("FOo"));
+    test_int_gt(str_casecmp_n(str1, str2, 4), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_n_cstr_bin_lt)
+{
+    test_ptr_success(str1 = str_new_s("foo"));
+    test_ptr_success(str2 = str_new_bl("FOo\0"));
+    test_int_lt(str_casecmp_n(str1, str2, 4), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_n_cstr_bin_eq)
+{
+    test_ptr_success(str1 = str_new_s("foa"));
+    test_ptr_success(str2 = str_new_bl("FOb"));
+    test_int_eq(str_casecmp_n(str1, str2, 2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_n_cstr_bin_gt)
+{
+    test_ptr_success(str1 = str_new_s("foob"));
+    test_ptr_success(str2 = str_new_bl("FOo"));
+    test_int_gt(str_casecmp_n(str1, str2, 4), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_n_bin_cstr_lt)
+{
+    test_ptr_success(str1 = str_new_bl("fo"));
+    test_ptr_success(str2 = str_new_s("FOo"));
+    test_int_lt(str_casecmp_n(str1, str2, 3), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_n_bin_cstr_eq)
+{
+    test_ptr_success(str1 = str_new_bl("foa"));
+    test_ptr_success(str2 = str_new_s("FOb"));
+    test_int_eq(str_casecmp_n(str1, str2, 2), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_n_bin_cstr_gt)
+{
+    test_ptr_success(str1 = str_new_bl("foob"));
+    test_ptr_success(str2 = str_new_s("FOo"));
+    test_int_gt(str_casecmp_n(str1, str2, 4), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_n_bin_bin_lt)
+{
+    test_ptr_success(str1 = str_new_bl("f\x00o"));
+    test_ptr_success(str2 = str_new_bl("f\x00oo"));
+    test_int_lt(str_casecmp_n(str1, str2, 4), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_n_bin_bin_eq)
+{
+    test_ptr_success(str1 = str_new_bl("f\x00oa"));
+    test_ptr_success(str2 = str_new_bl("f\x00ob"));
+    test_int_eq(str_casecmp_n(str1, str2, 3), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE(str_casecmp_n_bin_bin_gt)
+{
+    test_ptr_success(str1 = str_new_bl("f\x00oob"));
+    test_ptr_success(str2 = str_new_bl("f\x00oo"));
+    test_int_gt(str_casecmp_n(str1, str2, 5), 0);
+    str_unref(str1);
+    str_unref(str2);
+}
+
+TEST_CASE_SIGNAL(str_casecmp_c_invalid_str_magic, SIGABRT)
+{
+    str_casecmp_c((str_ct)&not_a_str, "FOo");
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_casecmp_c_invalid_cstr, str_new_foo, str_unref, SIGABRT)
+{
+    str_casecmp_c(str, NULL);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_c_str_lt, str_new_foo, str_unref)
+{
+    test_int_lt(str_casecmp_c(str, "FOob"), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_c_str_eq, str_new_foo, str_unref)
+{
+    test_int_eq(str_casecmp_c(str, "FOo"), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_c_str_gt, str_new_foo, str_unref)
+{
+    test_int_gt(str_casecmp_c(str, "FO"), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_c_bin_lt, str_new_foo_b, str_unref)
+{
+    test_int_lt(str_casecmp_c(str, "FOob"), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_c_bin_eq, str_new_foo_b, str_unref)
+{
+    test_int_eq(str_casecmp_c(str, "FOo"), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_c_bin_gt, str_new_foo_b, str_unref)
+{
+    test_int_gt(str_casecmp_c(str, "FO"), 0);
+}
+
+TEST_CASE_SIGNAL(str_casecmp_cn_invalid_str_magic, SIGABRT)
+{
+    str_casecmp_cn((str_ct)&not_a_str, "FOo", 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_casecmp_cn_invalid_cstr, str_new_foo, str_unref, SIGABRT)
+{
+    str_casecmp_cn(str, NULL, 0);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_casecmp_cn_missing_terminator, str_new_foo, str_unref, SIGABRT)
+{
+    str_casecmp_cn(str, "FOo", 2);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_cn_str_lt, str_new_foo, str_unref)
+{
+    test_int_lt(str_casecmp_cn(str, "FOob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_cn_str_eq, str_new_foo, str_unref)
+{
+    test_int_eq(str_casecmp_cn(str, "FOo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_cn_str_gt, str_new_foo, str_unref)
+{
+    test_int_gt(str_casecmp_cn(str, "FO", 2), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_cn_bin_lt, str_new_foo_b, str_unref)
+{
+    test_int_lt(str_casecmp_cn(str, "FOob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_cn_bin_eq, str_new_foo_b, str_unref)
+{
+    test_int_eq(str_casecmp_cn(str, "FOo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_cn_bin_gt, str_new_foo_b, str_unref)
+{
+    test_int_gt(str_casecmp_cn(str, "FO", 2), 0);
+}
+
+TEST_CASE_SIGNAL(str_casecmp_nc_invalid_str_magic, SIGABRT)
+{
+    str_casecmp_nc((str_ct)&not_a_str, "FOo", 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_casecmp_nc_invalid_cstr, str_new_foo, str_unref, SIGABRT)
+{
+    str_casecmp_nc(str, NULL, 3);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_nc_str_lt, str_new_foo, str_unref)
+{
+    test_int_lt(str_casecmp_nc(str, "FOob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_nc_str_eq, str_new_foo, str_unref)
+{
+    test_int_eq(str_casecmp_nc(str, "FOo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_nc_str_gt, str_new_foo, str_unref)
+{
+    test_int_gt(str_casecmp_nc(str, "FO", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_nc_bin_lt, str_new_foo_b, str_unref)
+{
+    test_int_lt(str_casecmp_nc(str, "FOob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_nc_bin_eq, str_new_foo_b, str_unref)
+{
+    test_int_eq(str_casecmp_nc(str, "FOo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_nc_bin_gt, str_new_foo_b, str_unref)
+{
+    test_int_gt(str_casecmp_nc(str, "FO", 3), 0);
+}
+
+TEST_CASE_SIGNAL(str_casecmp_ncn_invalid_str_magic, SIGABRT)
+{
+    str_casecmp_ncn((str_ct)&not_a_str, "FOo", 3, 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_casecmp_ncn_invalid_cstr, str_new_foo, str_unref, SIGABRT)
+{
+    str_casecmp_ncn(str, NULL, 0, 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_casecmp_ncn_missing_terminator, str_new_foo, str_unref, SIGABRT)
+{
+    str_casecmp_ncn(str, "FOo", 2, 3);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_ncn_str_lt, str_new_foo, str_unref)
+{
+    test_int_lt(str_casecmp_ncn(str, "FOob", 4, 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_ncn_str_eq, str_new_foo, str_unref)
+{
+    test_int_eq(str_casecmp_ncn(str, "FOo", 3, 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_ncn_str_gt, str_new_foo, str_unref)
+{
+    test_int_gt(str_casecmp_ncn(str, "FO", 2, 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_ncn_bin_lt, str_new_foo_b, str_unref)
+{
+    test_int_lt(str_casecmp_ncn(str, "FOob", 4, 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_ncn_bin_eq, str_new_foo_b, str_unref)
+{
+    test_int_eq(str_casecmp_ncn(str, "FOo", 3, 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_ncn_bin_gt, str_new_foo_b, str_unref)
+{
+    test_int_gt(str_casecmp_ncn(str, "FO", 2, 3), 0);
+}
+
+TEST_CASE_SIGNAL(str_casecmp_b_invalid_str_magic, SIGABRT)
+{
+    str_casecmp_b((str_ct)&not_a_str, "FOo", 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_casecmp_b_invalid_cstr, str_new_foo, str_unref, SIGABRT)
+{
+    str_casecmp_b(str, NULL, 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_b_str_lt, str_new_foo, str_unref)
+{
+    test_int_lt(str_casecmp_b(str, "FOob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_b_str_eq, str_new_foo, str_unref)
+{
+    test_int_eq(str_casecmp_b(str, "FOo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_b_str_gt, str_new_foo, str_unref)
+{
+    test_int_gt(str_casecmp_b(str, "FO", 2), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_b_bin_lt, str_new_foo_b, str_unref)
+{
+    test_int_lt(str_casecmp_b(str, "FOob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_b_bin_eq, str_new_foo_b, str_unref)
+{
+    test_int_eq(str_casecmp_b(str, "FOo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_b_bin_gt, str_new_foo_b, str_unref)
+{
+    test_int_gt(str_casecmp_b(str, "FO", 2), 0);
+}
+
+TEST_CASE_SIGNAL(str_casecmp_nb_invalid_str_magic, SIGABRT)
+{
+    str_casecmp_nb((str_ct)&not_a_str, "FOo", 3);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(str_casecmp_nb_invalid_cstr, str_new_foo, str_unref, SIGABRT)
+{
+    str_casecmp_nb(str, NULL, 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_nb_str_lt, str_new_foo, str_unref)
+{
+    test_int_lt(str_casecmp_nb(str, "FOob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_nb_str_eq, str_new_foo, str_unref)
+{
+    test_int_eq(str_casecmp_nb(str, "FOo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_nb_str_gt, str_new_foo, str_unref)
+{
+    test_int_gt(str_casecmp_nb(str, "FAa", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_nb_bin_lt, str_new_foo_b, str_unref)
+{
+    test_int_lt(str_casecmp_nb(str, "FOob", 4), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_nb_bin_eq, str_new_foo_b, str_unref)
+{
+    test_int_eq(str_casecmp_nb(str, "FOo", 3), 0);
+}
+
+TEST_CASE_FIXTURE(str_casecmp_nb_bin_gt, str_new_foo_b, str_unref)
+{
+    test_int_gt(str_casecmp_nb(str, "FAa", 3), 0);
+}
+
+test_suite_ct test_suite_str_add_cmp(test_suite_ct suite)
+{
+    return test_suite_add_cases(suite
+        , test_case_new(str_cmp_invalid_str1_magic)
+        , test_case_new(str_cmp_invalid_str2_magic)
+        , test_case_new(str_cmp_cstr_cstr_lt)
+        , test_case_new(str_cmp_cstr_cstr_eq)
+        , test_case_new(str_cmp_cstr_cstr_gt)
+        , test_case_new(str_cmp_cstr_bin_lt)
+        , test_case_new(str_cmp_cstr_bin_eq)
+        , test_case_new(str_cmp_cstr_bin_gt)
+        , test_case_new(str_cmp_bin_cstr_lt)
+        , test_case_new(str_cmp_bin_cstr_eq)
+        , test_case_new(str_cmp_bin_cstr_gt)
+        , test_case_new(str_cmp_bin_bin_lt)
+        , test_case_new(str_cmp_bin_bin_eq)
+        , test_case_new(str_cmp_bin_bin_gt)
+        
+        , test_case_new(str_cmp_n_invalid_str1_magic)
+        , test_case_new(str_cmp_n_invalid_str2_magic)
+        , test_case_new(str_cmp_n_cstr_cstr_lt)
+        , test_case_new(str_cmp_n_cstr_cstr_eq)
+        , test_case_new(str_cmp_n_cstr_cstr_gt)
+        , test_case_new(str_cmp_n_cstr_bin_lt)
+        , test_case_new(str_cmp_n_cstr_bin_eq)
+        , test_case_new(str_cmp_n_cstr_bin_gt)
+        , test_case_new(str_cmp_n_bin_cstr_lt)
+        , test_case_new(str_cmp_n_bin_cstr_eq)
+        , test_case_new(str_cmp_n_bin_cstr_gt)
+        , test_case_new(str_cmp_n_bin_bin_lt)
+        , test_case_new(str_cmp_n_bin_bin_eq)
+        , test_case_new(str_cmp_n_bin_bin_gt)
+        
+        , test_case_new(str_cmp_c_invalid_str_magic)
+        , test_case_new(str_cmp_c_invalid_cstr)
+        , test_case_new(str_cmp_c_str_lt)
+        , test_case_new(str_cmp_c_str_eq)
+        , test_case_new(str_cmp_c_str_gt)
+        , test_case_new(str_cmp_c_bin_lt)
+        , test_case_new(str_cmp_c_bin_eq)
+        , test_case_new(str_cmp_c_bin_gt)
+        
+        , test_case_new(str_cmp_cn_invalid_str_magic)
+        , test_case_new(str_cmp_cn_invalid_cstr)
+        , test_case_new(str_cmp_cn_missing_terminator)
+        , test_case_new(str_cmp_cn_str_lt)
+        , test_case_new(str_cmp_cn_str_eq)
+        , test_case_new(str_cmp_cn_str_gt)
+        , test_case_new(str_cmp_cn_bin_lt)
+        , test_case_new(str_cmp_cn_bin_eq)
+        , test_case_new(str_cmp_cn_bin_gt)
+        
+        , test_case_new(str_cmp_nc_invalid_str_magic)
+        , test_case_new(str_cmp_nc_invalid_cstr)
+        , test_case_new(str_cmp_nc_str_lt)
+        , test_case_new(str_cmp_nc_str_eq)
+        , test_case_new(str_cmp_nc_str_gt)
+        , test_case_new(str_cmp_nc_bin_lt)
+        , test_case_new(str_cmp_nc_bin_eq)
+        , test_case_new(str_cmp_nc_bin_gt)
+        
+        , test_case_new(str_cmp_ncn_invalid_str_magic)
+        , test_case_new(str_cmp_ncn_invalid_cstr)
+        , test_case_new(str_cmp_ncn_missing_terminator)
+        , test_case_new(str_cmp_ncn_str_lt)
+        , test_case_new(str_cmp_ncn_str_eq)
+        , test_case_new(str_cmp_ncn_str_gt)
+        , test_case_new(str_cmp_ncn_bin_lt)
+        , test_case_new(str_cmp_ncn_bin_eq)
+        , test_case_new(str_cmp_ncn_bin_gt)
+        
+        , test_case_new(str_cmp_b_invalid_str_magic)
+        , test_case_new(str_cmp_b_invalid_cstr)
+        , test_case_new(str_cmp_b_str_lt)
+        , test_case_new(str_cmp_b_str_eq)
+        , test_case_new(str_cmp_b_str_gt)
+        , test_case_new(str_cmp_b_bin_lt)
+        , test_case_new(str_cmp_b_bin_eq)
+        , test_case_new(str_cmp_b_bin_gt)
+        
+        , test_case_new(str_cmp_nb_invalid_str_magic)
+        , test_case_new(str_cmp_nb_invalid_cstr)
+        , test_case_new(str_cmp_nb_str_lt)
+        , test_case_new(str_cmp_nb_str_eq)
+        , test_case_new(str_cmp_nb_str_gt)
+        , test_case_new(str_cmp_nb_bin_lt)
+        , test_case_new(str_cmp_nb_bin_eq)
+        , test_case_new(str_cmp_nb_bin_gt)
+        
+        , test_case_new(str_casecmp_invalid_str1_magic)
+        , test_case_new(str_casecmp_invalid_str2_magic)
+        , test_case_new(str_casecmp_cstr_cstr_lt)
+        , test_case_new(str_casecmp_cstr_cstr_eq)
+        , test_case_new(str_casecmp_cstr_cstr_gt)
+        , test_case_new(str_casecmp_cstr_bin_lt)
+        , test_case_new(str_casecmp_cstr_bin_eq)
+        , test_case_new(str_casecmp_cstr_bin_gt)
+        , test_case_new(str_casecmp_bin_cstr_lt)
+        , test_case_new(str_casecmp_bin_cstr_eq)
+        , test_case_new(str_casecmp_bin_cstr_gt)
+        , test_case_new(str_casecmp_bin_bin_lt)
+        , test_case_new(str_casecmp_bin_bin_eq)
+        , test_case_new(str_casecmp_bin_bin_gt)
+        
+        , test_case_new(str_casecmp_n_invalid_str1_magic)
+        , test_case_new(str_casecmp_n_invalid_str2_magic)
+        , test_case_new(str_casecmp_n_cstr_cstr_lt)
+        , test_case_new(str_casecmp_n_cstr_cstr_eq)
+        , test_case_new(str_casecmp_n_cstr_cstr_gt)
+        , test_case_new(str_casecmp_n_cstr_bin_lt)
+        , test_case_new(str_casecmp_n_cstr_bin_eq)
+        , test_case_new(str_casecmp_n_cstr_bin_gt)
+        , test_case_new(str_casecmp_n_bin_cstr_lt)
+        , test_case_new(str_casecmp_n_bin_cstr_eq)
+        , test_case_new(str_casecmp_n_bin_cstr_gt)
+        , test_case_new(str_casecmp_n_bin_bin_lt)
+        , test_case_new(str_casecmp_n_bin_bin_eq)
+        , test_case_new(str_casecmp_n_bin_bin_gt)
+        
+        , test_case_new(str_casecmp_c_invalid_str_magic)
+        , test_case_new(str_casecmp_c_invalid_cstr)
+        , test_case_new(str_casecmp_c_str_lt)
+        , test_case_new(str_casecmp_c_str_eq)
+        , test_case_new(str_casecmp_c_str_gt)
+        , test_case_new(str_casecmp_c_bin_lt)
+        , test_case_new(str_casecmp_c_bin_eq)
+        , test_case_new(str_casecmp_c_bin_gt)
+        
+        , test_case_new(str_casecmp_cn_invalid_str_magic)
+        , test_case_new(str_casecmp_cn_invalid_cstr)
+        , test_case_new(str_casecmp_cn_missing_terminator)
+        , test_case_new(str_casecmp_cn_str_lt)
+        , test_case_new(str_casecmp_cn_str_eq)
+        , test_case_new(str_casecmp_cn_str_gt)
+        , test_case_new(str_casecmp_cn_bin_lt)
+        , test_case_new(str_casecmp_cn_bin_eq)
+        , test_case_new(str_casecmp_cn_bin_gt)
+        
+        , test_case_new(str_casecmp_nc_invalid_str_magic)
+        , test_case_new(str_casecmp_nc_invalid_cstr)
+        , test_case_new(str_casecmp_nc_str_lt)
+        , test_case_new(str_casecmp_nc_str_eq)
+        , test_case_new(str_casecmp_nc_str_gt)
+        , test_case_new(str_casecmp_nc_bin_lt)
+        , test_case_new(str_casecmp_nc_bin_eq)
+        , test_case_new(str_casecmp_nc_bin_gt)
+        
+        , test_case_new(str_casecmp_ncn_invalid_str_magic)
+        , test_case_new(str_casecmp_ncn_invalid_cstr)
+        , test_case_new(str_casecmp_ncn_missing_terminator)
+        , test_case_new(str_casecmp_ncn_str_lt)
+        , test_case_new(str_casecmp_ncn_str_eq)
+        , test_case_new(str_casecmp_ncn_str_gt)
+        , test_case_new(str_casecmp_ncn_bin_lt)
+        , test_case_new(str_casecmp_ncn_bin_eq)
+        , test_case_new(str_casecmp_ncn_bin_gt)
+        
+        , test_case_new(str_casecmp_b_invalid_str_magic)
+        , test_case_new(str_casecmp_b_invalid_cstr)
+        , test_case_new(str_casecmp_b_str_lt)
+        , test_case_new(str_casecmp_b_str_eq)
+        , test_case_new(str_casecmp_b_str_gt)
+        , test_case_new(str_casecmp_b_bin_lt)
+        , test_case_new(str_casecmp_b_bin_eq)
+        , test_case_new(str_casecmp_b_bin_gt)
+        
+        , test_case_new(str_casecmp_nb_invalid_str_magic)
+        , test_case_new(str_casecmp_nb_invalid_cstr)
+        , test_case_new(str_casecmp_nb_str_lt)
+        , test_case_new(str_casecmp_nb_str_eq)
+        , test_case_new(str_casecmp_nb_str_gt)
+        , test_case_new(str_casecmp_nb_bin_lt)
+        , test_case_new(str_casecmp_nb_bin_eq)
+        , test_case_new(str_casecmp_nb_bin_gt)
+    );
+}
+
 test_suite_ct test_suite_str(void)
 {
     test_suite_ct suite;
@@ -3950,7 +5604,10 @@ test_suite_ct test_suite_str(void)
     || !test_suite_str_add_append(suite)
     || !test_suite_str_add_insert(suite)
     || !test_suite_str_add_cat(suite)
-    || !test_suite_str_add_remove_replace(suite))
+    || !test_suite_str_add_remove_replace(suite)
+    || !test_suite_str_add_sub(suite)
+    || !test_suite_str_add_mod(suite)
+    || !test_suite_str_add_cmp(suite))
         return NULL;
     
     return suite;

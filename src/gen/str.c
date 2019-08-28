@@ -84,6 +84,7 @@ static const error_info_st error_infos[] =
     , ERROR_INFO(E_STR_CONST, "Operation not supported on constant str.")
     , ERROR_INFO(E_STR_EMPTY, "Operation not supported on empty str.")
     , ERROR_INFO(E_STR_INVALID_CSTR, "Invalid str data.")
+    , ERROR_INFO(E_STR_INVALID_CALLBACK, "Invalid callback.")
     , ERROR_INFO(E_STR_INVALID_DATA, "Invalid binary data.")
     , ERROR_INFO(E_STR_INVALID_FORMAT, "Invalid format.")
     , ERROR_INFO(E_STR_INVALID_LENGTH, "Invalid str length.")
@@ -1888,4 +1889,442 @@ str_ct str_replace_b(str_ct str, const void *sub, size_t sublen, const void *nsu
     _str_set_flags(str, FLAG_BINARY);
     
     return str;
+}
+
+str_ct str_substr(str_const_ct str, ssize_t pos, size_t len)
+{
+    assert_str(str);
+    
+    if(pos < 0)
+        pos += _str_get_len(str);
+    
+    return_error_if_fail(pos >= 0 && pos+len <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
+    
+    if(str->type == DATA_STATIC)
+    {
+        if(_str_is_binary(str)) // no null terminator required
+            return error_propagate_ptr(str_new_bs(&str->data[pos], len));
+        
+        if(pos+len == str->len) // suffix can just be referenced
+            return error_propagate_ptr(str_new_sn((char*)&str->data[pos], len));
+    }
+    
+    if(_str_is_binary(str))
+        return error_propagate_ptr(str_dup_b(&str->data[pos], len));
+    else
+        return error_propagate_ptr(str_dup_cn((char*)&str->data[pos], len));
+}
+
+str_ct str_substr_r(str_const_ct str, ssize_t pos, size_t len)
+{
+    assert_str(str);
+    
+    if(pos < 0)
+        pos += _str_get_len(str);
+    
+    return_error_if_fail(pos >= 0 && pos+len <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
+    
+    if(!pos && len == str->len)
+        return error_propagate_ptr(str_ref(str));
+    else
+        return error_propagate_ptr(str_substr(str, pos, len));
+}
+
+str_ct str_slice(str_ct str, ssize_t pos, size_t len)
+{
+    unsigned char *data;
+    
+    assert_str(str);
+    return_error_if_pass(_str_is_const(str), E_STR_CONST, NULL);
+    
+    if(pos < 0)
+        pos += _str_get_len(str);
+    
+    return_error_if_fail(pos >= 0 && pos+len <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
+    
+    if(!pos && len == str->len)
+        return str;
+    
+    if(!len)
+        return str_set_l(str, "");
+    
+    data = str->data;
+    
+    if(str->type == DATA_STATIC)
+    {
+        if(pos+len == str->len) // suffix, just move start forward
+        {
+            str->data += len;
+            str->len = len;
+            return str;
+        }
+        
+        if(!str_resize(str, len))
+            return error_propagate(), NULL;
+    }
+    else
+        str->len = len;
+    
+    if(pos)
+        memmove(str->data, &data[pos], len);
+    
+    if(!_str_is_binary(str))
+        str->data[str->len] = '\0';
+    
+    return str;
+}
+
+str_ct str_cut(str_ct str, ssize_t pos, size_t len)
+{
+    unsigned char *data;
+    
+    assert_str(str);
+    return_error_if_pass(_str_is_const(str), E_STR_CONST, NULL);
+    
+    if(pos < 0)
+        pos += _str_get_len(str);
+    
+    return_error_if_fail(pos >= 0 && pos+len <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
+    
+    if(!len)
+        return str;
+    
+    data = str->data;
+    
+    if(str->type == DATA_STATIC)
+    {
+        if(!pos) // suffix left, just move start forward
+        {
+            str->data += len;
+            str->len -= len;
+            return str;
+        }
+        
+        if(!str_resize(str, str->len-len))
+            return error_propagate(), NULL;
+    }
+    else
+        str->len -= len;
+    
+    if(pos < str->len)
+        memmove(&str->data[pos], &data[pos+len], str->len - pos);
+    
+    if(!_str_is_binary(str))
+        str->data[str->len] = '\0';
+    
+    return str;
+}
+
+str_ct str_trim_pred(str_ct str, ctype_pred_cb pred)
+{
+    unsigned char *start, *end;
+    
+    assert_str(str);
+    return_error_if_fail(pred, E_STR_INVALID_CALLBACK, NULL);
+    
+    if(!(start = memwhile(str->data, _str_get_len(str), pred)))
+        return str_clear(str);
+    
+    if(!(end = memrwhile(start, str->len - (start-str->data), pred)))
+        abort();
+    
+    return error_propagate_ptr(str_slice(str, start - str->data, end+1 - start));
+}
+
+str_ct str_trim_blank(str_ct str)
+{
+    return error_propagate_ptr(str_trim_pred(str, isblank));
+}
+
+str_ct str_trim_space(str_ct str)
+{
+    return error_propagate_ptr(str_trim_pred(str, isspace));
+}
+
+str_ct str_transpose_f(str_ct str, ctype_transpose_cb trans)
+{
+    assert_str(str);
+    return_error_if_fail(trans, E_STR_INVALID_CALLBACK, NULL);
+    
+    if(!_str_get_writeable(str))
+        return error_propagate(), NULL;
+    
+    if(_str_is_binary(str))
+        memtranspose_f(str->data, _str_get_len(str), trans);
+    else
+        strtranspose_f((char*)str->data, trans);
+    
+    return str;
+}
+
+str_ct str_transpose_lower(str_ct str)
+{
+    return error_propagate_ptr(str_transpose_f(str, tolower));
+}
+
+str_ct str_transpose_upper(str_ct str)
+{
+    return error_propagate_ptr(str_transpose_f(str, toupper));
+}
+
+str_ct str_translate(str_ct str, ctype_translate_cb trans)
+{
+    size_t len;
+    void *data;
+    
+    assert_str(str);
+    return_error_if_fail(trans, E_STR_INVALID_CALLBACK, NULL);
+    
+    if(_str_is_binary(str))
+    {
+        len = strtranslate_mem(NULL, str->data, _str_get_len(str), trans);
+        
+        if(!(data = calloc(1, len+1)))
+            return error_set_errno(calloc), NULL;
+        
+        strtranslate_mem(data, str->data, str->len, trans);
+        
+        if(!str_set_hn(str, data, len))
+            return error_propagate(), free(data), NULL;
+    }
+    else
+    {
+        len = strtranslate(NULL, (char*)str->data, trans);
+        
+        if(!(data = calloc(1, len+1)))
+            return error_set_errno(calloc), NULL;
+        
+        strtranslate(data, (char*)str->data, trans);
+        
+        if(!str_set_hn(str, data, len))
+            return error_propagate(), free(data), NULL;
+    }
+    
+    return str;
+}
+
+str_ct str_translate_b(str_ct str, ctype_translate_cb trans)
+{
+    if(!str_translate(str, trans))
+        return error_propagate(), NULL;
+    
+    _str_set_flags(str, FLAG_BINARY);
+    
+    return str;
+}
+
+str_ct str_dup_translate(str_ct str, ctype_translate_cb trans)
+{
+    str_ct nstr;
+    size_t len;
+    
+    assert_str(str);
+    return_error_if_fail(trans, E_STR_INVALID_CALLBACK, NULL);
+    
+    if(_str_is_binary(str))
+    {
+        len = strtranslate_mem(NULL, str->data, _str_get_len(str), trans);
+        
+        if(!(nstr = str_prepare(len)))
+            return error_propagate(), NULL;
+        
+        strtranslate_mem((char*)nstr->data, str->data, str->len, trans);
+    }
+    else
+    {
+        len = strtranslate(NULL, (char*)str->data, trans);
+        
+        if(!(nstr = str_prepare(len)))
+            return error_propagate(), NULL;
+        
+        strtranslate((char*)nstr->data, (char*)str->data, trans);
+    }
+    
+    return nstr;
+}
+
+str_ct str_dup_translate_b(str_ct str, ctype_translate_cb trans)
+{
+    if(!(str = str_dup_translate(str, trans)))
+        return error_propagate(), NULL;
+    
+    _str_set_flags(str, FLAG_BINARY);
+    
+    return str;
+}
+
+str_ct str_escape(str_ct str)
+{
+    return error_propagate_ptr(str_translate(str, translate_escape));
+}
+
+str_ct str_unescape(str_ct str)
+{
+    return error_propagate_ptr(str_translate(str, translate_unescape));
+}
+
+str_ct str_unescape_b(str_ct str)
+{
+    return error_propagate_ptr(str_translate_b(str, translate_unescape));
+}
+
+str_ct str_dup_escape(str_ct str)
+{
+    return error_propagate_ptr(str_dup_translate(str, translate_escape));
+}
+
+str_ct str_dup_unescape(str_ct str)
+{
+    return error_propagate_ptr(str_dup_translate(str, translate_unescape));
+}
+
+str_ct str_dup_unescape_b(str_ct str)
+{
+    return error_propagate_ptr(str_dup_translate_b(str, translate_unescape));
+}
+
+int str_cmp(str_const_ct str1, str_const_ct str2)
+{
+    size_t len1, len2;
+    int rc;
+    
+    assert_str(str1);
+    assert_str(str2);
+    
+    if(!_str_is_binary(str1) && !_str_is_binary(str2))
+        return strcmp((char*)str1->data, (char*)str2->data);
+    
+    len1 = _str_get_len(str1);
+    len2 = _str_get_len(str2);
+    rc = memcmp(str1->data, str2->data, MIN(len1, len2));
+    
+    return rc ? rc : len1 > len2 ? 1 : len1 < len2 ? -1 : 0;
+}
+
+int str_cmp_n(str_const_ct str1, str_const_ct str2, size_t n)
+{
+    size_t len1, len2;
+    int rc;
+    
+    assert_str(str1);
+    assert_str(str2);
+    
+    if(!n)
+        return 0;
+    
+    if(!_str_is_binary(str1) && !_str_is_binary(str2))
+        return strncmp((char*)str1->data, (char*)str2->data, n);
+    
+    len1 = _str_get_len(str1);
+    len2 = _str_get_len(str2);
+    
+    if(len1 >= n && len2 >= n)
+        return memcmp(str1->data, str2->data, n);
+    
+    rc = memcmp(str1->data, str2->data, MIN(len1, len2));
+    
+    return rc ? rc : len1 > len2 ? 1 : len1 < len2 ? -1 : 0;
+}
+
+int str_cmp_c(str_const_ct str, const char *cstr)
+{
+    return str_cmp(str, tstr_new_s(cstr));
+}
+
+int str_cmp_cn(str_const_ct str, const char *cstr, size_t len)
+{
+    return str_cmp(str, tstr_new_sn(cstr, len));
+}
+
+int str_cmp_nc(str_const_ct str, const char *cstr, size_t n)
+{
+    return str_cmp_n(str, tstr_new_s(cstr), n);
+}
+
+int str_cmp_ncn(str_const_ct str, const char *cstr, size_t len, size_t n)
+{
+    return str_cmp_n(str, tstr_new_sn(cstr, len), n);
+}
+
+int str_cmp_b(str_const_ct str, const void *mem, size_t size)
+{
+    return str_cmp(str, tstr_new_bs(mem, size));
+}
+
+int str_cmp_nb(str_const_ct str, const void *mem, size_t n)
+{
+    return str_cmp_n(str, tstr_new_bs(mem, n), n);
+}
+
+int str_casecmp(str_const_ct str1, str_const_ct str2)
+{
+    size_t len1, len2;
+    int rc;
+    
+    assert_str(str1);
+    assert_str(str2);
+    
+    if(!_str_is_binary(str1) && !_str_is_binary(str2))
+        return strcasecmp((char*)str1->data, (char*)str2->data);
+    
+    len1 = _str_get_len(str1);
+    len2 = _str_get_len(str2);
+    rc = memcasecmp(str1->data, str2->data, MIN(len1, len2));
+    
+    return rc ? rc : len1 > len2 ? 1 : len1 < len2 ? -1 : 0;
+}
+
+int str_casecmp_n(str_const_ct str1, str_const_ct str2, size_t n)
+{
+    size_t len1, len2;
+    int rc;
+    
+    assert_str(str1);
+    assert_str(str2);
+    
+    if(!n)
+        return 0;
+    
+    if(!_str_is_binary(str1) && !_str_is_binary(str2))
+        return strncasecmp((char*)str1->data, (char*)str2->data, n);
+    
+    len1 = _str_get_len(str1);
+    len2 = _str_get_len(str2);
+    
+    if(len1 >= n && len2 >= n)
+        return memcasecmp(str1->data, str2->data, n);
+    
+    rc = memcasecmp(str1->data, str2->data, MIN(len1, len2));
+    
+    return rc ? rc : len1 > len2 ? 1 : len1 < len2 ? -1 : 0;
+}
+
+int str_casecmp_c(str_const_ct str, const char *cstr)
+{
+    return str_casecmp(str, tstr_new_s(cstr));
+}
+
+int str_casecmp_cn(str_const_ct str, const char *cstr, size_t len)
+{
+    return str_casecmp(str, tstr_new_sn(cstr, len));
+}
+
+int str_casecmp_nc(str_const_ct str, const char *cstr, size_t n)
+{
+    return str_casecmp_n(str, tstr_new_s(cstr), n);
+}
+
+int str_casecmp_ncn(str_const_ct str, const char *cstr, size_t len, size_t n)
+{
+    return str_casecmp_n(str, tstr_new_sn(cstr, len), n);
+}
+
+int str_casecmp_b(str_const_ct str, const void *mem, size_t size)
+{
+    return str_casecmp(str, tstr_new_bs(mem, size));
+}
+
+int str_casecmp_nb(str_const_ct str, const void *mem, size_t n)
+{
+    return str_casecmp_n(str, tstr_new_bs(mem, n), n);
 }
