@@ -114,11 +114,6 @@
     #define BA(value, n) (((unsigned char*)(value)) + (n))
 #endif
 
-// cast value to type, eg value or function pointer to void*
-#define CAST(type, value) __extension__({ \
-    assert(sizeof(type) >= sizeof(intptr_t)); \
-    (type)(intptr_t)(value); })
-
 // return if condition true
 #define return_if_pass(condition) do { \
     if((condition)) \
@@ -172,6 +167,9 @@
     // does nothing in production mode
     #define DEBUG(x)
     
+    // does nothing in production mode
+    #define DEBUG_MEMBER(m)
+    
     // insert production value
     #define PROD_DEBUG(p, d) p
     
@@ -179,6 +177,9 @@
     
     // insert x in debug mode
     #define DEBUG(x) x
+    
+    // insert struct member m in debug mode
+    #define DEBUG_MEMBER(m) m;
     
     // insert debug value
     #define PROD_DEBUG(p, d) d
