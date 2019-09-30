@@ -27,6 +27,21 @@
 #include <errno.h>
 
 
+#ifdef _WIN32
+char *strndup(const char *str, size_t n)
+{
+    char *str2;
+    
+    if(!(str2 = malloc(n+1)))
+        return NULL;
+    
+    strncpy(str2, str, n);
+    str2[n] = '\0';
+    
+    return str2;
+}
+#endif
+
 void *memdup(const void *mem, size_t size)
 {
     void *ptr;

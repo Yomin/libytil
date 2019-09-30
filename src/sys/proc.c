@@ -39,15 +39,20 @@ static const error_info_st error_infos[] =
 {
       ERROR_INFO(E_PROC_INVALID_TITLE, "Invalid proc title.")
     , ERROR_INFO(E_PROC_NO_SPACE, "Not enough space scavenged.")
+    , ERROR_INFO(E_PROC_NOT_AVAILABLE, "Function not available.")
     , ERROR_INFO(E_PROC_NOT_INITIALIZED, "proc title is not initalized.")
 };
 
+#ifndef _WIN32
 static proc_title_st   *proc_title;
 extern char           **environ;
-
+#endif
 
 int proc_init_title(int argc, char *argv[])
 {
+#ifdef _WIN32
+    return error_set(E_PROC_NOT_AVAILABLE), -1;
+#else
     proc_title_st *title;
     int envc, i;
     
@@ -83,10 +88,12 @@ int proc_init_title(int argc, char *argv[])
     proc_title = title;
     
     return 0;
+#endif
 }
 
 void proc_free_title(void)
 {
+#ifndef _WIN32
     if(proc_title)
     {
         if(proc_title->ref > 1)
@@ -98,6 +105,7 @@ void proc_free_title(void)
             proc_title = NULL;
         }
     }
+#endif
 }
 
 int proc_set_title(const char *fmt, ...)
@@ -114,6 +122,9 @@ int proc_set_title(const char *fmt, ...)
 
 int proc_set_title_v(const char *fmt, va_list ap)
 {
+#ifdef _WIN32
+    return error_set(E_PROC_NOT_AVAILABLE), -1;
+#else
     return_error_if_fail(proc_title, E_PROC_NOT_INITIALIZED, -1);
     return_error_if_fail(fmt, E_PROC_INVALID_TITLE, -1);
     
@@ -121,6 +132,7 @@ int proc_set_title_v(const char *fmt, va_list ap)
     proc_title->title[proc_title->size-1] = '\0';
     
     return 0;
+#endif
 }
 
 int proc_append_title(const char *fmt, ...)
@@ -137,6 +149,9 @@ int proc_append_title(const char *fmt, ...)
 
 int proc_append_title_v(const char *fmt, va_list ap)
 {
+#ifdef _WIN32
+    return error_set(E_PROC_NOT_AVAILABLE), -1;
+#else
     char *title;
     size_t size;
     
@@ -151,4 +166,5 @@ int proc_append_title_v(const char *fmt, va_list ap)
     title[size-1] = '\0';
     
     return 0;
+#endif
 }

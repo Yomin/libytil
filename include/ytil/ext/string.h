@@ -32,8 +32,10 @@
 
 // duplicate string (system provided)
 // char *strdup(const char *str);
-// duplicate first n chars of str (system provided)
-// char *strndup(const char *str, size_t n);
+#ifdef _WIN32
+// duplicate first n chars of str
+char *strndup(const char *str, size_t n);
+#endif
 // duplicate memory, no deep copy
 void *memdup(const void *mem, size_t size);
 

@@ -23,8 +23,8 @@
 #ifndef __YTIL_EXT_STDIO_H__
 #define __YTIL_EXT_STDIO_H__
 
+#include <ytil/ext/alloca.h>
 #include <stdio.h>
-#include <alloca.h>
 #include <stdarg.h>
 
 // format string into stack allocated buffer

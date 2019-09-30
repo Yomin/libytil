@@ -20,33 +20,37 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_SYS_PROC_H__
-#define __YTIL_SYS_PROC_H__
+#ifndef __YTIL_BITS_H__
+#define __YTIL_BITS_H__
 
-#include <stdarg.h>
-
-typedef enum proc_error
-{
-      E_PROC_INVALID_TITLE
-    , E_PROC_NO_SPACE
-    , E_PROC_NOT_AVAILABLE
-    , E_PROC_NOT_INITIALIZED
-} proc_error_id;
+#include <ytil/ext/endian.h>
 
 
-// initialize proc title by scavenging argv and environ
-int proc_init_title(int argc, char *argv[]);
-// free proc title, bricks argv and environ
-void proc_free_title(void);
+// bit value, lshift 1 'pos' times
+#define BV(pos) \
+    (1 << (pos))
 
-// set process title
-int proc_set_title(const char *fmt, ...) __attribute__((format (gnu_printf, 1, 2)));
-// set process title, va_list version
-int proc_set_title_v(const char *fmt, va_list ap) __attribute__((format (gnu_printf, 1, 0)));
+// bit mask value, lshift 'mask' 'pos' times
+#define BMV(mask, pos) \
+    ((m) << (pos))
 
-// append to original process title
-int proc_append_title(const char *fmt, ...) __attribute__((format (gnu_printf, 1, 2)));
-// append to original process title, va_list version
-int proc_append_title_v(const char *fmt, va_list ap) __attribute__((format (gnu_printf, 1, 0)));
+// bit mask of n ones
+#define BM(n) \
+    (BV(n)-1)
+
+// bit get, get bit at 'pos'
+#define BG(value, pos) \
+    (((value) >> (pos)) & 1)
+
+// bit mask get, get mask at 'pos'
+#define BMG(value, mask, pos) \
+    (((value) >> (pos)) & (mask))
+
+// byte address, get pointer to nth byte of endian dependent value
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+    #define BA(value, n) (((unsigned char*)(value)) + (sizeof(*(value))-(n)-1))
+#elif __BYTE_ORDER == __BIG_ENDIAN
+    #define BA(value, n) (((unsigned char*)(value)) + (n))
+#endif
 
 #endif

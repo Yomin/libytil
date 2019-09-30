@@ -25,7 +25,6 @@
 
 #include <ytil/gen/error.h>
 #include <stdlib.h>
-#include <endian.h>
 #include <assert.h>
 
 
@@ -86,33 +85,6 @@
 // suppress compiler warning for unused variable
 #define UNUSED(x) \
     (void)(x)
-
-// bit value, lshift 1 'pos' times
-#define BV(pos) \
-    (1 << (pos))
-
-// bit mask value, lshift 'mask' 'pos' times
-#define BMV(mask, pos) \
-    ((m) << (pos))
-
-// bit mask of n ones
-#define BM(n) \
-    (BV(n)-1)
-
-// bit get, get bit at 'pos'
-#define BG(value, pos) \
-    (((value) >> (pos)) & 1)
-
-// bit mask get, get mask at 'pos'
-#define BMG(value, mask, pos) \
-    (((value) >> (pos)) & (mask))
-
-// byte address, get pointer to nth byte of endian dependent value
-#if __BYTE_ORDER == __LITTLE_ENDIAN
-    #define BA(value, n) (((unsigned char*)(value)) + (sizeof(*(value))-(n)-1))
-#elif __BYTE_ORDER == __BIG_ENDIAN
-    #define BA(value, n) (((unsigned char*)(value)) + (n))
-#endif
 
 // return if condition true
 #define return_if_pass(condition) do { \

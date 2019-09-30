@@ -24,11 +24,11 @@
 #define __YTIL_GEN_STR_H__
 
 #include <ytil/ext/ctype.h>
+#include <ytil/ext/alloca.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdarg.h>
 #include <string.h>
-#include <alloca.h>
 #include <sys/types.h>
 
 

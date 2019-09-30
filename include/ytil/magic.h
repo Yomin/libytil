@@ -23,8 +23,8 @@
 #ifndef __YTIL_MAGIC_H__
 #define __YTIL_MAGIC_H__
 
+#include <ytil/ext/endian.h>
 #include <stdlib.h>
-#include <endian.h>
 #include <assert.h>
 
 
@@ -76,7 +76,7 @@
 // define magic value with 3 chars
 #if __BYTE_ORDER == __LITTLE_ENDIAN
     #define define_magic(a, b, c)   ((c << 24)|(b << 16)|(a << 8)|'*')
-#else
+#elif __BYTE_ORDER == __BIG_ENDIAN
     #define define_magic(a, b, c)   (('*' << 24)|(a << 16)|(b << 8)|c)
 #endif
 

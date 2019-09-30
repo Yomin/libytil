@@ -20,33 +20,15 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_SYS_PROC_H__
-#define __YTIL_SYS_PROC_H__
+#ifndef __YTIL_EXT_ALLOCA_H__
+#define __YTIL_EXT_ALLOCA_H__
 
-#include <stdarg.h>
-
-typedef enum proc_error
-{
-      E_PROC_INVALID_TITLE
-    , E_PROC_NO_SPACE
-    , E_PROC_NOT_AVAILABLE
-    , E_PROC_NOT_INITIALIZED
-} proc_error_id;
-
-
-// initialize proc title by scavenging argv and environ
-int proc_init_title(int argc, char *argv[]);
-// free proc title, bricks argv and environ
-void proc_free_title(void);
-
-// set process title
-int proc_set_title(const char *fmt, ...) __attribute__((format (gnu_printf, 1, 2)));
-// set process title, va_list version
-int proc_set_title_v(const char *fmt, va_list ap) __attribute__((format (gnu_printf, 1, 0)));
-
-// append to original process title
-int proc_append_title(const char *fmt, ...) __attribute__((format (gnu_printf, 1, 2)));
-// append to original process title, va_list version
-int proc_append_title_v(const char *fmt, va_list ap) __attribute__((format (gnu_printf, 1, 0)));
+#if defined(__linux__)
+#   include <alloca.h>
+#elif defined(_WIN32)
+#   include <malloc.h>
+#else
+#   error unsupported platform
+#endif
 
 #endif
