@@ -29,9 +29,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ioctl.h>
 
+#ifndef _WIN32
+#   include <sys/socket.h>
+#endif
 
 typedef struct test_com
 {
@@ -51,6 +52,7 @@ static const error_info_st error_infos[] =
     , ERROR_INFO(E_TEST_COM_INVALID_POS_TYPE, "Invalid position type.")
     , ERROR_INFO(E_TEST_COM_INVALID_TIMESTAMP, "Invalid timestamp.")
     , ERROR_INFO(E_TEST_COM_INVALID_TEXT_FORMAT, "Invalid text message format.")
+    , ERROR_INFO(E_TEST_COM_NOT_AVAILABLE, "Function not available.")
     , ERROR_INFO(E_TEST_COM_SHUTDOWN, "Test case peer shutdown.")
     , ERROR_INFO(E_TEST_COM_WOULD_BLOCK, "Socket would block.")
 };
@@ -65,6 +67,10 @@ test_com_ct test_com_new(test_com_msg_cb cb, void *ctx)
     
     com->cb = cb;
     com->ctx = ctx;
+    
+#ifdef _WIN32
+    com->shortcut = true;
+#endif
     
     return com;
 }
@@ -108,13 +114,20 @@ int test_com_get_socket(test_com_ct com)
     return com->sock;
 }
 
-void test_com_enable_shortcut(test_com_ct com, bool shortcut)
+int test_com_enable_shortcut(test_com_ct com, bool shortcut)
 {
     assert(com);
     
+#ifdef _WIN32
+    return_error_if_fail(shortcut, E_TEST_COM_NOT_AVAILABLE, -1);
+#endif
+    
     com->shortcut = shortcut;
+    
+    return 0;
 }
 
+#ifndef _WIN32
 static int test_com_write(test_com_ct com, void *vdata, size_t size)
 {
     char *data = vdata;
@@ -153,6 +166,7 @@ static int test_com_send(test_com_ct com, test_com_msg_id type, size_t n, ...)
     
     return 0;
 }
+#endif // !_WIN32
 
 int test_com_send_status(test_com_ct com, test_status_id status)
 {
@@ -161,10 +175,12 @@ int test_com_send_status(test_com_ct com, test_status_id status)
     assert(com);
     return_error_if_fail(status < TEST_STATUSES, E_TEST_COM_INVALID_STATUS_TYPE, -1);
     
-    if(com->shortcut)
-        return error_push_int(com->cb(TEST_COM_STATUS, &msg, com->ctx));
+#ifndef _WIN32
+    if(!com->shortcut)
+        return error_propagate_int(test_com_send(com, TEST_COM_STATUS, 1, &status, sizeof(test_status_id)));
+#endif
     
-    return error_propagate_int(test_com_send(com, TEST_COM_STATUS, 1, &status, sizeof(test_status_id)));
+    return error_push_int(com->cb(TEST_COM_STATUS, &msg, com->ctx));
 }
 
 int test_com_send_result(test_com_ct com, test_result_id result)
@@ -174,10 +190,12 @@ int test_com_send_result(test_com_ct com, test_result_id result)
     assert(com);
     return_error_if_fail(result < TEST_RESULTS, E_TEST_COM_INVALID_RESULT_TYPE, -1);
     
-    if(com->shortcut)
-        return error_push_int(com->cb(TEST_COM_RESULT, &msg, com->ctx));
+#ifndef _WIN32
+    if(!com->shortcut)
+        return error_propagate_int(test_com_send(com, TEST_COM_RESULT, 1, &result, sizeof(test_result_id)));
+#endif
     
-    return error_propagate_int(test_com_send(com, TEST_COM_RESULT, 1, &result, sizeof(test_result_id)));
+    return error_push_int(com->cb(TEST_COM_RESULT, &msg, com->ctx));
 }
 
 int test_com_send_duration(test_com_ct com, clockid_t clock, timespec_st *start)
@@ -191,39 +209,46 @@ int test_com_send_duration(test_com_ct com, clockid_t clock, timespec_st *start)
     clock_gettime(clock, &now);
     msg.duration = time_ts_diff_milli(start, &now);
     
-    if(com->shortcut)
-        return error_push_int(com->cb(TEST_COM_DURATION, &msg, com->ctx));
+#ifndef _WIN32
+    if(!com->shortcut)
+        return error_propagate_int(test_com_send(com, TEST_COM_DURATION, 1, &msg.duration, sizeof(size_t)));
+#endif
     
-    return error_propagate_int(test_com_send(com, TEST_COM_DURATION, 1, &msg.duration, sizeof(size_t)));
+    return error_push_int(com->cb(TEST_COM_DURATION, &msg, com->ctx));
 }
 
 int test_com_send_position(test_com_ct com, test_pos_id type, const char *file, size_t line)
 {
     test_com_msg_un msg = { .pos.type = type, .pos.file = (char*)file, .pos.line = line };
-    size_t len;
     
     assert(com);
     return_error_if_fail(file && type < TEST_POS_TYPES, E_TEST_COM_INVALID_POS_TYPE, -1);
     
-    if(com->shortcut)
-        return error_push_int(com->cb(TEST_COM_POS, &msg, com->ctx));
+#ifndef _WIN32
+    if(!com->shortcut)
+    {
+        size_t len = strlen(file) +1;
+        
+        return error_propagate_int(test_com_send(com, TEST_COM_POS, 4,
+            &type, sizeof(test_pos_id),
+            &len, sizeof(size_t), file, len,
+            &line, sizeof(size_t)));
+    }
+#endif
     
-    len = strlen(file) +1;
-    
-    return error_propagate_int(test_com_send(com, TEST_COM_POS, 4,
-        &type, sizeof(test_pos_id),
-        &len, sizeof(size_t), file, len,
-        &line, sizeof(size_t)));
+    return error_push_int(com->cb(TEST_COM_POS, &msg, com->ctx));
 }
 
 int test_com_send_pass(test_com_ct com)
 {
     assert(com);
     
-    if(com->shortcut)
-        return error_push_int(com->cb(TEST_COM_PASS, NULL, com->ctx));
+#ifndef _WIN32
+    if(!com->shortcut)
+        return error_propagate_int(test_com_send(com, TEST_COM_PASS, 0));
+#endif
     
-    return error_propagate_int(test_com_send(com, TEST_COM_PASS, 0));
+    return error_push_int(com->cb(TEST_COM_PASS, NULL, com->ctx));
 }
 
 int test_com_send_msg(test_com_ct com, test_msg_id type, const char *fmt, ...)
@@ -255,13 +280,16 @@ int test_com_send_msg_v(test_com_ct com, test_msg_id type, const char *fmt, va_l
     
     va_end(ap2);
     
-    if(com->shortcut)
-        return error_push_int(com->cb(TEST_COM_MSG, &msg, com->ctx));
+#ifndef _WIN32
+    if(!com->shortcut)
+        return error_propagate_int(test_com_send(com, TEST_COM_MSG, 3,
+            &type, sizeof(test_msg_id), &len, sizeof(size_t), msg.msg.text, len));
+#endif
     
-    return error_propagate_int(test_com_send(com, TEST_COM_MSG, 3,
-        &type, sizeof(test_msg_id), &len, sizeof(size_t), msg.msg.text, len));
+    return error_push_int(com->cb(TEST_COM_MSG, &msg, com->ctx));
 }
 
+#ifndef _WIN32
 static char *test_com_alloc(test_com_ct com, size_t size)
 {
     size_t cap;
@@ -438,3 +466,4 @@ int test_com_recv(test_com_ct com)
         else
             return error_propagate(), -1;
 }
+#endif // !_WIN32

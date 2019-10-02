@@ -38,6 +38,7 @@ typedef enum test_com_error
     , E_TEST_COM_INVALID_POS_TYPE
     , E_TEST_COM_INVALID_TIMESTAMP
     , E_TEST_COM_INVALID_TEXT_FORMAT
+    , E_TEST_COM_NOT_AVAILABLE
     , E_TEST_COM_SHUTDOWN
     , E_TEST_COM_WOULD_BLOCK
 } test_com_error_id;
@@ -75,7 +76,7 @@ void        test_com_reset(test_com_ct com);
 void test_com_set_socket(test_com_ct com, int sock);
 int  test_com_get_socket(test_com_ct com);
 
-void test_com_enable_shortcut(test_com_ct com, bool shortcut);
+int test_com_enable_shortcut(test_com_ct com, bool shortcut);
 
 int test_com_send_status(test_com_ct com, test_status_id status);
 int test_com_send_result(test_com_ct com, test_result_id result);

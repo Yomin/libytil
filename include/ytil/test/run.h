@@ -34,6 +34,7 @@ typedef enum test_run_error
     , E_TEST_RUN_INVALID_OPTION
     , E_TEST_RUN_MISSING_ARG
     , E_TEST_RUN_MALFORMED_ARG
+    , E_TEST_RUN_NOT_AVAILABLE
     , E_TEST_RUN_TRACE_CHECK
 } test_run_error_id;
 
@@ -44,7 +45,7 @@ test_run_ct test_run_new(void);
 test_run_ct test_run_new_with_args(int argc, char *argv[]);
 void        test_run_free(test_run_ct run);
 
-void test_run_enable_fork(test_run_ct run, bool fork);
+int test_run_enable_fork(test_run_ct run, bool fork);
 
 int test_run_add_filter(test_run_ct run, const char *filter);
 

@@ -26,21 +26,24 @@
 #include <ytil/test/ctx.h>
 #include <ytil/con/vec.h>
 #include <ytil/sys/proc.h>
+#include <ytil/ext/string.h>
 #include <ytil/def.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <wait.h>
 #include <fcntl.h>
-#include <poll.h>
-#include <string.h>
 #include <errno.h>
 #include <getopt.h>
 #include <limits.h>
 #include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/ptrace.h>
-#include <sys/resource.h>
+
+#ifndef _WIN32
+#   include <wait.h>
+#   include <poll.h>
+#   include <sys/socket.h>
+#   include <sys/ptrace.h>
+#   include <sys/resource.h>
+#endif
 
 #define COLOR_DEFAULT   "\033[0m"
 #define COLOR_RED       "\033[1;31;40m"
@@ -114,6 +117,7 @@ static const error_info_st error_infos[] =
     , ERROR_INFO(E_TEST_RUN_INVALID_OPTION, "Invalid option.")
     , ERROR_INFO(E_TEST_RUN_MISSING_ARG, "Missing argument.")
     , ERROR_INFO(E_TEST_RUN_MALFORMED_ARG, "Malformed argument.")
+    , ERROR_INFO(E_TEST_RUN_NOT_AVAILABLE, "Function not available.")
     , ERROR_INFO(E_TEST_RUN_TRACE_CHECK, "Trace check failed.")
 };
 
@@ -161,14 +165,12 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
 {
     int opt;
     
-    if(proc_init_title(argc, argv))
+    if(proc_init_title(argc, argv) && !error_check(E_PROC_NOT_AVAILABLE))
         fperror(run->fp, "failed to init proc title");
     
-    if(test_run_get_clock(&run->control_clock,
-        CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC, CLOCK_REALTIME)
-    || test_run_get_clock(&run->worker_clock,
-        CLOCK_PROCESS_CPUTIME_ID, CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC, CLOCK_REALTIME))
-            return error_propagate(), fperror(run->fp, "failed to get clock"), -1;
+    if(test_run_get_clock(&run->control_clock, CLOCK_MONOTONIC, CLOCK_REALTIME)
+    || test_run_get_clock(&run->worker_clock, CLOCK_PROCESS_CPUTIME_ID, CLOCK_MONOTONIC, CLOCK_REALTIME))
+        return error_propagate(), fperror(run->fp, "failed to get clock"), -1;
     
     if(argc <= 1)
         return 0;
@@ -181,7 +183,8 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
             return 1;
         case 'f':
         case 'F':
-            test_run_enable_fork(run, opt == 'f');
+            if(test_run_enable_fork(run, opt == 'f'))
+                return error_propagate(), fprintf(run->fp, "fork not available\n"), -1;
             break;
         case 'c':
         case 'C':
@@ -250,9 +253,15 @@ test_run_ct test_run_new_with_args(int argc, char *argv[])
         return error_set_errno(calloc), perror("failed to init test run"), NULL;
     
     run->fp = stdout;
-    run->fork = true;
     run->skip = true;
+    
+#ifdef _WIN32
+    run->fork = false;
+    run->check_traced = false;
+#else
+    run->fork = true;
     run->check_traced = true;
+#endif
     
     if(test_run_config(run, argc, argv))
         return error_propagate(), test_run_free(run), NULL;
@@ -308,12 +317,18 @@ void test_run_free(test_run_ct run)
     free(run);
 }
 
-void test_run_enable_fork(test_run_ct run, bool fork)
+int test_run_enable_fork(test_run_ct run, bool fork)
 {
-    return_if_fail(run);
+    return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
+    
+#ifdef _WIN32
+    return_error_if_fail(!fork, E_TEST_RUN_NOT_AVAILABLE, -1);
+#endif
     
     run->fork = fork;
     run->check_traced = false;
+    
+    return 0;
 }
 
 int test_run_add_filter(test_run_ct run, const char *text)
@@ -385,6 +400,9 @@ int test_run_add_filter(test_run_ct run, const char *text)
 
 static int test_run_check_traced(test_run_ct run)
 {
+#ifdef _WIN32
+    return TEST_PARENT_NOT_TRACED;
+#else
     pid_t child, parent;
     int status, rc;
     
@@ -438,10 +456,12 @@ static int test_run_check_traced(test_run_ct run)
         
         _exit(rc);
     }
+#endif
 }
 
 static int test_run_set_core_dump(test_run_ct run)
 {
+#ifndef _WIN32
     struct rlimit limit;
     
     if(getrlimit(RLIMIT_CORE, &limit))
@@ -462,6 +482,7 @@ static int test_run_set_core_dump(test_run_ct run)
             return error_set_errno(setrlimit), fperror(run->fp, "failed to enable core dump"), -1;
     }
     
+#endif
     return 0;
 }
 
@@ -645,10 +666,12 @@ static int test_run_worker(test_run_ct run, test_case_const_ct tcase)
     test_case_cb fun;
     void *state = NULL;
     jmp_buf jump;
-    int null;
     
+#ifndef _WIN32
     if(run->fork)
     {
+        int null;
+        
         // put test process into own process group
         // so kill(0, SIGKILL) wont kill the runner
         setpgid(0, 0);
@@ -664,6 +687,7 @@ static int test_run_worker(test_run_ct run, test_case_const_ct tcase)
         }
     }
     else
+#endif
     {
         ctx.jump = &jump;
         
@@ -807,6 +831,7 @@ static void test_run_eval_status(test_run_ct run, test_case_const_ct tcase, bool
 {
     if(test_state_get_result(run->state) == TEST_RESULT_SKIP)
         ; // skip signal/rc inspection
+#ifndef _WIN32
     else if(signaled)
     {
         if(!test_case_expects_signal(tcase))
@@ -825,8 +850,10 @@ static void test_run_eval_status(test_run_ct run, test_case_const_ct tcase, bool
                 test_case_get_signal(tcase), strsignal(test_case_get_signal(tcase)));
         }
     }
+#endif
     else if(exited)
     {
+#ifndef _WIN32
         if(test_case_expects_signal(tcase))
         {
             test_state_set_result(run->state, TEST_RESULT_FAIL);
@@ -834,7 +861,9 @@ static void test_run_eval_status(test_run_ct run, test_case_const_ct tcase, bool
                 "exit %i, expected signal %i (%s)",
                 rc, test_case_get_signal(tcase), strsignal(test_case_get_signal(tcase)));
         }
-        else if(test_case_expects_exit(tcase) && rc != test_case_get_exit(tcase))
+        else
+#endif
+        if(test_case_expects_exit(tcase) && rc != test_case_get_exit(tcase))
         {
             test_state_set_result(run->state, TEST_RESULT_FAIL);
             test_state_add_msg_f(run->state, TEST_MSG_ERROR,
@@ -848,6 +877,7 @@ static void test_run_eval_status(test_run_ct run, test_case_const_ct tcase, bool
     test_run_eval(run, tcase);
 }
 
+#ifndef _WIN32
 static int test_run_collect(test_run_ct run, test_case_const_ct tcase, pid_t worker)
 {
     int status;
@@ -942,11 +972,11 @@ static int test_run_control(test_run_ct run, test_case_const_ct tcase, pid_t wor
     
     return 0;
 }
+#endif // !_WIN32
 
 static int test_run_case(test_run_ct run, test_case_const_ct tcase)
 {
-    pid_t pid;
-    int sv[2], rc = 0;
+    int rc = 0;
     
     if(!test_run_filter(run, TEST_ENTRY_CASE, test_case_get_name(tcase)))
         return 0;
@@ -967,8 +997,12 @@ static int test_run_case(test_run_ct run, test_case_const_ct tcase)
         if(rc >= 0)
             test_run_eval_status(run, tcase, false, 0, true, rc);
     }
+#ifndef _WIN32
     else
     {
+        pid_t pid;
+        int sv[2];
+        
         if(socketpair(AF_UNIX, SOCK_STREAM|SOCK_NONBLOCK, 0, sv) == -1)
             return error_set_errno(socketpair), tcperror(run, tcase, "failed to init com"), -1;
         
@@ -992,6 +1026,7 @@ static int test_run_case(test_run_ct run, test_case_const_ct tcase)
             rc = test_run_control(run, tcase, pid);
         }
     }
+#endif
     
     test_state_reset(run->state);
     test_com_reset(run->com);

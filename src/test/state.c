@@ -23,8 +23,8 @@
 #include <ytil/test/state.h>
 #include <ytil/def.h>
 #include <ytil/ext/stdio.h>
+#include <ytil/ext/string.h>
 #include <ytil/con/vec.h>
-#include <string.h>
 
 
 typedef struct test_state
