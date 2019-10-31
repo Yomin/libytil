@@ -44,6 +44,7 @@ typedef enum str_error
     , E_STR_INVALID_LENGTH
     , E_STR_OUT_OF_BOUNDS
     , E_STR_UNREFERENCED
+    , E_STR_VOLATILE
 } str_eror_id;
 
 
@@ -66,8 +67,10 @@ bool str_is_empty(str_const_ct str);
 bool str_is_transient(str_const_ct str);
 // check if str head is redirected (str_ref transient-heap str)
 bool str_is_redirected(str_const_ct str);
-// check if str is const resp. not to be modified
+// check if str is const i.e. not to be modified
 bool str_is_const(str_const_ct str);
+// check if str is volatile i.e. will be modified by other reference holders
+bool str_is_volatile(str_const_ct str);
 // check if str is binary (may contain control chars and/or no null terminator)
 bool str_is_binary(str_const_ct str);
 
@@ -78,10 +81,13 @@ bool str_data_is_static(str_const_ct str);
 // check if str data is transient
 bool str_data_is_transient(str_const_ct str);
 
-// set/unset const flag (if str is not to be modified)
-void str_mark_const(str_const_ct str, bool isconst);
-// set/unset binary flag (if str was externally changed with binary data)
-void str_mark_binary(str_const_ct str, bool isbinary);
+// set const flag (if str is not to be modified)
+str_ct str_mark_const(str_const_ct str);
+// set volatile flag (if str is definitely modified)
+// currently only usefull to prevent str_mark_const
+str_ct str_mark_volatile(str_const_ct str);
+// set binary flag (if str was externally changed with binary data)
+str_ct str_mark_binary(str_const_ct str);
 
 // readable raw getters
 
@@ -113,8 +119,12 @@ str_ct str_set_len(str_const_ct str, size_t len);
 
 // get first char of str
 char str_first(str_const_ct str);
+// get first unsigned char of str
+unsigned char str_first_u(str_const_ct str);
 // get last char of str
 char str_last(str_const_ct str);
+// get last unsigned char of str
+unsigned char str_last_u(str_const_ct str);
 // get char at str[pos]
 char str_at(str_const_ct str, size_t pos);
 // get unsigned char at str[pos]
@@ -123,8 +133,12 @@ unsigned char str_at_u(str_const_ct str, size_t pos);
 
 // add reference, transient strings are converted to heap strings, this may fail
 str_ct str_ref(str_const_ct str);
+// like str_ref but only ref if not referenced
+str_ct str_ref_ensure(str_const_ct str, bool *referenced);
 // remove reference, removal of last reference frees string
 str_ct str_unref(str_const_ct str);
+// like str_unref but only if cond is true
+str_ct str_unref_if(str_const_ct str, bool cond);
 // return current reference count
 size_t str_get_refs(str_const_ct str);
 
@@ -224,6 +238,13 @@ str_ct  tstr_init_s(str_ct str, const char *cstr);
 str_ct  tstr_init_sn(str_ct str, const char *cstr, size_t len);
 #define tstr_new_sn(str, n) tstr_init_sn(alloca(str_headsize()), str, n)
 #define tstr_new_l(lit) tstr_init_sn(alloca(str_headsize()), lit, sizeof(lit)-1)
+// init transient-transient data str of len, without reference
+str_ct  tstr_init_tn(str_ct str, char *cstr, size_t len);
+#define tstr_new_tn(str, n) tstr_init_tn(alloca(str_headsize()), str, n)
+// init transient-transient data str of len/capacity, without reference
+str_ct  tstr_init_tnc(str_ct str, char *cstr, size_t len, size_t cap);
+#define tstr_new_tnc(str, n, c) tstr_init_tnc(alloca(str_headsize()), str, n, c)
+
 // init binary transient-heap data str of len, with reference
 str_ct  tstr_init_bh(str_ct str, void *bin, size_t len);
 #define tstr_new_bh(bin, n) tstr_init_bh(alloca(str_headsize()), bin, n)
@@ -234,16 +255,17 @@ str_ct  tstr_init_bhc(str_ct str, void *bin, size_t len, size_t cap);
 str_ct  tstr_init_bs(str_ct str, const void *bin, size_t len);
 #define tstr_new_bs(bin, n) tstr_init_bs(alloca(str_headsize()), bin, n)
 #define tstr_new_bl(bin) tstr_init_bs(alloca(str_headsize()), bin, sizeof(bin)-1)
-// init transient-transient data str of len, without reference
-str_ct  tstr_init_tn(str_ct str, char *cstr, size_t len);
-#define tstr_new_tn(str, n) tstr_init_tn(alloca(str_headsize()), str, n)
-// init transient-transient data str of len/capacity, without reference
-str_ct  tstr_init_tnc(str_ct str, char *cstr, size_t len, size_t cap);
-#define tstr_new_tnc(str, n, c) tstr_init_tnc(alloca(str_headsize()), str, n, c)
+// init binary transient-transient data str of len, without reference
+str_ct  tstr_init_bt(str_ct str, void *bin, size_t len);
+#define tstr_new_bt(bin, n) tstr_init_bt(alloca(str_headsize()), bin, n)
+// init binary transient-transient data str of len/capacity, without reference
+str_ct  tstr_init_btc(str_ct str, void *bin, size_t len, size_t cap);
+#define tstr_new_btc(bin, n, c) tstr_init_btc(alloca(str_headsize()), bin, n, c)
 
-#define STR(str)       tstr_new_s(str)
-#define LIT(lit)       tstr_new_l(lit)
-#define BIN(bin, size) tstr_new_bs(bin, size)
+#define STR(str)        tstr_new_s(str)
+#define LIT(lit)        tstr_new_l(lit)
+#define BIN(lit)        tstr_new_bl(lit)
+#define BLOB(bin, size) tstr_new_bs(bin, size)
 
 
 // create heap duplicate of str, static data is not duplicated
@@ -262,6 +284,24 @@ str_ct  str_dup_b(const void *data, size_t len);
 str_ct  str_dup_f(const char *fmt, ...) __attribute__((format(gnu_printf, 1, 2)));
 // create new heap str from format with va_list
 str_ct  str_dup_vf(const char *fmt, va_list ap) __attribute__((format(gnu_printf, 1, 0)));
+
+// create stack duplicate of str
+#define tstr_dup(str) tstr_init_dup_n(alloca(str_headsize()), alloca(str_len(str)+1), str, str_len(str))
+// create stack duplicate of str with max len
+str_ct  tstr_init_dup_n(str_ct dst, void *data, str_ct src, size_t len);
+#define tstr_dup_n(str, n) tstr_init_dup_n(alloca(str_headsize()), alloca(str_len(str)+1), str, n)
+// create stack duplicate of cstr
+#define tstr_dup_c(str) __extension__({ \
+    size_t len = strlen(str); \
+    tstr_init_dup_cn(alloca(str_headsize()), alloca(len+1), str, len); })
+// create stack duplicate of cstr with max len
+str_ct  tstr_init_dup_cn(str_ct dst, void *data, const char *cstr, size_t len);
+#define tstr_dup_cn(str, n) tstr_init_dup_cn(alloca(str_headsize()), alloca(n+1), str, n)
+#define tstr_dup_l(lit) tstr_dup_cn(lit, sizeof(lit)-1)
+// create binary stack duplicate of data
+str_ct  tstr_init_dup_b(str_ct dst, void *data, const void *bin, size_t len);
+#define tstr_dup_b(bin, len) tstr_init_dup_b(alloca(str_headsize()), alloca(len+1), bin, len)
+#define tstr_dup_bl(bin) tstr_dup_b(bin, sizeof(bin)-1)
 
 
 // set str with heap data
@@ -435,9 +475,17 @@ str_ct str_substr_r(str_const_ct str, ssize_t pos, size_t len);
 
 // like str_substr but modify actual str, ie keep only given part
 str_ct str_slice(str_ct str, ssize_t pos, size_t len);
+// keep first n chars of str like str_slice(str, 0, len)
+str_ct str_slice_head(str_ct str, size_t len);
+// keep last n chars of str like str_slice(str, -len, len)
+str_ct str_slice_tail(str_ct str, size_t len);
 
 // reverse str_slice, ie remove given part
 str_ct str_cut(str_ct str, ssize_t pos, size_t len);
+// drop n chars from start of str like str_cut(str, 0, len)
+str_ct str_cut_head(str_ct str, size_t len);
+// drop n chars from end of str like str_cut(str, -len, len)
+str_ct str_cut_tail(str_ct str, size_t len);
 
 
 // remove chars matching pred at front and back of str

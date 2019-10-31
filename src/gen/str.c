@@ -41,9 +41,10 @@ typedef enum str_flags
     , FLAG_TRANSIENT    = BV(0) // str is stack allocated
     , FLAG_UPDATE_LEN   = BV(1) // len is unset and has to be calculated
     , FLAG_UPDATE_CAP   = BV(2) // cap is unset and has to be calculated
-    , FLAG_CONST        = BV(3) // data is const resp. not to be modified
-    , FLAG_BINARY       = BV(4) // data my contain control chars and/or no null terminator
-    , FLAG_REDIRECT     = BV(5) // transient str points to heap allocated str
+    , FLAG_REDIRECT     = BV(3) // transient str points to heap allocated str
+    , FLAG_CONST        = BV(4) // data is const i.e. not to be modified
+    , FLAG_VOLATILE     = BV(5) // data is volatile i.e. is modified by other ref holders
+    , FLAG_BINARY       = BV(6) // data my contain control chars and/or no null terminator
 } str_flag_fs;
 
 typedef enum str_type
@@ -91,6 +92,7 @@ static const error_info_st error_infos[] =
     , ERROR_INFO(E_STR_INVALID_LENGTH, "Invalid str length.")
     , ERROR_INFO(E_STR_OUT_OF_BOUNDS, "Out of bounds access.")
     , ERROR_INFO(E_STR_UNREFERENCED, "Operation not supported on unreferenced str.")
+    , ERROR_INFO(E_STR_VOLATILE, "Operation not supported on volatile str.")
 };
 
 
@@ -166,7 +168,7 @@ static inline size_t _str_get_cap(str_const_ct str)
 
 static bool _str_is_empty(str_const_ct str)
 {
-    return (_str_is_binary(str) && !str->len) || !str->data[0];
+    return _str_is_binary(str) ? !str->len : !str->data[0];
 }
 
 static str_ct _str_get_writeable(str_ct str)
@@ -196,7 +198,7 @@ static str_ct _str_get_writeable(str_ct str)
 str_ct _str_init(str_ct str, str_flag_fs flags, uint16_t ref, str_type_id type, unsigned char *data, ssize_t len, ssize_t cap)
 {
     assert(str && type < DATA_TYPES && data && (!cap || len <= cap));
-    assert(!(flags & ~(FLAG_TRANSIENT|FLAG_CONST|FLAG_BINARY)));
+    assert(!(flags & ~(FLAG_TRANSIENT|FLAG_CONST|FLAG_VOLATILE|FLAG_BINARY)));
     
     init_magic(str);
     
@@ -324,6 +326,13 @@ bool str_is_const(str_const_ct str)
     return _str_is_const(str);
 }
 
+bool str_is_volatile(str_const_ct str)
+{
+    assert_str(str);
+    
+    return _str_get_flags(str, FLAG_VOLATILE);
+}
+
 bool str_is_binary(str_const_ct str)
 {
     assert_str(str);
@@ -352,24 +361,33 @@ bool str_data_is_transient(str_const_ct str)
     return str->type == DATA_TRANSIENT;
 }
 
-void str_mark_const(str_const_ct str, bool isconst)
+str_ct str_mark_const(str_const_ct str)
 {
     assert_str(str);
+    return_error_if_pass(_str_get_flags(str, FLAG_VOLATILE), E_STR_VOLATILE, NULL);
     
-    if(isconst)
-        _str_set_flags(str, FLAG_CONST);
-    else
-        _str_clear_flags(str, FLAG_CONST);
+    _str_set_flags(str, FLAG_CONST);
+    
+    return (str_ct)str;
 }
 
-void str_mark_binary(str_const_ct str, bool isconst)
+str_ct str_mark_volatile(str_const_ct str)
+{
+    assert_str(str);
+    return_error_if_pass(_str_is_const(str), E_STR_CONST, NULL);
+    
+    _str_set_flags(str, FLAG_VOLATILE);
+    
+    return (str_ct)str;
+}
+
+str_ct str_mark_binary(str_const_ct str)
 {
     assert_str(str);
     
-    if(isconst)
-        _str_set_flags(str, FLAG_BINARY);
-    else
-        _str_clear_flags(str, FLAG_BINARY);
+    _str_set_flags(str, FLAG_BINARY);
+    
+    return (str_ct)str;
 }
 
 const char *str_c(str_const_ct str)
@@ -463,7 +481,23 @@ char str_first(str_const_ct str)
     return str->data[0];
 }
 
+unsigned char str_first_u(str_const_ct str)
+{
+    assert_str(str);
+    return_error_if_pass(_str_is_empty(str), E_STR_EMPTY, '\0');
+    
+    return str->data[0];
+}
+
 char str_last(str_const_ct str)
+{
+    assert_str(str);
+    return_error_if_pass(_str_is_empty(str), E_STR_EMPTY, '\0');
+    
+    return str->data[_str_get_len(str)-1];
+}
+
+unsigned char str_last_u(str_const_ct str)
 {
     assert_str(str);
     return_error_if_pass(_str_is_empty(str), E_STR_EMPTY, '\0');
@@ -538,6 +572,19 @@ str_ct str_ref(str_const_ct str)
     return nstr;
 }
 
+str_ct str_ref_ensure(str_const_ct str, bool *referenced)
+{
+    assert_str(str);
+    
+    if(str->ref)
+        return *referenced = false, (str_ct)str;
+    
+    if(!(str = str_ref(str)))
+        return NULL;
+    
+    return *referenced = true, (str_ct)str;
+}
+
 str_ct str_unref(str_const_ct str)
 {
     str_ct vstr = (str_ct)str;
@@ -555,6 +602,11 @@ str_ct str_unref(str_const_ct str)
         free(vstr);
     
     return NULL;
+}
+
+str_ct str_unref_if(str_const_ct str, bool cond)
+{
+    return cond ? str_unref(str) : (str_ct)str;
 }
 
 size_t str_get_refs(str_const_ct str)
@@ -890,6 +942,21 @@ str_ct tstr_init_sn(str_ct str, const char *cstr, size_t len)
     return _str_init(str, FLAG_TRANSIENT, 0, DATA_STATIC, (unsigned char*)cstr, len, 0);
 }
 
+str_ct tstr_init_tn(str_ct str, char *cstr, size_t len)
+{
+    return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
+    
+    return _str_init(str, FLAG_TRANSIENT, 0, DATA_TRANSIENT, (unsigned char*)cstr, len, len);
+}
+
+str_ct tstr_init_tnc(str_ct str, char *cstr, size_t len, size_t cap)
+{
+    return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
+    return_error_if_fail(len <= cap, E_STR_INVALID_LENGTH, NULL);
+    
+    return _str_init(str, FLAG_TRANSIENT, 0, DATA_TRANSIENT, (unsigned char*)cstr, len, cap);
+}
+
 str_ct tstr_init_bh(str_ct str, void *bin, size_t len)
 {
     return_error_if_fail(bin, E_STR_INVALID_DATA, NULL);
@@ -912,19 +979,19 @@ str_ct tstr_init_bs(str_ct str, const void *bin, size_t len)
     return _str_init(str, FLAG_TRANSIENT|FLAG_BINARY, 0, DATA_STATIC, (void*)bin, len, 0);
 }
 
-str_ct tstr_init_tn(str_ct str, char *cstr, size_t len)
+str_ct tstr_init_bt(str_ct str, void *bin, size_t len)
 {
-    return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
+    return_error_if_fail(bin, E_STR_INVALID_DATA, NULL);
     
-    return _str_init(str, FLAG_TRANSIENT, 0, DATA_TRANSIENT, (unsigned char*)cstr, len, len);
+    return _str_init(str, FLAG_TRANSIENT|FLAG_BINARY, 0, DATA_TRANSIENT, (void*)bin, len, len);
 }
 
-str_ct tstr_init_tnc(str_ct str, char *cstr, size_t len, size_t cap)
+str_ct tstr_init_btc(str_ct str, void *bin, size_t len, size_t cap)
 {
-    return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
+    return_error_if_fail(bin, E_STR_INVALID_DATA, NULL);
     return_error_if_fail(len <= cap, E_STR_INVALID_LENGTH, NULL);
     
-    return _str_init(str, FLAG_TRANSIENT, 0, DATA_TRANSIENT, (unsigned char*)cstr, len, cap);
+    return _str_init(str, FLAG_TRANSIENT|FLAG_BINARY, 0, DATA_TRANSIENT, (void*)bin, len, cap);
 }
 
 str_ct str_dup(str_const_ct str)
@@ -985,9 +1052,10 @@ str_ct str_dup_b(const void *data, size_t len)
     
     return_error_if_fail(data, E_STR_INVALID_DATA, NULL);
     
-    if(!(str = str_dup_cn(data, len)))
+    if(!(str = str_prepare_c(len, len)))
         return error_propagate(), NULL;
     
+    memcpy(str->data, data, len);
     _str_set_flags(str, FLAG_BINARY);
     
     return str;
@@ -1023,6 +1091,42 @@ str_ct str_dup_vf(const char *fmt, va_list ap)
     vsnprintf((char*)str->data, len+1, fmt, ap);
     
     return str;
+}
+
+str_ct tstr_init_dup_n(str_ct dst, void *data, str_ct src, size_t len)
+{
+    assert_str(src);
+    
+    len = MIN(len, _str_get_len(src));
+    
+    if(_str_is_binary(src))
+        return error_propagate_ptr(tstr_init_dup_b(dst, data, src->data, len));
+    else
+        return error_propagate_ptr(tstr_init_dup_cn(dst, data, (char*)src->data, len));
+}
+
+str_ct tstr_init_dup_cn(str_ct dst, void *vdata, const char *cstr, size_t len)
+{
+    unsigned char *data = vdata;
+    
+    return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
+    
+    memcpy(data, cstr, len);
+    data[len] = '\0';
+    
+    return _str_init(dst, FLAG_TRANSIENT, 0, DATA_TRANSIENT, data, len, len);
+}
+
+str_ct tstr_init_dup_b(str_ct dst, void *vdata, const void *bin, size_t len)
+{
+    unsigned char *data = vdata;
+    
+    return_error_if_fail(bin, E_STR_INVALID_DATA, NULL);
+    
+    memcpy(data, bin, len);
+    data[len] = '\0';
+    
+    return _str_init(dst, FLAG_TRANSIENT|FLAG_BINARY, 0, DATA_TRANSIENT, data, len, len);
 }
 
 str_ct str_set_h(str_ct str, char *cstr)
@@ -1975,6 +2079,16 @@ str_ct str_slice(str_ct str, ssize_t pos, size_t len)
     return str;
 }
 
+str_ct str_slice_head(str_ct str, size_t len)
+{
+    return error_propagate_ptr(str_slice(str, 0, len));
+}
+
+str_ct str_slice_tail(str_ct str, size_t len)
+{
+    return error_propagate_ptr(str_slice(str, -len, len));
+}
+
 str_ct str_cut(str_ct str, ssize_t pos, size_t len)
 {
     unsigned char *data;
@@ -2014,6 +2128,16 @@ str_ct str_cut(str_ct str, ssize_t pos, size_t len)
         str->data[str->len] = '\0';
     
     return str;
+}
+
+str_ct str_cut_head(str_ct str, size_t len)
+{
+    return error_propagate_ptr(str_cut(str, 0, len));
+}
+
+str_ct str_cut_tail(str_ct str, size_t len)
+{
+    return error_propagate_ptr(str_cut(str, -len, len));
 }
 
 str_ct str_trim_pred(str_ct str, ctype_pred_cb pred)
