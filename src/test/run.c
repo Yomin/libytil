@@ -954,12 +954,12 @@ static int test_run_control(test_run_ct run, test_case_const_ct tcase, pid_t wor
         if(!run->traced)
         {
             clock_gettime(run->control_clock, &end);
-            time_ts_diff(&diff, &start, &end);
+            time_ts_set_diff(&diff, &start, &end);
             
             if(time_ts_cmp(&diff, &timeout) >= 0)
                 break;
             
-            time_ts_diff(&timeout, &diff, &timeout);
+            time_ts_set_diff(&timeout, &diff, &timeout);
             start = end;
         }
     }

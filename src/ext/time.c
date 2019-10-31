@@ -125,6 +125,33 @@ char *time_strdup_duration(size_t seconds, size_t milli_seconds)
     return strdup_printf("%u.%03u", secs, msecs);
 }
 
+void time_ts_set_diff(timespec_st *dst, const timespec_st *start, const timespec_st *end)
+{
+    assert(time_ts_cmp(start, end) <= 0);
+    
+    dst->tv_sec = end->tv_sec - start->tv_sec;
+    
+    if(start->tv_nsec <= end->tv_nsec)
+        dst->tv_nsec = end->tv_nsec - start->tv_nsec;
+    else
+    {
+        dst->tv_sec--;
+        dst->tv_nsec = 1000000000 - start->tv_nsec + end->tv_nsec;
+    }
+}
+
+void time_ts_set_diff_tv(timespec_st *dst, const timeval_st *start, const timeval_st *end)
+{
+    timeval_st tv;
+    
+    assert(dst);
+    
+    time_tv_set_diff(&tv, start, end);
+    
+    dst->tv_sec = tv.tv_sec;
+    dst->tv_nsec = tv.tv_usec * 1000;
+}
+
 void time_ts_set_sec(timespec_st *ts, size_t seconds)
 {
     assert(ts);
@@ -165,6 +192,32 @@ void time_ts_add(timespec_st *dst, const timespec_st *src)
     dst->tv_sec += src->tv_sec;
     dst->tv_sec += (dst->tv_nsec + src->tv_nsec) / 1000000000;
     dst->tv_nsec = (dst->tv_nsec + src->tv_nsec) % 1000000000;
+}
+
+void time_ts_add_tv(timespec_st *dst, const timeval_st *src)
+{
+    assert(src && src->tv_usec < 1000000);
+    assert(dst && dst->tv_nsec < 1000000000);
+    
+    dst->tv_sec += src->tv_sec;
+    dst->tv_sec += (dst->tv_nsec + src->tv_usec*1000) / 1000000000;
+    dst->tv_nsec = (dst->tv_nsec + src->tv_usec*1000) % 1000000000;
+}
+
+void time_ts_add_diff(timespec_st *dst, const timespec_st *start, const timespec_st *end)
+{
+    timespec_st ts;
+    
+    time_ts_set_diff(&ts, start, end);
+    time_ts_add(dst, &ts);
+}
+
+void time_ts_add_diff_tv(timespec_st *dst, const timeval_st *start, const timeval_st *end)
+{
+    timeval_st tv;
+    
+    time_tv_set_diff(&tv, start, end);
+    time_ts_add_tv(dst, &tv);
 }
 
 void time_ts_add_sec(timespec_st *ts, size_t sec)
@@ -252,38 +305,11 @@ int time_ts_cmp(const timespec_st *ts1, const timespec_st *ts2)
     return 0;
 }
 
-void time_ts_diff(timespec_st *dst, const timespec_st *start, const timespec_st *end)
-{
-    assert(time_ts_cmp(start, end) <= 0);
-    
-    dst->tv_sec = end->tv_sec - start->tv_sec;
-    
-    if(start->tv_nsec <= end->tv_nsec)
-        dst->tv_nsec = end->tv_nsec - start->tv_nsec;
-    else
-    {
-        dst->tv_sec--;
-        dst->tv_nsec = 1000000000 - start->tv_nsec + end->tv_nsec;
-    }
-}
-
-void time_ts_diff_tv(timeval_st *dst, const timespec_st *start, const timespec_st *end)
-{
-    timespec_st ts;
-    
-    assert(dst);
-    
-    time_ts_diff(&ts, start, end);
-    
-    dst->tv_sec = ts.tv_sec;
-    dst->tv_usec = ts.tv_nsec / 1000;
-}
-
 size_t time_ts_diff_sec(const timespec_st *start, const timespec_st *end)
 {
     timespec_st ts;
     
-    time_ts_diff(&ts, start, end);
+    time_ts_set_diff(&ts, start, end);
     
     return ts.tv_sec;
 }
@@ -292,7 +318,7 @@ size_t time_ts_diff_milli(const timespec_st *start, const timespec_st *end)
 {
     timespec_st ts;
     
-    time_ts_diff(&ts, start, end);
+    time_ts_set_diff(&ts, start, end);
     
     return ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 }
@@ -301,7 +327,7 @@ size_t time_ts_diff_micro(const timespec_st *start, const timespec_st *end)
 {
     timespec_st ts;
     
-    time_ts_diff(&ts, start, end);
+    time_ts_set_diff(&ts, start, end);
     
     return ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
 }
@@ -310,9 +336,36 @@ size_t time_ts_diff_nano(const timespec_st *start, const timespec_st *end)
 {
     timespec_st ts;
     
-    time_ts_diff(&ts, start, end);
+    time_ts_set_diff(&ts, start, end);
     
     return ts.tv_sec * 1000000000 + ts.tv_nsec;
+}
+
+void time_tv_set_diff(timeval_st *dst, const timeval_st *start, const timeval_st *end)
+{
+    assert(time_tv_cmp(start, end) <= 0);
+    
+    dst->tv_sec = end->tv_sec - start->tv_sec;
+    
+    if(start->tv_usec <= end->tv_usec)
+        dst->tv_usec = end->tv_usec - start->tv_usec;
+    else
+    {
+        dst->tv_sec--;
+        dst->tv_usec = 1000000 - start->tv_usec + end->tv_usec;
+    }
+}
+
+void time_tv_set_diff_ts(timeval_st *dst, const timespec_st *start, const timespec_st *end)
+{
+    timespec_st ts;
+    
+    assert(dst);
+    
+    time_ts_set_diff(&ts, start, end);
+    
+    dst->tv_sec = ts.tv_sec;
+    dst->tv_usec = ts.tv_nsec / 1000;
 }
 
 void time_tv_set_sec(timeval_st *tv, size_t seconds)
@@ -355,6 +408,32 @@ void time_tv_add(timeval_st *dst, const timeval_st *src)
     dst->tv_sec += src->tv_sec;
     dst->tv_sec += (dst->tv_usec + src->tv_usec) / 1000000;
     dst->tv_usec = (dst->tv_usec + src->tv_usec) % 1000000;
+}
+
+void time_tv_add_ts(timeval_st *dst, const timespec_st *src)
+{
+    assert(src && src->tv_nsec < 1000000000);
+    assert(dst && dst->tv_usec < 1000000);
+    
+    dst->tv_sec += src->tv_sec;
+    dst->tv_sec += (dst->tv_usec + src->tv_nsec/1000) / 1000000;
+    dst->tv_usec = (dst->tv_usec + src->tv_nsec/1000) % 1000000;
+}
+
+void time_tv_add_diff(timeval_st *dst, const timeval_st *start, const timeval_st *end)
+{
+    timeval_st tv;
+    
+    time_tv_set_diff(&tv, start, end);
+    time_tv_add(dst, &tv);
+}
+
+void time_tv_add_diff_ts(timeval_st *dst, const timespec_st *start, const timespec_st *end)
+{
+    timespec_st ts;
+    
+    time_ts_set_diff(&ts, start, end);
+    time_tv_add_ts(dst, &ts);
 }
 
 void time_tv_add_sec(timeval_st *tv, size_t sec)
@@ -442,38 +521,11 @@ int time_tv_cmp(const timeval_st *tv1, const timeval_st *tv2)
     return 0;
 }
 
-void time_tv_diff(timeval_st *dst, const timeval_st *start, const timeval_st *end)
-{
-    assert(time_tv_cmp(start, end) <= 0);
-    
-    dst->tv_sec = end->tv_sec - start->tv_sec;
-    
-    if(start->tv_usec <= end->tv_usec)
-        dst->tv_usec = end->tv_usec - start->tv_usec;
-    else
-    {
-        dst->tv_sec--;
-        dst->tv_usec = 1000000 - start->tv_usec + end->tv_usec;
-    }
-}
-
-void time_tv_diff_ts(timespec_st *dst, const timeval_st *start, const timeval_st *end)
-{
-    timeval_st tv;
-    
-    assert(dst);
-    
-    time_tv_diff(&tv, start, end);
-    
-    dst->tv_sec = tv.tv_sec;
-    dst->tv_nsec = tv.tv_usec * 1000;
-}
-
 size_t time_tv_diff_sec(const timeval_st *start, const timeval_st *end)
 {
     timeval_st tv;
     
-    time_tv_diff(&tv, start, end);
+    time_tv_set_diff(&tv, start, end);
     
     return tv.tv_sec;
 }
@@ -482,7 +534,7 @@ size_t time_tv_diff_milli(const timeval_st *start, const timeval_st *end)
 {
     timeval_st tv;
     
-    time_tv_diff(&tv, start, end);
+    time_tv_set_diff(&tv, start, end);
     
     return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
@@ -491,7 +543,7 @@ size_t time_tv_diff_micro(const timeval_st *start, const timeval_st *end)
 {
     timeval_st tv;
     
-    time_tv_diff(&tv, start, end);
+    time_tv_set_diff(&tv, start, end);
     
     return tv.tv_sec * 1000000 + tv.tv_usec;
 }
@@ -500,7 +552,7 @@ size_t time_tv_diff_nano(const timeval_st *start, const timeval_st *end)
 {
     timeval_st tv;
     
-    time_tv_diff(&tv, start, end);
+    time_tv_set_diff(&tv, start, end);
     
     return tv.tv_sec * 1000000000 + tv.tv_usec * 1000;
 }
