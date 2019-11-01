@@ -15,7 +15,7 @@ NAME     := ytil
 LIBNAME  := lib$(NAME).a
 INCLUDES := $(INCLUDES) -Iinclude
 CFLAGS   := $(CFLAGS) -Wall -Wextra -Wpedantic -Woverflow -Wno-unused-parameter
-CFLAGS   := $(CFLAGS) -Werror -Wfatal-errors -std=gnu11 $(INCLUDES)
+CFLAGS   := $(CFLAGS) -Werror -Wfatal-errors -std=gnu11 -march=native $(INCLUDES)
 DFLAGS   := $(CFLAGS) $(DFLAGS) -ggdb3 -O0
 CFLAGS   := $(CFLAGS) -DNDEBUG -DNVALGRIND -O2
 SOURCES  := $(shell find src -type f -name "*.c")
