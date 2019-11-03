@@ -55,7 +55,7 @@ test_suite_ct test_suite_new(const char *name)
     return_error_if_fail(name, E_TEST_SUITE_INVALID_NAME, NULL);
     
     if(!(suite = calloc(1, sizeof(test_suite_st))))
-        return error_set_errno(calloc), NULL;
+        return error_wrap_errno(calloc), NULL;
     
     suite->name = name;
     
@@ -240,13 +240,13 @@ static test_suite_ct test_suite_add_entry(test_suite_ct suite, test_entry_id typ
     return_error_if_fail(suite, E_TEST_SUITE_INVALID_OBJECT, NULL);
     
     if(!entry)
-        return error_push(), test_suite_free(suite), NULL;
+        return error_wrap(), test_suite_free(suite), NULL;
     
     if(!suite->entries && !(suite->entries = vec_new(10, sizeof(test_entry_st))))
-        return error_push(), test_suite_free(suite), test_entry_free(type, entry), NULL;
+        return error_wrap(), test_suite_free(suite), test_entry_free(type, entry), NULL;
     
     if(!(sentry = vec_push(suite->entries)))
-        return error_push(), test_suite_free(suite), test_entry_free(type, entry), NULL;
+        return error_wrap(), test_suite_free(suite), test_entry_free(type, entry), NULL;
     
     sentry->type = type;
     sentry->value.entry = entry;
@@ -292,7 +292,7 @@ test_suite_ct test_suite_add_suites_v(test_suite_ct suite, va_list ap)
     if(suite)
         test_suite_free(suite);
     
-    return error_push(), NULL;
+    return error_wrap(), NULL;
 }
 
 test_suite_ct test_suite_add_case(test_suite_ct suite, test_case_ct tcase)
@@ -334,7 +334,7 @@ test_suite_ct test_suite_add_cases_v(test_suite_ct suite, va_list ap)
     if(suite)
         test_suite_free(suite);
     
-    return error_push(), NULL;
+    return error_wrap(), NULL;
 }
 
 static int test_suite_vec_fold_entry(vec_const_ct vec, size_t index, void *elem, void *ctx)
@@ -342,7 +342,7 @@ static int test_suite_vec_fold_entry(vec_const_ct vec, size_t index, void *elem,
     test_suite_fold_st *state = ctx;
     test_entry_st *entry = elem;
     
-    return error_push_int(state->fold(state->suite, entry, state->ctx));
+    return error_wrap_int(state->fold(state->suite, entry, state->ctx));
 }
 
 int test_suite_fold(test_suite_const_ct suite, test_suite_fold_cb fold, void *ctx)
@@ -352,5 +352,5 @@ int test_suite_fold(test_suite_const_ct suite, test_suite_fold_cb fold, void *ct
     return_error_if_fail(suite, E_TEST_SUITE_INVALID_OBJECT, -1);
     return_error_if_fail(fold, E_TEST_SUITE_INVALID_CALLBACK, -1);
     
-    return error_push_int(vec_fold(suite->entries, test_suite_vec_fold_entry, &state));
+    return error_wrap_int(vec_fold(suite->entries, test_suite_vec_fold_entry, &state));
 }

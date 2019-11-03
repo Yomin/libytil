@@ -50,30 +50,43 @@
     
     int module1_func(void **ptr)
     {
-        // set module specific error origin for local errors
+        // set module1 error for local errors
         if(!ptr)
             return error_set(E_MODULE1_ERROR_1), -1;
         
-        // set errno error origin for functions not using gen_error
-        if(!(*ptr = malloc(123)))
-            return error_set_errno(malloc), -1;
+        // set errno error for wrapper functions using errno
+        if(!ptr)
+            return error_set_errno(EINVAL), -1;
         
-        // module2 set error origin, just add module1_func to error stack
-        if(module2_func(*ptr))
-            return error_push(), -1;
+        // set errno error, add module1_func, errno is hidden
+        // for gen_error functions with errno sub functions
+        if(!(*ptr = malloc(123)))
+            return error_wrap_errno(malloc), -1;
+        
+        // set errno error, add module1_func, errno is propagated
+        // for wrapper functions using errno with errno sub functions
+        if(!(*ptr = malloc(123)))
+            return error_propagate_errno(malloc), -1;
+        
+        // add errno error, module2 error is hidden
+        if(!(*ptr = module2_func(123)))
+            return error_push_errno(EFAULT), -1;
+        
+        // add module1_func, module2 error is hidden
+        if(!(*ptr = module2_func(123)))
+            return error_wrap(), -1;
         
         // convert module3 error to module1 error
         if(module3_func())
             switch(error_get())
             {
             case E_MODULE3_ERROR:
-                return error_set(E_MODULE1_ERROR_2), -1;
+                return error_push(E_MODULE1_ERROR_2), -1;
             default:
-                return error_push(), -1;
+                return error_wrap(), -1;
             }
         
-        // add module1_func to error stack but keep error context
-        // -> module1_func2 errors checkable via error_get()
+        // add module1_func but keep error module1_func2 error
         return error_propagate_int(module1_func2());
     }
 */
@@ -88,25 +101,45 @@ typedef struct error_info
     [_error] = { .name = #_error, .desc = _desc }
 
 
-// set func with module specific error as error origin
-void    _error_set(const char *func, const error_info_st *infos, size_t err);
+// clear stack, push module error, update context
+void    _error_set(const char *func, const error_info_st *infos, size_t error);
 #define  error_set(error) _error_set(__func__, error_infos, (error))
 
-// set errno of sub as error origin, then add func to error stack
-void    _error_set_errno(const char *func, const char *sub);
-#define  error_set_errno(sub) _error_set_errno(__func__, #sub)
+// push module error, update context
+void    _error_push(const char *func, const error_info_st *infos, size_t error);
+#define  error_push(error) _error_push(__func__, error_infos, (error))
 
-// add func to existing error stack, clear error context
-void    _error_push(const char *func);
-#define  error_push() _error_push(__func__)
+// push wrapper error, invalidate context
+void    _error_wrap(const char *func);
+#define  error_wrap() _error_wrap(__func__)
 
-// add func to existing error stack, keep error context
+// push module error if context valid, else push wrapper error
+void    _error_push_wrap(const char *func, const error_info_st *infos, size_t error);
+#define  error_push_wrap(error) _error_push_wrap(__func__, error_infos, (error))
+
+// push wrapper error, keep context
 void    _error_propagate(const char *func);
 #define  error_propagate() _error_propagate(__func__)
 
+// clear stack, push errno error, update context
+void    _error_set_errno(const char *func, int error);
+#define  error_set_errno(error) _error_set_errno(__func__, (error))
+
+// push errno error, update context
+void    _error_push_errno(const char *func, int error);
+#define  error_push_errno(error) _error_push_errno(__func__, (error))
+
+// clear stack, push errno error from sub, push wrapper error, invalidate context
+void    _error_wrap_errno(const char *func, const char *sub);
+#define  error_wrap_errno(sub) _error_wrap_errno(__func__, #sub)
+
+// clear stack, push errno error from sub, push wrapper error, keep context from errno error
+void    _error_propagate_errno(const char *func, const char *sub);
+#define  error_propagate_errno(sub) _error_propagate_errno(__func__, #sub)
+
 
 // convenience macro for enclosing functions with int rc
-// to push/propagate error on the fly
+// to wrap/propagate error on the fly
 #define error_pack_int(action, sub) __extension__ ({ \
     __auto_type rc = (sub); \
     \
@@ -117,7 +150,7 @@ void    _error_propagate(const char *func);
 })
 
 // convenience macro for enclosing functions with pointer rc
-// to push/propagate error on the fly
+// to wrap/propagate error on the fly
 #define error_pack_ptr(action, sub) __extension__ ({ \
     __auto_type rc = (sub); \
     \
@@ -127,34 +160,49 @@ void    _error_propagate(const char *func);
     rc; \
 })
 
-#define error_push_int(sub)         error_pack_int(push, sub)
-#define error_push_ptr(sub)         error_pack_ptr(push, sub)
+#define error_wrap_int(sub)         error_pack_int(wrap, sub)
+#define error_wrap_ptr(sub)         error_pack_ptr(wrap, sub)
 #define error_propagate_int(sub)    error_pack_int(propagate, sub)
 #define error_propagate_ptr(sub)    error_pack_ptr(propagate, sub)
 
 
-// clear error origin/stack
+// clear error stack
 void error_clear(void);
 
 
-// get numeric error from context, -1 if unset
-ssize_t error_get(void);
-// check if error context matches error code
-bool    error_check(size_t error);
+// check if last error matches error code
+bool error_check(ssize_t error);
 
+// get error code from last error, -1 if unset
+ssize_t     error_get(void);
+// get function from last error, def if unset
+const char *error_get_func(const char *def);
+// get error name from last error, def if unset
+const char *error_get_name(const char *def);
+// get error description from last error, def if unset
+const char *error_get_desc(const char *def);
 
-// get error code from origin
+// get error code from error origin, -1 if unset
 ssize_t     error_origin_get(void);
-// get function from origin
-const char *error_origin_get_func(void);
-// get error name from origin
-const char *error_origin_get_name(void);
-// get error description from origin
-const char *error_origin_get_desc(void);
+// get function from error origin, def if unset
+const char *error_origin_get_func(const char *def);
+// get error name from error origin, def if unset
+const char *error_origin_get_name(const char *def);
+// get error description from error origin, def if unset
+const char *error_origin_get_desc(const char *def);
+
 
 // get number of errors on stack
 size_t      error_stack_get_size(void);
-// get function of specific stack level
-const char *error_stack_get_func(size_t level);
+// check if wrapper error on stack level
+bool        error_stack_is_wrapper(size_t level);
+// get error code of stack level, -1 if unset
+ssize_t     error_stack_get_error(size_t level);
+// get function of stack level, def if unset
+const char *error_stack_get_func(size_t level, const char *def);
+// get error name of stack level, def if unset
+const char *error_stack_get_name(size_t level, const char *def);
+// get error description of stack level, def if unset
+const char *error_stack_get_desc(size_t level, const char *def);
 
 #endif

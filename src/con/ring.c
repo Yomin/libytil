@@ -63,7 +63,7 @@ ring_ct ring_new(size_t capacity, size_t elemsize)
     return_error_if_fail(elemsize, E_RING_INVALID_ELEMSIZE, NULL);
     
     if(!(ring = calloc(1, sizeof(ring_st))))
-        return error_set_errno(calloc), NULL;
+        return error_wrap_errno(calloc), NULL;
     
     init_magic(ring);
     ring->esize = elemsize;
@@ -154,7 +154,7 @@ void *ring_put_ef(ring_ct ring, const void *elem, ring_overflow_cb overflow, voi
     assert_magic(ring);
     
     if(!ring->mem && !(ring->mem = calloc(ring->cap, ring->esize)))
-        return error_set_errno(calloc), NULL;
+        return error_wrap_errno(calloc), NULL;
     
     if(ring->size == ring->cap)
     {
@@ -267,7 +267,7 @@ int ring_fold(ring_ct ring, ring_fold_cb fold, void *ctx)
     assert(fold);
     
     for(tail=ring->tail, size=ring->size; size; tail=INC(tail), size--)
-        if((rc = error_push_int(fold(ring, ELEM(tail), ctx))))
+        if((rc = error_wrap_int(fold(ring, ELEM(tail), ctx))))
             return rc;
     
     return 0;
@@ -282,7 +282,7 @@ int ring_fold_r(ring_ct ring, ring_fold_cb fold, void *ctx)
     assert(fold);
     
     for(head=POS(ring->tail+ring->size-1), size=ring->size; size; head=DEC(head), size--)
-        if((rc = error_push_int(fold(ring, ELEM(head), ctx))))
+        if((rc = error_wrap_int(fold(ring, ELEM(head), ctx))))
             return rc;
     
     return 0;

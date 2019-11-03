@@ -227,7 +227,7 @@ art_ct art_new(art_mode_id mode)
     art_ct art;
     
     if(!(art = calloc(1, sizeof(art_st))))
-        return error_set_errno(calloc), NULL;
+        return error_wrap_errno(calloc), NULL;
     
     init_magic(art);
     
@@ -396,7 +396,7 @@ static int art_node_prepend_path(art_node_ct node, const unsigned char *prefix, 
     else
     {
         if(!(path = malloc(node->path_len+len+1)))
-            return error_set_errno(malloc), -1;
+            return error_wrap_errno(malloc), -1;
         
         memcpy(path, prefix, len);
         path[len] = key;
@@ -434,12 +434,12 @@ str_ct art_node_get_key(art_node_const_ct node)
     assert_magic_n(&node->v.leaf, NODE_MAGIC);
     
     if(!(key = str_dup_b(art_node_get_path(node), node->path_len)))
-        return error_push(), NULL;
+        return error_wrap(), NULL;
     
     for(; node->parent; node = node->parent)
         if(!str_prepend_b(key, &node->key, 1)
         || !str_prepend_b(key, art_node_get_path(node->parent), node->parent->path_len))
-            return error_push(), str_unref(key), NULL;
+            return error_wrap(), str_unref(key), NULL;
     
     return key;
 }
@@ -622,14 +622,14 @@ static art_node_ct art_node_new(art_node_id type, unsigned char key, art_node_ct
     art_node_ct node;
     
     if(!(node = calloc(1, art_node_size(type))))
-        return error_set_errno(calloc), NULL;
+        return error_wrap_errno(calloc), NULL;
     
     if(path)
     {
         if(str_len(path) <= sizeof(unsigned char*))
             memcpy(&node->path, str_bc(path), str_len(path));
         else if(!(node->path = memdup(str_bc(path), str_len(path))))
-            return error_set_errno(memdup), NULL;
+            return error_wrap_errno(memdup), NULL;
     }
     
     switch(type)
@@ -1398,7 +1398,7 @@ static int art_traverse_node(art_ct art, size_t pos, art_node_ct node, art_trave
     {
         if((node->parent && !str_append_set(state->path, 1, node->key))
         || !str_append_b(state->path, art_node_get_path(node), path_len))
-            return error_push(), -1;
+            return error_wrap(), -1;
         
         if(node->parent)
             path_len++; // remember to drop node->key
@@ -1455,12 +1455,12 @@ static int art_traverse(art_ct art, art_node_ct node, str_const_ct prefix, art_t
             node_prefix++; // dont dup node->key
         
         if(key && !(state.path = str_dup_n(prefix, str_len(prefix)-node_prefix)))
-            return error_push(), -1;
+            return error_wrap(), -1;
     }
     else
     {
         if(key && !(state.path = str_prepare_bc(0, 10)))
-            return error_push(), -1;
+            return error_wrap(), -1;
     }
     
     if(key)
@@ -1546,7 +1546,7 @@ static int art_traverse_fold(art_ct art, art_node_ct node, str_ct path, void *ct
 {
     art_fold_st *state = ctx;
     
-    return error_push_int(state->fold(art, path, node->v.leaf.data, state->ctx));
+    return error_wrap_int(state->fold(art, path, node->v.leaf.data, state->ctx));
 }
 
 static int _art_fold(art_ct art, str_const_ct prefix, bool key, bool reverse, art_fold_cb fold, void *ctx)
@@ -1619,7 +1619,7 @@ str_ct art_complete(art_const_ct art, str_const_ct prefix)
         node = art->root;
     
     if(!(path = str_dup_b(art_node_get_path(node)+node_prefix, node->path_len-node_prefix)))
-        return error_push(), NULL;
+        return error_wrap(), NULL;
     
     // nodes with 1 child may happen if a merge fails
     while(node->size == 1)
@@ -1628,7 +1628,7 @@ str_ct art_complete(art_const_ct art, str_const_ct prefix)
         
         if(!str_append_set(path, 1, node->key)
         || !str_append_b(path, art_node_get_path(node), node->path_len))
-            return error_push(), str_unref(path), NULL;
+            return error_wrap(), str_unref(path), NULL;
     }
     
     return path;

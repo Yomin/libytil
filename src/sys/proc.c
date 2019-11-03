@@ -60,7 +60,7 @@ int proc_init_title(int argc, char *argv[])
         return proc_title->ref++, 0;
     
     if(!(title = calloc(1, sizeof(proc_title_st))))
-        return error_set_errno(calloc), -1;
+        return error_wrap_errno(calloc), -1;
     
     for(envc=0; environ[envc]; envc++);
     
@@ -73,7 +73,7 @@ int proc_init_title(int argc, char *argv[])
         return free(title), error_set(E_PROC_NO_SPACE), -1;
     
     if(!(title->data = malloc(title->size)))
-        return free(title), error_set_errno(malloc), -1;
+        return free(title), error_wrap_errno(malloc), -1;
     
     memcpy(title->data, argv[0], title->size);
     

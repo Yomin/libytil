@@ -81,7 +81,7 @@ static int vec_resize(vec_ct vec, size_t capacity)
     if(!vec->mem)
     {
         if(!(mem = calloc(1, OFFSET + capacity * vec->esize)))
-            return error_set_errno(calloc), -1;
+            return error_wrap_errno(calloc), -1;
         
         vec_set_buf(vec, mem, capacity, 0);
     }
@@ -92,7 +92,7 @@ static int vec_resize(vec_ct vec, size_t capacity)
         if(!(mem = realloc(mem, OFFSET + capacity * vec->esize)))
         {
             if(capacity > vec->cap)
-                return error_set_errno(realloc), -1;
+                return error_wrap_errno(realloc), -1;
             else
                 return 0;
         }
@@ -137,7 +137,7 @@ vec_ct vec_new(size_t capacity, size_t elemsize)
     return_error_if_fail(elemsize, E_VEC_INVALID_ELEMSIZE, NULL);
     
     if(!(vec = calloc(1, sizeof(struct vector))))
-        return error_set_errno(calloc), NULL;
+        return error_wrap_errno(calloc), NULL;
     
     init_magic(vec);
     vec->esize = elemsize;
@@ -214,7 +214,7 @@ vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, void 
     assert_magic(vec);
     
     if(!(nvec = calloc(1, sizeof(vec_st))))
-        return error_set_errno(calloc), NULL;
+        return error_wrap_errno(calloc), NULL;
     
     init_magic(nvec);
     nvec->esize = vec->esize;
@@ -235,7 +235,7 @@ vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, void 
     
     for(i=0; i < vec->size; i++)
         if(clone(vec, nvec->mem + i*nvec->esize, ELEM(i), ctx))
-            return error_push(), vec_free_f(nvec, dtor, ctx), NULL;
+            return error_wrap(), vec_free_f(nvec, dtor, ctx), NULL;
     
     return nvec;
 }
@@ -1195,7 +1195,7 @@ int vec_fold(vec_const_ct vec, vec_fold_cb fold, void *ctx)
     assert(fold);
     
     for(i=0; i < vec->size; i++)
-        if((rc = error_push_int(fold(vec, i, ELEM(i), ctx))))
+        if((rc = error_wrap_int(fold(vec, i, ELEM(i), ctx))))
             return rc;
     
     return 0;
@@ -1210,7 +1210,7 @@ int vec_fold_r(vec_const_ct vec, vec_fold_cb fold, void *ctx)
     assert(fold);
     
     for(i=0; i < vec->size; i++)
-        if((rc = error_push_int(fold(vec, i, ELEM(vec->size-i-1), ctx))))
+        if((rc = error_wrap_int(fold(vec, i, ELEM(vec->size-i-1), ctx))))
             return rc;
     
     return 0;

@@ -63,7 +63,7 @@ test_com_ct test_com_new(test_com_msg_cb cb, void *ctx)
     test_com_ct com;
     
     if(!(com = calloc(1, sizeof(test_com_st))))
-        return error_set_errno(calloc), NULL;
+        return error_wrap_errno(calloc), NULL;
     
     com->cb = cb;
     com->ctx = ctx;
@@ -135,7 +135,7 @@ static int test_com_write(test_com_ct com, void *vdata, size_t size)
     
     for(; size; data += count, size -= count)
         if((count = send(com->sock, data, size, 0)) < 0)
-            return error_set_errno(send), -1;
+            return error_wrap_errno(send), -1;
     
     return 0;
 }
@@ -180,7 +180,7 @@ int test_com_send_status(test_com_ct com, test_status_id status)
         return error_propagate_int(test_com_send(com, TEST_COM_STATUS, 1, &status, sizeof(test_status_id)));
 #endif
     
-    return error_push_int(com->cb(TEST_COM_STATUS, &msg, com->ctx));
+    return error_wrap_int(com->cb(TEST_COM_STATUS, &msg, com->ctx));
 }
 
 int test_com_send_result(test_com_ct com, test_result_id result)
@@ -195,7 +195,7 @@ int test_com_send_result(test_com_ct com, test_result_id result)
         return error_propagate_int(test_com_send(com, TEST_COM_RESULT, 1, &result, sizeof(test_result_id)));
 #endif
     
-    return error_push_int(com->cb(TEST_COM_RESULT, &msg, com->ctx));
+    return error_wrap_int(com->cb(TEST_COM_RESULT, &msg, com->ctx));
 }
 
 int test_com_send_duration(test_com_ct com, clockid_t clock, timespec_st *start)
@@ -214,7 +214,7 @@ int test_com_send_duration(test_com_ct com, clockid_t clock, timespec_st *start)
         return error_propagate_int(test_com_send(com, TEST_COM_DURATION, 1, &msg.duration, sizeof(size_t)));
 #endif
     
-    return error_push_int(com->cb(TEST_COM_DURATION, &msg, com->ctx));
+    return error_wrap_int(com->cb(TEST_COM_DURATION, &msg, com->ctx));
 }
 
 int test_com_send_position(test_com_ct com, test_pos_id type, const char *file, size_t line)
@@ -236,7 +236,7 @@ int test_com_send_position(test_com_ct com, test_pos_id type, const char *file, 
     }
 #endif
     
-    return error_push_int(com->cb(TEST_COM_POS, &msg, com->ctx));
+    return error_wrap_int(com->cb(TEST_COM_POS, &msg, com->ctx));
 }
 
 int test_com_send_pass(test_com_ct com)
@@ -248,7 +248,7 @@ int test_com_send_pass(test_com_ct com)
         return error_propagate_int(test_com_send(com, TEST_COM_PASS, 0));
 #endif
     
-    return error_push_int(com->cb(TEST_COM_PASS, NULL, com->ctx));
+    return error_wrap_int(com->cb(TEST_COM_PASS, NULL, com->ctx));
 }
 
 int test_com_send_msg(test_com_ct com, test_msg_id type, const char *fmt, ...)
@@ -286,7 +286,7 @@ int test_com_send_msg_v(test_com_ct com, test_msg_id type, const char *fmt, va_l
             &type, sizeof(test_msg_id), &len, sizeof(size_t), msg.msg.text, len));
 #endif
     
-    return error_push_int(com->cb(TEST_COM_MSG, &msg, com->ctx));
+    return error_wrap_int(com->cb(TEST_COM_MSG, &msg, com->ctx));
 }
 
 #ifndef _WIN32
@@ -300,7 +300,7 @@ static char *test_com_alloc(test_com_ct com, size_t size)
         cap = MAX(size, 128U);
         
         if(!(com->buf = malloc(cap)))
-            return error_set_errno(malloc), NULL;
+            return error_wrap_errno(malloc), NULL;
         
         com->cap = cap;
         com->size = 0;
@@ -310,7 +310,7 @@ static char *test_com_alloc(test_com_ct com, size_t size)
         cap = MAX(com->size+size, com->cap*2);
         
         if(!(tmp = realloc(com->buf, cap)))
-            return error_set_errno(realloc), NULL;
+            return error_wrap_errno(realloc), NULL;
         
         com->buf = tmp;
         com->cap = cap;
@@ -340,7 +340,7 @@ static int test_com_read(test_com_ct com, void *dst, size_t dst_size)
             else if(errno == EWOULDBLOCK)
                 return error_set(E_TEST_COM_WOULD_BLOCK), -1;
             else
-                return error_set_errno(recv), -1;
+                return error_wrap_errno(recv), -1;
     }
     
     if(dst)
@@ -440,7 +440,7 @@ static int test_com_recv_msg(test_com_ct com)
     if(rc)
         return error_propagate(), rc;
     
-    rc = error_push_int(com->cb(type, &msg, com->ctx));
+    rc = error_wrap_int(com->cb(type, &msg, com->ctx));
     
     if(com->pos < com->size)
         memmove(com->buf, &com->buf[com->pos], com->size - com->pos);

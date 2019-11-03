@@ -59,7 +59,7 @@ test_state_ct test_state_new(void)
     test_state_ct state;
     
     if(!(state = calloc(1, sizeof(test_state_st))))
-        return error_set_errno(calloc), NULL;
+        return error_wrap_errno(calloc), NULL;
     
     return state;
 }
@@ -139,7 +139,7 @@ int test_state_set_position(test_state_ct state, test_pos_id type, const char *f
         free(state->pos.file);
     
     if(!(state->pos.file = strdup(file)))
-        return error_set_errno(strdup), -1;
+        return error_wrap_errno(strdup), -1;
     
     state->pos.type = type;
     state->pos.line = line;
@@ -238,13 +238,13 @@ static int _test_state_add_msg(test_state_ct state, test_msg_id type, size_t lev
     char *text;
     
     if((!len && !(text = strdup(msgtext))) || (len && !(text = strndup(msgtext, len))))
-        return error_set_errno(strdup), -1;
+        return error_wrap_errno(strdup), -1;
     
     if(!state->msg && !(state->msg = vec_new(10, sizeof(test_msg_st))))
-        return error_push(), free(text), -1;
+        return error_wrap(), free(text), -1;
     
     if(!(msg = vec_push(state->msg)))
-        return error_push(), free(text), -1;
+        return error_wrap(), free(text), -1;
     
     msg->type = type;
     msg->level = level;
@@ -306,7 +306,7 @@ static int test_state_vec_fold_msg(vec_const_ct vec, size_t index, void *elem, v
     test_fold_state_st *fstate = ctx;
     test_msg_st *msg = elem;
     
-    return error_push_int(fstate->fold(&msg->pos, msg->type, msg->level, msg->text, fstate->ctx));
+    return error_wrap_int(fstate->fold(&msg->pos, msg->type, msg->level, msg->text, fstate->ctx));
 }
 
 int test_state_fold_msg(test_state_ct state, test_state_msg_cb fold, void *ctx)
@@ -319,5 +319,5 @@ int test_state_fold_msg(test_state_ct state, test_state_msg_cb fold, void *ctx)
     if(!state->msg)
         return 0;
     
-    return error_push_int(vec_fold(state->msg, test_state_vec_fold_msg, &fstate));
+    return error_wrap_int(vec_fold(state->msg, test_state_vec_fold_msg, &fstate));
 }

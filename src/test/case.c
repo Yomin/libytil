@@ -55,7 +55,7 @@ test_case_ct _test_case_new(const char *name, test_case_cb run, const test_case_
     return_error_if_fail(run, E_TEST_CASE_INVALID_CALLBACK, NULL);
     
     if(!(tcase = calloc(1, sizeof(test_case_st))))
-        return error_set_errno(calloc), NULL;
+        return error_wrap_errno(calloc), NULL;
     
     tcase->name = name;
     tcase->run = run;

@@ -124,7 +124,7 @@ static const error_info_st error_infos[] =
 
 static void fperror(FILE *fp, const char *msg)
 {
-    fprintf(fp, "%s: %s\n", msg, error_origin_get_desc());
+    fprintf(fp, "%s: %s\n", msg, error_get_desc("<unset_error>"));
 }
 
 static int test_run_get_clock(clockid_t *clock, ...)
@@ -142,7 +142,7 @@ static int test_run_get_clock(clockid_t *clock, ...)
             return va_end(ap), 0;
         
         if(*clock == CLOCK_REALTIME)
-            return va_end(ap), error_set_errno(clock_gettime), -1;
+            return va_end(ap), error_wrap_errno(clock_gettime), -1;
     }
 }
 
@@ -250,7 +250,7 @@ test_run_ct test_run_new_with_args(int argc, char *argv[])
     test_run_ct run;
     
     if(!(run = calloc(1, sizeof(test_run_st))))
-        return error_set_errno(calloc), perror("failed to init test run"), NULL;
+        return error_wrap_errno(calloc), perror("failed to init test run"), NULL;
     
     run->fp = stdout;
     run->skip = true;
@@ -267,10 +267,10 @@ test_run_ct test_run_new_with_args(int argc, char *argv[])
         return error_propagate(), test_run_free(run), NULL;
     
     if(!(run->state = test_state_new()))
-        return error_push(), fperror(run->fp, "failed to init test state"), test_run_free(run), NULL;
+        return error_wrap(), fperror(run->fp, "failed to init test state"), test_run_free(run), NULL;
     
     if(!(run->com = test_com_new(test_run_msg, run)))
-        return error_push(), fperror(run->fp, "failed to init com"), test_run_free(run), NULL;
+        return error_wrap(), fperror(run->fp, "failed to init com"), test_run_free(run), NULL;
     
     return run;
 }
@@ -348,11 +348,11 @@ int test_run_add_filter(test_run_ct run, const char *text)
     return_error_if_fail(text[0], E_TEST_RUN_INVALID_FILTER, -1);
     
     if(!run->filters && !(run->filters = vec_new(2, sizeof(test_filter_st))))
-        return error_push(), -1;
+        return error_wrap(), -1;
     
     if(!(filter = vec_push(run->filters))
     || !(filter->path = vec_new(3, sizeof(test_filter_node_st))))
-        return error_push(), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
+        return error_wrap(), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
     
     for(start_node = text, end_node = strchr(start_node, '/');
         start_node;
@@ -363,7 +363,7 @@ int test_run_add_filter(test_run_ct run, const char *text)
         
         if(!(node = vec_push(filter->path))
         || !(node->units = vec_new(2, sizeof(test_filter_unit_st))))
-            return error_push(), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
+            return error_wrap(), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
         
         for(start_unit = start_node, end_unit = memchr(start_unit, ',', len_node);
             start_unit;
@@ -377,7 +377,7 @@ int test_run_add_filter(test_run_ct run, const char *text)
                 return error_set(E_TEST_RUN_INVALID_FILTER), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
             
             if(!(unit = vec_push(node->units)))
-                return error_push(), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
+                return error_wrap(), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
             
             unit->len = len_unit;
             
@@ -391,7 +391,7 @@ int test_run_add_filter(test_run_ct run, const char *text)
                 return error_set(E_TEST_RUN_INVALID_FILTER), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
             
             if(unit->len && !(unit->name = strndup(start_unit, unit->len)))
-                return error_set_errno(strndup), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
+                return error_wrap_errno(strndup), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
         }
     }
     
@@ -409,14 +409,14 @@ static int test_run_check_traced(test_run_ct run)
     if((child = fork()) < 0)
     {
         fperror(run->fp, "failed to check trace status");
-        return error_set_errno(fork), -1;
+        return error_wrap_errno(fork), -1;
     }
     else if(child)
     {
         if(waitpid(child, &status, 0) < 0)
         {
             fperror(run->fp, "failed to check trace status");
-            return error_set_errno(waitpid), -1;
+            return error_wrap_errno(waitpid), -1;
         }
         else if(WIFSIGNALED(status))
         {
@@ -465,21 +465,21 @@ static int test_run_set_core_dump(test_run_ct run)
     struct rlimit limit;
     
     if(getrlimit(RLIMIT_CORE, &limit))
-        return error_set_errno(getrlimit), fperror(run->fp, "failed to get core dump size"), -1;
+        return error_wrap_errno(getrlimit), fperror(run->fp, "failed to get core dump size"), -1;
     
     if(!run->core_dump && limit.rlim_cur)
     {
         limit.rlim_cur = 0;
         
         if(setrlimit(RLIMIT_CORE, &limit))
-            return error_set_errno(setrlimit), fperror(run->fp, "failed to disable core dump"), -1;
+            return error_wrap_errno(setrlimit), fperror(run->fp, "failed to disable core dump"), -1;
     }
     else if(run->core_dump && !limit.rlim_cur)
     {
         limit.rlim_cur = limit.rlim_max;
         
         if(setrlimit(RLIMIT_CORE, &limit))
-            return error_set_errno(setrlimit), fperror(run->fp, "failed to enable core dump"), -1;
+            return error_wrap_errno(setrlimit), fperror(run->fp, "failed to enable core dump"), -1;
     }
     
 #endif
@@ -555,10 +555,10 @@ static bool test_run_filter(test_run_ct run, test_entry_id type, const char *nam
 static int test_run_push(test_run_ct run, const char *name)
 {
     if(!run->path && !(run->path = vec_new(10, sizeof(char*))))
-        return error_push(), fperror(run->fp, "failed to init path"), -1;
+        return error_wrap(), fperror(run->fp, "failed to init path"), -1;
     
     if(!vec_push_p(run->path, name))
-        return error_push(), fperror(run->fp, "failed to push path"), -1;
+        return error_wrap(), fperror(run->fp, "failed to push path"), -1;
     
     return 0;
 }
@@ -883,7 +883,7 @@ static int test_run_collect(test_run_ct run, test_case_const_ct tcase, pid_t wor
     int status;
     
     if(waitpid(worker, &status, 0) < 0)
-        return error_set_errno(waitpid), fperror(run->fp, "failed to wait for test worker"), -1;
+        return error_wrap_errno(waitpid), fperror(run->fp, "failed to wait for test worker"), -1;
     
     test_run_eval_status(run, tcase,
         WIFSIGNALED(status), WTERMSIG(status), WIFEXITED(status), WEXITSTATUS(status));
@@ -895,10 +895,10 @@ static int test_run_kill(test_run_ct run, pid_t worker)
 {
     // kill whole process group
     if(killpg(worker, SIGKILL))
-        return error_set_errno(killpg), fperror(run->fp, "failed to kill test worker"), -1;
+        return error_wrap_errno(killpg), fperror(run->fp, "failed to kill test worker"), -1;
     
     if(waitpid(worker, NULL, 0) < 0)
-        return error_set_errno(waitpid), fperror(run->fp, "failed to wait for test worker"), -1;
+        return error_wrap_errno(waitpid), fperror(run->fp, "failed to wait for test worker"), -1;
     
     return 0;
 }
@@ -936,7 +936,7 @@ static int test_run_control(test_run_ct run, test_case_const_ct tcase, pid_t wor
             poll_timeout = MIN((size_t)INT_MAX, time_ts_get_milli(&timeout));
         
         if((rc = poll(pfds, 1, poll_timeout)) < 0)
-            return error_set_errno(poll), tcperror(run, tcase, "failed to poll"), test_run_kill(run, worker), -1;
+            return error_wrap_errno(poll), tcperror(run, tcase, "failed to poll"), test_run_kill(run, worker), -1;
         
         if(!rc)
             break;
@@ -1004,11 +1004,11 @@ static int test_run_case(test_run_ct run, test_case_const_ct tcase)
         int sv[2];
         
         if(socketpair(AF_UNIX, SOCK_STREAM|SOCK_NONBLOCK, 0, sv) == -1)
-            return error_set_errno(socketpair), tcperror(run, tcase, "failed to init com"), -1;
+            return error_wrap_errno(socketpair), tcperror(run, tcase, "failed to init com"), -1;
         
         if((pid = fork()) == -1)
         {
-            error_set_errno(fork);
+            error_wrap_errno(fork);
             tcperror(run, tcase, "failed to fork");
             return close(sv[0]), close(sv[1]), -1;
         }

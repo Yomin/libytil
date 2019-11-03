@@ -73,7 +73,7 @@ list_ct list_new(void)
     list_ct list;
     
     if(!(list = calloc(1, sizeof(list_st))))
-        return error_set_errno(calloc), NULL;
+        return error_wrap_errno(calloc), NULL;
     
     init_magic(list);
     list->head.next = list->head.prev = &list->head;
@@ -133,7 +133,7 @@ static list_node_ct list_node_new(list_ct list, void *data)
     list_node_ct node;
     
     if(!(node = calloc(1, sizeof(list_node_st))))
-        return error_set_errno(calloc), NULL;
+        return error_wrap_errno(calloc), NULL;
     
     init_magic_n(node, NODE_MAGIC);
     DEBUG(node->list = list);
@@ -169,7 +169,7 @@ list_ct list_clone_f(list_const_ct list1, list_clone_cb clone, list_dtor_cb dtor
             node2->next = &list2->head;
             list_free_f(list2, dtor, ctx);
             
-            return error_push(), NULL;
+            return error_wrap(), NULL;
         }
         
         if(!(node2->next = list_node_new(list2, data)))
@@ -571,7 +571,7 @@ int list_fold(list_const_ct list, list_fold_cb fold, void *ctx)
     assert(fold);
     
     LIST_FOREACH_SAFE(list, next, node, next)
-        if((rc = error_push_int(fold(list, node->data, ctx))))
+        if((rc = error_wrap_int(fold(list, node->data, ctx))))
             return rc;
     
     return 0;
@@ -586,7 +586,7 @@ int list_fold_r(list_const_ct list, list_fold_cb fold, void *ctx)
     assert(fold);
     
     LIST_FOREACH_SAFE(list, prev, node, prev)
-        if((rc = error_push_int(fold(list, node->data, ctx))))
+        if((rc = error_wrap_int(fold(list, node->data, ctx))))
             return rc;
     
     return 0;
