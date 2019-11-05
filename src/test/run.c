@@ -745,7 +745,7 @@ static int test_run_msg(test_com_msg_id type, test_com_msg_un *msg, void *ctx)
             return test_state_inc_asserts(run->state);
         return 0;
     case TEST_COM_MSG:
-        return test_state_add_msg(run->state, msg->msg.type, msg->msg.text);
+        return test_state_add_msg(run->state, msg->msg.type, msg->msg.level, msg->msg.text);
     default:
         abort();
     }
@@ -756,18 +756,13 @@ static int test_run_print_msg(test_pos_st *pos, test_msg_id type, size_t level, 
     test_run_ct run = ctx;
     size_t l;
     
-    for(l=0; l < level+2; l++)
-        fprintf(run->fp, "  ");
-    
     if(pos->file && !level)
-    {
-        fprintf(run->fp, "%s"COLOR_DEFAULT"%s:%zu\n",
+        fprintf(run->fp, "    %s"COLOR_DEFAULT"%s:%zu\n",
             pos->type == TEST_POS_AFTER ? COLOR_YELLOW"after " : "",
             pos->file, pos->line);
-        
-        for(l=0; l < level+3; l++)
-            fprintf(run->fp, "  ");
-    }
+    
+    for(l=0; l < level+3; l++)
+        fprintf(run->fp, "  ");
     
     switch(type)
     {
@@ -837,14 +832,14 @@ static void test_run_eval_status(test_run_ct run, test_case_const_ct tcase, bool
         if(!test_case_expects_signal(tcase))
         {
             test_state_set_result(run->state, TEST_RESULT_ERROR);
-            test_state_add_msg_f(run->state, TEST_MSG_ERROR,
+            test_state_add_msg_f(run->state, TEST_MSG_ERROR, 0,
                 "signal %i (%s) during %s",
                 signal, strsignal(signal), test_state_get_strstatus(run->state));
         }
         else if(signal != test_case_get_signal(tcase))
         {
             test_state_set_result(run->state, TEST_RESULT_FAIL);
-            test_state_add_msg_f(run->state, TEST_MSG_ERROR,
+            test_state_add_msg_f(run->state, TEST_MSG_ERROR, 0,
                 "signal %i (%s), expected %i (%s)",
                 signal, strsignal(signal),
                 test_case_get_signal(tcase), strsignal(test_case_get_signal(tcase)));
@@ -857,7 +852,7 @@ static void test_run_eval_status(test_run_ct run, test_case_const_ct tcase, bool
         if(test_case_expects_signal(tcase))
         {
             test_state_set_result(run->state, TEST_RESULT_FAIL);
-            test_state_add_msg_f(run->state, TEST_MSG_ERROR,
+            test_state_add_msg_f(run->state, TEST_MSG_ERROR, 0,
                 "exit %i, expected signal %i (%s)",
                 rc, test_case_get_signal(tcase), strsignal(test_case_get_signal(tcase)));
         }
@@ -866,7 +861,7 @@ static void test_run_eval_status(test_run_ct run, test_case_const_ct tcase, bool
         if(test_case_expects_exit(tcase) && rc != test_case_get_exit(tcase))
         {
             test_state_set_result(run->state, TEST_RESULT_FAIL);
-            test_state_add_msg_f(run->state, TEST_MSG_ERROR,
+            test_state_add_msg_f(run->state, TEST_MSG_ERROR, 0,
                 "exit %i, expected %i",
                 rc, test_case_get_exit(tcase));
         }

@@ -83,8 +83,8 @@ int test_com_send_result(test_com_ct com, test_result_id result);
 int test_com_send_duration(test_com_ct com, clockid_t clock, timespec_st *start);
 int test_com_send_position(test_com_ct com, test_pos_id type, const char *file, size_t line);
 int test_com_send_pass(test_com_ct com);
-int test_com_send_msg(test_com_ct com, test_msg_id type, const char *fmt, ...) __attribute__((format (gnu_printf, 3, 4)));
-int test_com_send_msg_v(test_com_ct com, test_msg_id type, const char *fmt, va_list ap) __attribute__((format (gnu_printf, 3, 0)));
+int test_com_send_msg(test_com_ct com, test_msg_id type, size_t level, const char *fmt, ...) __attribute__((format (gnu_printf, 4, 5)));
+int test_com_send_msg_v(test_com_ct com, test_msg_id type, size_t level, const char *fmt, va_list ap) __attribute__((format (gnu_printf, 4, 0)));
 
 int test_com_recv(test_com_ct com);
 

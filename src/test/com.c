@@ -251,21 +251,21 @@ int test_com_send_pass(test_com_ct com)
     return error_wrap_int(com->cb(TEST_COM_PASS, NULL, com->ctx));
 }
 
-int test_com_send_msg(test_com_ct com, test_msg_id type, const char *fmt, ...)
+int test_com_send_msg(test_com_ct com, test_msg_id type, size_t level, const char *fmt, ...)
 {
     va_list ap;
     int rc;
     
     va_start(ap, fmt);
-    rc = error_propagate_int(test_com_send_msg_v(com, type, fmt, ap));
+    rc = error_propagate_int(test_com_send_msg_v(com, type, level, fmt, ap));
     va_end(ap);
     
     return rc;
 }
 
-int test_com_send_msg_v(test_com_ct com, test_msg_id type, const char *fmt, va_list ap1)
+int test_com_send_msg_v(test_com_ct com, test_msg_id type, size_t level, const char *fmt, va_list ap1)
 {
-    test_com_msg_un msg = { .msg.type = type };
+    test_com_msg_un msg = { .msg.type = type, .msg.level = level };
     va_list ap2;
     size_t len;
     
@@ -283,7 +283,10 @@ int test_com_send_msg_v(test_com_ct com, test_msg_id type, const char *fmt, va_l
 #ifndef _WIN32
     if(!com->shortcut)
         return error_propagate_int(test_com_send(com, TEST_COM_MSG, 3,
-            &type, sizeof(test_msg_id), &len, sizeof(size_t), msg.msg.text, len));
+            &type, sizeof(test_msg_id),
+            &len, sizeof(size_t),
+            &level, sizeof(size_t),
+            msg.msg.text, len));
 #endif
     
     return error_wrap_int(com->cb(TEST_COM_MSG, &msg, com->ctx));
@@ -430,6 +433,7 @@ static int test_com_recv_msg(test_com_ct com)
         break;
     case TEST_COM_MSG:
         if((rc = test_com_read_msg_type(com, &msg.msg.type))
+        || (rc = test_com_read_size(com, &msg.msg.level))
         || (rc = test_com_read_str(com, &msg.msg.text)))
             break;
         break;

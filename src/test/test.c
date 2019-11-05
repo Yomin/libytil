@@ -37,7 +37,7 @@ void _test_pos(void *vctx, test_pos_id type, const char *file, size_t line)
         abort();
 }
 
-void _test_msg(void *vctx, const char *file, size_t line, test_msg_id type, const char *msg, ...)
+void _test_msg(void *vctx, const char *file, size_t line, test_msg_id type, size_t level, const char *msg, ...)
 {
     test_ctx_st *ctx = vctx;
     va_list ap;
@@ -46,7 +46,7 @@ void _test_msg(void *vctx, const char *file, size_t line, test_msg_id type, cons
     
     if(test_com_send_duration(ctx->com, ctx->clock, &ctx->start)
     || test_com_send_position(ctx->com, TEST_POS_EXACT, file, line)
-    || test_com_send_msg_v(ctx->com, type, msg, ap)
+    || test_com_send_msg_v(ctx->com, type, level, msg, ap)
     || clock_gettime(ctx->clock, &ctx->start))
         abort();
     
@@ -69,19 +69,31 @@ void _test_end(void *vctx, const char *file, size_t line)
         abort();
 }
 
-void _test_abort(void *vctx, const char *file, size_t line, const char *msg, ...)
+void _test_abort(void *vctx, const char *file, size_t line, bool backtrace, const char *msg, ...)
 {
     test_ctx_st *ctx = vctx;
     va_list ap;
+    size_t e;
     
     va_start(ap, msg);
     
     if(test_com_send_duration(ctx->com, ctx->clock, &ctx->start)
     || test_com_send_position(ctx->com, TEST_POS_EXACT, file, line)
-    || test_com_send_msg_v(ctx->com, TEST_MSG_ERROR, msg, ap))
+    || test_com_send_msg_v(ctx->com, TEST_MSG_ERROR, 0, msg, ap))
         abort();
     
     va_end(ap);
+    
+    if(backtrace)
+        for(e=0; e < error_stack_get_size(); e++)
+        {
+            if(error_stack_is_wrapper(e))
+                test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s",
+                    e, error_stack_get_func(e, NULL));
+            else
+                test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: %s",
+                    e, error_stack_get_func(e, NULL), error_stack_get_name(e, NULL));
+        }
     
     if(ctx->jump)
         longjmp(*ctx->jump, 1);

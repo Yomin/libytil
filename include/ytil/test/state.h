@@ -113,8 +113,8 @@ size_t          test_state_get_asserts(test_state_ct state);
 const char *test_state_strstatus(test_status_id status);
 const char *test_state_strresult(test_result_id result);
 
-int test_state_add_msg(test_state_ct state, test_msg_id type, const char *msg);
-int test_state_add_msg_f(test_state_ct state, test_msg_id type, const char *msg, ...) __attribute__((format (gnu_printf, 3, 4)));
+int test_state_add_msg(test_state_ct state, test_msg_id type, size_t level, const char *msg);
+int test_state_add_msg_f(test_state_ct state, test_msg_id type, size_t level, const char *msg, ...) __attribute__((format (gnu_printf, 4, 5)));
 
 int test_state_fold_msg(test_state_ct state, test_state_msg_cb fold, void *ctx);
 

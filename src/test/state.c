@@ -261,10 +261,10 @@ static int _test_state_add_msg(test_state_ct state, test_msg_id type, size_t lev
     return 0;
 }
 
-int test_state_add_msg(test_state_ct state, test_msg_id type, const char *msg)
+int test_state_add_msg(test_state_ct state, test_msg_id type, size_t level, const char *msg)
 {
     const char *ptr;
-    size_t level = 0;
+    size_t msglevel = level;
     int rc = 0;
     
     return_error_if_fail(state, E_TEST_STATE_INVALID_OBJECT, -1);
@@ -285,10 +285,10 @@ int test_state_add_msg(test_state_ct state, test_msg_id type, const char *msg)
     for(; (ptr = strchr(msg, '\n')); msg = ptr+1)
         if(ptr == msg)
             continue;
-        else if(_test_state_add_msg(state, type, level, msg, ptr-msg))
+        else if(_test_state_add_msg(state, type, msglevel, msg, ptr-msg))
             return error_propagate(), -1;
         else
-            level = 1;
+            msglevel = level+1;
     
     if(!msg[0])
         return 0;
@@ -296,9 +296,9 @@ int test_state_add_msg(test_state_ct state, test_msg_id type, const char *msg)
     return error_propagate_int(_test_state_add_msg(state, type, level, msg, 0));
 }
 
-int test_state_add_msg_f(test_state_ct state, test_msg_id type, const char *fmt, ...)
+int test_state_add_msg_f(test_state_ct state, test_msg_id type, size_t level, const char *fmt, ...)
 {
-    return error_propagate_int(test_state_add_msg(state, type, VVFMT(fmt)));
+    return error_propagate_int(test_state_add_msg(state, type, level, VVFMT(fmt)));
 }
 
 static int test_state_vec_fold_msg(vec_const_ct vec, size_t index, void *elem, void *ctx)
