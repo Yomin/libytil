@@ -36,18 +36,23 @@ char *strdup_printf(const char *fmt, ...)
     return str;
 }
 
-char *strdup_vprintf(const char *fmt, va_list ap)
+char *strdup_vprintf(const char *fmt, va_list ap1)
 {
     char *str;
     int len;
+    va_list ap2;
     
-    if((len = vsnprintf(NULL, 0, fmt, ap)) < 0)
-        return NULL;
+    va_copy(ap2, ap1);
+    
+    if((len = vsnprintf(NULL, 0, fmt, ap2)) < 0)
+        return va_end(ap2), NULL;
+    
+    va_end(ap2);
     
     if(!(str = malloc(len+1)))
         return NULL;
     
-    if(vsnprintf(str, len+1, fmt, ap) < 0)
+    if(vsnprintf(str, len+1, fmt, ap1) < 0)
         return free(str), NULL;
     
     return str;
