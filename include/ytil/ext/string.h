@@ -61,6 +61,8 @@ char *strpnchr(const char *str, int c, size_t *n);
 
 // scan str for first occurence of any char in accept (system provided)
 // char *strpbrk(const char *str, const char *accept);
+// scan str for first occurence of any char in accept, check max first n chars
+char *strnpbrk(const char *str, const char *accept, size_t n);
 // scan str for last occurence of any char in accept
 char *strrpbrk(const char *str, const char *accept);
 // scan str for first occurence of any char not in reject

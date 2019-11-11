@@ -115,6 +115,18 @@ char *strpnchr(const char *str, int c, size_t *pn)
     return (char*)str;
 }
 
+char *strnpbrk(const char *str, const char *accept, size_t n)
+{
+    const char *a;
+    
+    for(; n && str[0]; str++, n--)
+        for(a=accept; a[0]; a++)
+            if(a[0] == str[0])
+                return (char*)str;
+    
+    return NULL;
+}
+
 char *strrpbrk(const char *str, const char *accept)
 {
     return memrpbrk(str, strlen(str), accept, strlen(accept));
