@@ -124,7 +124,7 @@ static const error_info_st error_infos[] =
 
 static void fperror(FILE *fp, const char *msg)
 {
-    fprintf(fp, "%s: %s\n", msg, error_get_desc("<unset_error>"));
+    fprintf(fp, "%s: %s\n", msg, error_desc(0));
 }
 
 static int test_run_get_clock(clockid_t *clock, ...)
@@ -165,12 +165,12 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
 {
     int opt;
     
-    if(proc_init_title(argc, argv) && !error_check(E_PROC_NOT_AVAILABLE))
+    if(proc_init_title(argc, argv) && !error_check(0, E_PROC_NOT_AVAILABLE))
         fperror(run->fp, "failed to init proc title");
     
     if(test_run_get_clock(&run->control_clock, CLOCK_MONOTONIC, CLOCK_REALTIME)
     || test_run_get_clock(&run->worker_clock, CLOCK_PROCESS_CPUTIME_ID, CLOCK_MONOTONIC, CLOCK_REALTIME))
-        return error_propagate(), fperror(run->fp, "failed to get clock"), -1;
+        return error_pass(), fperror(run->fp, "failed to get clock"), -1;
     
     if(argc <= 1)
         return 0;
@@ -184,7 +184,7 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
         case 'f':
         case 'F':
             if(test_run_enable_fork(run, opt == 'f'))
-                return error_propagate(), fprintf(run->fp, "fork not available\n"), -1;
+                return error_pass(), fprintf(run->fp, "fork not available\n"), -1;
             break;
         case 'c':
         case 'C':
@@ -222,12 +222,12 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
     for(; optind < argc; optind++)
         if(test_run_add_filter(run, argv[optind]))
         {
-            if(error_check(E_TEST_RUN_INVALID_FILTER))
+            if(error_check(0, E_TEST_RUN_INVALID_FILTER))
                 fprintf(run->fp, "invalid filter '%s'\n", argv[optind]);
             else
                 fperror(run->fp, "failed to add filter");
             
-            return error_propagate(), -1;
+            return error_pass(), -1;
         }
     
     return 0;
@@ -240,7 +240,7 @@ test_run_ct test_run_new(void)
     test_run_ct run;
     
     if(!(run = test_run_new_with_args(0, NULL)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     return run;
 }
@@ -264,7 +264,7 @@ test_run_ct test_run_new_with_args(int argc, char *argv[])
 #endif
     
     if(test_run_config(run, argc, argv))
-        return error_propagate(), test_run_free(run), NULL;
+        return error_pass(), test_run_free(run), NULL;
     
     if(!(run->state = test_state_new()))
         return error_wrap(), fperror(run->fp, "failed to init test state"), test_run_free(run), NULL;
@@ -630,7 +630,7 @@ static int test_run_suite(test_run_ct run, test_suite_const_ct suite)
     memset(&run->count, 0, sizeof(test_count_st));
     
     if(test_run_push(run, test_suite_get_name(suite)))
-        return error_propagate(), -1;
+        return error_pass(), -1;
     
     if(run->loglvl >= TEST_LOGLVL_CASE)
     {
@@ -960,7 +960,7 @@ static int test_run_control(test_run_ct run, test_case_const_ct tcase, pid_t wor
     }
     
     if(test_run_kill(run, worker))
-        return error_propagate(), -1;
+        return error_pass(), -1;
     
     test_state_set_result(run->state, TEST_RESULT_TIMEOUT);
     test_run_eval(run, tcase);

@@ -149,7 +149,7 @@ static int test_com_send(test_com_ct com, test_com_msg_id type, ...)
     assert(type < TEST_COM_TYPES);
     
     if(test_com_write(com, &type, sizeof(test_com_msg_id)))
-        return error_propagate(), -1;
+        return error_pass(), -1;
     
     va_start(ap, type);
     
@@ -158,7 +158,7 @@ static int test_com_send(test_com_ct com, test_com_msg_id type, ...)
         size = va_arg(ap, size_t);
         
         if(test_com_write(com, data, size))
-            return va_end(ap), error_propagate(), -1;
+            return va_end(ap), error_pass(), -1;
     }
     
     va_end(ap);
@@ -176,7 +176,7 @@ int test_com_send_status(test_com_ct com, test_status_id status)
     
 #ifndef _WIN32
     if(!com->shortcut)
-        return error_propagate_int(test_com_send(com, TEST_COM_STATUS
+        return error_pass_int(test_com_send(com, TEST_COM_STATUS
             , &status, sizeof(test_status_id)
             , NULL));
 #endif
@@ -193,7 +193,7 @@ int test_com_send_result(test_com_ct com, test_result_id result)
     
 #ifndef _WIN32
     if(!com->shortcut)
-        return error_propagate_int(test_com_send(com, TEST_COM_RESULT
+        return error_pass_int(test_com_send(com, TEST_COM_RESULT
             , &result, sizeof(test_result_id)
             , NULL));
 #endif
@@ -214,7 +214,7 @@ int test_com_send_duration(test_com_ct com, clockid_t clock, timespec_st *start)
     
 #ifndef _WIN32
     if(!com->shortcut)
-        return error_propagate_int(test_com_send(com, TEST_COM_DURATION
+        return error_pass_int(test_com_send(com, TEST_COM_DURATION
             , &msg.duration, sizeof(size_t)
             , NULL));
 #endif
@@ -234,7 +234,7 @@ int test_com_send_position(test_com_ct com, test_pos_id type, const char *file, 
     {
         size_t len = strlen(file) +1;
         
-        return error_propagate_int(test_com_send(com, TEST_COM_POS
+        return error_pass_int(test_com_send(com, TEST_COM_POS
             , &type, sizeof(test_pos_id)
             , &len, sizeof(size_t)
             , file, len
@@ -252,7 +252,7 @@ int test_com_send_pass(test_com_ct com)
     
 #ifndef _WIN32
     if(!com->shortcut)
-        return error_propagate_int(test_com_send(com, TEST_COM_PASS, NULL));
+        return error_pass_int(test_com_send(com, TEST_COM_PASS, NULL));
 #endif
     
     return error_wrap_int(com->cb(TEST_COM_PASS, NULL, com->ctx));
@@ -264,7 +264,7 @@ int test_com_send_msg(test_com_ct com, test_msg_id type, size_t level, const cha
     int rc;
     
     va_start(ap, fmt);
-    rc = error_propagate_int(test_com_send_msg_v(com, type, level, fmt, ap));
+    rc = error_pass_int(test_com_send_msg_v(com, type, level, fmt, ap));
     va_end(ap);
     
     return rc;
@@ -289,7 +289,7 @@ int test_com_send_msg_v(test_com_ct com, test_msg_id type, size_t level, const c
     
 #ifndef _WIN32
     if(!com->shortcut)
-        return error_propagate_int(test_com_send(com, TEST_COM_MSG
+        return error_pass_int(test_com_send(com, TEST_COM_MSG
             , &type, sizeof(test_msg_id)
             , &level, sizeof(size_t)
             , &len, sizeof(size_t)
@@ -341,7 +341,7 @@ static int test_com_read(test_com_ct com, void *dst, size_t dst_size)
         size = com->pos + dst_size - com->size;
         
         if(!(data = test_com_alloc(com, size)))
-            return error_propagate(), -1;
+            return error_pass(), -1;
         
         for(; size; data += count, size -= count, com->size += count)
             if((count = recv(com->sock, data, size, 0)) > 0)
@@ -364,32 +364,32 @@ static int test_com_read(test_com_ct com, void *dst, size_t dst_size)
 
 static int test_com_read_type(test_com_ct com, test_com_msg_id *type)
 {
-    return error_propagate_int(test_com_read(com, type, sizeof(test_com_msg_id)));
+    return error_pass_int(test_com_read(com, type, sizeof(test_com_msg_id)));
 }
 
 static int test_com_read_status(test_com_ct com, test_status_id *status)
 {
-    return error_propagate_int(test_com_read(com, status, sizeof(test_status_id)));
+    return error_pass_int(test_com_read(com, status, sizeof(test_status_id)));
 }
 
 static int test_com_read_result(test_com_ct com, test_result_id *result)
 {
-    return error_propagate_int(test_com_read(com, result, sizeof(test_result_id)));
+    return error_pass_int(test_com_read(com, result, sizeof(test_result_id)));
 }
 
 static int test_com_read_pos_type(test_com_ct com, test_pos_id *type)
 {
-    return error_propagate_int(test_com_read(com, type, sizeof(test_pos_id)));
+    return error_pass_int(test_com_read(com, type, sizeof(test_pos_id)));
 }
 
 static int test_com_read_msg_type(test_com_ct com, test_msg_id *type)
 {
-    return error_propagate_int(test_com_read(com, type, sizeof(test_msg_id)));
+    return error_pass_int(test_com_read(com, type, sizeof(test_msg_id)));
 }
 
 static int test_com_read_size(test_com_ct com, size_t *size)
 {
-    return error_propagate_int(test_com_read(com, size, sizeof(size_t)));
+    return error_pass_int(test_com_read(com, size, sizeof(size_t)));
 }
 
 static int test_com_read_str(test_com_ct com, char **str)
@@ -397,12 +397,12 @@ static int test_com_read_str(test_com_ct com, char **str)
     size_t size, offset;
     
     if(test_com_read(com, &size, sizeof(size_t)))
-        return error_propagate(), -1;
+        return error_pass(), -1;
     
     offset = com->pos;
     
     if(test_com_read(com, NULL, size))
-        return error_propagate(), -1;
+        return error_pass(), -1;
     
     *str = &com->buf[offset]; // fixme next alloc may invalidate str
     
@@ -418,7 +418,7 @@ static int test_com_recv_msg(test_com_ct com)
     com->pos = 0;
     
     if(test_com_read_type(com, &type))
-        return error_propagate(), -1;
+        return error_pass(), -1;
     
     switch(type)
     {
@@ -450,7 +450,7 @@ static int test_com_recv_msg(test_com_ct com)
     }
     
     if(rc)
-        return error_propagate(), rc;
+        return error_pass(), rc;
     
     rc = error_wrap_int(com->cb(type, &msg, com->ctx));
     
@@ -473,9 +473,9 @@ int test_com_recv(test_com_ct com)
             continue;
         else if(rc > 0)
             return rc;
-        else if(error_check(E_TEST_COM_WOULD_BLOCK) || error_check(E_TEST_COM_SHUTDOWN))
+        else if(error_check(0, E_TEST_COM_WOULD_BLOCK) || error_check(0, E_TEST_COM_SHUTDOWN))
             return 0;
         else
-            return error_propagate(), -1;
+            return error_pass(), -1;
 }
 #endif // !_WIN32

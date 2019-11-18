@@ -26,19 +26,12 @@
 #include <string.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 
 #ifndef ERROR_STACK_SIZE
-#   define ERROR_STACK_SIZE 10
+#   define ERROR_STACK_SIZE 20
 #endif
-
-typedef enum error_type
-{
-      ERROR_TYPE_WRAP
-    , ERROR_TYPE_PROPAGATE
-    , ERROR_TYPE_ERROR
-    , ERROR_TYPE_ERRNO
-} error_type_id;
 
 typedef struct error_entry
 {
@@ -52,7 +45,6 @@ typedef struct error_state
 {
     error_entry_st stack[ERROR_STACK_SIZE];
     size_t size;
-    int context;
 } error_state_st;
 
 static error_state_st errors;
@@ -70,14 +62,6 @@ static void error_add(error_type_id type, const char *func, ssize_t error, const
         , .infos = infos
     };
     
-    switch(type)
-    {
-    case ERROR_TYPE_WRAP:   errors.context = -1; break;
-    case ERROR_TYPE_ERROR:
-    case ERROR_TYPE_ERRNO:  errors.context = entry; break;
-    default:                break;
-    }
-    
     errors.size = entry+1;
 }
 
@@ -94,76 +78,171 @@ void _error_push(const char *func, const error_info_st *infos, size_t error)
 
 void _error_wrap(const char *func)
 {
-    error_add(ERROR_TYPE_WRAP, func, -1, NULL);
+    error_add(ERROR_TYPE_WRAPPER, func, E_ERROR_WRAPPER, NULL);
 }
 
-void _error_push_wrap(const char *func, const error_info_st *infos, size_t error)
+void _error_pack(const char *func, const error_info_st *infos, size_t error)
 {
-    if(errors.context >= 0)
-        error_add(ERROR_TYPE_ERROR, func, error, infos);
+    if(error_get(0) < 0)
+        error_add(ERROR_TYPE_WRAPPER, func, E_ERROR_WRAPPER, NULL);
     else
-        error_add(ERROR_TYPE_WRAP, func, -1, NULL);
+        error_add(ERROR_TYPE_ERROR, func, error, infos);
 }
 
-void _error_propagate(const char *func)
+void _error_map(const char *func, size_t depth, const error_info_st *infos, ...)
 {
-    error_add(ERROR_TYPE_PROPAGATE, func, -1, NULL);
+    ssize_t error = error_get(depth), match;
+    va_list ap;
+    
+    va_start(ap, infos);
+    
+    while(1)
+    {
+        if((match = va_arg(ap, int)) == E_ERROR_UNSET)
+        {
+            error_add(ERROR_TYPE_WRAPPER, func, E_ERROR_WRAPPER, NULL);
+            break;
+        }
+        else if(match == error)
+        {
+            error_add(ERROR_TYPE_ERROR, func, va_arg(ap, int), infos);
+            break;
+        }
+        else
+        {
+            va_arg(ap, int);
+        }
+    }
+    
+    va_end(ap);
 }
 
-void _error_set_errno(const char *func, int error)
+void _error_pass(const char *func)
+{
+    error_add(ERROR_TYPE_PASS, func, -1, NULL);
+}
+
+void _errno_set(const char *func, int error)
 {
     errors.size = 0;
     error_add(ERROR_TYPE_ERRNO, func, error, NULL);
 }
 
-void _error_push_errno(const char *func, int error)
+void _errno_push(const char *func, int error)
 {
     error_add(ERROR_TYPE_ERRNO, func, error, NULL);
+}
+
+void _error_push_errno(const char *func, const error_info_st *infos, size_t error, const char *sub)
+{
+    errors.size = 0;
+    error_add(ERROR_TYPE_ERRNO, sub, errno, NULL);
+    error_add(ERROR_TYPE_ERROR, func, error, infos);
 }
 
 void _error_wrap_errno(const char *func, const char *sub)
 {
     errors.size = 0;
     error_add(ERROR_TYPE_ERRNO, sub, errno, NULL);
-    error_add(ERROR_TYPE_WRAP, func, -1, NULL);
+    error_add(ERROR_TYPE_WRAPPER, func, E_ERROR_WRAPPER, NULL);
 }
 
-void _error_propagate_errno(const char *func, const char *sub)
+void _error_pass_errno(const char *func, const char *sub)
 {
     errors.size = 0;
     error_add(ERROR_TYPE_ERRNO, sub, errno, NULL);
-    error_add(ERROR_TYPE_PROPAGATE, func, -1, NULL);
+    error_add(ERROR_TYPE_PASS, func, -1, NULL);
 }
 
 void error_clear(void)
 {
     errors.size = 0;
-    errors.context = -1;
 }
 
-bool error_check(ssize_t error)
+size_t error_depth(void)
 {
-    return errors.context >= 0 && error == errors.stack[errors.context].error;
+    return errors.size;
 }
 
-ssize_t error_get(void)
+static error_entry_st *error_get_entry(size_t depth)
 {
-    return errors.context < 0 ? -1 : error_stack_get_error(errors.context);
+    size_t level;
+    
+    return_value_if_fail(errors.size, NULL);
+    
+    for(level = errors.size-1; level && errors.stack[level].type == ERROR_TYPE_PASS; level--);
+    
+    for(; level && depth; depth--)
+        for(level--; level && errors.stack[level].type == ERROR_TYPE_PASS; level--);
+    
+    if(depth || errors.stack[level].type == ERROR_TYPE_PASS)
+        return NULL;
+    
+    return &errors.stack[level];
 }
 
-const char *error_get_func(const char *def)
+static const char *error_entry_get_name(error_entry_st *entry)
 {
-    return errors.context < 0 ? def : error_stack_get_func(errors.context, def);
+    switch(entry->type)
+    {
+    case ERROR_TYPE_WRAPPER:    return "E_ERROR_WRAPPER";
+    case ERROR_TYPE_ERROR:      return entry->infos[entry->error].name;
+    case ERROR_TYPE_ERRNO:      return IFNULL(strerrno(entry->error), "<unknown_errno>");
+    default:                    abort();
+    }
 }
 
-const char *error_get_name(const char *def)
+static const char *error_entry_get_desc(error_entry_st *entry)
 {
-    return errors.context < 0 ? def : error_stack_get_name(errors.context, def);
+    switch(entry->type)
+    {
+    case ERROR_TYPE_WRAPPER:    return "Error Wrapper";
+    case ERROR_TYPE_ERROR:      return entry->infos[entry->error].desc;
+    case ERROR_TYPE_ERRNO:      return strerror(entry->error);
+    default:                    abort();
+    }
 }
 
-const char *error_get_desc(const char *def)
+ssize_t error_get(size_t depth)
 {
-    return errors.context < 0 ? def : error_stack_get_desc(errors.context, def);
+    error_entry_st *entry = error_get_entry(depth);
+    
+    return entry ? entry->error : E_ERROR_UNSET;
+}
+
+bool error_check(size_t depth, ssize_t error)
+{
+    error_entry_st *entry = error_get_entry(depth);
+    
+    return entry && entry->error == error;
+}
+
+error_type_id error_type(size_t depth)
+{
+    error_entry_st *entry = error_get_entry(depth);
+    
+    return entry ? entry->type : ERROR_TYPE_INVALID;
+}
+
+const char *error_func(size_t depth)
+{
+    error_entry_st *entry = error_get_entry(depth);
+    
+    return entry ? entry->func : NULL;
+}
+
+const char *error_name(size_t depth)
+{
+    error_entry_st *entry = error_get_entry(depth);
+    
+    return entry ? error_entry_get_name(entry) : NULL;
+}
+
+const char *error_desc(size_t depth)
+{
+    error_entry_st *entry = error_get_entry(depth);
+    
+    return entry ? error_entry_get_desc(entry) : NULL;
 }
 
 ssize_t error_origin_get(void)
@@ -171,79 +250,57 @@ ssize_t error_origin_get(void)
     return error_stack_get_error(0);
 }
 
-const char *error_origin_get_func(const char *def)
+bool error_origin_check(ssize_t error)
 {
-    return error_stack_get_func(0, def);
+    return error_stack_check_error(0, error);
 }
 
-const char *error_origin_get_name(const char *def)
+error_type_id error_origin_type(void)
 {
-    return error_stack_get_name(0, def);
+    return error_stack_get_type(0);
 }
 
-const char *error_origin_get_desc(const char *def)
+const char *error_origin_func(void)
 {
-    return error_stack_get_desc(0, def);
+    return error_stack_get_func(0);
 }
 
-size_t error_stack_get_size(void)
+const char *error_origin_name(void)
 {
-    return errors.size;
+    return error_stack_get_name(0);
 }
 
-bool error_stack_is_wrapper(size_t level)
+const char *error_origin_desc(void)
 {
-    if(level >= errors.size)
-        return true;
-    
-    switch(errors.stack[level].type)
-    {
-    case ERROR_TYPE_ERROR:
-    case ERROR_TYPE_ERRNO:  return false;
-    default:                return true;
-    }
+    return error_stack_get_desc(0);
 }
 
 ssize_t error_stack_get_error(size_t level)
 {
-    return level < errors.size ? errors.stack[level].error : -1;
+    return level >= errors.size ? E_ERROR_UNSET : errors.stack[level].error;
 }
 
-const char *error_stack_get_func(size_t level, const char *def)
+bool error_stack_check_error(size_t level, ssize_t error)
 {
-    return level < errors.size ? errors.stack[level].func : def;
+    return level < errors.size && errors.stack[level].error == error;
 }
 
-const char *error_stack_get_name(size_t level, const char *def)
+error_type_id error_stack_get_type(size_t level)
 {
-    error_entry_st *entry;
-    
-    if(level >= errors.size)
-        return def;
-    
-    entry = &errors.stack[level];
-    
-    switch(entry->type)
-    {
-    case ERROR_TYPE_ERROR:  return entry->infos[entry->error].name;
-    case ERROR_TYPE_ERRNO:  return IFNULL(strerrno(entry->error), "<unknown_errno>");
-    default:                abort();
-    }
+    return level >= errors.size ? ERROR_TYPE_INVALID : errors.stack[level].type;
 }
 
-const char *error_stack_get_desc(size_t level, const char *def)
+const char *error_stack_get_func(size_t level)
 {
-    error_entry_st *entry;
-    
-    if(level >= errors.size)
-        return def;
-    
-    entry = &errors.stack[level];
-    
-    switch(entry->type)
-    {
-    case ERROR_TYPE_ERROR:  return entry->infos[entry->error].desc;
-    case ERROR_TYPE_ERRNO:  return strerror(entry->error);
-    default:                abort();
-    }
+    return level >= errors.size ? NULL : errors.stack[level].func;
+}
+
+const char *error_stack_get_name(size_t level)
+{
+    return level >= errors.size ? NULL : error_entry_get_name(&errors.stack[level]);
+}
+
+const char *error_stack_get_desc(size_t level)
+{
+    return level >= errors.size ? NULL : error_entry_get_desc(&errors.stack[level]);
 }

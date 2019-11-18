@@ -85,15 +85,25 @@ void _test_abort(void *vctx, const char *file, size_t line, bool backtrace, cons
     va_end(ap);
     
     if(backtrace)
-        for(e=0; e < error_stack_get_size(); e++)
-        {
-            if(error_stack_is_wrapper(e))
+        for(e=0; e < error_depth(); e++)
+            switch(error_stack_get_type(e))
+            {
+            case ERROR_TYPE_WRAPPER:
+                test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: <wrapper>",
+                    e, error_stack_get_func(e));
+                break;
+            case ERROR_TYPE_PASS:
                 test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s",
-                    e, error_stack_get_func(e, NULL));
-            else
+                    e, error_stack_get_func(e));
+                break;
+            case ERROR_TYPE_ERRNO:
+            case ERROR_TYPE_ERROR:
                 test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: %s",
-                    e, error_stack_get_func(e, NULL), error_stack_get_name(e, NULL));
-        }
+                    e, error_stack_get_func(e), error_stack_get_name(e));
+                break;
+            default:
+                abort();
+            }
     
     if(ctx->jump)
         longjmp(*ctx->jump, 1);

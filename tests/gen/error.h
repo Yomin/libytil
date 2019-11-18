@@ -20,17 +20,11 @@
  * THE SOFTWARE.
  */
 
-#include "gen.h"
-#include "error.h"
-#include "path.h"
-#include "str.h"
+#ifndef __YTIL_TEST_GEN_ERROR_H__
+#define __YTIL_TEST_GEN_ERROR_H__
 
+#include <ytil/test/suite.h>
 
-test_suite_ct test_suite_gen(void)
-{
-    return test_suite_new_with_suites("gen"
-        , test_suite_error()
-        , test_suite_path()
-        , test_suite_str()
-    );
-}
+test_suite_ct test_suite_error(void);
+
+#endif

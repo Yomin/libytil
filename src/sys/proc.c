@@ -114,7 +114,7 @@ int proc_set_title(const char *fmt, ...)
     int rc;
     
     va_start(ap, fmt);
-    rc = error_propagate_int(proc_set_title_v(fmt, ap));
+    rc = error_pass_int(proc_set_title_v(fmt, ap));
     va_end(ap);
     
     return rc;
@@ -141,7 +141,7 @@ int proc_append_title(const char *fmt, ...)
     int rc;
     
     va_start(ap, fmt);
-    rc = error_propagate_int(proc_append_title_v(fmt, ap));
+    rc = error_pass_int(proc_append_title_v(fmt, ap));
     va_end(ap);
     
     return rc;

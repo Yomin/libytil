@@ -428,7 +428,7 @@ unsigned char *str_uw(str_ct str)
     return_error_if_pass(_str_is_binary(str), E_STR_BINARY, NULL);
     
     if(!_str_get_writeable(str))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     return str->data;
 }
@@ -443,7 +443,7 @@ unsigned char *str_buw(str_ct str)
     assert_str(str);
     
     if(!_str_get_writeable(str))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     return str->data;
 }
@@ -556,7 +556,7 @@ str_ct str_ref(str_const_ct str)
         if(str->type == DATA_TRANSIENT)
             free(data);
         
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     }
     
     // if transient string has ref redirect to heap string
@@ -729,7 +729,7 @@ str_ct str_resize_set(str_ct str, size_t new_len, char c)
     len = _str_get_len(str);
     
     if(!str_resize(str, new_len))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     if(new_len > len)
         memset(&str->data[len], c, new_len-len);
@@ -741,7 +741,7 @@ str_ct str_grow(str_ct str, size_t len)
 {
     assert_str(str);
     
-    return error_propagate_ptr(str_resize(str, _str_get_len(str)+len));
+    return error_pass_ptr(str_resize(str, _str_get_len(str)+len));
 }
 
 str_ct str_grow_set(str_ct str, size_t len, char c)
@@ -753,7 +753,7 @@ str_ct str_grow_set(str_ct str, size_t len, char c)
     cur_len = _str_get_len(str);
     
     if(!str_resize(str, cur_len+len))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     memset(&str->data[cur_len], c, len);
     
@@ -769,12 +769,12 @@ str_ct str_shrink(str_ct str, size_t len)
     cur_len = _str_get_len(str);
     len = cur_len <= len ? 0 : cur_len - len;
     
-    return error_propagate_ptr(str_resize(str, len));
+    return error_pass_ptr(str_resize(str, len));
 }
 
 str_ct str_prepare(size_t len)
 {
-    return error_propagate_ptr(str_prepare_c(len, len));
+    return error_pass_ptr(str_prepare_c(len, len));
 }
 
 str_ct str_prepare_c(size_t len, size_t cap)
@@ -788,14 +788,14 @@ str_ct str_prepare_c(size_t len, size_t cap)
         return error_wrap_errno(calloc), NULL;
     
     if(!(str = _str_new(DATA_HEAP, data, len, cap, NO_FLAGS)))
-        return error_propagate(), free(data), NULL;
+        return error_pass(), free(data), NULL;
     
     return str;
 }
 
 str_ct str_prepare_b(size_t len)
 {
-    return error_propagate_ptr(str_prepare_bc(len, len));
+    return error_pass_ptr(str_prepare_bc(len, len));
 }
 
 str_ct str_prepare_bc(size_t len, size_t cap)
@@ -809,14 +809,14 @@ str_ct str_prepare_bc(size_t len, size_t cap)
         return error_wrap_errno(calloc), NULL;
     
     if(!(str = _str_new(DATA_HEAP, data, len, cap, FLAG_BINARY)))
-        return error_propagate(), free(data), NULL;
+        return error_pass(), free(data), NULL;
     
     return str;
 }
 
 str_ct str_prepare_set(size_t len, char c)
 {
-    return error_propagate_ptr(str_prepare_set_c(len, len, c));
+    return error_pass_ptr(str_prepare_set_c(len, len, c));
 }
 
 str_ct str_prepare_set_c(size_t len, size_t cap, char c)
@@ -824,7 +824,7 @@ str_ct str_prepare_set_c(size_t len, size_t cap, char c)
     str_ct str;
     
     if(!(str = str_prepare_c(len, cap)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     memset(str->data, c, len);
     
@@ -833,7 +833,7 @@ str_ct str_prepare_set_c(size_t len, size_t cap, char c)
 
 str_ct str_prepare_set_b(size_t len, char c)
 {
-    return error_propagate_ptr(str_prepare_set_bc(len, len, c));
+    return error_pass_ptr(str_prepare_set_bc(len, len, c));
 }
 
 str_ct str_prepare_set_bc(size_t len, size_t cap, char c)
@@ -841,7 +841,7 @@ str_ct str_prepare_set_bc(size_t len, size_t cap, char c)
     str_ct str;
     
     if(!(str = str_prepare_bc(len, cap)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     memset(str->data, c, len);
     
@@ -852,14 +852,14 @@ str_ct str_new_h(char *cstr)
 {
     return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
     
-    return error_propagate_ptr(_str_new(DATA_HEAP, (unsigned char*)cstr, -1, -1, NO_FLAGS));
+    return error_pass_ptr(_str_new(DATA_HEAP, (unsigned char*)cstr, -1, -1, NO_FLAGS));
 }
 
 str_ct str_new_hn(char *cstr, size_t len)
 {
     return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
     
-    return error_propagate_ptr(_str_new(DATA_HEAP, (unsigned char*)cstr, len, len, NO_FLAGS));
+    return error_pass_ptr(_str_new(DATA_HEAP, (unsigned char*)cstr, len, len, NO_FLAGS));
 }
 
 str_ct str_new_hnc(char *cstr, size_t len, size_t cap)
@@ -867,28 +867,28 @@ str_ct str_new_hnc(char *cstr, size_t len, size_t cap)
     return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
     return_error_if_fail(len <= cap, E_STR_INVALID_LENGTH, NULL);
     
-    return error_propagate_ptr(_str_new(DATA_HEAP, (unsigned char*)cstr, len, cap, NO_FLAGS));
+    return error_pass_ptr(_str_new(DATA_HEAP, (unsigned char*)cstr, len, cap, NO_FLAGS));
 }
 
 str_ct str_new_s(const char *cstr)
 {
     return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
     
-    return error_propagate_ptr(_str_new(DATA_STATIC, (unsigned char*)cstr, -1, 0, NO_FLAGS));
+    return error_pass_ptr(_str_new(DATA_STATIC, (unsigned char*)cstr, -1, 0, NO_FLAGS));
 }
 
 str_ct str_new_sn(const char *cstr, size_t len)
 {
     return_error_if_fail(cstr && !cstr[len], E_STR_INVALID_CSTR, NULL);
     
-    return error_propagate_ptr(_str_new(DATA_STATIC, (unsigned char*)cstr, len, 0, NO_FLAGS));
+    return error_pass_ptr(_str_new(DATA_STATIC, (unsigned char*)cstr, len, 0, NO_FLAGS));
 }
 
 str_ct str_new_bh(void *data, size_t len)
 {
     return_error_if_fail(data, E_STR_INVALID_DATA, NULL);
     
-    return error_propagate_ptr(_str_new(DATA_HEAP, data, len, len, FLAG_BINARY));
+    return error_pass_ptr(_str_new(DATA_HEAP, data, len, len, FLAG_BINARY));
 }
 
 str_ct str_new_bhc(void *data, size_t len, size_t cap)
@@ -896,14 +896,14 @@ str_ct str_new_bhc(void *data, size_t len, size_t cap)
     return_error_if_fail(data, E_STR_INVALID_DATA, NULL);
     return_error_if_fail(len <= cap, E_STR_INVALID_LENGTH, NULL);
     
-    return error_propagate_ptr(_str_new(DATA_HEAP, data, len, cap, FLAG_BINARY));
+    return error_pass_ptr(_str_new(DATA_HEAP, data, len, cap, FLAG_BINARY));
 }
 
 str_ct str_new_bs(const void *data, size_t len)
 {
     return_error_if_fail(data, E_STR_INVALID_DATA, NULL);
     
-    return error_propagate_ptr(_str_new(DATA_STATIC, (void*)data, len, 0, FLAG_BINARY));
+    return error_pass_ptr(_str_new(DATA_STATIC, (void*)data, len, 0, FLAG_BINARY));
 }
 
 str_ct tstr_init_h(str_ct str, char *hstr)
@@ -996,7 +996,7 @@ str_ct tstr_init_btc(str_ct str, void *bin, size_t len, size_t cap)
 
 str_ct str_dup(str_const_ct str)
 {
-    return error_propagate_ptr(str_dup_n(str, str_len(str)));
+    return error_pass_ptr(str_dup_n(str, str_len(str)));
 }
 
 str_ct str_dup_n(str_const_ct str, size_t len)
@@ -1008,20 +1008,20 @@ str_ct str_dup_n(str_const_ct str, size_t len)
     if(str->type == DATA_STATIC)
     {
         if(_str_is_binary(str)) // no terminator for binary required
-            return error_propagate_ptr(str_new_bs(str->data, len));
+            return error_pass_ptr(str_new_bs(str->data, len));
         else if(!len) // zero length const data can be statically provided
-            return error_propagate_ptr(str_new_l(""));
+            return error_pass_ptr(str_new_l(""));
         else if(len == _str_get_len(str)) // just reference it
-            return error_propagate_ptr(str_new_sn((char*)str->data, len));
+            return error_pass_ptr(str_new_sn((char*)str->data, len));
         else // heap dup to ensure terminator
-            return error_propagate_ptr(str_dup_cn((char*)str->data, len));
+            return error_pass_ptr(str_dup_cn((char*)str->data, len));
     }
     else
     {
         if(_str_is_binary(str))
-            return error_propagate_ptr(str_dup_b(str->data, len));
+            return error_pass_ptr(str_dup_b(str->data, len));
         else
-            return error_propagate_ptr(str_dup_cn((char*)str->data, len));
+            return error_pass_ptr(str_dup_cn((char*)str->data, len));
     }
 }
 
@@ -1029,7 +1029,7 @@ str_ct str_dup_c(const char *cstr)
 {
     return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
     
-    return error_propagate_ptr(str_dup_cn(cstr, strlen(cstr)));
+    return error_pass_ptr(str_dup_cn(cstr, strlen(cstr)));
 }
 
 str_ct str_dup_cn(const char *cstr, size_t len)
@@ -1039,7 +1039,7 @@ str_ct str_dup_cn(const char *cstr, size_t len)
     return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
     
     if(!(str = str_prepare_c(len, len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     memcpy(str->data, cstr, len);
     
@@ -1053,7 +1053,7 @@ str_ct str_dup_b(const void *data, size_t len)
     return_error_if_fail(data, E_STR_INVALID_DATA, NULL);
     
     if(!(str = str_prepare_c(len, len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     memcpy(str->data, data, len);
     _str_set_flags(str, FLAG_BINARY);
@@ -1067,7 +1067,7 @@ str_ct str_dup_f(const char *fmt, ...)
     va_list ap;
     
     va_start(ap, fmt);
-    str = error_propagate_ptr(str_dup_vf(fmt, ap));
+    str = error_pass_ptr(str_dup_vf(fmt, ap));
     va_end(ap);
     
     return str;
@@ -1086,7 +1086,7 @@ str_ct str_dup_vf(const char *fmt, va_list ap)
     va_end(ap2);
     
     if(!(str = str_prepare_c(len, len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     vsnprintf((char*)str->data, len+1, fmt, ap);
     
@@ -1100,9 +1100,9 @@ str_ct tstr_init_dup_n(str_ct dst, void *data, str_ct src, size_t len)
     len = MIN(len, _str_get_len(src));
     
     if(_str_is_binary(src))
-        return error_propagate_ptr(tstr_init_dup_b(dst, data, src->data, len));
+        return error_pass_ptr(tstr_init_dup_b(dst, data, src->data, len));
     else
-        return error_propagate_ptr(tstr_init_dup_cn(dst, data, (char*)src->data, len));
+        return error_pass_ptr(tstr_init_dup_cn(dst, data, (char*)src->data, len));
 }
 
 str_ct tstr_init_dup_cn(str_ct dst, void *vdata, const char *cstr, size_t len)
@@ -1200,9 +1200,9 @@ str_ct str_copy(str_ct dst, size_t pos, str_const_ct src)
     assert_str(src);
     
     if(_str_is_binary(src))
-        return error_propagate_ptr(str_copy_b(dst, pos, src->data, _str_get_len(src)));
+        return error_pass_ptr(str_copy_b(dst, pos, src->data, _str_get_len(src)));
     else
-        return error_propagate_ptr(str_copy_cn(dst, pos, (void*)src->data, _str_get_len(src)));
+        return error_pass_ptr(str_copy_cn(dst, pos, (void*)src->data, _str_get_len(src)));
 }
 
 str_ct str_copy_n(str_ct dst, size_t pos, str_const_ct src, size_t len)
@@ -1212,16 +1212,16 @@ str_ct str_copy_n(str_ct dst, size_t pos, str_const_ct src, size_t len)
     len = MIN(len, _str_get_len(src));
     
     if(_str_is_binary(src))
-        return error_propagate_ptr(str_copy_b(dst, pos, src->data, len));
+        return error_pass_ptr(str_copy_b(dst, pos, src->data, len));
     else
-        return error_propagate_ptr(str_copy_cn(dst, pos, (void*)src->data, len));
+        return error_pass_ptr(str_copy_cn(dst, pos, (void*)src->data, len));
 }
 
 str_ct str_copy_c(str_ct dst, size_t pos, const char *src)
 {
     return_error_if_fail(src, E_STR_INVALID_CSTR, NULL);
     
-    return error_propagate_ptr(str_copy_cn(dst, pos, src, strlen(src)));
+    return error_pass_ptr(str_copy_cn(dst, pos, src, strlen(src)));
 }
 
 str_ct str_copy_cn(str_ct dst, size_t pos, const char *src, size_t len)
@@ -1231,7 +1231,7 @@ str_ct str_copy_cn(str_ct dst, size_t pos, const char *src, size_t len)
     return_error_if_fail(pos <= _str_get_len(dst), E_STR_OUT_OF_BOUNDS, NULL);
     
     if(!(dst = str_resize(dst, pos + len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     memcpy(&dst->data[pos], src, len);
     
@@ -1243,7 +1243,7 @@ str_ct str_copy_b(str_ct dst, size_t pos, const void *src, size_t len)
     return_error_if_fail(src, E_STR_INVALID_DATA, NULL);
     
     if(!(dst = str_copy_cn(dst, pos, src, len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     _str_set_flags(dst, FLAG_BINARY);
     
@@ -1255,7 +1255,7 @@ str_ct str_copy_f(str_ct dst, size_t pos, const char *fmt, ...)
     va_list ap;
     
     va_start(ap, fmt);
-    dst = error_propagate_ptr(str_copy_vf(dst, pos, fmt, ap));
+    dst = error_pass_ptr(str_copy_vf(dst, pos, fmt, ap));
     va_end(ap);
     
     return dst;
@@ -1275,7 +1275,7 @@ str_ct str_copy_vf(str_ct dst, size_t pos, const char *fmt, va_list ap)
     va_end(ap2);
     
     if(!(dst = str_resize(dst, pos + len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     vsnprintf((char*)&dst->data[pos], len+1, fmt, ap);
     
@@ -1287,9 +1287,9 @@ ssize_t str_overwrite(str_ct dst, size_t pos, str_const_ct src)
     assert_str(src);
     
     if(_str_is_binary(src))
-        return error_propagate_int(str_overwrite_b(dst, pos, src->data, _str_get_len(src)));
+        return error_pass_int(str_overwrite_b(dst, pos, src->data, _str_get_len(src)));
     else
-        return error_propagate_int(str_overwrite_cn(dst, pos, (char*)src->data, _str_get_len(src)));
+        return error_pass_int(str_overwrite_cn(dst, pos, (char*)src->data, _str_get_len(src)));
 }
 
 ssize_t str_overwrite_n(str_ct dst, size_t pos, str_const_ct src, size_t len)
@@ -1299,16 +1299,16 @@ ssize_t str_overwrite_n(str_ct dst, size_t pos, str_const_ct src, size_t len)
     len = MIN(len, _str_get_len(src));
     
     if(_str_is_binary(src))
-        return error_propagate_int(str_overwrite_b(dst, pos, src->data, len));
+        return error_pass_int(str_overwrite_b(dst, pos, src->data, len));
     else
-        return error_propagate_int(str_overwrite_cn(dst, pos, (char*)src->data, len));
+        return error_pass_int(str_overwrite_cn(dst, pos, (char*)src->data, len));
 }
 
 ssize_t str_overwrite_c(str_ct dst, size_t pos, const char *src)
 {
     return_error_if_fail(src, E_STR_INVALID_CSTR, -1);
     
-    return error_propagate_int(str_overwrite_cn(dst, pos, src, strlen(src)));
+    return error_pass_int(str_overwrite_cn(dst, pos, src, strlen(src)));
 }
 
 ssize_t str_overwrite_cn(str_ct dst, size_t pos, const char *src, size_t len)
@@ -1318,7 +1318,7 @@ ssize_t str_overwrite_cn(str_ct dst, size_t pos, const char *src, size_t len)
     return_error_if_fail(pos < _str_get_len(dst), E_STR_OUT_OF_BOUNDS, -1);
     
     if(!(dst = _str_get_writeable(dst)))
-        return error_propagate(), -1;
+        return error_pass(), -1;
     
     len = MIN(len, _str_get_len(dst) - pos);
     memcpy(&dst->data[pos], src, len);
@@ -1333,7 +1333,7 @@ ssize_t str_overwrite_b(str_ct dst, size_t pos, const void *src, size_t len)
     return_error_if_fail(src, E_STR_INVALID_DATA, -1);
     
     if((count = str_overwrite_cn(dst, pos, src, len)) < 0)
-        return error_propagate(), -1;
+        return error_pass(), -1;
     
     _str_set_flags(dst, FLAG_BINARY);
     
@@ -1346,7 +1346,7 @@ ssize_t str_overwrite_f(str_ct dst, size_t pos, const char *fmt, ...)
     ssize_t len;
     
     va_start(ap, fmt);
-    len = error_propagate_int(str_overwrite_vfn(dst, pos, str_len(dst), fmt, ap));
+    len = error_pass_int(str_overwrite_vfn(dst, pos, str_len(dst), fmt, ap));
     va_end(ap);
     
     return len;
@@ -1357,7 +1357,7 @@ ssize_t str_overwrite_fn(str_ct dst, size_t pos, size_t len, const char *fmt, ..
     va_list ap;
     
     va_start(ap, fmt);
-    len = error_propagate_int(str_overwrite_vfn(dst, pos, len, fmt, ap));
+    len = error_pass_int(str_overwrite_vfn(dst, pos, len, fmt, ap));
     va_end(ap);
     
     return len;
@@ -1365,7 +1365,7 @@ ssize_t str_overwrite_fn(str_ct dst, size_t pos, size_t len, const char *fmt, ..
 
 ssize_t str_overwrite_vf(str_ct dst, size_t pos, const char *fmt, va_list ap)
 {
-    return error_propagate_int(str_overwrite_vfn(dst, pos, str_len(dst), fmt, ap));
+    return error_pass_int(str_overwrite_vfn(dst, pos, str_len(dst), fmt, ap));
 }
 
 ssize_t str_overwrite_vfn(str_ct dst, size_t pos, size_t len, const char *fmt, va_list ap)
@@ -1378,7 +1378,7 @@ ssize_t str_overwrite_vfn(str_ct dst, size_t pos, size_t len, const char *fmt, v
     return_error_if_fail(pos < _str_get_len(dst), E_STR_OUT_OF_BOUNDS, -1);
     
     if(!(dst = _str_get_writeable(dst)))
-        return error_propagate(), -1;
+        return error_pass(), -1;
     
     va_copy(ap2, ap);
     len = MIN(len, _str_get_len(dst) - pos);
@@ -1399,7 +1399,7 @@ static str_ct _str_insert(str_ct str, size_t pos, const char *sub, size_t sub_le
     len = _str_get_len(str);
     
     if(!(str = str_resize(str, len + sub_len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     if(pos < len)
         memmove(&str->data[pos + sub_len], &str->data[pos], len - pos);
@@ -1423,7 +1423,7 @@ static str_ct _str_insert_f(str_ct str, size_t pos, const char *fmt, va_list ap)
     len = _str_get_len(str);
     
     if(!(str = str_resize(str, len + fmt_len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     if(pos < len)
         memmove(&str->data[pos + fmt_len], &str->data[pos], len - pos);
@@ -1440,9 +1440,9 @@ str_ct str_prepend(str_ct str, str_const_ct prefix)
     assert_str(prefix);
     
     if(_str_is_binary(prefix))
-        return error_propagate_ptr(str_prepend_b(str, prefix->data, _str_get_len(prefix)));
+        return error_pass_ptr(str_prepend_b(str, prefix->data, _str_get_len(prefix)));
     else
-        return error_propagate_ptr(str_prepend_cn(str, (char*)prefix->data, _str_get_len(prefix)));
+        return error_pass_ptr(str_prepend_cn(str, (char*)prefix->data, _str_get_len(prefix)));
 }
 
 str_ct str_prepend_n(str_ct str, str_const_ct prefix, size_t len)
@@ -1452,9 +1452,9 @@ str_ct str_prepend_n(str_ct str, str_const_ct prefix, size_t len)
     len = MIN(len, _str_get_len(prefix));
     
     if(_str_is_binary(prefix))
-        return error_propagate_ptr(str_prepend_b(str, prefix->data, len));
+        return error_pass_ptr(str_prepend_b(str, prefix->data, len));
     else
-        return error_propagate_ptr(str_prepend_cn(str, (char*)prefix->data, len));
+        return error_pass_ptr(str_prepend_cn(str, (char*)prefix->data, len));
 }
 
 str_ct str_prepend_c(str_ct str, const char *prefix)
@@ -1462,7 +1462,7 @@ str_ct str_prepend_c(str_ct str, const char *prefix)
     assert_str(str);
     return_error_if_fail(prefix, E_STR_INVALID_CSTR, NULL);
     
-    return error_propagate_ptr(_str_insert(str, 0, prefix, strlen(prefix)));
+    return error_pass_ptr(_str_insert(str, 0, prefix, strlen(prefix)));
 }
 
 str_ct str_prepend_cn(str_ct str, const char *prefix, size_t len)
@@ -1470,7 +1470,7 @@ str_ct str_prepend_cn(str_ct str, const char *prefix, size_t len)
     assert_str(str);
     return_error_if_fail(prefix, E_STR_INVALID_CSTR, NULL);
     
-    return error_propagate_ptr(_str_insert(str, 0, prefix, len));
+    return error_pass_ptr(_str_insert(str, 0, prefix, len));
 }
 
 str_ct str_prepend_b(str_ct str, const void *prefix, size_t len)
@@ -1479,7 +1479,7 @@ str_ct str_prepend_b(str_ct str, const void *prefix, size_t len)
     return_error_if_fail(prefix, E_STR_INVALID_DATA, NULL);
     
     if(!(str = _str_insert(str, 0, prefix, len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     _str_set_flags(str, FLAG_BINARY);
     
@@ -1491,7 +1491,7 @@ str_ct str_prepend_set(str_ct str, size_t len, char c)
     assert_str(str);
     
     if(!(str = _str_insert(str, 0, NULL, len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     memset(str->data, c, len);
     
@@ -1506,7 +1506,7 @@ str_ct str_prepend_f(str_ct str, const char *fmt, ...)
     return_error_if_fail(fmt, E_STR_INVALID_FORMAT, NULL);
     
     va_start(ap, fmt);
-    str = error_propagate_ptr(_str_insert_f(str, 0, fmt, ap));
+    str = error_pass_ptr(_str_insert_f(str, 0, fmt, ap));
     va_end(ap);
     
     return str;
@@ -1517,7 +1517,7 @@ str_ct str_prepend_vf(str_ct str, const char *fmt, va_list ap)
     assert_str(str);
     return_error_if_fail(fmt, E_STR_INVALID_FORMAT, NULL);
     
-    return error_propagate_ptr(_str_insert_f(str, 0, fmt, ap));
+    return error_pass_ptr(_str_insert_f(str, 0, fmt, ap));
 }
 
 str_ct str_append(str_ct str, str_const_ct suffix)
@@ -1525,9 +1525,9 @@ str_ct str_append(str_ct str, str_const_ct suffix)
     assert_str(suffix);
     
     if(_str_is_binary(suffix))
-        return error_propagate_ptr(str_append_b(str, suffix->data, _str_get_len(suffix)));
+        return error_pass_ptr(str_append_b(str, suffix->data, _str_get_len(suffix)));
     else
-        return error_propagate_ptr(str_append_cn(str, (char*)suffix->data, _str_get_len(suffix)));
+        return error_pass_ptr(str_append_cn(str, (char*)suffix->data, _str_get_len(suffix)));
 }
 
 str_ct str_append_n(str_ct str, str_const_ct suffix, size_t len)
@@ -1537,9 +1537,9 @@ str_ct str_append_n(str_ct str, str_const_ct suffix, size_t len)
     len = MIN(len, _str_get_len(suffix));
     
     if(_str_is_binary(suffix))
-        return error_propagate_ptr(str_append_b(str, suffix->data, len));
+        return error_pass_ptr(str_append_b(str, suffix->data, len));
     else
-        return error_propagate_ptr(str_append_cn(str, (char*)suffix->data, len));
+        return error_pass_ptr(str_append_cn(str, (char*)suffix->data, len));
 }
 
 str_ct str_append_c(str_ct str, const char *suffix)
@@ -1564,7 +1564,7 @@ str_ct str_append_b(str_ct str, const void *suffix, size_t len)
     return_error_if_fail(suffix, E_STR_INVALID_DATA, NULL);
     
     if(!(str = _str_insert(str, _str_get_len(str), suffix, len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     _str_set_flags(str, FLAG_BINARY);
     
@@ -1580,7 +1580,7 @@ str_ct str_append_set(str_ct str, size_t suffix_len, char c)
     len = _str_get_len(str);
     
     if(!(str = _str_insert(str, len, NULL, suffix_len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     memset(&str->data[len], c, suffix_len);
     
@@ -1595,7 +1595,7 @@ str_ct str_append_f(str_ct str, const char *fmt, ...)
     return_error_if_fail(fmt, E_STR_INVALID_FORMAT, NULL);
     
     va_start(ap, fmt);
-    str = error_propagate_ptr(_str_insert_f(str, _str_get_len(str), fmt, ap));
+    str = error_pass_ptr(_str_insert_f(str, _str_get_len(str), fmt, ap));
     va_end(ap);
     
     return str;
@@ -1606,7 +1606,7 @@ str_ct str_append_vf(str_ct str, const char *fmt, va_list ap)
     assert_str(str);
     return_error_if_fail(fmt, E_STR_INVALID_FORMAT, NULL);
     
-    return error_propagate_ptr(_str_insert_f(str, _str_get_len(str), fmt, ap));
+    return error_pass_ptr(_str_insert_f(str, _str_get_len(str), fmt, ap));
 }
 
 str_ct str_insert(str_ct str, size_t pos, str_const_ct sub)
@@ -1614,9 +1614,9 @@ str_ct str_insert(str_ct str, size_t pos, str_const_ct sub)
     assert_str(sub);
     
     if(_str_is_binary(sub))
-        return error_propagate_ptr(str_insert_b(str, pos, sub->data, _str_get_len(sub)));
+        return error_pass_ptr(str_insert_b(str, pos, sub->data, _str_get_len(sub)));
     else
-        return error_propagate_ptr(str_insert_cn(str, pos, (char*)sub->data, _str_get_len(sub)));
+        return error_pass_ptr(str_insert_cn(str, pos, (char*)sub->data, _str_get_len(sub)));
 }
 
 str_ct str_insert_n(str_ct str, size_t pos, str_const_ct sub, size_t len)
@@ -1626,9 +1626,9 @@ str_ct str_insert_n(str_ct str, size_t pos, str_const_ct sub, size_t len)
     len = MIN(len, _str_get_len(sub));
     
     if(_str_is_binary(sub))
-        return error_propagate_ptr(str_insert_b(str, pos, sub->data, len));
+        return error_pass_ptr(str_insert_b(str, pos, sub->data, len));
     else
-        return error_propagate_ptr(str_insert_cn(str, pos, (char*)sub->data, len));
+        return error_pass_ptr(str_insert_cn(str, pos, (char*)sub->data, len));
 }
 
 str_ct str_insert_c(str_ct str, size_t pos, const char *sub)
@@ -1656,7 +1656,7 @@ str_ct str_insert_b(str_ct str, size_t pos, const void *sub, size_t len)
     return_error_if_fail(pos <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
     
     if(!(str = _str_insert(str, pos, sub, len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     _str_set_flags(str, FLAG_BINARY);
     
@@ -1669,7 +1669,7 @@ str_ct str_insert_set(str_ct str, size_t pos, size_t len, char c)
     return_error_if_fail(pos <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
     
     if(!(str = _str_insert(str, pos, NULL, len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     memset(&str->data[pos], c, len);
     
@@ -1685,7 +1685,7 @@ str_ct str_insert_f(str_ct str, size_t pos, const char *fmt, ...)
     return_error_if_fail(pos <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
     
     va_start(ap, fmt);
-    str = error_propagate_ptr(_str_insert_f(str, pos, fmt, ap));
+    str = error_pass_ptr(_str_insert_f(str, pos, fmt, ap));
     va_end(ap);
     
     return str;
@@ -1697,7 +1697,7 @@ str_ct str_insert_vf(str_ct str, size_t pos, const char *fmt, va_list ap)
     return_error_if_fail(fmt, E_STR_INVALID_FORMAT, NULL);
     return_error_if_fail(pos <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
     
-    return error_propagate_ptr(_str_insert_f(str, pos, fmt, ap));
+    return error_pass_ptr(_str_insert_f(str, pos, fmt, ap));
 }
 
 static str_ct _str_cat(size_t n, va_list ap, str_cat_id mode)
@@ -1752,7 +1752,7 @@ static str_ct _str_cat(size_t n, va_list ap, str_cat_id mode)
         }
     
     if(!(cat = str_prepare(cat_len)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     for(cat_len=0, i=0; i < n; cat_len += info[i].len, i++)
         memcpy(&cat->data[cat_len], info[i].data, info[i].len);
@@ -1769,7 +1769,7 @@ str_ct str_cat(size_t n, ...)
     str_ct cat;
     
     va_start(ap, n);
-    cat = error_propagate_ptr(_str_cat(n, ap, CAT_STR));
+    cat = error_pass_ptr(_str_cat(n, ap, CAT_STR));
     va_end(ap);
     
     return cat;
@@ -1777,7 +1777,7 @@ str_ct str_cat(size_t n, ...)
 
 str_ct str_cat_v(size_t n, va_list ap)
 {
-    return error_propagate_ptr(_str_cat(n, ap, CAT_STR));
+    return error_pass_ptr(_str_cat(n, ap, CAT_STR));
 }
 
 str_ct str_cat_n(size_t n, ...)
@@ -1786,7 +1786,7 @@ str_ct str_cat_n(size_t n, ...)
     str_ct cat;
     
     va_start(ap, n);
-    cat = error_propagate_ptr(_str_cat(n, ap, CAT_STR_N));
+    cat = error_pass_ptr(_str_cat(n, ap, CAT_STR_N));
     va_end(ap);
     
     return cat;
@@ -1794,7 +1794,7 @@ str_ct str_cat_n(size_t n, ...)
 
 str_ct str_cat_vn(size_t n, va_list ap)
 {
-    return error_propagate_ptr(_str_cat(n, ap, CAT_STR_N));
+    return error_pass_ptr(_str_cat(n, ap, CAT_STR_N));
 }
 
 str_ct str_cat_c(size_t n, ...)
@@ -1803,7 +1803,7 @@ str_ct str_cat_c(size_t n, ...)
     str_ct cat;
     
     va_start(ap, n);
-    cat = error_propagate_ptr(_str_cat(n, ap, CAT_CSTR));
+    cat = error_pass_ptr(_str_cat(n, ap, CAT_CSTR));
     va_end(ap);
     
     return cat;
@@ -1811,7 +1811,7 @@ str_ct str_cat_c(size_t n, ...)
 
 str_ct str_cat_vc(size_t n, va_list ap)
 {
-    return error_propagate_ptr(_str_cat(n, ap, CAT_CSTR));
+    return error_pass_ptr(_str_cat(n, ap, CAT_CSTR));
 }
 
 str_ct str_cat_cn(size_t n, ...)
@@ -1820,7 +1820,7 @@ str_ct str_cat_cn(size_t n, ...)
     str_ct cat;
     
     va_start(ap, n);
-    cat = error_propagate_ptr(_str_cat(n, ap, CAT_CSTR_N));
+    cat = error_pass_ptr(_str_cat(n, ap, CAT_CSTR_N));
     va_end(ap);
     
     return cat;
@@ -1828,7 +1828,7 @@ str_ct str_cat_cn(size_t n, ...)
 
 str_ct str_cat_vcn(size_t n, va_list ap)
 {
-    return error_propagate_ptr(_str_cat(n, ap, CAT_CSTR_N));
+    return error_pass_ptr(_str_cat(n, ap, CAT_CSTR_N));
 }
 
 str_ct str_cat_b(size_t n, ...)
@@ -1837,7 +1837,7 @@ str_ct str_cat_b(size_t n, ...)
     str_ct cat;
     
     va_start(ap, n);
-    cat = error_propagate_ptr(_str_cat(n, ap, CAT_BIN));
+    cat = error_pass_ptr(_str_cat(n, ap, CAT_BIN));
     va_end(ap);
     
     return cat;
@@ -1845,27 +1845,27 @@ str_ct str_cat_b(size_t n, ...)
 
 str_ct str_cat_vb(size_t n, va_list ap)
 {
-    return error_propagate_ptr(_str_cat(n, ap, CAT_BIN));
+    return error_pass_ptr(_str_cat(n, ap, CAT_BIN));
 }
 
 str_ct str_remove(str_ct str, str_const_ct sub)
 {
-    return error_propagate_ptr(str_replace(str, sub, LIT("")));
+    return error_pass_ptr(str_replace(str, sub, LIT("")));
 }
 
 str_ct str_remove_n(str_ct str, str_const_ct sub, size_t len)
 {
-    return error_propagate_ptr(str_replace_n(str, sub, len, LIT(""), 0));
+    return error_pass_ptr(str_replace_n(str, sub, len, LIT(""), 0));
 }
 
 str_ct str_remove_c(str_ct str, const char *sub)
 {
-    return error_propagate_ptr(str_replace_c(str, sub, ""));
+    return error_pass_ptr(str_replace_c(str, sub, ""));
 }
 
 str_ct str_remove_cn(str_ct str, const char *sub, size_t len)
 {
-    return error_propagate_ptr(str_replace_cn(str, sub, len, "", 0));
+    return error_pass_ptr(str_replace_cn(str, sub, len, "", 0));
 }
 
 str_ct str_replace(str_ct str, str_const_ct sub, str_const_ct nsub)
@@ -1874,10 +1874,10 @@ str_ct str_replace(str_ct str, str_const_ct sub, str_const_ct nsub)
     assert_str(nsub);
     
     if(_str_is_binary(nsub))
-        return error_propagate_ptr(str_replace_b(
+        return error_pass_ptr(str_replace_b(
             str, sub->data, _str_get_len(sub), nsub->data, _str_get_len(nsub)));
     else
-        return error_propagate_ptr(str_replace_cn(
+        return error_pass_ptr(str_replace_cn(
             str, (char*)sub->data, _str_get_len(sub), (char*)nsub->data, _str_get_len(nsub)));
 }
 
@@ -1890,10 +1890,10 @@ str_ct str_replace_n(str_ct str, str_const_ct sub, size_t sublen, str_const_ct n
     nsublen = MIN(nsublen, _str_get_len(nsub));
     
     if(_str_is_binary(nsub))
-        return error_propagate_ptr(str_replace_b(
+        return error_pass_ptr(str_replace_b(
             str, sub->data, sublen, nsub->data, nsublen));
     else
-        return error_propagate_ptr(str_replace_cn(
+        return error_pass_ptr(str_replace_cn(
             str, (char*)sub->data, sublen, (char*)nsub->data, nsublen));
 }
 
@@ -1901,7 +1901,7 @@ str_ct str_replace_c(str_ct str, const char *sub, const char *nsub)
 {
     return_error_if_fail(sub && nsub, E_STR_INVALID_CSTR, NULL);
     
-    return error_propagate_ptr(str_replace_cn(str, sub, strlen(sub), nsub, strlen(nsub)));
+    return error_pass_ptr(str_replace_cn(str, sub, strlen(sub), nsub, strlen(nsub)));
 }
 
 str_ct str_replace_cn(str_ct str, const char *sub, size_t sublen, const char *nsub, size_t nsublen)
@@ -1935,7 +1935,7 @@ str_ct str_replace_cn(str_ct str, const char *sub, size_t sublen, const char *ns
     if(nsublen <= sublen) // replace left to right
     {
         if(!_str_get_writeable(str))
-            return error_propagate(), vec_free(positions), NULL;
+            return error_pass(), vec_free(positions), NULL;
         
         len = str->len - vec_size(positions)*(sublen-nsublen);
         vec_get_first(positions, &ins);
@@ -1962,7 +1962,7 @@ str_ct str_replace_cn(str_ct str, const char *sub, size_t sublen, const char *ns
         data = str->len; // data position at end of old str
         
         if(!str_grow(str, vec_size(positions)*(nsublen-sublen)))
-            return error_propagate(), vec_free(positions), NULL;
+            return error_pass(), vec_free(positions), NULL;
         
         ins = str->len; // insert position at end of new str
         
@@ -1989,7 +1989,7 @@ str_ct str_replace_b(str_ct str, const void *sub, size_t sublen, const void *nsu
     return_error_if_fail(sub && nsub, E_STR_INVALID_DATA, NULL);
     
     if(!(str = str_replace_cn(str, sub, sublen, nsub, nsublen)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     _str_set_flags(str, FLAG_BINARY);
     
@@ -2008,16 +2008,16 @@ str_ct str_substr(str_const_ct str, ssize_t pos, size_t len)
     if(str->type == DATA_STATIC)
     {
         if(_str_is_binary(str)) // no null terminator required
-            return error_propagate_ptr(str_new_bs(&str->data[pos], len));
+            return error_pass_ptr(str_new_bs(&str->data[pos], len));
         
         if(pos+len == str->len) // suffix can just be referenced
-            return error_propagate_ptr(str_new_sn((char*)&str->data[pos], len));
+            return error_pass_ptr(str_new_sn((char*)&str->data[pos], len));
     }
     
     if(_str_is_binary(str))
-        return error_propagate_ptr(str_dup_b(&str->data[pos], len));
+        return error_pass_ptr(str_dup_b(&str->data[pos], len));
     else
-        return error_propagate_ptr(str_dup_cn((char*)&str->data[pos], len));
+        return error_pass_ptr(str_dup_cn((char*)&str->data[pos], len));
 }
 
 str_ct str_substr_r(str_const_ct str, ssize_t pos, size_t len)
@@ -2030,9 +2030,9 @@ str_ct str_substr_r(str_const_ct str, ssize_t pos, size_t len)
     return_error_if_fail(pos >= 0 && pos+len <= _str_get_len(str), E_STR_OUT_OF_BOUNDS, NULL);
     
     if(!pos && len == str->len)
-        return error_propagate_ptr(str_ref(str));
+        return error_pass_ptr(str_ref(str));
     else
-        return error_propagate_ptr(str_substr(str, pos, len));
+        return error_pass_ptr(str_substr(str, pos, len));
 }
 
 str_ct str_slice(str_ct str, ssize_t pos, size_t len)
@@ -2065,7 +2065,7 @@ str_ct str_slice(str_ct str, ssize_t pos, size_t len)
         }
         
         if(!str_resize(str, len))
-            return error_propagate(), NULL;
+            return error_pass(), NULL;
     }
     else
         str->len = len;
@@ -2081,12 +2081,12 @@ str_ct str_slice(str_ct str, ssize_t pos, size_t len)
 
 str_ct str_slice_head(str_ct str, size_t len)
 {
-    return error_propagate_ptr(str_slice(str, 0, len));
+    return error_pass_ptr(str_slice(str, 0, len));
 }
 
 str_ct str_slice_tail(str_ct str, size_t len)
 {
-    return error_propagate_ptr(str_slice(str, -len, len));
+    return error_pass_ptr(str_slice(str, -len, len));
 }
 
 str_ct str_cut(str_ct str, ssize_t pos, size_t len)
@@ -2116,7 +2116,7 @@ str_ct str_cut(str_ct str, ssize_t pos, size_t len)
         }
         
         if(!str_resize(str, str->len-len))
-            return error_propagate(), NULL;
+            return error_pass(), NULL;
     }
     else
         str->len -= len;
@@ -2132,12 +2132,12 @@ str_ct str_cut(str_ct str, ssize_t pos, size_t len)
 
 str_ct str_cut_head(str_ct str, size_t len)
 {
-    return error_propagate_ptr(str_cut(str, 0, len));
+    return error_pass_ptr(str_cut(str, 0, len));
 }
 
 str_ct str_cut_tail(str_ct str, size_t len)
 {
-    return error_propagate_ptr(str_cut(str, -len, len));
+    return error_pass_ptr(str_cut(str, -len, len));
 }
 
 str_ct str_trim_pred(str_ct str, ctype_pred_cb pred)
@@ -2153,17 +2153,17 @@ str_ct str_trim_pred(str_ct str, ctype_pred_cb pred)
     if(!(end = memrwhile(start, str->len - (start-str->data), pred)))
         abort();
     
-    return error_propagate_ptr(str_slice(str, start - str->data, end+1 - start));
+    return error_pass_ptr(str_slice(str, start - str->data, end+1 - start));
 }
 
 str_ct str_trim_blank(str_ct str)
 {
-    return error_propagate_ptr(str_trim_pred(str, isblank));
+    return error_pass_ptr(str_trim_pred(str, isblank));
 }
 
 str_ct str_trim_space(str_ct str)
 {
-    return error_propagate_ptr(str_trim_pred(str, isspace));
+    return error_pass_ptr(str_trim_pred(str, isspace));
 }
 
 str_ct str_transpose_f(str_ct str, ctype_transpose_cb trans)
@@ -2172,7 +2172,7 @@ str_ct str_transpose_f(str_ct str, ctype_transpose_cb trans)
     return_error_if_fail(trans, E_STR_INVALID_CALLBACK, NULL);
     
     if(!_str_get_writeable(str))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     if(_str_is_binary(str))
         memtranspose_f(str->data, _str_get_len(str), trans);
@@ -2184,12 +2184,12 @@ str_ct str_transpose_f(str_ct str, ctype_transpose_cb trans)
 
 str_ct str_transpose_lower(str_ct str)
 {
-    return error_propagate_ptr(str_transpose_f(str, tolower));
+    return error_pass_ptr(str_transpose_f(str, tolower));
 }
 
 str_ct str_transpose_upper(str_ct str)
 {
-    return error_propagate_ptr(str_transpose_f(str, toupper));
+    return error_pass_ptr(str_transpose_f(str, toupper));
 }
 
 str_ct str_translate(str_ct str, ctype_translate_cb trans)
@@ -2210,7 +2210,7 @@ str_ct str_translate(str_ct str, ctype_translate_cb trans)
         strtranslate_mem(data, str->data, str->len, trans);
         
         if(!str_set_hn(str, data, len))
-            return error_propagate(), free(data), NULL;
+            return error_pass(), free(data), NULL;
     }
     else
     {
@@ -2222,7 +2222,7 @@ str_ct str_translate(str_ct str, ctype_translate_cb trans)
         strtranslate(data, (char*)str->data, trans);
         
         if(!str_set_hn(str, data, len))
-            return error_propagate(), free(data), NULL;
+            return error_pass(), free(data), NULL;
     }
     
     return str;
@@ -2231,7 +2231,7 @@ str_ct str_translate(str_ct str, ctype_translate_cb trans)
 str_ct str_translate_b(str_ct str, ctype_translate_cb trans)
 {
     if(!str_translate(str, trans))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     _str_set_flags(str, FLAG_BINARY);
     
@@ -2251,7 +2251,7 @@ str_ct str_dup_translate(str_ct str, ctype_translate_cb trans)
         len = strtranslate_mem(NULL, str->data, _str_get_len(str), trans);
         
         if(!(nstr = str_prepare(len)))
-            return error_propagate(), NULL;
+            return error_pass(), NULL;
         
         strtranslate_mem((char*)nstr->data, str->data, str->len, trans);
     }
@@ -2260,7 +2260,7 @@ str_ct str_dup_translate(str_ct str, ctype_translate_cb trans)
         len = strtranslate(NULL, (char*)str->data, trans);
         
         if(!(nstr = str_prepare(len)))
-            return error_propagate(), NULL;
+            return error_pass(), NULL;
         
         strtranslate((char*)nstr->data, (char*)str->data, trans);
     }
@@ -2271,7 +2271,7 @@ str_ct str_dup_translate(str_ct str, ctype_translate_cb trans)
 str_ct str_dup_translate_b(str_ct str, ctype_translate_cb trans)
 {
     if(!(str = str_dup_translate(str, trans)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     _str_set_flags(str, FLAG_BINARY);
     
@@ -2280,32 +2280,32 @@ str_ct str_dup_translate_b(str_ct str, ctype_translate_cb trans)
 
 str_ct str_escape(str_ct str)
 {
-    return error_propagate_ptr(str_translate(str, translate_escape));
+    return error_pass_ptr(str_translate(str, translate_escape));
 }
 
 str_ct str_unescape(str_ct str)
 {
-    return error_propagate_ptr(str_translate(str, translate_unescape));
+    return error_pass_ptr(str_translate(str, translate_unescape));
 }
 
 str_ct str_unescape_b(str_ct str)
 {
-    return error_propagate_ptr(str_translate_b(str, translate_unescape));
+    return error_pass_ptr(str_translate_b(str, translate_unescape));
 }
 
 str_ct str_dup_escape(str_ct str)
 {
-    return error_propagate_ptr(str_dup_translate(str, translate_escape));
+    return error_pass_ptr(str_dup_translate(str, translate_escape));
 }
 
 str_ct str_dup_unescape(str_ct str)
 {
-    return error_propagate_ptr(str_dup_translate(str, translate_unescape));
+    return error_pass_ptr(str_dup_translate(str, translate_unescape));
 }
 
 str_ct str_dup_unescape_b(str_ct str)
 {
-    return error_propagate_ptr(str_dup_translate_b(str, translate_unescape));
+    return error_pass_ptr(str_dup_translate_b(str, translate_unescape));
 }
 
 int str_cmp(str_const_ct str1, str_const_ct str2)

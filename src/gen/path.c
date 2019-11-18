@@ -101,12 +101,12 @@ static const error_info_st error_infos[] =
 
 path_ct path_new(str_const_ct str, path_style_id style)
 {
-    return error_propagate_ptr(path_new_cn(str_c(str), str_len(str), style));
+    return error_pass_ptr(path_new_cn(str_c(str), str_len(str), style));
 }
 
 path_ct path_new_c(const char *str, path_style_id style)
 {
-    return error_propagate_ptr(path_new_cn(str, strlen(str), style));
+    return error_pass_ptr(path_new_cn(str, strlen(str), style));
 }
 
 path_ct path_new_cn(const char *str, size_t len, path_style_id style)
@@ -121,7 +121,7 @@ path_ct path_new_cn(const char *str, size_t len, path_style_id style)
     init_magic(path);
     
     if(!path_set_cn(path, str, len, style))
-        return error_propagate(), free(path), NULL;
+        return error_pass(), free(path), NULL;
     
     return path;
 }
@@ -302,12 +302,12 @@ static path_comp_st *path_add_comp(path_ct path, const char *str, size_t len, pa
     if((comp = vec_last(path->comp)) && !comp->name && comp->len == PATH_COMP_CURRENT)
     {
         if(!path_set_comp(comp, str, len, style))
-            return error_propagate(), NULL;
+            return error_pass(), NULL;
     }
     else if((comp = vec_push(path->comp)))
     {
         if(!path_set_comp(comp, str, len, style))
-            return error_propagate(), vec_pop(path->comp), NULL;
+            return error_pass(), vec_pop(path->comp), NULL;
     }
     else
         return error_wrap(), NULL;
@@ -332,14 +332,14 @@ static path_ct path_parse_comp(path_ct path, const char *str, size_t len, path_s
             continue;
         
         if(!path_add_comp(path, str, ptr - str, style))
-            return error_propagate(), NULL;
+            return error_pass(), NULL;
     }
     
     // trailing path separator
     path->trailing = !len && !vec_is_empty(path->comp);
     
     if(len && !path_add_comp(path, str, len, style))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     if((comp = vec_last(path->comp)) && !comp->name && comp->len == PATH_COMP_CURRENT)
     {
@@ -369,7 +369,7 @@ static path_ct path_set_standard(path_ct path, const char *str, size_t len, path
         len--;
     }
     
-    return error_propagate_ptr(path_parse_comp(path, str, len, style));
+    return error_pass_ptr(path_parse_comp(path, str, len, style));
 }
 
 static path_ct path_set_posix(path_ct path, const char *str, size_t len)
@@ -380,7 +380,7 @@ static path_ct path_set_posix(path_ct path, const char *str, size_t len)
     && (len == 2 || !strchr(path_props[PATH_STYLE_POSIX].sep, str[2])))
         return error_set(E_PATH_UNSUPPORTED), NULL;
     
-    return error_propagate_ptr(path_set_standard(path, str, len, PATH_STYLE_POSIX));
+    return error_pass_ptr(path_set_standard(path, str, len, PATH_STYLE_POSIX));
 }
 
 static path_ct path_set_win_drive(path_ct path, char drive, const char *str, size_t len, path_style_id style)
@@ -394,7 +394,7 @@ static path_ct path_set_win_drive(path_ct path, char drive, const char *str, siz
     if(len && strchr(path_props[style].sep, str[0]))
         path->absolute = true;
     
-    return error_propagate_ptr(path_parse_comp(path, str, len, style));
+    return error_pass_ptr(path_parse_comp(path, str, len, style));
 }
 
 static path_ct path_set_win_unc(path_ct path, const char *str, size_t len, path_style_id style)
@@ -425,16 +425,16 @@ static path_ct path_set_win_unc(path_ct path, const char *str, size_t len, path_
     ptr++;
     len -= ptr - share;
     
-    return error_propagate_ptr(path_parse_comp(path, ptr, len, style));
+    return error_pass_ptr(path_parse_comp(path, ptr, len, style));
 }
 
 static path_ct path_set_win32_file(path_ct path, const char *str, size_t len)
 {
     if(len >= 2 && str[1] == ':')
-        return error_propagate_ptr(path_set_win_drive(path, str[0], str+2, len-2, PATH_STYLE_WINDOWS));
+        return error_pass_ptr(path_set_win_drive(path, str[0], str+2, len-2, PATH_STYLE_WINDOWS));
     
     if(len >= 4 && !strncasecmp(str, "UNC", 3) && strchr(path_props[PATH_STYLE_WINDOWS].sep, str[3]))
-        return error_propagate_ptr(path_set_win_unc(path, str+4, len-4, PATH_STYLE_WINDOWS));
+        return error_pass_ptr(path_set_win_unc(path, str+4, len-4, PATH_STYLE_WINDOWS));
     
     return error_set(E_PATH_MALFORMED), NULL;
 }
@@ -468,42 +468,42 @@ static path_ct path_set_windows(path_ct path, const char *str, size_t len)
     const char *ptr;
     
     if(len == 1)
-        return error_propagate_ptr(path_set_standard(path, str, len, PATH_STYLE_WINDOWS));
+        return error_pass_ptr(path_set_standard(path, str, len, PATH_STYLE_WINDOWS));
     
     if(str[1] == ':')
-        return error_propagate_ptr(path_set_win_drive(path, str[0], str+2, len-2, PATH_STYLE_WINDOWS));
+        return error_pass_ptr(path_set_win_drive(path, str[0], str+2, len-2, PATH_STYLE_WINDOWS));
     
     if(!(ptr = strchr(path_props[PATH_STYLE_WINDOWS].sep, str[0])) || str[1] != ptr[0])
-        return error_propagate_ptr(path_set_standard(path, str, len, PATH_STYLE_WINDOWS));
+        return error_pass_ptr(path_set_standard(path, str, len, PATH_STYLE_WINDOWS));
     
     if(len == 2)
         return error_set(E_PATH_MALFORMED), NULL;
     
     if(strchr(path_props[PATH_STYLE_WINDOWS].sep, str[2]))
-        return error_propagate_ptr(path_set_standard(path, str, len, PATH_STYLE_WINDOWS));
+        return error_pass_ptr(path_set_standard(path, str, len, PATH_STYLE_WINDOWS));
     
     if(len == 3 || !strchr(path_props[PATH_STYLE_WINDOWS].sep, str[3]))
-        return error_propagate_ptr(path_set_win_unc(path, str+2, len-2, PATH_STYLE_WINDOWS));
+        return error_pass_ptr(path_set_win_unc(path, str+2, len-2, PATH_STYLE_WINDOWS));
     
     switch(str[2])
     {
     case '?':
-        return error_propagate_ptr(path_set_win32_file(path, str+4, len-4));
+        return error_pass_ptr(path_set_win32_file(path, str+4, len-4));
     case '.':
-        return error_propagate_ptr(path_set_win32_device(path, str+4, len-4));
+        return error_pass_ptr(path_set_win32_device(path, str+4, len-4));
     default:
-        return error_propagate_ptr(path_set_win_unc(path, str+2, len-2, PATH_STYLE_WINDOWS));
+        return error_pass_ptr(path_set_win_unc(path, str+2, len-2, PATH_STYLE_WINDOWS));
     }
 }
 
 path_ct path_set(path_ct path, str_const_ct str, path_style_id style)
 {
-    return error_propagate_ptr(path_set_cn(path, str_c(str), str_len(str), style));
+    return error_pass_ptr(path_set_cn(path, str_c(str), str_len(str), style));
 }
 
 path_ct path_set_c(path_ct path, const char *str, path_style_id style)
 {
-    return error_propagate_ptr(path_set_cn(path, str, strlen(str), style));
+    return error_pass_ptr(path_set_cn(path, str, strlen(str), style));
 }
 
 path_ct path_set_cn(path_ct path, const char *str, size_t len, path_style_id style)
@@ -520,8 +520,8 @@ path_ct path_set_cn(path_ct path, const char *str, size_t len, path_style_id sty
     
     switch(style)
     {
-    case PATH_STYLE_POSIX:   npath = error_propagate_ptr(path_set_posix(npath, str, len)); break;
-    case PATH_STYLE_WINDOWS: npath = error_propagate_ptr(path_set_windows(npath, str, len)); break;
+    case PATH_STYLE_POSIX:   npath = error_pass_ptr(path_set_posix(npath, str, len)); break;
+    case PATH_STYLE_WINDOWS: npath = error_pass_ptr(path_set_windows(npath, str, len)); break;
     default:                 abort();
     }
     
@@ -672,12 +672,12 @@ path_ct path_add_suffix(path_ct path, str_const_ct suffix)
 
 path_ct path_append(path_ct path, str_const_ct str, path_style_id style)
 {
-    return error_propagate_ptr(path_append_cn(path, str_c(str), str_len(str), style));
+    return error_pass_ptr(path_append_cn(path, str_c(str), str_len(str), style));
 }
 
 path_ct path_append_c(path_ct path, const char *str, path_style_id style)
 {
-    return error_propagate_ptr(path_append_cn(path, str, strlen(str), style));
+    return error_pass_ptr(path_append_cn(path, str, strlen(str), style));
 }
 
 path_ct path_append_cn(path_ct path, const char *str, size_t len, path_style_id style)
@@ -689,7 +689,7 @@ path_ct path_append_cn(path_ct path, const char *str, size_t len, path_style_id 
     return_error_if_pass(path->type == PATH_TYPE_DEVICE, E_PATH_INVALID_TYPE, NULL);
     return_error_if_pass(!len, E_PATH_MALFORMED, NULL);
     
-    return error_propagate_ptr(path_parse_comp(path, str, len, style));
+    return error_pass_ptr(path_parse_comp(path, str, len, style));
 }
 
 path_ct path_drop(path_ct path, size_t n)
@@ -850,21 +850,21 @@ static str_ct _path_get(path_const_ct path, path_style_id style, bool dirname)
         break;
     case PATH_TYPE_DRIVE:
         if(!(str = path_get_drive(path, style)))
-            return error_propagate(), NULL;
+            return error_pass(), NULL;
         break;
     case PATH_TYPE_UNC:
         if(!(str = path_get_unc(path, style)))
-            return error_propagate(), NULL;
+            return error_pass(), NULL;
         break;
     case PATH_TYPE_DEVICE:
         if(!(str = path_get_device(path, style)))
-            return error_propagate(), NULL;
+            return error_pass(), NULL;
         break;
     default:
         abort();
     }
     
-    return error_propagate_ptr(path_cat_comp(str, path, style, dirname));
+    return error_pass_ptr(path_cat_comp(str, path, style, dirname));
 }
 
 str_ct path_get(path_const_ct path, path_style_id style)
@@ -872,7 +872,7 @@ str_ct path_get(path_const_ct path, path_style_id style)
     assert_magic(path);
     assert(style < PATH_STYLES);
     
-    return error_propagate_ptr(_path_get(path, style, false));
+    return error_pass_ptr(_path_get(path, style, false));
 }
 
 char path_get_drive_letter(path_const_ct path)
@@ -936,7 +936,7 @@ str_ct path_dirname(path_const_ct path, path_style_id style)
     assert_magic(path);
     assert(style < PATH_STYLES);
     
-    return error_propagate_ptr(_path_get(path, style, true));
+    return error_pass_ptr(_path_get(path, style, true));
 }
 
 str_ct path_basename(path_const_ct path, path_style_id style)

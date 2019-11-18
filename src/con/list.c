@@ -144,7 +144,7 @@ static list_node_ct list_node_new(list_ct list, void *data)
 
 list_ct list_clone(list_const_ct list)
 {
-    return error_propagate_ptr(list_clone_f(list, NULL, NULL, NULL));
+    return error_pass_ptr(list_clone_f(list, NULL, NULL, NULL));
 }
 
 list_ct list_clone_f(list_const_ct list1, list_clone_cb clone, list_dtor_cb dtor, void *ctx)
@@ -156,7 +156,7 @@ list_ct list_clone_f(list_const_ct list1, list_clone_cb clone, list_dtor_cb dtor
     assert_magic(list1);
     
     if(!(list2 = list_new()))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     node2 = &list2->head;
     
@@ -180,7 +180,7 @@ list_ct list_clone_f(list_const_ct list1, list_clone_cb clone, list_dtor_cb dtor
             node2->next = &list2->head;
             list_free_f(list2, dtor, ctx);
             
-            return error_propagate(), NULL;
+            return error_pass(), NULL;
         }
         
         node2->next->prev = node2;
@@ -264,7 +264,7 @@ list_node_ct list_at(list_const_ct list, ssize_t pos)
 {
     assert_magic(list);
     
-    return error_propagate_ptr(list_get_node(list, pos));
+    return error_pass_ptr(list_get_node(list, pos));
 }
 
 list_node_ct list_first(list_const_ct list)
@@ -310,7 +310,7 @@ void *list_data_at(list_const_ct list, ssize_t pos)
     assert_magic(list);
     
     if(!(node = list_get_node(list, pos)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     return node->data;
 }
@@ -352,7 +352,7 @@ static list_node_ct _list_insert_after(list_ct list, list_node_const_ct cpre, vo
     list_node_ct node, pre = (list_node_ct)cpre;
     
     if(!(node = list_node_new(list, data)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     node->prev = pre;
     node->next = pre->next;
@@ -368,14 +368,14 @@ list_node_ct list_prepend(list_ct list, void *data)
 {
     assert_magic(list);
     
-    return error_propagate_ptr(_list_insert_after(list, &list->head, data));
+    return error_pass_ptr(_list_insert_after(list, &list->head, data));
 }
 
 list_node_ct list_append(list_ct list, void *data)
 {
     assert_magic(list);
     
-    return error_propagate_ptr(_list_insert_after(list, list->head.prev, data));
+    return error_pass_ptr(_list_insert_after(list, list->head.prev, data));
 }
 
 list_node_ct list_insert(list_ct list, ssize_t pos, void *data)
@@ -387,9 +387,9 @@ list_node_ct list_insert(list_ct list, ssize_t pos, void *data)
     if(ABS(pos) == list->size)
         node = pos < 0 ? list->head.next : &list->head;
     else if(!(node = list_get_node(list, pos)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
-    return error_propagate_ptr(_list_insert_after(list, node->prev, data));
+    return error_pass_ptr(_list_insert_after(list, node->prev, data));
 }
 
 list_node_ct list_insert_before(list_ct list, list_node_const_ct suc, void *data)
@@ -398,7 +398,7 @@ list_node_ct list_insert_before(list_ct list, list_node_const_ct suc, void *data
     assert_magic_n(suc, NODE_MAGIC);
     assert(list == suc->list);
     
-    return error_propagate_ptr(_list_insert_after(list, suc->prev, data));
+    return error_pass_ptr(_list_insert_after(list, suc->prev, data));
 }
 
 list_node_ct list_insert_after(list_ct list, list_node_const_ct pre, void *data)
@@ -407,7 +407,7 @@ list_node_ct list_insert_after(list_ct list, list_node_const_ct pre, void *data)
     assert_magic_n(pre, NODE_MAGIC);
     assert(list == pre->list);
     
-    return error_propagate_ptr(_list_insert_after(list, pre, data));
+    return error_pass_ptr(_list_insert_after(list, pre, data));
 }
 
 static void _list_remove(list_ct list, list_node_ct node, list_dtor_cb dtor, void *ctx)
@@ -434,7 +434,7 @@ void list_remove(list_ct list, list_node_ct node)
 
 int list_remove_at(list_ct list, ssize_t pos)
 {
-    return error_propagate_int(list_remove_at_f(list, pos, NULL, NULL));
+    return error_pass_int(list_remove_at_f(list, pos, NULL, NULL));
 }
 
 int list_remove_at_f(list_ct list, ssize_t pos, list_dtor_cb dtor, void *ctx)
@@ -444,7 +444,7 @@ int list_remove_at_f(list_ct list, ssize_t pos, list_dtor_cb dtor, void *ctx)
     assert_magic(list);
     
     if(!(node = list_get_node(list, pos)))
-        return error_propagate(), -1;
+        return error_pass(), -1;
     
     _list_remove(list, node, dtor, ctx);
     
@@ -481,7 +481,7 @@ list_node_ct list_find_r(list_const_ct list, list_pred_cb pred, void *ctx)
 
 int list_find_remove(list_ct list, list_pred_cb pred, void *ctx)
 {
-    return error_propagate_int(list_find_remove_f(list, pred, ctx, NULL, NULL));
+    return error_pass_int(list_find_remove_f(list, pred, ctx, NULL, NULL));
 }
 
 int list_find_remove_f(list_ct list, list_pred_cb pred, void *pred_ctx, list_dtor_cb dtor, void *dtor_ctx)
@@ -500,7 +500,7 @@ int list_find_remove_f(list_ct list, list_pred_cb pred, void *pred_ctx, list_dto
 
 int list_find_remove_r(list_ct list, list_pred_cb pred, void *ctx)
 {
-    return error_propagate_int(list_find_remove_rf(list, pred, ctx, NULL, NULL));
+    return error_pass_int(list_find_remove_rf(list, pred, ctx, NULL, NULL));
 }
 
 int list_find_remove_rf(list_ct list, list_pred_cb pred, void *pred_ctx, list_dtor_cb dtor, void *dtor_ctx)

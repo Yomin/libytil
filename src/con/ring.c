@@ -134,17 +134,17 @@ size_t ring_size(ring_const_ct ring)
 
 void *ring_put(ring_ct ring)
 {
-    return error_propagate_ptr(ring_put_ef(ring, NULL, NULL, NULL));
+    return error_pass_ptr(ring_put_ef(ring, NULL, NULL, NULL));
 }
 
 void *ring_put_e(ring_ct ring, const void *elem)
 {
-    return error_propagate_ptr(ring_put_ef(ring, elem, NULL, NULL));
+    return error_pass_ptr(ring_put_ef(ring, elem, NULL, NULL));
 }
 
 void *ring_put_f(ring_ct ring, ring_overflow_cb overflow, void *ctx)
 {
-    return error_propagate_ptr(ring_put_ef(ring, NULL, overflow, ctx));
+    return error_pass_ptr(ring_put_ef(ring, NULL, overflow, ctx));
 }
 
 void *ring_put_ef(ring_ct ring, const void *elem, ring_overflow_cb overflow, void *ctx)
@@ -188,7 +188,7 @@ void *ring_peek(ring_const_ct ring)
 
 int ring_drop(ring_ct ring)
 {
-    return error_propagate_int(ring_drop_f(ring, NULL, NULL));
+    return error_pass_int(ring_drop_f(ring, NULL, NULL));
 }
 
 int ring_drop_f(ring_ct ring, ring_dtor_cb dtor, void *ctx)
@@ -229,7 +229,7 @@ void *ring_peek_head(ring_const_ct ring)
 
 int ring_drop_head(ring_ct ring)
 {
-    return error_propagate_int(ring_drop_head_f(ring, NULL, NULL));
+    return error_pass_int(ring_drop_head_f(ring, NULL, NULL));
 }
 
 int ring_drop_head_f(ring_ct ring, ring_dtor_cb dtor, void *ctx)

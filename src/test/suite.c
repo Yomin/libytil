@@ -67,10 +67,10 @@ test_suite_ct test_suite_new_with_suite(const char *name, test_suite_ct sub)
     test_suite_ct suite;
     
     if(!(suite = test_suite_new(name)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     if(!(suite = test_suite_add_suite(suite, sub)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     return sub;
 }
@@ -81,10 +81,10 @@ test_suite_ct _test_suite_new_with_suites(const char *name, ...)
     va_list ap;
     
     if(!(suite = test_suite_new(name)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     va_start(ap, name);
-    suite = error_propagate_ptr(test_suite_add_suites_v(suite, ap));
+    suite = error_pass_ptr(test_suite_add_suites_v(suite, ap));
     va_end(ap);
     
     return suite;
@@ -95,10 +95,10 @@ test_suite_ct test_suite_new_with_suites_v(const char *name, va_list ap)
     test_suite_ct suite;
     
     if(!(suite = test_suite_new(name)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     if(!(suite = test_suite_add_suites_v(suite, ap)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     return suite;
 }
@@ -108,10 +108,10 @@ test_suite_ct test_suite_new_with_case(const char *name, test_case_ct tcase)
     test_suite_ct suite;
     
     if(!(suite = test_suite_new(name)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     if(!(suite = test_suite_add_case(suite, tcase)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     return suite;
 }
@@ -122,10 +122,10 @@ test_suite_ct _test_suite_new_with_cases(const char *name, ...)
     va_list ap;
     
     if(!(suite = test_suite_new(name)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     va_start(ap, name);
-    suite = error_propagate_ptr(test_suite_add_cases_v(suite, ap));
+    suite = error_pass_ptr(test_suite_add_cases_v(suite, ap));
     va_end(ap);
     
     return suite;
@@ -136,10 +136,10 @@ test_suite_ct test_suite_new_with_cases_v(const char *name, va_list ap)
     test_suite_ct suite;
     
     if(!(suite = test_suite_new(name)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     if(!(suite = test_suite_add_cases_v(suite, ap)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     return suite;
 }
@@ -256,7 +256,7 @@ static test_suite_ct test_suite_add_entry(test_suite_ct suite, test_entry_id typ
 
 test_suite_ct test_suite_add_suite(test_suite_ct suite, test_suite_ct sub)
 {
-    return error_propagate_ptr(test_suite_add_entry(suite, TEST_ENTRY_SUITE, sub));
+    return error_pass_ptr(test_suite_add_entry(suite, TEST_ENTRY_SUITE, sub));
 }
 
 test_suite_ct _test_suite_add_suites(test_suite_ct suite, ...)
@@ -264,7 +264,7 @@ test_suite_ct _test_suite_add_suites(test_suite_ct suite, ...)
     va_list ap;
     
     va_start(ap, suite);
-    suite = error_propagate_ptr(test_suite_add_suites_v(suite, ap));
+    suite = error_pass_ptr(test_suite_add_suites_v(suite, ap));
     va_end(ap);
     
     return suite;
@@ -297,7 +297,7 @@ test_suite_ct test_suite_add_suites_v(test_suite_ct suite, va_list ap)
 
 test_suite_ct test_suite_add_case(test_suite_ct suite, test_case_ct tcase)
 {
-    return error_propagate_ptr(test_suite_add_entry(suite, TEST_ENTRY_CASE, tcase));
+    return error_pass_ptr(test_suite_add_entry(suite, TEST_ENTRY_CASE, tcase));
 }
 
 test_suite_ct _test_suite_add_cases(test_suite_ct suite, ...)
@@ -305,7 +305,7 @@ test_suite_ct _test_suite_add_cases(test_suite_ct suite, ...)
     va_list ap;
     
     va_start(ap, suite);
-    suite = error_propagate_ptr(test_suite_add_cases_v(suite, ap));
+    suite = error_pass_ptr(test_suite_add_cases_v(suite, ap));
     va_end(ap);
     
     return suite;

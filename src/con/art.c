@@ -612,7 +612,7 @@ void *art_get_data(art_const_ct art, str_const_ct key)
     art_node_ct node;
     
     if(!(node = art_get(art, key)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     return node->v.leaf.data;
 }
@@ -652,7 +652,7 @@ static art_node_ct art_node_new_leaf(art_ct art, str_const_ct path, void *data)
     art_node_ct node;
     
     if(!(node = art_node_new(LEAF, '\0', NULL, path)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     init_magic_n(&node->v.leaf, NODE_MAGIC);
     DEBUG(node->v.leaf.art = art);
@@ -743,7 +743,7 @@ static art_node_ct art_node_grow(art_node_ct *ref)
     art_node_ct node1 = *ref, node2;
     
     if(!(node2 = art_node_new(node1->type+1, node1->key, node1->parent, NULL)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     switch(node1->type)
     {
@@ -877,7 +877,7 @@ static art_node_ct art_node_split(art_ct art, art_node_ct *ref, size_t prefix)
     assert(prefix+1 <= child->path_len);
     
     if(!(inode = art_node_new(NODE4, child->key, child->parent, tstr_new_bs(path, prefix))))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     *ref = inode;
     
@@ -910,7 +910,7 @@ art_node_ct art_insert(art_ct art, str_const_ct key, void *data)
     if(!art->root)
     {
         if(!(leaf = art_node_new_leaf(art, path, data)))
-            return error_propagate(), NULL;
+            return error_pass(), NULL;
         
         art->root = leaf;
         art->size++;
@@ -928,18 +928,18 @@ art_node_ct art_insert(art_ct art, str_const_ct key, void *data)
     str_cut_head(path, 1);
     
     if(!(leaf = art_node_new_leaf(art, path, data)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     if(prefix_len < node->path_len)
     {
         if(!(node = art_node_split(art, node_ref, prefix_len)))
-            return error_propagate(), art_node_free(leaf), NULL;
+            return error_pass(), art_node_free(leaf), NULL;
     }
     else
     {
         if(node->size == art_node_capacity(node->type)
         && !(node = art_node_grow(node_ref)))
-            return error_propagate(), art_node_free(leaf), NULL;
+            return error_pass(), art_node_free(leaf), NULL;
     }
     
     art->size++;
@@ -1136,7 +1136,7 @@ static art_node_ct art_node_shrink(art_ct art, art_node_ct node1)
     art_node_ct node2;
     
     if(!(node2 = art_node_new(node1->type-1, node1->key, node1->parent, NULL)))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     switch(node1->type)
     {
@@ -1189,7 +1189,7 @@ static art_node_ct art_node_merge(art_ct art, art_node_ct node)
     child = art_node_get_first_child(node);
     
     if(art_node_prepend_path(child, art_node_get_path(node), node->path_len, child->key))
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     child->parent = node->parent;
     child->key = node->key;
@@ -1236,7 +1236,7 @@ static int art_node_remove(art_ct art, art_node_ct node, str_const_ct prefix, ar
     unsigned char key;
     
     if(art_traverse(art, node, prefix, TRAV_POST, WITHOUT_KEY, FORWARD, art_traverse_remove, &state))
-        return error_propagate(), -1;
+        return error_pass(), -1;
     
     child = state.last;
     
@@ -1290,14 +1290,14 @@ int art_remove_p(art_ct art, str_const_ct prefix)
 {
     assert_magic(art);
     
-    return error_propagate_int(art_node_remove(art, art->root, prefix, NULL, NULL));
+    return error_pass_int(art_node_remove(art, art->root, prefix, NULL, NULL));
 }
 
 int art_remove_pf(art_ct art, str_const_ct prefix, art_dtor_cb dtor, void *ctx)
 {
     assert_magic(art);
     
-    return error_propagate_int(art_node_remove(art, art->root, prefix, dtor, ctx));
+    return error_pass_int(art_node_remove(art, art->root, prefix, dtor, ctx));
 }
 
 static int art_traverse_node(art_ct art, size_t pos, art_node_ct node, art_traverse_st *state);
@@ -1391,7 +1391,7 @@ static int art_traverse_node(art_ct art, size_t pos, art_node_ct node, art_trave
     int rc = 0;
     
     if(state->order == TRAV_IN && node->parent && pos > 0
-    && (rc = error_propagate_int(state->cb(art, node->parent, state->path, state->ctx))))
+    && (rc = error_pass_int(state->cb(art, node->parent, state->path, state->ctx))))
         return rc;
     
     if(state->path)
@@ -1406,12 +1406,12 @@ static int art_traverse_node(art_ct art, size_t pos, art_node_ct node, art_trave
     
     if(node->type == LEAF)
     {
-        rc = error_propagate_int(state->cb(art, node, state->path, state->ctx));
+        rc = error_pass_int(state->cb(art, node, state->path, state->ctx));
     }
     else
     {
         if(state->order == TRAV_PRE)
-            rc = error_propagate_int(state->cb(art, node, state->path, state->ctx));
+            rc = error_pass_int(state->cb(art, node, state->path, state->ctx));
         
         if(!rc)
             switch(node->type)
@@ -1427,7 +1427,7 @@ static int art_traverse_node(art_ct art, size_t pos, art_node_ct node, art_trave
             }
         
         if(!rc && state->order == TRAV_POST)
-            rc = error_propagate_int(state->cb(art, node, state->path, state->ctx));
+            rc = error_pass_int(state->cb(art, node, state->path, state->ctx));
     }
     
     if(state->path)
@@ -1466,7 +1466,7 @@ static int art_traverse(art_ct art, art_node_ct node, str_const_ct prefix, art_t
     if(key)
         str_mark_volatile(state.path);
     
-    rc = error_propagate_int(art_traverse_node(art, 0, node, &state));
+    rc = error_pass_int(art_traverse_node(art, 0, node, &state));
     
     if(key)
         str_unref(state.path);
@@ -1495,7 +1495,7 @@ static art_node_ct _art_find(art_const_ct art, str_const_ct prefix, bool key, bo
     assert(pred);
     
     if((rc = art_traverse((art_ct)art, art->root, prefix, TRAV_LEAF, key, reverse, art_traverse_find, &state)) < 0)
-        return error_propagate(), NULL;
+        return error_pass(), NULL;
     
     return_error_if_fail(rc == 1, E_ART_NOT_FOUND, NULL);
     
@@ -1504,42 +1504,42 @@ static art_node_ct _art_find(art_const_ct art, str_const_ct prefix, bool key, bo
 
 art_node_ct art_find(art_const_ct art, art_pred_cb pred, void *ctx)
 {
-    return error_propagate_ptr(_art_find(art, NO_PREFIX, WITHOUT_KEY, FORWARD, pred, ctx));
+    return error_pass_ptr(_art_find(art, NO_PREFIX, WITHOUT_KEY, FORWARD, pred, ctx));
 }
 
 art_node_ct art_find_k(art_const_ct art, art_pred_cb pred, void *ctx)
 {
-    return error_propagate_ptr(_art_find(art, NO_PREFIX, WITH_KEY, FORWARD, pred, ctx));
+    return error_pass_ptr(_art_find(art, NO_PREFIX, WITH_KEY, FORWARD, pred, ctx));
 }
 
 art_node_ct art_find_r(art_const_ct art, art_pred_cb pred, void *ctx)
 {
-    return error_propagate_ptr(_art_find(art, NO_PREFIX, WITHOUT_KEY, BACKWARD, pred, ctx));
+    return error_pass_ptr(_art_find(art, NO_PREFIX, WITHOUT_KEY, BACKWARD, pred, ctx));
 }
 
 art_node_ct art_find_rk(art_const_ct art, art_pred_cb pred, void *ctx)
 {
-    return error_propagate_ptr(_art_find(art, NO_PREFIX, WITH_KEY, BACKWARD, pred, ctx));
+    return error_pass_ptr(_art_find(art, NO_PREFIX, WITH_KEY, BACKWARD, pred, ctx));
 }
 
 art_node_ct art_find_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
 {
-    return error_propagate_ptr(_art_find(art, prefix, WITHOUT_KEY, FORWARD, pred, ctx));
+    return error_pass_ptr(_art_find(art, prefix, WITHOUT_KEY, FORWARD, pred, ctx));
 }
 
 art_node_ct art_find_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
 {
-    return error_propagate_ptr(_art_find(art, prefix, WITH_KEY, FORWARD, pred, ctx));
+    return error_pass_ptr(_art_find(art, prefix, WITH_KEY, FORWARD, pred, ctx));
 }
 
 art_node_ct art_find_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
 {
-    return error_propagate_ptr(_art_find(art, prefix, WITHOUT_KEY, BACKWARD, pred, ctx));
+    return error_pass_ptr(_art_find(art, prefix, WITHOUT_KEY, BACKWARD, pred, ctx));
 }
 
 art_node_ct art_find_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
 {
-    return error_propagate_ptr(_art_find(art, prefix, WITH_KEY, BACKWARD, pred, ctx));
+    return error_pass_ptr(_art_find(art, prefix, WITH_KEY, BACKWARD, pred, ctx));
 }
 
 static int art_traverse_fold(art_ct art, art_node_ct node, str_ct path, void *ctx)
@@ -1556,47 +1556,47 @@ static int _art_fold(art_ct art, str_const_ct prefix, bool key, bool reverse, ar
     assert_magic(art);
     assert(fold);
     
-    return error_propagate_int(art_traverse(art, art->root, prefix, TRAV_LEAF, key, reverse, art_traverse_fold, &state));
+    return error_pass_int(art_traverse(art, art->root, prefix, TRAV_LEAF, key, reverse, art_traverse_fold, &state));
 }
 
 int art_fold(art_ct art, art_fold_cb fold, void *ctx)
 {
-    return error_propagate_int(_art_fold(art, NO_PREFIX, WITHOUT_KEY, FORWARD, fold, ctx));
+    return error_pass_int(_art_fold(art, NO_PREFIX, WITHOUT_KEY, FORWARD, fold, ctx));
 }
 
 int art_fold_k(art_ct art, art_fold_cb fold, void *ctx)
 {
-    return error_propagate_int(_art_fold(art, NO_PREFIX, WITH_KEY, FORWARD, fold, ctx));
+    return error_pass_int(_art_fold(art, NO_PREFIX, WITH_KEY, FORWARD, fold, ctx));
 }
 
 int art_fold_r(art_ct art, art_fold_cb fold, void *ctx)
 {
-    return error_propagate_int(_art_fold(art, NO_PREFIX, WITHOUT_KEY, BACKWARD, fold, ctx));
+    return error_pass_int(_art_fold(art, NO_PREFIX, WITHOUT_KEY, BACKWARD, fold, ctx));
 }
 
 int art_fold_rk(art_ct art, art_fold_cb fold, void *ctx)
 {
-    return error_propagate_int(_art_fold(art, NULL, WITH_KEY, BACKWARD, fold, ctx));
+    return error_pass_int(_art_fold(art, NULL, WITH_KEY, BACKWARD, fold, ctx));
 }
 
 int art_fold_p(art_ct art, str_const_ct prefix, art_fold_cb fold, void *ctx)
 {
-    return error_propagate_int(_art_fold(art, prefix, WITHOUT_KEY, FORWARD, fold, ctx));
+    return error_pass_int(_art_fold(art, prefix, WITHOUT_KEY, FORWARD, fold, ctx));
 }
 
 int art_fold_pk(art_ct art, str_const_ct prefix, art_fold_cb fold, void *ctx)
 {
-    return error_propagate_int(_art_fold(art, prefix, WITH_KEY, FORWARD, fold, ctx));
+    return error_pass_int(_art_fold(art, prefix, WITH_KEY, FORWARD, fold, ctx));
 }
 
 int art_fold_pr(art_ct art, str_const_ct prefix, art_fold_cb fold, void *ctx)
 {
-    return error_propagate_int(_art_fold(art, prefix, WITHOUT_KEY, BACKWARD, fold, ctx));
+    return error_pass_int(_art_fold(art, prefix, WITHOUT_KEY, BACKWARD, fold, ctx));
 }
 
 int art_fold_prk(art_ct art, str_const_ct prefix, art_fold_cb fold, void *ctx)
 {
-    return error_propagate_int(_art_fold(art, prefix, WITH_KEY, BACKWARD, fold, ctx));
+    return error_pass_int(_art_fold(art, prefix, WITH_KEY, BACKWARD, fold, ctx));
 }
 
 str_ct art_complete(art_const_ct art, str_const_ct prefix)

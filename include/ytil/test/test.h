@@ -89,7 +89,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     if((rc = (expr)) < 0) \
-        test_abort_backtrace("INT SUCCESS test failed: "#expr" (%jd, %s)", rc, error_get_name("<unset>")); \
+        test_abort_backtrace("INT SUCCESS test failed: "#expr" (%jd, %s)", rc, error_name(0)); \
     else if(rc > 0) \
         test_msg_warn("INT SUCCESS test warning: "#expr" == 0 (%jd)", rc); \
     \
@@ -104,8 +104,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     \
     if((rc = (expr)) >= 0) \
         test_abort("INT ERROR test failed: "#expr" (%jd)", rc); \
-    else if(!error_check(err)) \
-        test_abort_backtrace("INT ERROR test failed: "#expr" (%s == "#err")", error_get_name("<unset>")); \
+    else if(!error_check(0, err)) \
+        test_abort_backtrace("INT ERROR test failed: "#expr" (%s == "#err")", error_name(0)); \
     \
     test_end(); \
 } while(0)
@@ -119,7 +119,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     intmax_t rc, _trc = (trc); \
     \
     if((rc = (expr)) < 0) \
-        test_abort_backtrace("RC SUCCESS test failed: "#expr" (%jd, %s)", rc, error_get_name("<unset>")); \
+        test_abort_backtrace("RC SUCCESS test failed: "#expr" (%jd, %s)", rc, error_name(0)); \
     else if(rc != _trc) \
         test_abort("RC SUCCESS test failed: "#expr" == "#trc" (%jd == %jd)", rc, _trc); \
     \
@@ -134,8 +134,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     \
     if((rc = (expr)) != _trc) \
         test_abort("RC ERROR test failed: "#expr" == "#trc" (%jd == %jd)", rc, _trc); \
-    else if(!error_check(err)) \
-        test_abort_backtrace("RC ERROR test failed: "#expr" (%s == "#err")", error_get_name("<unset>")); \
+    else if(!error_check(0, err)) \
+        test_abort_backtrace("RC ERROR test failed: "#expr" (%s == "#err")", error_name(0)); \
     \
     test_end(); \
 } while(0)
@@ -155,7 +155,7 @@ extern char **environ;
     test_begin(); \
     \
     if(!(ptr = (expr))) \
-        test_abort_backtrace("PTR SUCCESS test failed: "#expr" (%s)", error_get_name("<unset>")); \
+        test_abort_backtrace("PTR SUCCESS test failed: "#expr" (%s)", error_name(0)); \
     else if(ptr <= (void*)(intptr_t)main) \
         test_msg_warn("PTR SUCCESS test warning: "#expr" > main (%p > %p)", \
             ptr, (void*)(intptr_t)main); \
@@ -174,7 +174,7 @@ extern char **environ;
     test_begin(); \
     \
     if(!(ptr = (expr))) \
-        test_abort_backtrace("PTR SUCCESS test failed: "#expr" (%s)", error_get_name("<unset>")); \
+        test_abort_backtrace("PTR SUCCESS test failed: "#expr" (%s)", error_name(0)); \
     \
     test_end(); \
 } while(0)
@@ -189,8 +189,8 @@ extern char **environ;
     \
     if((ptr = (expr))) \
         test_abort("PTR ERROR test failed: "#expr" (%p)", ptr); \
-    else if(!error_check(err)) \
-        test_abort_backtrace("PTR ERROR test failed: "#expr" (%s == "#err")", error_get_name("<unset>")); \
+    else if(!error_check(0, err)) \
+        test_abort_backtrace("PTR ERROR test failed: "#expr" (%s == "#err")", error_name(0)); \
     \
     test_end(); \
 } while(0)
