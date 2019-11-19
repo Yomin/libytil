@@ -53,6 +53,34 @@ TEST_CASE(path_new_empty)
     test_ptr_error(path_new(LIT(""), PATH_STYLE_SYSTEM), E_PATH_MALFORMED);
 }
 
+TEST_CASE(path_new_current)
+{
+    test_ptr_success(path = path_new_current());
+    test_true(path_is_relative(path));
+    test_false(path_is_directory(path));
+    test_uint_eq(path_type(path), PATH_TYPE_STANDARD);
+    test_uint_eq(path_depth(path), 1);
+    test_uint_eq(path_len(path, PATH_STYLE_POSIX), strlen("."));
+    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
+    test_str_eq(str_c(str), ".");
+    path_free(path);
+    str_unref(str);
+}
+
+TEST_CASE(path_new_parent)
+{
+    test_ptr_success(path = path_new_parent());
+    test_true(path_is_relative(path));
+    test_false(path_is_directory(path));
+    test_uint_eq(path_type(path), PATH_TYPE_STANDARD);
+    test_uint_eq(path_depth(path), 1);
+    test_uint_eq(path_len(path, PATH_STYLE_POSIX), strlen(".."));
+    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
+    test_str_eq(str_c(str), "..");
+    path_free(path);
+    str_unref(str);
+}
+
 TEST_SETUP(path_new_root)
 {
     test_ptr_success(path = path_new(LIT("/"), PATH_STYLE_POSIX));
@@ -1151,6 +1179,28 @@ TEST_CASE_FIXTURE(path_new_windows_win32_device, path_new_device, path_free)
     str_unref(str);
 }
 
+TEST_CASE_SIGNAL(path_dup_invalid_magic, SIGABRT)
+{
+    path_dup((path_ct)&not_a_path);
+}
+
+TEST_CASE_FIXTURE(path_dup, path_new_dir_absolute, path_free)
+{
+    path_ct npath;
+    str_ct nstr;
+    
+    test_ptr_success(npath = path_dup(path));
+    test_true(path_is_absolute(npath));
+    test_true(path_is_directory(npath));
+    test_uint_eq(path_depth(path), path_depth(npath));
+    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
+    test_ptr_success(nstr = path_get(npath, PATH_STYLE_POSIX));
+    test_str_eq(str_c(str), str_c(nstr));
+    str_unref(str);
+    str_unref(nstr);
+    path_free(npath);
+}
+
 TEST_CASE_SIGNAL(path_reset_invalid_magic, SIGABRT)
 {
     path_reset((path_ct)&not_a_path);
@@ -1187,6 +1237,51 @@ TEST_CASE_SIGNAL(path_depth_invalid_magic, SIGABRT)
 TEST_CASE_SIGNAL(path_len_invalid_magic, SIGABRT)
 {
     path_len((path_ct)&not_a_path, PATH_STYLE_SYSTEM);
+}
+
+TEST_CASE_SIGNAL(path_current_invalid_style, SIGABRT)
+{
+    path_current(999);
+}
+
+TEST_CASE(path_current_posix)
+{
+    test_str_eq(path_current(PATH_STYLE_POSIX), ".");
+}
+
+TEST_CASE(path_current_windows)
+{
+    test_str_eq(path_current(PATH_STYLE_WINDOWS), ".");
+}
+
+TEST_CASE_SIGNAL(path_parent_invalid_style, SIGABRT)
+{
+    path_parent(999);
+}
+
+TEST_CASE(path_parent_posix)
+{
+    test_str_eq(path_parent(PATH_STYLE_POSIX), "..");
+}
+
+TEST_CASE(path_parent_windows)
+{
+    test_str_eq(path_parent(PATH_STYLE_WINDOWS), "..");
+}
+
+TEST_CASE_SIGNAL(path_separator_invalid_style, SIGABRT)
+{
+    path_separator(999);
+}
+
+TEST_CASE(path_separator_posix)
+{
+    test_str_eq(path_separator(PATH_STYLE_POSIX), "/");
+}
+
+TEST_CASE(path_separator_windows)
+{
+    test_str_eq(path_separator(PATH_STYLE_WINDOWS), "\\/");
 }
 
 TEST_CASE_SIGNAL(path_set_invalid_magic, SIGABRT)
@@ -1938,6 +2033,8 @@ test_suite_ct test_suite_path(void)
         , test_case_new(path_new_invalid_str)
         , test_case_new(path_new_invalid_style)
         , test_case_new(path_new_empty)
+        , test_case_new(path_new_current)
+        , test_case_new(path_new_parent)
         
         , test_case_new(path_new_posix_root)
         , test_case_new(path_new_posix_root2)
@@ -2029,6 +2126,9 @@ test_suite_ct test_suite_path(void)
         , test_case_new(path_new_windows_win32_device_missing_ident)
         , test_case_new(path_new_windows_win32_device)
         
+        , test_case_new(path_dup_invalid_magic)
+        , test_case_new(path_dup)
+        
         , test_case_new(path_reset_invalid_magic)
         , test_case_new(path_reset)
         
@@ -2037,6 +2137,16 @@ test_suite_ct test_suite_path(void)
         , test_case_new(path_type_invalid_magic)
         , test_case_new(path_depth_invalid_magic)
         , test_case_new(path_len_invalid_magic)
+        
+        , test_case_new(path_current_invalid_style)
+        , test_case_new(path_current_posix)
+        , test_case_new(path_current_windows)
+        , test_case_new(path_parent_invalid_style)
+        , test_case_new(path_parent_posix)
+        , test_case_new(path_parent_windows)
+        , test_case_new(path_separator_invalid_style)
+        , test_case_new(path_separator_posix)
+        , test_case_new(path_separator_windows)
         
         , test_case_new(path_set_invalid_magic)
         , test_case_new(path_set_invalid_style)

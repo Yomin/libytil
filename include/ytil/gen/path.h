@@ -72,6 +72,12 @@ path_ct path_new(str_const_ct str, path_style_id style);
 path_ct path_new_c(const char *str, path_style_id style);
 // create new path from cstr of len
 path_ct path_new_cn(const char *str, size_t len, path_style_id style);
+// create new 'current' path
+path_ct path_new_current(void);
+// create new 'parent' path
+path_ct path_new_parent(void);
+// duplicate path
+path_ct path_dup(path_const_ct path);
 // reset path to 'current' dir
 void    path_reset(path_ct path);
 // free path
@@ -91,6 +97,13 @@ path_type_id path_type(path_const_ct path);
 size_t path_depth(path_const_ct path);
 // get length of path
 size_t path_len(path_const_ct path, path_style_id style);
+
+// get 'current' directory in respective style
+const char *path_current(path_style_id style);
+// get 'parent' directory in respective style
+const char *path_parent(path_style_id style);
+// get path separators in respective style
+const char *path_separator(path_style_id style);
 
 // set str as path
 path_ct path_set(path_ct path, str_const_ct str, path_style_id style);

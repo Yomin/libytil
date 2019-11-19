@@ -115,15 +115,81 @@ path_ct path_new_cn(const char *str, size_t len, path_style_id style)
     
     assert(str);
     
+    if(!(path = path_new_current()))
+        return error_pass(), NULL;
+    
+    if(!path_set_cn(path, str, len, style))
+        return error_pass(), path_free(path), NULL;
+    
+    return path;
+}
+
+path_ct path_new_current(void)
+{
+    path_ct path;
+    
     if(!(path = calloc(1, sizeof(path_st))))
         return error_wrap_errno(calloc), NULL;
     
     init_magic(path);
     
-    if(!path_set_cn(path, str, len, style))
-        return error_pass(), free(path), NULL;
+    return path;
+}
+
+path_ct path_new_parent(void)
+{
+    path_ct path;
+    path_comp_st *comp;
+    
+    if(!(path = path_new_current()))
+        return error_pass(), NULL;
+    
+    if(!(path->comp = vec_new(1, sizeof(path_comp_st))))
+        return error_wrap(), path_free(path), NULL;
+    
+    comp = vec_push(path->comp);
+    comp->len = PATH_COMP_PARENT;
     
     return path;
+}
+
+static int path_vec_dup_comp(vec_const_ct vec, size_t index, void *elem, void *ctx)
+{
+    path_comp_st *comp = elem, *ncomp;
+    vec_ct nvec = ctx;
+    
+    if(!(ncomp = vec_push(nvec)))
+        return error_wrap(), -1;
+    
+    if(comp->name && !(ncomp->name = strdup(comp->name)))
+        return error_wrap_errno(strdup), vec_pop(nvec), -1;
+    
+    ncomp->len = comp->len;
+    
+    return 0;
+}
+
+path_ct path_dup(path_const_ct path)
+{
+    path_ct npath;
+    
+    assert_magic(path);
+    
+    if(!(npath = calloc(1, sizeof(path_st))))
+        return error_wrap_errno(calloc), NULL;
+    
+    memcpy(npath, path, sizeof(path_st));
+    
+    if(path->comp && !vec_is_empty(path->comp))
+    {
+        if(!(npath->comp = vec_new(vec_size(path->comp), sizeof(path_comp_st))))
+            return error_wrap(), free(npath), NULL;
+        
+        if(vec_fold(path->comp, path_vec_dup_comp, npath->comp))
+            return error_wrap(), path_free(npath), NULL;
+    }
+    
+    return npath;
 }
 
 static void path_vec_free_comp(vec_const_ct vec, void *elem, void *ctx)
@@ -254,6 +320,27 @@ size_t path_len(path_const_ct path, path_style_id style)
     default:
         abort();
     }
+}
+
+const char *path_current(path_style_id style)
+{
+    assert(style < PATH_STYLES);
+    
+    return path_props[style].current;
+}
+
+const char *path_parent(path_style_id style)
+{
+    assert(style < PATH_STYLES);
+    
+    return path_props[style].parent;
+}
+
+const char *path_separator(path_style_id style)
+{
+    assert(style < PATH_STYLES);
+    
+    return path_props[style].sep;
 }
 
 static path_comp_st *path_set_comp(path_comp_st *comp, const char *str, size_t len, path_style_id style)
