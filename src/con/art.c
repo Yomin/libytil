@@ -1507,9 +1507,29 @@ art_node_ct art_find(art_const_ct art, art_pred_cb pred, void *ctx)
     return error_pass_ptr(_art_find(art, NO_PREFIX, WITHOUT_KEY, FORWARD, pred, ctx));
 }
 
+void *art_find_data(art_const_ct art, art_pred_cb pred, void *ctx)
+{
+    art_node_ct node;
+    
+    if(!(node = art_find(art, pred, ctx)))
+        return error_pass(), NULL;
+    
+    return node->v.leaf.data;
+}
+
 art_node_ct art_find_k(art_const_ct art, art_pred_cb pred, void *ctx)
 {
     return error_pass_ptr(_art_find(art, NO_PREFIX, WITH_KEY, FORWARD, pred, ctx));
+}
+
+void *art_find_data_k(art_const_ct art, art_pred_cb pred, void *ctx)
+{
+    art_node_ct node;
+    
+    if(!(node = art_find_k(art, pred, ctx)))
+        return error_pass(), NULL;
+    
+    return node->v.leaf.data;
 }
 
 art_node_ct art_find_r(art_const_ct art, art_pred_cb pred, void *ctx)
@@ -1517,9 +1537,29 @@ art_node_ct art_find_r(art_const_ct art, art_pred_cb pred, void *ctx)
     return error_pass_ptr(_art_find(art, NO_PREFIX, WITHOUT_KEY, BACKWARD, pred, ctx));
 }
 
+void *art_find_data_r(art_const_ct art, art_pred_cb pred, void *ctx)
+{
+    art_node_ct node;
+    
+    if(!(node = art_find_r(art, pred, ctx)))
+        return error_pass(), NULL;
+    
+    return node->v.leaf.data;
+}
+
 art_node_ct art_find_rk(art_const_ct art, art_pred_cb pred, void *ctx)
 {
     return error_pass_ptr(_art_find(art, NO_PREFIX, WITH_KEY, BACKWARD, pred, ctx));
+}
+
+void *art_find_data_rk(art_const_ct art, art_pred_cb pred, void *ctx)
+{
+    art_node_ct node;
+    
+    if(!(node = art_find_rk(art, pred, ctx)))
+        return error_pass(), NULL;
+    
+    return node->v.leaf.data;
 }
 
 art_node_ct art_find_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
@@ -1527,9 +1567,29 @@ art_node_ct art_find_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, 
     return error_pass_ptr(_art_find(art, prefix, WITHOUT_KEY, FORWARD, pred, ctx));
 }
 
+void *art_find_data_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
+{
+    art_node_ct node;
+    
+    if(!(node = art_find_p(art, prefix, pred, ctx)))
+        return error_pass(), NULL;
+    
+    return node->v.leaf.data;
+}
+
 art_node_ct art_find_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
 {
     return error_pass_ptr(_art_find(art, prefix, WITH_KEY, FORWARD, pred, ctx));
+}
+
+void *art_find_data_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
+{
+    art_node_ct node;
+    
+    if(!(node = art_find_pk(art, prefix, pred, ctx)))
+        return error_pass(), NULL;
+    
+    return node->v.leaf.data;
 }
 
 art_node_ct art_find_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
@@ -1537,9 +1597,29 @@ art_node_ct art_find_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred,
     return error_pass_ptr(_art_find(art, prefix, WITHOUT_KEY, BACKWARD, pred, ctx));
 }
 
+void *art_find_data_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
+{
+    art_node_ct node;
+    
+    if(!(node = art_find_pr(art, prefix, pred, ctx)))
+        return error_pass(), NULL;
+    
+    return node->v.leaf.data;
+}
+
 art_node_ct art_find_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
 {
     return error_pass_ptr(_art_find(art, prefix, WITH_KEY, BACKWARD, pred, ctx));
+}
+
+void *art_find_data_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
+{
+    art_node_ct node;
+    
+    if(!(node = art_find_prk(art, prefix, pred, ctx)))
+        return error_pass(), NULL;
+    
+    return node->v.leaf.data;
 }
 
 static int art_traverse_fold(art_ct art, art_node_ct node, str_ct path, void *ctx)

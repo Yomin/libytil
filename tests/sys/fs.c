@@ -20,33 +20,38 @@
  * THE SOFTWARE.
  */
 
-#include <ytil/test/run.h>
-#include "con/cont.h"
-#include "gen/gen.h"
-#include "sys/sys.h"
-#include <stdio.h>
+#include "fs.h"
+#include <ytil/test/test.h>
+#include <ytil/sys/fs.h>
+
+path_ct path;
+fs_stat_st fst;
 
 
-int main(int argc, char *argv[])
+TEST_SETUP(path_new)
 {
-    test_suite_ct suite;
-    test_run_ct run;
-    int rc;
-    
-    if(!(suite = test_suite_new_with_suites("ytil"
-            , test_suite_con()
-            , test_suite_gen()
-            , test_suite_sys()
-        )))
-        return perror("failed to setup test suites"), -1;
-    
-    if((run = test_run_new_with_args(argc, argv)))
-    {
-        rc = test_run_exec(run, suite);
-        test_run_free(run);
-    }
-    
-    test_suite_free(suite);
-    
-    return rc;
+    test_ptr_success(path = path_new_current());
+}
+
+TEST_TEARDOWN(path_free)
+{
+    path_free(path);
+}
+
+TEST_CASE_SIGNAL(fs_stat_invalid_path, SIGABRT)
+{
+    fs_stat(NULL, &fst);
+}
+
+TEST_CASE_FIXTURE_SIGNAL(fs_stat_invalid_fst, path_new, path_free, SIGABRT)
+{
+    fs_stat(path, NULL);
+}
+
+test_suite_ct test_suite_fsys(void)
+{
+    return test_suite_new_with_cases("fs"
+        , test_case_new(fs_stat_invalid_path)
+        , test_case_new(fs_stat_invalid_fst)
+    );
 }

@@ -20,33 +20,59 @@
  * THE SOFTWARE.
  */
 
-#include <ytil/test/run.h>
-#include "con/cont.h"
-#include "gen/gen.h"
-#include "sys/sys.h"
-#include <stdio.h>
+#ifndef __YTIL_SYS_FS_H__
+#define __YTIL_SYS_FS_H__
 
+#include <ytil/gen/path.h>
 
-int main(int argc, char *argv[])
+typedef enum fs_error
 {
-    test_suite_ct suite;
-    test_run_ct run;
-    int rc;
-    
-    if(!(suite = test_suite_new_with_suites("ytil"
-            , test_suite_con()
-            , test_suite_gen()
-            , test_suite_sys()
-        )))
-        return perror("failed to setup test suites"), -1;
-    
-    if((run = test_run_new_with_args(argc, argv)))
-    {
-        rc = test_run_exec(run, suite);
-        test_run_free(run);
-    }
-    
-    test_suite_free(suite);
-    
-    return rc;
-}
+      E_FS_ERRNO
+    , E_FS_INVALID_PATH
+} fs_error_id;
+
+typedef enum fs_mode
+{
+      FS_MODE_REPLACE
+    , FS_MODE_MERGE
+    , FS_MODES
+} fs_mode_id;
+
+typedef enum fs_type
+{
+      FS_TYPE_UNKNOWN
+    , FS_TYPE_BLOCK
+    , FS_TYPE_CHARACTER
+    , FS_TYPE_PIPE
+    , FS_TYPE_SOCKET
+    , FS_TYPE_LINK
+    , FS_TYPE_REGULAR
+    , FS_TYPE_DIRECTORY
+} fs_type_id;
+
+typedef struct fs_stat
+{
+    fs_type_id type;
+    size_t size;
+    short uid, gid;
+    time_t atime, mtime, ctime;
+} fs_stat_st;
+
+typedef int (*fs_walk_cb)(path_const_ct file, fs_stat_st *info, void *ctx);
+
+// get file status
+fs_stat_st *fs_stat(path_const_ct file, fs_stat_st *fst);
+
+// iterate over all files in directory
+int fs_walk(path_const_ct dir, fs_walk_cb walk, void *ctx);
+
+//path_ct fs_tmp
+
+// move file from src to dst
+int fs_move(path_const_ct dst, path_const_ct src, fs_mode_id mode);
+// copy file from src to dst
+int fs_copy(path_const_ct dst, path_const_ct src, fs_mode_id mode);
+// remove file
+int fs_remove(path_const_ct file);
+
+#endif
