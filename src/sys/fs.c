@@ -40,7 +40,7 @@ fs_stat_st *fs_stat(path_const_ct file, fs_stat_st *fst)
     
     assert(fst);
     
-    if(!(path = path_get(file, PATH_STYLE_SYSTEM)))
+    if(!(path = path_get(file, PATH_STYLE_NATIVE)))
         return error_pack(E_FS_INVALID_PATH), NULL;
     
 #ifdef _WIN32
@@ -91,7 +91,7 @@ int fs_walk(path_const_ct dir, fs_walk_cb walk, void *ctx)
     if(!(path = path_dup(dir)))
         return error_wrap(), -1;
     
-    if(!(str = path_get(path, PATH_STYLE_SYSTEM)))
+    if(!(str = path_get(path, PATH_STYLE_NATIVE)))
         return error_pack(E_FS_INVALID_PATH), path_free(path), -1;
     
     if(!(dp = opendir(str_c(str))))
@@ -101,11 +101,11 @@ int fs_walk(path_const_ct dir, fs_walk_cb walk, void *ctx)
     
     for(errno = 0; (ep = readdir(dp)); errno = 0)
     {
-        if(!strcmp(ep->d_name, path_current(PATH_STYLE_SYSTEM))
-        || !strcmp(ep->d_name, path_parent(PATH_STYLE_SYSTEM)))
+        if(!strcmp(ep->d_name, path_current(PATH_STYLE_NATIVE))
+        || !strcmp(ep->d_name, path_parent(PATH_STYLE_NATIVE)))
             continue;
         
-        if(!path_append_c(path, ep->d_name, PATH_STYLE_SYSTEM))
+        if(!path_append_c(path, ep->d_name, PATH_STYLE_NATIVE))
             return error_wrap(), path_free(path), closedir(dp), -1;
         
         if(fs_stat(path, &fst))

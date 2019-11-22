@@ -29,6 +29,7 @@
 typedef enum env_error
 {
       E_ENV_INVALID_NAME
+    , E_ENV_NOT_AVAILABLE
     , E_ENV_NOT_FOUND
 } env_error_id;
 
@@ -37,9 +38,23 @@ typedef enum env_path
       ENV_PATH_USER_CACHE
     , ENV_PATH_USER_CONFIG
     , ENV_PATH_USER_DATA
+    , ENV_PATH_USER_HOME
     , ENV_PATH_USER_VOLATILE
     , ENV_PATHS
 } env_path_id;
+
+typedef enum env_mode
+{
+      ENV_MODE_WINDOWS
+    , ENV_MODE_XDG
+    , ENV_MODES
+} env_mode_id;
+
+#ifdef _WIN32
+#   define ENV_MODE_NATIVE ENV_MODE_WINDOWS
+#else
+#   define ENV_MODE_NATIVE ENV_MODE_XDG
+#endif
 
 // return 0 to continue fold, anything else stops fold
 typedef int (*env_fold_cb)(str_const_ct name, str_const_ct value, void *ctx);
@@ -65,6 +80,6 @@ int          env_fold(env_fold_cb fold, void *ctx);
 void         env_dump(void);
 
 // get environment specific path
-path_ct env_path(env_path_id id);
+path_ct env_get_path(env_path_id id, env_mode_id mode);
 
 #endif

@@ -56,9 +56,9 @@ typedef enum path_style
 } path_style_id;
 
 #ifdef _WIN32
-#   define PATH_STYLE_SYSTEM PATH_STYLE_WINDOWS
+#   define PATH_STYLE_NATIVE PATH_STYLE_WINDOWS
 #else
-#   define PATH_STYLE_SYSTEM PATH_STYLE_POSIX
+#   define PATH_STYLE_NATIVE PATH_STYLE_POSIX
 #endif
 
 struct path;

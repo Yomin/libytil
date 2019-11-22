@@ -25,6 +25,9 @@
 #include <ytil/con/art.h>
 #include <stdio.h>
 
+#ifndef _WIN32
+#   include <pwd.h>
+#endif
 
 typedef struct env_value
 {
@@ -38,22 +41,10 @@ typedef struct env_fold_state
     void *ctx;
 } env_fold_state_st;
 
-typedef struct env_xdg_path
-{
-    const char *name, *def;
-} env_xdg_path_st;
-
-static const env_xdg_path_st env_xdg_path[] =
-{
-      [ENV_PATH_USER_CACHE]     = { "XDG_CACHE_HOME", ".cache" }
-    , [ENV_PATH_USER_CONFIG]    = { "XDG_CONFIG_HOME", ".config" }
-    , [ENV_PATH_USER_DATA]      = { "XDG_DATA_HOME", ".local/share" }
-    , [ENV_PATH_USER_VOLATILE]  = { "XDG_RUNTIME_DIR", NULL }
-};
-
 static const error_info_st error_infos[] =
 {
       ERROR_INFO(E_ENV_INVALID_NAME, "Invalid environment name.")
+    , ERROR_INFO(E_ENV_NOT_AVAILABLE, "Environment value not available.")
     , ERROR_INFO(E_ENV_NOT_FOUND, "Environment value not found.")
 };
 
@@ -277,17 +268,74 @@ void env_dump(void)
     env_fold(env_dump_value, &no);
 }
 
-path_ct env_path(env_path_id id)
+static path_ct env_get_user_home(env_mode_id mode)
 {
-    env_xdg_path_st *xpath;
-    str_const_ct str;
+    str_const_ct value;
+    path_ct path;
     
-    assert(id < ENV_PATHS);
+    if(!(value = env_get(LIT("HOME"))))
+    {
+#ifdef _WIN32
+        return error_pack(E_ENV_NOT_AVAILABLE), NULL;
+#else
+        struct passwd *pwd;
+        
+        if(!(pwd = getpwuid(getuid())))
+            return error_wrap_errno(getpwuid), NULL;
+        
+        value = STR(pwd->pw_dir);
+#endif
+    }
     
-    xpath = env_xdg_path[id];
+    if(!(path = path_new(value, PATH_STYLE_NATIVE)))
+        return error_wrap(), NULL;
     
-    if((str = env_get(STR(xpath->name))))
+    return path;
+}
+
+static path_ct env_get_user_path(env_path_id id, env_mode_id mode)
+{
+    path_ct path;
+    str_const_ct value, def;
     
+    switch(id)
+    {
+    case ENV_PATH_USER_CACHE:       value = env_get(LIT("XDG_CACHE_HOME")); def = LIT(".cache"); break;
+    case ENV_PATH_USER_CONFIG:      value = env_get(LIT("XDG_CONFIG_HOME")); def = LIT(".config"); break;
+    case ENV_PATH_USER_DATA:        value = env_get(LIT("XDG_DATA_HOME")); def = LIT(".local/share"); break;
+    case ENV_PATH_USER_VOLATILE:    value = env_get(LIT("XDG_RUNTIME_DIR")); def = NULL; break;
+    default:                        abort();
+    }
     
-    return NULL;
+    if(value)
+        return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
+    
+    if(!error_check(0, E_ENV_NOT_FOUND))
+        return error_wrap(), NULL;
+    
+    if(!def)
+        return error_pack(E_ENV_NOT_AVAILABLE), NULL;
+    
+    if(!(path = env_get_user_home(mode)))
+        return error_pass(), NULL;
+    
+    if(!path_append(path, def, PATH_STYLE_NATIVE))
+        return error_wrap(), path_free(path), NULL;
+    
+    return path;
+}
+
+path_ct env_get_path(env_path_id id, env_mode_id mode)
+{
+    assert(id < ENV_PATHS && mode < ENV_MODES);
+    
+    switch(id)
+    {
+    case ENV_PATH_USER_CACHE:
+    case ENV_PATH_USER_CONFIG:
+    case ENV_PATH_USER_DATA:
+    case ENV_PATH_USER_VOLATILE:    return error_pass_ptr(env_get_user_path(id, mode));
+    case ENV_PATH_USER_HOME:        return error_pass_ptr(env_get_user_home(mode));
+    default:                        abort();
+    }
 }
