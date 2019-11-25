@@ -44,7 +44,7 @@ TEST_TEARDOWN(env_free)
     test_void(env_free());
 }
 
-TEST_CASE_FIXTURE_SIGNAL(env_get_invalid_name1, env_init, env_free, SIGABRT)
+TEST_CASE_FIXTURE_ABORT(env_get_invalid_name1, env_init, env_free)
 {
     env_get(NULL);
 }
@@ -64,7 +64,7 @@ TEST_CASE_FIXTURE(env_get, env_init, env_free)
     test_ptr_success(env_get(LIT("PATH")));
 }
 
-TEST_CASE_FIXTURE_SIGNAL(env_set_invalid_name1, env_init, env_free, SIGABRT)
+TEST_CASE_FIXTURE_ABORT(env_set_invalid_name1, env_init, env_free)
 {
     env_set(NULL, LIT("foo"));
 }
@@ -74,7 +74,7 @@ TEST_CASE_FIXTURE(env_set_invalid_name2, env_init, env_free)
     test_int_error(env_set(LIT(""), LIT("foo")), E_ENV_INVALID_NAME);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(env_set_invalid_value, env_init, env_free, SIGABRT)
+TEST_CASE_FIXTURE_ABORT(env_set_invalid_value, env_init, env_free)
 {
     env_set(LIT("foo"), NULL);
 }
@@ -116,7 +116,7 @@ TEST_CASE_FIXTURE(env_set_unset_def, env_init, env_free)
     test_str_eq(str_c(value), "foo");
 }
 
-TEST_CASE_FIXTURE_SIGNAL(env_reset_invalid_name1, env_init, env_free, SIGABRT)
+TEST_CASE_FIXTURE_ABORT(env_reset_invalid_name1, env_init, env_free)
 {
     env_reset(NULL);
 }
@@ -154,7 +154,7 @@ TEST_CASE_FIXTURE(env_reset_unset_def, env_init, env_free)
     test_ptr_success(env_get(LIT("PATH")));
 }
 
-TEST_CASE_FIXTURE_SIGNAL(env_unset_invalid_name1, env_init, env_free, SIGABRT)
+TEST_CASE_FIXTURE_ABORT(env_unset_invalid_name1, env_init, env_free)
 {
     env_unset(NULL);
 }
@@ -197,6 +197,7 @@ TEST_CASE_FIXTURE(env_get_home_from_home, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(str), "/home/foo");
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_home_from_userprofile, env_init, env_free)
@@ -207,6 +208,7 @@ TEST_CASE_FIXTURE(env_get_home_from_userprofile, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(str), "/users/foo");
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_home_native, env_init, env_free)
@@ -224,19 +226,20 @@ TEST_CASE_FIXTURE(env_get_home_native, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
     test_str_eq(str_c(str), cstr);
     str_unref(str);
+    path_free(path);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(env_get_app_dir_invalid_ident, env_init, env_free, SIGABRT)
+TEST_CASE_FIXTURE_ABORT(env_get_app_dir_invalid_ident, env_init, env_free)
 {
     env_get_app_dir(999, LIT("ACME"), LIT("tron"), NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(env_get_app_dir_invalid_author, env_init, env_free, SIGABRT)
+TEST_CASE_FIXTURE_ABORT(env_get_app_dir_invalid_author, env_init, env_free)
 {
     env_get_app_dir(ENV_APP_DIR_CACHE, NULL, LIT("tron"), NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(env_get_app_dir_invalid_name, env_init, env_free, SIGABRT)
+TEST_CASE_FIXTURE_ABORT(env_get_app_dir_invalid_name, env_init, env_free)
 {
     env_get_app_dir(ENV_APP_DIR_CACHE, LIT("ACME"), NULL, NULL);
 }
@@ -248,6 +251,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_cache_from_xdg_cache_home, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(str), "/home/foo/my_cache/tron");
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_cache_from_localappdata, env_init, env_free)
@@ -258,6 +262,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_cache_from_localappdata, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(str), "/users/foo/appdata/glocal/ACME/tron/cache");
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_cache_native, env_init, env_free)
@@ -276,6 +281,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_cache_native, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
     test_str_eq(str_c(str), cstr);
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_config_from_xdg_config_home, env_init, env_free)
@@ -285,6 +291,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_config_from_xdg_config_home, env_init, env_fre
     test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(str), "/home/foo/my_config/tron");
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_config_from_appdata, env_init, env_free)
@@ -295,6 +302,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_config_from_appdata, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(str), "/users/foo/appdata/goofing/ACME/tron");
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_config_native, env_init, env_free)
@@ -313,6 +321,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_config_native, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
     test_str_eq(str_c(str), cstr);
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_data_from_xdg_data_home, env_init, env_free)
@@ -322,6 +331,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_data_from_xdg_data_home, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(str), "/home/foo/my_data/tron");
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_data_from_localappdata, env_init, env_free)
@@ -332,6 +342,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_data_from_localappdata, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(str), "/users/foo/appdata/glocal/ACME/tron");
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_data_native, env_init, env_free)
@@ -350,6 +361,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_data_native, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
     test_str_eq(str_c(str), cstr);
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_log_from_xdg_cache_home, env_init, env_free)
@@ -359,6 +371,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_log_from_xdg_cache_home, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(str), "/home/foo/my_cache/tron/logs");
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_log_from_localappdata, env_init, env_free)
@@ -369,6 +382,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_log_from_localappdata, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(str), "/users/foo/appdata/glocal/ACME/tron/logs");
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_log_native, env_init, env_free)
@@ -387,6 +401,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_log_native, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
     test_str_eq(str_c(str), cstr);
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_volatile_from_xdg_runtime_dir, env_init, env_free)
@@ -396,6 +411,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_volatile_from_xdg_runtime_dir, env_init, env_f
     test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(str), "/home/foo/my_sockets/tron");
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_volatile_from_localappdata, env_init, env_free)
@@ -406,6 +422,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_volatile_from_localappdata, env_init, env_free
     test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(str), "/users/foo/appdata/glocal/ACME/tron/run");
     str_unref(str);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(env_get_app_dir_volatile_native, env_init, env_free)
@@ -424,6 +441,7 @@ TEST_CASE_FIXTURE(env_get_app_dir_volatile_native, env_init, env_free)
     test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
     test_str_eq(str_c(str), cstr);
     str_unref(str);
+    path_free(path);
 }
 
 test_suite_ct test_suite_env(void)
