@@ -33,28 +33,15 @@ typedef enum env_error
     , E_ENV_NOT_FOUND
 } env_error_id;
 
-typedef enum env_path
+typedef enum env_app_dir
 {
-      ENV_PATH_USER_CACHE
-    , ENV_PATH_USER_CONFIG
-    , ENV_PATH_USER_DATA
-    , ENV_PATH_USER_HOME
-    , ENV_PATH_USER_VOLATILE
-    , ENV_PATHS
-} env_path_id;
-
-typedef enum env_mode
-{
-      ENV_MODE_WINDOWS
-    , ENV_MODE_XDG
-    , ENV_MODES
-} env_mode_id;
-
-#ifdef _WIN32
-#   define ENV_MODE_NATIVE ENV_MODE_WINDOWS
-#else
-#   define ENV_MODE_NATIVE ENV_MODE_XDG
-#endif
+      ENV_APP_DIR_CACHE
+    , ENV_APP_DIR_CONFIG
+    , ENV_APP_DIR_DATA
+    , ENV_APP_DIR_LOG
+    , ENV_APP_DIR_VOLATILE
+    , ENV_APP_DIRS
+} env_app_dir_id;
 
 // return 0 to continue fold, anything else stops fold
 typedef int (*env_fold_cb)(str_const_ct name, str_const_ct value, void *ctx);
@@ -79,7 +66,10 @@ int          env_fold(env_fold_cb fold, void *ctx);
 // dump all environment variables to stdout
 void         env_dump(void);
 
-// get environment specific path
-path_ct env_get_path(env_path_id id, env_mode_id mode);
+// get environment specific user directory
+path_ct env_get_home(void);
+// get environment specific application directory
+// version may be NULL
+path_ct env_get_app_dir(env_app_dir_id id, str_const_ct author, str_const_ct app, str_const_ct version);
 
 #endif
