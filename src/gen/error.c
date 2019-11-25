@@ -27,7 +27,12 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdio.h>
 
+#ifdef _WIN32
+#   include <winerror.h>
+#   include <ntstatus.h>
+#endif
 
 #ifndef ERROR_STACK_SIZE
 #   define ERROR_STACK_SIZE 20
@@ -338,7 +343,7 @@ static char error_name_buf[20];
 static inline const char *error_entry_get_win32_name(error_entry_st *entry)
 {
     snprintf(error_name_buf, sizeof(error_name_buf),
-        "WIN32_%08X", entry->value.win32.code);
+        "WIN32_%08lX", entry->value.win32.code);
     
     return error_name_buf;
 }
@@ -346,7 +351,7 @@ static inline const char *error_entry_get_win32_name(error_entry_st *entry)
 static inline const char *error_entry_get_hresult_name(error_entry_st *entry)
 {
     snprintf(error_name_buf, sizeof(error_name_buf),
-        "HRESULT_%08X", entry->value.hresult.result);
+        "HRESULT_%08lX", entry->value.hresult.result);
     
     return error_name_buf;
 }
@@ -354,7 +359,7 @@ static inline const char *error_entry_get_hresult_name(error_entry_st *entry)
 static inline const char *error_entry_get_ntstatus_name(error_entry_st *entry)
 {
     snprintf(error_name_buf, sizeof(error_name_buf),
-        "NTSTATUS_%08X", entry->value.ntstatus.status);
+        "NTSTATUS_%08lX", entry->value.ntstatus.status);
     
     return error_name_buf;
 }
@@ -388,23 +393,47 @@ static inline const char *error_entry_get_errno_desc(error_entry_st *entry)
 
 #ifdef _WIN32
 
-static char error_desc_buf[200+4];
+static char error_desc_buf[200];
 
 static inline const char *error_entry_get_win32_desc(error_entry_st *entry)
 {
     DWORD rc;
+    char *tmp;
     
-    rc = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS, NULL,
-        entry->value.win32.code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        error_desc_buf, sizeof(error_desc_buf)-3, NULL);
+    rc = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, entry->value.win32.code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        error_desc_buf, sizeof(error_desc_buf), NULL);
+    
+    if(rc)
+    {
+        for(; rc && (error_desc_buf[rc-1] == '\n' || error_desc_buf[rc-1] == '\r'); rc--)
+            error_desc_buf[rc-1] = '\0';
+        
+        return error_desc_buf;
+    }
+    
+    if((rc = GetLastError()) != ERROR_INSUFFICIENT_BUFFER)
+    {
+        snprintf(error_desc_buf, sizeof(error_desc_buf), "<WIN32_FormatMessage_Error_%08lX>", rc);
+        
+        return error_desc_buf;
+    }
+    
+    rc = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS|FORMAT_MESSAGE_ALLOCATE_BUFFER,
+        NULL, entry->value.win32.code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (char*)&tmp, 0, NULL);
     
     if(!rc)
-        return "<WIN32_FormatMessage_Error>";
+    {
+        rc = GetLastError();
+        snprintf(error_desc_buf, sizeof(error_desc_buf), "<WIN32_FormatMessage_Error_%08lX>", rc);
+        
+        return error_desc_buf;
+    }
     
-    if(rc == sizeof(error_desc_buf)-4)
-        strncpy(&error_desc_buf[sizeof(error_desc_buf)-4], "...", 4);
-    
-    assert(!"test overflow!!!");
+    strncpy(error_desc_buf, tmp, sizeof(error_desc_buf));
+    strncpy(&error_desc_buf[sizeof(error_desc_buf)-4], "...", 4);
+    LocalFree(tmp);
     
     return error_desc_buf;
 }
@@ -457,7 +486,7 @@ int error_get_errno(size_t depth)
     error_entry_st *entry = error_get_entry(depth);
     assert(!entry || entry->type == ERROR_TYPE_ERRNO);
     
-    return entry ? entry->value._errno.code : -1;
+    return entry ? entry->value._errno.code : 0;
 }
 
 bool error_check_errno(size_t depth, int error)
@@ -475,7 +504,7 @@ DWORD error_get_win32(size_t depth)
     error_entry_st *entry = error_get_entry(depth);
     assert(!entry || entry->type == ERROR_TYPE_WIN32);
     
-    return entry ? entry->value.win32.code : -1;
+    return entry ? entry->value.win32.code : ERROR_SUCCESS;
 }
 
 bool error_check_win32(size_t depth, DWORD error)
@@ -491,7 +520,7 @@ HRESULT error_get_hresult(size_t depth)
     error_entry_st *entry = error_get_entry(depth);
     assert(!entry || entry->type == ERROR_TYPE_HRESULT);
     
-    return entry ? entry->value.hresult.result : -1;
+    return entry ? entry->value.hresult.result : S_OK;
 }
 
 bool error_check_hresult(size_t depth, HRESULT result)
@@ -507,7 +536,7 @@ NTSTATUS error_get_ntstatus(size_t depth)
     error_entry_st *entry = error_get_entry(depth);
     assert(!entry || entry->type == ERROR_TYPE_NTSTATUS);
     
-    return entry ? entry->value.ntstatus.status : -1;
+    return entry ? entry->value.ntstatus.status : STATUS_SUCCESS;
 }
 
 bool error_check_ntstatus(size_t depth, NTSTATUS status)
@@ -640,7 +669,7 @@ bool error_stack_check_error(size_t level, ssize_t error)
 
 int error_stack_get_errno(size_t level)
 {
-    return_value_if_fail(level < errors.size, -1);
+    return_value_if_fail(level < errors.size, 0);
     assert(errors.stack[level].type == ERROR_TYPE_ERRNO);
     
     return errors.stack[level].value._errno.code;
@@ -658,7 +687,7 @@ bool error_stack_check_errno(size_t level, int error)
 
 DWORD error_stack_get_win32(size_t level)
 {
-    return_value_if_fail(level < errors.size, -1);
+    return_value_if_fail(level < errors.size, ERROR_SUCCESS);
     assert(errors.stack[level].type == ERROR_TYPE_WIN32);
     
     return errors.stack[level].value.win32.code;
@@ -674,7 +703,7 @@ bool error_stack_check_win32(size_t level, DWORD error)
 
 HRESULT error_stack_get_hresult(size_t level)
 {
-    return_value_if_fail(level < errors.size, -1);
+    return_value_if_fail(level < errors.size, S_OK);
     assert(errors.stack[level].type == ERROR_TYPE_HRESULT);
     
     return errors.stack[level].value.hresult.result;
@@ -690,7 +719,7 @@ bool error_stack_check_hresult(size_t level, HRESULT result)
 
 NTSTATUS error_stack_get_ntstatus(size_t level)
 {
-    return_value_if_fail(level < errors.size, -1);
+    return_value_if_fail(level < errors.size, STATUS_SUCCESS);
     assert(errors.stack[level].type == ERROR_TYPE_NTSTATUS);
     
     return errors.stack[level].value.ntstatus.status;

@@ -25,6 +25,11 @@
 #include <ytil/gen/error.h>
 #include <ytil/ext/errno.h>
 
+#ifdef _WIN32
+#   include <winerror.h>
+#   include <ntstatus.h>
+#endif
+
 typedef enum test_error
 {
       E_TEST_ERROR_1
@@ -336,6 +341,27 @@ TEST_CASE(error_pass_errno)
 
 #ifdef _WIN32
 
+static char *_test_error_format(DWORD error)
+{
+    static char *tmp;
+    DWORD rc;
+    
+    if(tmp)
+        LocalFree(tmp);
+    
+    if(error == ERROR_SUCCESS)
+        return NULL;
+    
+    tmp = NULL;
+    rc = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS|FORMAT_MESSAGE_ALLOCATE_BUFFER,
+        NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (char*)&tmp, 0, NULL);
+    
+    for(; rc && (tmp[rc-1] == '\n' || tmp[rc-1] == '\r'); rc--)
+        tmp[rc-1] = '\0';
+    
+    return tmp;
+}
+
 TEST_CASE(error_push_win32)
 {
     test_void(error_push_win32(E_TEST_ERROR_1, foo, ERROR_FILE_NOT_FOUND));
@@ -354,7 +380,8 @@ TEST_CASE(error_push_win32)
     test_int_eq(error_get_win32(1), ERROR_FILE_NOT_FOUND);
     test_str_eq(error_func(1), "foo");
     test_str_eq(error_name(1), "WIN32_00000002");
-    test_str_eq(error_desc(1), "foo");
+    test_str_eq(error_desc(1), _test_error_format(ERROR_FILE_NOT_FOUND));
+    _test_error_format(ERROR_SUCCESS);
     
     test_int_eq(error_get(2), E_ERROR_UNSET);
 }
@@ -478,7 +505,7 @@ TEST_CASE(error_push_hresult)
     test_uint_eq(error_type(1), ERROR_TYPE_HRESULT);
     test_int_eq(error_get_hresult(1), HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
     test_str_eq(error_func(1), "foo");
-    test_str_eq(error_name(1), "HRESULT_00000002");
+    test_str_eq(error_name(1), "HRESULT_80070002");
     test_str_eq(error_desc(1), "<HRESULT_MESSAGE>");
     
     test_int_eq(error_get(2), E_ERROR_UNSET);
@@ -614,7 +641,7 @@ TEST_CASE_ABORT(error_check_wrong_type)
 TEST_CASE(error_get_errno_oob)
 {
     test_void(errno_set(EINVAL));
-    test_int_eq(error_get_errno(1), -1);
+    test_int_eq(error_get_errno(1), 0);
 }
 
 TEST_CASE_ABORT(error_get_errno_wrong_type)
@@ -640,7 +667,7 @@ TEST_CASE_ABORT(error_check_errno_wrong_type)
 TEST_CASE(error_get_win32_oob)
 {
     test_void(error_pass_win32(foo, ERROR_FILE_NOT_FOUND));
-    test_int_eq(error_get_win32(1), -1);
+    test_uint_eq(error_get_win32(1), ERROR_SUCCESS);
 }
 
 TEST_CASE_ABORT(error_get_win32_wrong_type)
@@ -663,8 +690,8 @@ TEST_CASE_ABORT(error_check_win32_wrong_type)
 
 TEST_CASE(error_get_hresult_oob)
 {
-    test_void(errno_pass_hresult(foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
-    test_int_eq(error_get_hresult(1), -1);
+    test_void(error_pass_hresult(foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
+    test_uint_eq(error_get_hresult(1), S_OK);
 }
 
 TEST_CASE_ABORT(error_get_hresult_wrong_type)
@@ -675,7 +702,7 @@ TEST_CASE_ABORT(error_get_hresult_wrong_type)
 
 TEST_CASE(error_check_hresult_oob)
 {
-    test_void(errno_pass_hresult(foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
+    test_void(error_pass_hresult(foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
     test_false(error_check_hresult(1, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
 }
 
@@ -688,7 +715,7 @@ TEST_CASE_ABORT(error_check_hresult_wrong_type)
 TEST_CASE(error_get_ntstatus_oob)
 {
     test_void(error_pass_ntstatus(foo, STATUS_TIMEOUT));
-    test_int_eq(error_get_ntstatus(1), -1);
+    test_uint_eq(error_get_ntstatus(1), STATUS_SUCCESS);
 }
 
 TEST_CASE_ABORT(error_get_ntstatus_wrong_type)
@@ -762,7 +789,7 @@ TEST_CASE_ABORT(error_stack_check_error_wrong_type)
 TEST_CASE(error_stack_get_errno_oob)
 {
     test_void(errno_set(EINVAL));
-    test_int_eq(error_stack_get_errno(1), -1);
+    test_int_eq(error_stack_get_errno(1), 0);
 }
 
 TEST_CASE_ABORT(error_stack_get_errno_wrong_type)
@@ -788,7 +815,7 @@ TEST_CASE_ABORT(error_stack_check_errno_wrong_type)
 TEST_CASE(error_stack_get_win32_oob)
 {
     test_void(error_pass_win32(foo, ERROR_FILE_NOT_FOUND));
-    test_int_eq(error_stack_get_win32(2), -1);
+    test_int_eq(error_stack_get_win32(2), ERROR_SUCCESS);
 }
 
 TEST_CASE_ABORT(error_stack_get_win32_wrong_type)
@@ -811,8 +838,8 @@ TEST_CASE_ABORT(error_stack_check_win32_wrong_type)
 
 TEST_CASE(error_stack_get_hresult_oob)
 {
-    test_void(errno_pass_hresult(foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
-    test_int_eq(error_stack_get_hresult(2), -1);
+    test_void(error_pass_hresult(foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
+    test_int_eq(error_stack_get_hresult(2), S_OK);
 }
 
 TEST_CASE_ABORT(error_stack_get_hresult_wrong_type)
@@ -823,8 +850,8 @@ TEST_CASE_ABORT(error_stack_get_hresult_wrong_type)
 
 TEST_CASE(error_stack_check_hresult_oob)
 {
-    test_void(errno_pass_hresult(foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
-    test_false(error_stack_check_hresult(1, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
+    test_void(error_pass_hresult(foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
+    test_false(error_stack_check_hresult(2, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
 }
 
 TEST_CASE_ABORT(error_stack_check_hresult_wrong_type)
@@ -836,7 +863,7 @@ TEST_CASE_ABORT(error_stack_check_hresult_wrong_type)
 TEST_CASE(error_stack_get_ntstatus_oob)
 {
     test_void(error_pass_ntstatus(foo, STATUS_TIMEOUT));
-    test_int_eq(error_stack_get_ntstatus(2), -1);
+    test_int_eq(error_stack_get_ntstatus(2), STATUS_SUCCESS);
 }
 
 TEST_CASE_ABORT(error_stack_get_ntstatus_wrong_type)

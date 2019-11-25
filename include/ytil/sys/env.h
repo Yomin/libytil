@@ -33,13 +33,25 @@ typedef enum env_error
     , E_ENV_NOT_FOUND
 } env_error_id;
 
+typedef enum env_user_dir
+{
+      ENV_USER_DIR_HOME
+    , ENV_USER_DIR_DESKTOP
+    , ENV_USER_DIR_DOCUMENTS
+    , ENV_USER_DIR_DOWNLOADS
+    , ENV_USER_DIR_MUSIC
+    , ENV_USER_DIR_PICTURES
+    , ENV_USER_DIR_VIDEOS
+    , ENV_USER_DIRS
+} env_user_dir_id;
+
 typedef enum env_app_dir
 {
       ENV_APP_DIR_CACHE
     , ENV_APP_DIR_CONFIG
     , ENV_APP_DIR_DATA
     , ENV_APP_DIR_LOG
-    , ENV_APP_DIR_VOLATILE
+    , ENV_APP_DIR_RUNTIME
     , ENV_APP_DIRS
 } env_app_dir_id;
 
@@ -66,10 +78,9 @@ int          env_fold(env_fold_cb fold, void *ctx);
 // dump all environment variables to stdout
 void         env_dump(void);
 
-// get environment specific user directory
-path_ct env_get_home(void);
-// get environment specific application directory
-// version may be NULL
+// get user directory
+path_ct env_get_user_dir(env_user_dir_id id);
+// get application directory, version may be NULL
 path_ct env_get_app_dir(env_app_dir_id id, str_const_ct author, str_const_ct app, str_const_ct version);
 
 #endif

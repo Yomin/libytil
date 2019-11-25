@@ -25,7 +25,9 @@
 #include <ytil/con/art.h>
 #include <stdio.h>
 
-#ifndef _WIN32
+#ifdef _WIN32
+#   include <ShlObj.h>
+#else
 #   include <unistd.h>
 #   include <pwd.h>
 #endif
@@ -269,10 +271,12 @@ void env_dump(void)
     env_fold(env_dump_value, &no);
 }
 
-path_ct env_get_home(void)
+path_ct env_get_user_dir(env_user_dir_id id)
 {
     str_const_ct value;
     path_ct path;
+    
+    assert(id < ENV_USER_DIRS);
     
     if(!(value = env_get(LIT("HOME"))) && !(value = env_get(LIT("USERPROFILE"))))
     {
@@ -307,11 +311,11 @@ typedef struct env_app_dir_xdg_info
 
 static const env_app_dir_xdg_info_st env_app_dir_xdg_infos[] =
 {
-      [ENV_APP_DIR_CACHE]    = { "XDG_CACHE_HOME",  ".cache",       NULL,   NULL }
-    , [ENV_APP_DIR_CONFIG]   = { "XDG_CONFIG_HOME", ".config",      NULL,   NULL }
-    , [ENV_APP_DIR_DATA]     = { "XDG_DATA_HOME",   ".local/share", NULL,   NULL }
-    , [ENV_APP_DIR_LOG]      = { "XDG_CACHE_HOME",  ".cache",       "logs", "logs" }
-    , [ENV_APP_DIR_VOLATILE] = { "XDG_RUNTIME_DIR", ".cache",       NULL,   "run" }
+      [ENV_APP_DIR_CACHE]   = { "XDG_CACHE_HOME",  ".cache",       NULL,   NULL }
+    , [ENV_APP_DIR_CONFIG]  = { "XDG_CONFIG_HOME", ".config",      NULL,   NULL }
+    , [ENV_APP_DIR_DATA]    = { "XDG_DATA_HOME",   ".local/share", NULL,   NULL }
+    , [ENV_APP_DIR_LOG]     = { "XDG_CACHE_HOME",  ".cache",       "logs", "logs" }
+    , [ENV_APP_DIR_RUNTIME] = { "XDG_RUNTIME_DIR", ".cache",       NULL,   "run" }
 };
 
 static path_ct env_get_app_dir_xdg(env_app_dir_id id, str_const_ct app, str_const_ct version)
@@ -339,7 +343,7 @@ static path_ct env_get_app_dir_xdg_default(env_app_dir_id id, str_const_ct app, 
     const env_app_dir_xdg_info_st *info = &env_app_dir_xdg_infos[id];
     path_ct path;
     
-    if(!(path = env_get_home()))
+    if(!(path = env_get_user_dir(ENV_USER_DIR_HOME)))
         return error_pass(), NULL;
     
     if(!path_append_c(path, info->def, PATH_STYLE_POSIX)
@@ -366,11 +370,11 @@ typedef struct env_app_dir_windows_info
 
 static const env_app_dir_windows_info_st env_app_dir_windows_infos[] =
 {
-      [ENV_APP_DIR_CACHE]    = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), "cache" }
-    , [ENV_APP_DIR_CONFIG]   = { "APPDATA",      CSIDL(APPDATA),       NULL }
-    , [ENV_APP_DIR_DATA]     = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), NULL }
-    , [ENV_APP_DIR_LOG]      = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), "logs" }
-    , [ENV_APP_DIR_VOLATILE] = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), "run" }
+      [ENV_APP_DIR_CACHE]   = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), "cache" }
+    , [ENV_APP_DIR_CONFIG]  = { "APPDATA",      CSIDL(APPDATA),       NULL }
+    , [ENV_APP_DIR_DATA]    = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), NULL }
+    , [ENV_APP_DIR_LOG]     = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), "logs" }
+    , [ENV_APP_DIR_RUNTIME] = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), "run" }
 };
 
 static path_ct env_get_app_dir_windows(env_app_dir_id id, str_const_ct author, str_const_ct app, str_const_ct version)

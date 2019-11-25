@@ -28,6 +28,9 @@
 #include <stdbool.h>
 #include <sys/types.h>
 
+#ifdef _WIN32
+#   include <windows.h>
+#endif
 
 /*  to use module specific errors
     an 'error_infos' named array of error_info_st entries must exist
