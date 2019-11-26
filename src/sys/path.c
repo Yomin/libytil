@@ -33,10 +33,38 @@
 
 static const error_info_st error_infos[] =
 {
-      ERROR_INFO(E_PATH_NOT_AVAILABLE, "Path not available.")
+      ERROR_INFO(E_PATH_INVALID_APP_AUTHOR, "Invalid app author.")
+    , ERROR_INFO(E_PATH_INVALID_APP_NAME, "Invalid app name.")
+    , ERROR_INFO(E_PATH_INVALID_APP_VERSION, "Invalid app version.")
+    , ERROR_INFO(E_PATH_NOT_AVAILABLE, "Path not available.")
 };
 
-/*
+
+path_ct path_get_user_home(void)
+{
+    str_const_ct value;
+    
+    if((value = env_get(LIT("HOME"))))
+        return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
+    
+#ifdef _WIN32
+    char tmp[MAX_PATH];
+    HRESULT rc;
+    
+    if((rc = SHGetFolderPath(NULL, CSIDL_PROFILE, NULL, SHGFP_TYPE_CURRENT, tmp)) != S_OK)
+        return error_wrap_hresult(SHGetFolderPath, rc), NULL;
+    
+    return error_wrap_ptr(path_new_c(tmp, PATH_STYLE_NATIVE));
+#else
+    struct passwd *pwd;
+    
+    if(!(pwd = getpwuid(getuid())))
+        return error_wrap_errno(getpwuid), NULL;
+    
+    return error_wrap_ptr(path_new_c(pwd->pw_dir, PATH_STYLE_NATIVE));
+#endif
+}
+
 typedef struct path_user_dir_xdg_info
 {
     const char *env, *def;
@@ -44,8 +72,7 @@ typedef struct path_user_dir_xdg_info
 
 static const path_user_dir_xdg_info_st path_user_dir_xdg_infos[] =
 {
-      [PATH_USER_DIR_HOME]        = { "HOME",                NULL }
-    , [PATH_USER_DIR_DESKTOP]     = { "XDG_DESKTOP_DIR",     "Desktop" }
+      [PATH_USER_DIR_DESKTOP]     = { "XDG_DESKTOP_DIR",     "Desktop" }
     , [PATH_USER_DIR_DOCUMENTS]   = { "XDG_DOCUMENTS_DIR",   "Documents" }
     , [PATH_USER_DIR_DOWNLOAD]    = { "XDG_DOWNLOAD_DIR",    "Downloads" }
     , [PATH_USER_DIR_MUSIC]       = { "XDG_MUSIC_DIR",       "Music" }
@@ -53,91 +80,128 @@ static const path_user_dir_xdg_info_st path_user_dir_xdg_infos[] =
     , [PATH_USER_DIR_PUBLICSHARE] = { "XDG_PUBLICSHARE_DIR", "Public" }
     , [PATH_USER_DIR_TEMPLATES]   = { "XDG_TEMPLATES_DIR",   "Templates" }
     , [PATH_USER_DIR_VIDEOS]      = { "XDG_VIDEOS_DIR",      "Videos" }
-};*/
+};
 
-path_ct path_get_user_dir(path_user_dir_id id)
+static path_ct path_get_user_dir_xdg(path_user_dir_id id, bool def)
 {
+    const path_user_dir_xdg_info_st *info = &path_user_dir_xdg_infos[id];
     str_const_ct value;
     path_ct path;
     
-    assert(id < PATH_USER_DIRS);
+    if((value = env_get(STR(info->env))))
+        return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
     
-    if(!(value = env_get(LIT("HOME"))) && !(value = env_get(LIT("USERPROFILE"))))
-    {
-#ifdef _WIN32
-        char tmp[MAX_PATH];
-        HRESULT rc;
-        
-        if((rc = SHGetFolderPath(NULL, CSIDL_PROFILE, NULL, SHGFP_TYPE_CURRENT, tmp)) != S_OK)
-            return error_wrap_hresult(SHGetFolderPath, rc), NULL;
-        
-        value = STR(tmp);
-#else
-        struct passwd *pwd;
-        
-        if(!(pwd = getpwuid(getuid())))
-            return error_wrap_errno(getpwuid), NULL;
-        
-        value = STR(pwd->pw_dir);
-#endif
-    }
+    if(!(path = path_get_user_home()))
+        return error_pass(), NULL;
     
-    if(!(path = path_new(value, PATH_STYLE_NATIVE)))
-        return error_wrap(), NULL;
+    if(!path_append_c(path, info->def, PATH_STYLE_POSIX))
+        return error_wrap(), path_free(path), NULL;
     
     return path;
+}
+
+#ifdef _WIN32
+
+typedef struct path_user_dir_windows_info
+{
+    int csidl;
+} path_user_dir_windows_info_st;
+
+static const path_user_dir_windows_info_st path_user_dir_windows_infos[] =
+{
+      [PATH_USER_DIR_DESKTOP]     = { CSIDL_DESKTOPDIRECTORY }
+    , [PATH_USER_DIR_DOCUMENTS]   = { CSIDL_MYDOCUMENTS }
+    , [PATH_USER_DIR_DOWNLOAD]    = { CSIDL_ }
+    , [PATH_USER_DIR_MUSIC]       = { CSIDL_MYMUSIC }
+    , [PATH_USER_DIR_PICTURES]    = { CSIDL_MYPICTURES }
+    , [PATH_USER_DIR_PUBLICSHARE] = { CSIDL_COMMON_DOCUMENTS }
+    , [PATH_USER_DIR_TEMPLATES]   = { CSIDL_TEMPLATES }
+    , [PATH_USER_DIR_VIDEOS]      = { CSIDL_MYVIDEO }
+};
+
+static path_ct path_get_user_dir_windows(path_user_dir_id id)
+{
+    return error_set(E_PATH_NOT_AVAILABLE), NULL;
+}
+
+#endif // _WIN32
+
+path_ct path_get_user_dir(path_user_dir_id id)
+{
+    assert(id < PATH_USER_DIRS);
+    
+#ifndef _WIN32
+    return error_pass_ptr(path_get_user_dir_xdg(id, true));
+#else
+    path_ct path;
+    
+    // use XDG directories/defaults if HOME available (MSYS)
+    if(env_get(LIT("HOME")))
+        return error_pass_ptr(path_get_user_dir_xdg(id, true));
+    
+    if(!error_check(0, E_ENV_NOT_FOUND))
+        return error_pass(), NULL;
+    
+    // recognize XDG directories if available
+    if((path = path_get_user_dir_xdg(id, false)))
+        return path;
+    
+    if(!error_check(0, E_PATH_NOT_AVAILABLE))
+        return error_pass(), NULL;
+    
+    // use standard windows directories
+    return error_pass_ptr(path_get_user_dir_windows(id));
+#endif
 }
 
 typedef struct path_app_dir_xdg_info
 {
-    const char *env, *def, *sub, *sub_def;
+    const char *env, *sub, *def, *sub_def;
 } path_app_dir_xdg_info_st;
 
 static const path_app_dir_xdg_info_st path_app_dir_xdg_infos[] =
 {
-      [PATH_APP_DIR_CACHE]   = { "XDG_CACHE_HOME",  ".cache",       NULL,   NULL }
-    , [PATH_APP_DIR_CONFIG]  = { "XDG_CONFIG_HOME", ".config",      NULL,   NULL }
-    , [PATH_APP_DIR_DATA]    = { "XDG_DATA_HOME",   ".local/share", NULL,   NULL }
-    , [PATH_APP_DIR_LOG]     = { "XDG_CACHE_HOME",  ".cache",       "logs", "logs" }
-    , [PATH_APP_DIR_RUNTIME] = { "XDG_RUNTIME_DIR", ".cache",       NULL,   "run" }
+      [PATH_APP_DIR_CACHE]   = { "XDG_CACHE_HOME",  NULL,   ".cache",       NULL }
+    , [PATH_APP_DIR_CONFIG]  = { "XDG_CONFIG_HOME", NULL,   ".config",      NULL }
+    , [PATH_APP_DIR_DATA]    = { "XDG_DATA_HOME",   NULL,   ".local/share", NULL }
+    , [PATH_APP_DIR_LOG]     = { "XDG_CACHE_HOME",  "logs", ".cache",       "logs" }
+    , [PATH_APP_DIR_RUNTIME] = { "XDG_RUNTIME_DIR", NULL,   ".cache",       "run" }
 };
 
-static path_ct path_get_app_dir_xdg(path_app_dir_id id, str_const_ct app, str_const_ct version)
+static path_ct path_get_app_dir_xdg(path_app_dir_id id, str_const_ct app, str_const_ct version, bool def)
 {
     const path_app_dir_xdg_info_st *info = &path_app_dir_xdg_infos[id];
     str_const_ct value;
     path_ct path;
     
-    if(!(value = env_get(STR(info->env))))
+    if((value = env_get(STR(info->env))))
+    {
+        if(!(path = path_new(value, PATH_STYLE_NATIVE)))
+            return error_wrap(), NULL;
+        
+        if(!path_append(path, app, PATH_STYLE_NATIVE)
+        || (version && !path_append(path, version, PATH_STYLE_NATIVE))
+        || (info->sub && !path_append_c(path, info->sub, PATH_STYLE_POSIX)))
+            return error_wrap(), path_free(path), NULL;
+    }
+    else if(def)
+    {
+        if(!(path = path_get_user_home()))
+            return error_pass(), NULL;
+        
+        if(!path_append_c(path, info->def, PATH_STYLE_POSIX)
+        || !path_append(path, app, PATH_STYLE_NATIVE)
+        || (version && !path_append(path, version, PATH_STYLE_NATIVE))
+        || (info->sub_def && !path_append_c(path, info->sub_def, PATH_STYLE_POSIX)))
+            return error_wrap(), path_free(path), NULL;
+    }
+    else
         return error_set(E_PATH_NOT_AVAILABLE), NULL;
-    
-    if(!(path = path_new(value, PATH_STYLE_NATIVE)))
-        return error_wrap(), NULL;
-    
-    if(!path_append(path, app, PATH_STYLE_NATIVE)
-    || (version && !path_append(path, version, PATH_STYLE_NATIVE))
-    || (info->sub && !path_append_c(path, info->sub, PATH_STYLE_POSIX)))
-        return error_wrap(), path_free(path), NULL;
     
     return path;
 }
 
-static path_ct path_get_app_dir_xdg_default(path_app_dir_id id, str_const_ct app, str_const_ct version)
-{
-    const path_app_dir_xdg_info_st *info = &path_app_dir_xdg_infos[id];
-    path_ct path;
-    
-    if(!(path = path_get_user_dir(PATH_USER_DIR_HOME)))
-        return error_pass(), NULL;
-    
-    if(!path_append_c(path, info->def, PATH_STYLE_POSIX)
-    || !path_append(path, app, PATH_STYLE_NATIVE)
-    || (version && !path_append(path, version, PATH_STYLE_NATIVE))
-    || (info->sub_def && !path_append_c(path, info->sub_def, PATH_STYLE_POSIX)))
-        return error_wrap(), path_free(path), NULL;
-    
-    return path;
-}
+#ifdef _WIN32
 
 typedef struct path_app_dir_windows_info
 {
@@ -146,40 +210,29 @@ typedef struct path_app_dir_windows_info
     const char *sub;
 } path_app_dir_windows_info_st;
 
-#ifdef _WIN32
-#   define CSIDL(id) CSIDL_##id
-#else
-#   define CSIDL(id) 0
-#endif
-
 static const path_app_dir_windows_info_st path_app_dir_windows_infos[] =
 {
-      [PATH_APP_DIR_CACHE]   = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), "cache" }
-    , [PATH_APP_DIR_CONFIG]  = { "APPDATA",      CSIDL(APPDATA),       NULL }
-    , [PATH_APP_DIR_DATA]    = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), NULL }
-    , [PATH_APP_DIR_LOG]     = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), "logs" }
-    , [PATH_APP_DIR_RUNTIME] = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), "run" }
+      [PATH_APP_DIR_CACHE]   = { "LOCALAPPDATA", CSIDL_LOCAL_APPDATA, "cache" }
+    , [PATH_APP_DIR_CONFIG]  = { "APPDATA",      CSIDL_APPDATA,       NULL }
+    , [PATH_APP_DIR_DATA]    = { "LOCALAPPDATA", CSIDL_LOCAL_APPDATA, NULL }
+    , [PATH_APP_DIR_LOG]     = { "LOCALAPPDATA", CSIDL_LOCAL_APPDATA, "logs" }
+    , [PATH_APP_DIR_RUNTIME] = { "LOCALAPPDATA", CSIDL_LOCAL_APPDATA, "run" }
 };
 
 static path_ct path_get_app_dir_windows(path_app_dir_id id, str_const_ct author, str_const_ct app, str_const_ct version)
 {
     const path_app_dir_windows_info_st *info = &path_app_dir_windows_infos[id];
     str_const_ct value;
+    char tmp[MAX_PATH];
+    HRESULT rc;
     path_ct path;
     
     if(!(value = env_get(STR(info->env))))
     {
-#ifndef _WIN32
-        return error_set(E_PATH_NOT_AVAILABLE), NULL;
-#else
-        char tmp[MAX_PATH];
-        HRESULT rc;
-        
         if((rc = SHGetFolderPath(NULL, info->csidl, NULL, SHGFP_TYPE_CURRENT, tmp)) != S_OK)
             return error_wrap_hresult(SHGetFolderPath, rc), NULL;
         
         value = STR(tmp);
-#endif
     }
     
     if(!(path = path_new(value, PATH_STYLE_NATIVE)))
@@ -194,23 +247,35 @@ static path_ct path_get_app_dir_windows(path_app_dir_id id, str_const_ct author,
     return path;
 }
 
+#endif // _WIN32
+
 path_ct path_get_app_dir(path_app_dir_id id, str_const_ct author, str_const_ct app, str_const_ct version)
 {
+    assert(id < PATH_APP_DIRS);
+    return_error_if_pass(str_is_empty(author), E_PATH_INVALID_APP_AUTHOR, NULL);
+    return_error_if_pass(str_is_empty(app), E_PATH_INVALID_APP_NAME, NULL);
+    return_error_if_pass(version && str_is_empty(version), E_PATH_INVALID_APP_VERSION, NULL);
+    
+#ifndef _WIN32
+    return error_pass_ptr(path_get_app_dir_xdg(id, app, version, true));
+#else
     path_ct path;
     
-    assert(id < PATH_APP_DIRS && author && app);
+    // use XDG directories/defaults if HOME available (MSYS)
+    if(env_get(LIT("HOME")))
+        return error_pass_ptr(path_get_app_dir_xdg(id, app, version, true));
     
-    if((path = path_get_app_dir_xdg(id, app, version)))
+    if(!error_check(0, E_ENV_NOT_FOUND))
+        return error_pass(), NULL;
+    
+    // recognize XDG directories if available
+    if((path = path_get_app_dir_xdg(id, app, version, false)))
         return path;
     
     if(!error_check(0, E_PATH_NOT_AVAILABLE))
         return error_pass(), NULL;
     
-    if((path = path_get_app_dir_windows(id, author, app, version)))
-        return path;
-    
-    if(!error_check(0, E_PATH_NOT_AVAILABLE))
-        return error_pass(), NULL;
-    
-    return error_pass_ptr(path_get_app_dir_xdg_default(id, app, version));
+    // use standard windows directories
+    return error_pass_ptr(path_get_app_dir_windows(id, author, app, version));
+#endif
 }

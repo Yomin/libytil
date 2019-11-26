@@ -27,13 +27,15 @@
 
 typedef enum sys_path_error
 {
-      E_PATH_NOT_AVAILABLE
+      E_PATH_INVALID_APP_AUTHOR
+    , E_PATH_INVALID_APP_NAME
+    , E_PATH_INVALID_APP_VERSION
+    , E_PATH_NOT_AVAILABLE
 } sys_path_error_id;
 
 typedef enum path_user_dir
 {
-      PATH_USER_DIR_HOME
-    , PATH_USER_DIR_DESKTOP
+      PATH_USER_DIR_DESKTOP
     , PATH_USER_DIR_DOCUMENTS
     , PATH_USER_DIR_DOWNLOAD
     , PATH_USER_DIR_MUSIC
@@ -55,6 +57,8 @@ typedef enum path_app_dir
 } path_app_dir_id;
 
 
+// get user home directory
+path_ct path_get_user_home(void);
 // get user directory
 path_ct path_get_user_dir(path_user_dir_id id);
 // get application directory, version may be NULL
