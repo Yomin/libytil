@@ -62,20 +62,81 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define  test_state_free() test_free(TEST_STATE)
 
 
-#define test_info(expr) do { \
+#define test_case_info(expr, ...) do { \
     test_begin(); \
     \
-    if(!(expr)) \
-        test_msg_info("test failed: "#expr); \
+    if(expr) \
+        test_msg_info(__VA_ARGS__); \
     \
     test_end(); \
 } while(0)
 
-#define test_warn(expr) do { \
+#define test_case_warn(expr, ...) do { \
     test_begin(); \
     \
-    if(!(expr)) \
-        test_msg_warn("test failed: "#expr); \
+    if(expr) \
+        test_msg_warn(__VA_ARGS__); \
+    \
+    test_end(); \
+} while(0)
+
+
+#define test_error(depth, error) do { \
+    test_begin(); \
+    \
+    if(error_type(depth) != ERROR_TYPE_ERROR) \
+        test_abort_backtrace("ERROR type test failed: %s == ERROR_TYPE_ERROR", \
+            error_strtype(error_type(depth))); \
+    else if(error_get(depth) != (error)) \
+        test_abort_backtrace("ERROR test failed: %s == "#error, error_name(depth)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_errno(depth, error) do { \
+    test_begin(); \
+    \
+    if(error_type(depth) != ERROR_TYPE_ERRNO) \
+        test_abort_backtrace("ERROR type test failed: %s == ERROR_TYPE_ERRNO", \
+            error_strtype(error_type(depth))); \
+    else if(error_get_errno(depth) != (error)) \
+        test_abort_backtrace("ERRNO test failed: %s == "#error, error_name(depth)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_win32(depth, error) do { \
+    test_begin(); \
+    \
+    if(error_type(depth) != ERROR_TYPE_WIN32) \
+        test_abort_backtrace("ERROR type test failed: %s == ERROR_TYPE_WIN32", \
+            error_strtype(error_type(depth))); \
+    else if(error_get_win32(depth) != (error)) \
+        test_abort_backtrace("WIN32 ERROR test failed: %s == "#error, error_name(depth)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_hresult(depth, result) do { \
+    test_begin(); \
+    \
+    if(error_type(depth) != ERROR_TYPE_HRESULT) \
+        test_abort_backtrace("ERROR type test failed: %s == ERROR_TYPE_HRESULT", \
+            error_strtype(error_type(depth))); \
+    else if(error_get_hresult(depth) != (result)) \
+        test_abort_backtrace("HRESULT test failed: %s == "#result, error_name(depth)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_ntstatus(depth, status) do { \
+    test_begin(); \
+    \
+    if(error_type(depth) != ERROR_TYPE_NTSTATUS) \
+        test_abort_backtrace("ERROR type test failed: %s == ERROR_TYPE_NTSTATUS", \
+            error_strtype(error_type(depth))); \
+    else if(error_get_ntstatus(depth) != (status)) \
+        test_abort_backtrace("NTSTATUS test failed: %s == "#status, error_name(depth)); \
     \
     test_end(); \
 } while(0)

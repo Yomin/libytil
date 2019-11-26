@@ -25,6 +25,6 @@
 
 #include <ytil/test/suite.h>
 
-test_suite_ct test_suite_ring(void);
+test_suite_ct test_suite_con_ring(void);
 
 #endif

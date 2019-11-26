@@ -20,11 +20,44 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_TEST_GEN_ERROR_H__
-#define __YTIL_TEST_GEN_ERROR_H__
+#ifndef __YTIL_SYS_PATH_H__
+#define __YTIL_SYS_PATH_H__
 
-#include <ytil/test/suite.h>
+#include <ytil/gen/path.h>
 
-test_suite_ct test_suite_gen_error(void);
+typedef enum sys_path_error
+{
+      E_PATH_NOT_AVAILABLE
+} sys_path_error_id;
+
+typedef enum path_user_dir
+{
+      PATH_USER_DIR_HOME
+    , PATH_USER_DIR_DESKTOP
+    , PATH_USER_DIR_DOCUMENTS
+    , PATH_USER_DIR_DOWNLOAD
+    , PATH_USER_DIR_MUSIC
+    , PATH_USER_DIR_PICTURES
+    , PATH_USER_DIR_PUBLICSHARE
+    , PATH_USER_DIR_TEMPLATES
+    , PATH_USER_DIR_VIDEOS
+    , PATH_USER_DIRS
+} path_user_dir_id;
+
+typedef enum path_app_dir
+{
+      PATH_APP_DIR_CACHE
+    , PATH_APP_DIR_CONFIG
+    , PATH_APP_DIR_DATA
+    , PATH_APP_DIR_LOG
+    , PATH_APP_DIR_RUNTIME
+    , PATH_APP_DIRS
+} path_app_dir_id;
+
+
+// get user directory
+path_ct path_get_user_dir(path_user_dir_id id);
+// get application directory, version may be NULL
+path_ct path_get_app_dir(path_app_dir_id id, str_const_ct author, str_const_ct app, str_const_ct version);
 
 #endif

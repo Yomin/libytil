@@ -251,6 +251,9 @@ void   error_clear(void);
 // get number of errors on stack
 size_t error_depth(void);
 
+// get error type name
+const char *error_strtype(error_type_id type);
+
 
 // get module error from last error
 ssize_t error_get(size_t depth);

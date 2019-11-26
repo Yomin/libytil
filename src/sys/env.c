@@ -21,16 +21,10 @@
  */
 
 #include <ytil/sys/env.h>
-#include <ytil/def.h>
 #include <ytil/con/art.h>
+#include <ytil/def.h>
 #include <stdio.h>
 
-#ifdef _WIN32
-#   include <ShlObj.h>
-#else
-#   include <unistd.h>
-#   include <pwd.h>
-#endif
 
 typedef struct env_value
 {
@@ -47,7 +41,6 @@ typedef struct env_fold_state
 static const error_info_st error_infos[] =
 {
       ERROR_INFO(E_ENV_INVALID_NAME, "Invalid environment name.")
-    , ERROR_INFO(E_ENV_NOT_AVAILABLE, "Environment value not available.")
     , ERROR_INFO(E_ENV_NOT_FOUND, "Environment value not found.")
 };
 
@@ -104,6 +97,18 @@ void env_free(void)
 {
     art_free_f(env, env_art_free_value, NULL);
     env = NULL;
+}
+
+bool env_is_set(str_const_ct name)
+{
+    env_value_st *value;
+    
+    return_error_if_pass(str_is_empty(name), E_ENV_INVALID_NAME, false);
+    
+    if(!env && env_init())
+        return error_pass(), false;
+    
+    return (value = art_get_data(env, name)) && value->set != ENV_UNSET;
 }
 
 int env_set(str_const_ct name, str_const_ct str)
@@ -269,164 +274,4 @@ void env_dump(void)
     size_t no = 1;
     
     env_fold(env_dump_value, &no);
-}
-
-path_ct env_get_user_dir(env_user_dir_id id)
-{
-    str_const_ct value;
-    path_ct path;
-    
-    assert(id < ENV_USER_DIRS);
-    
-    if(!(value = env_get(LIT("HOME"))) && !(value = env_get(LIT("USERPROFILE"))))
-    {
-#ifdef _WIN32
-        char tmp[MAX_PATH];
-        HRESULT rc;
-        
-        if((rc = SHGetFolderPath(NULL, CSIDL_PROFILE, NULL, SHGFP_TYPE_CURRENT, tmp)) != S_OK)
-            return error_wrap_hresult(SHGetFolderPath, rc), NULL;
-        
-        value = STR(tmp);
-#else
-        struct passwd *pwd;
-        
-        if(!(pwd = getpwuid(getuid())))
-            return error_wrap_errno(getpwuid), NULL;
-        
-        value = STR(pwd->pw_dir);
-#endif
-    }
-    
-    if(!(path = path_new(value, PATH_STYLE_NATIVE)))
-        return error_wrap(), NULL;
-    
-    return path;
-}
-
-typedef struct env_app_dir_xdg_info
-{
-    const char *env, *def, *sub, *sub_def;
-} env_app_dir_xdg_info_st;
-
-static const env_app_dir_xdg_info_st env_app_dir_xdg_infos[] =
-{
-      [ENV_APP_DIR_CACHE]   = { "XDG_CACHE_HOME",  ".cache",       NULL,   NULL }
-    , [ENV_APP_DIR_CONFIG]  = { "XDG_CONFIG_HOME", ".config",      NULL,   NULL }
-    , [ENV_APP_DIR_DATA]    = { "XDG_DATA_HOME",   ".local/share", NULL,   NULL }
-    , [ENV_APP_DIR_LOG]     = { "XDG_CACHE_HOME",  ".cache",       "logs", "logs" }
-    , [ENV_APP_DIR_RUNTIME] = { "XDG_RUNTIME_DIR", ".cache",       NULL,   "run" }
-};
-
-static path_ct env_get_app_dir_xdg(env_app_dir_id id, str_const_ct app, str_const_ct version)
-{
-    const env_app_dir_xdg_info_st *info = &env_app_dir_xdg_infos[id];
-    str_const_ct value;
-    path_ct path;
-    
-    if(!(value = env_get(STR(info->env))))
-        return error_set(E_ENV_NOT_AVAILABLE), NULL;
-    
-    if(!(path = path_new(value, PATH_STYLE_NATIVE)))
-        return error_wrap(), NULL;
-    
-    if(!path_append(path, app, PATH_STYLE_NATIVE)
-    || (version && !path_append(path, version, PATH_STYLE_NATIVE))
-    || (info->sub && !path_append_c(path, info->sub, PATH_STYLE_POSIX)))
-        return error_wrap(), path_free(path), NULL;
-    
-    return path;
-}
-
-static path_ct env_get_app_dir_xdg_default(env_app_dir_id id, str_const_ct app, str_const_ct version)
-{
-    const env_app_dir_xdg_info_st *info = &env_app_dir_xdg_infos[id];
-    path_ct path;
-    
-    if(!(path = env_get_user_dir(ENV_USER_DIR_HOME)))
-        return error_pass(), NULL;
-    
-    if(!path_append_c(path, info->def, PATH_STYLE_POSIX)
-    || !path_append(path, app, PATH_STYLE_NATIVE)
-    || (version && !path_append(path, version, PATH_STYLE_NATIVE))
-    || (info->sub_def && !path_append_c(path, info->sub_def, PATH_STYLE_POSIX)))
-        return error_wrap(), path_free(path), NULL;
-    
-    return path;
-}
-
-typedef struct env_app_dir_windows_info
-{
-    const char *env;
-    int csidl;
-    const char *sub;
-} env_app_dir_windows_info_st;
-
-#ifdef _WIN32
-#   define CSIDL(id) CSIDL_##id
-#else
-#   define CSIDL(id) 0
-#endif
-
-static const env_app_dir_windows_info_st env_app_dir_windows_infos[] =
-{
-      [ENV_APP_DIR_CACHE]   = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), "cache" }
-    , [ENV_APP_DIR_CONFIG]  = { "APPDATA",      CSIDL(APPDATA),       NULL }
-    , [ENV_APP_DIR_DATA]    = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), NULL }
-    , [ENV_APP_DIR_LOG]     = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), "logs" }
-    , [ENV_APP_DIR_RUNTIME] = { "LOCALAPPDATA", CSIDL(LOCAL_APPDATA), "run" }
-};
-
-static path_ct env_get_app_dir_windows(env_app_dir_id id, str_const_ct author, str_const_ct app, str_const_ct version)
-{
-    const env_app_dir_windows_info_st *info = &env_app_dir_windows_infos[id];
-    str_const_ct value;
-    path_ct path;
-    
-    if(!(value = env_get(STR(info->env))))
-    {
-#ifndef _WIN32
-        return error_set(E_ENV_NOT_AVAILABLE), NULL;
-#else
-        char tmp[MAX_PATH];
-        HRESULT rc;
-        
-        if((rc = SHGetFolderPath(NULL, info->csidl, NULL, SHGFP_TYPE_CURRENT, tmp)) != S_OK)
-            return error_wrap_hresult(SHGetFolderPath, rc), NULL;
-        
-        value = STR(tmp);
-#endif
-    }
-    
-    if(!(path = path_new(value, PATH_STYLE_NATIVE)))
-        return error_wrap(), NULL;
-    
-    if(!path_append(path, author, PATH_STYLE_NATIVE)
-    || !path_append(path, app, PATH_STYLE_NATIVE)
-    || (version && !path_append(path, version, PATH_STYLE_NATIVE))
-    || (info->sub && !path_append_c(path, info->sub, PATH_STYLE_POSIX)))
-        return error_wrap(), path_free(path), NULL;
-    
-    return path;
-}
-
-path_ct env_get_app_dir(env_app_dir_id id, str_const_ct author, str_const_ct app, str_const_ct version)
-{
-    path_ct path;
-    
-    assert(id < ENV_APP_DIRS && author && app);
-    
-    if((path = env_get_app_dir_xdg(id, app, version)))
-        return path;
-    
-    if(!error_check(0, E_ENV_NOT_AVAILABLE))
-        return error_pass(), NULL;
-    
-    if((path = env_get_app_dir_windows(id, author, app, version)))
-        return path;
-    
-    if(!error_check(0, E_ENV_NOT_AVAILABLE))
-        return error_pass(), NULL;
-    
-    return error_pass_ptr(env_get_app_dir_xdg_default(id, app, version));
 }

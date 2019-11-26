@@ -30,9 +30,9 @@
 test_suite_ct test_suite_con(void)
 {
     return test_suite_new_with_suites("con"
-        , test_suite_art()
-        , test_suite_list()
-        , test_suite_ring()
-        , test_suite_vec()
+        , test_suite_con_art()
+        , test_suite_con_list()
+        , test_suite_con_ring()
+        , test_suite_con_vec()
     );
 }

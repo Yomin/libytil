@@ -5653,7 +5653,7 @@ test_suite_ct test_suite_str_add_cmp(test_suite_ct suite)
     );
 }
 
-test_suite_ct test_suite_str(void)
+test_suite_ct test_suite_gen_str(void)
 {
     test_suite_ct suite;
     

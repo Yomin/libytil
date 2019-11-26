@@ -29,8 +29,8 @@
 test_suite_ct test_suite_gen(void)
 {
     return test_suite_new_with_suites("gen"
-        , test_suite_error()
-        , test_suite_path()
-        , test_suite_str()
+        , test_suite_gen_error()
+        , test_suite_gen_path()
+        , test_suite_gen_str()
     );
 }

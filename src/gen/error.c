@@ -302,6 +302,22 @@ size_t error_depth(void)
     return errors.size;
 }
 
+const char *error_strtype(error_type_id type)
+{
+    switch(type)
+    {
+    case ERROR_TYPE_INVALID:  return "ERROR_TYPE_INVALID";
+    case ERROR_TYPE_ERROR:    return "ERROR_TYPE_ERROR";
+    case ERROR_TYPE_ERRNO:    return "ERROR_TYPE_ERRNO";
+#ifdef _WIN32
+    case ERROR_TYPE_WIN32:    return "ERROR_TYPE_WIN32";
+    case ERROR_TYPE_HRESULT:  return "ERROR_TYPE_HRESULT";
+    case ERROR_TYPE_NTSTATUS: return "ERROR_TYPE_NTSTATUS";
+#endif
+    default:                  abort();
+    }
+}
+
 static error_entry_st *error_get_entry(size_t depth)
 {
     size_t level;

@@ -48,7 +48,7 @@ TEST_CASE_FIXTURE_SIGNAL(fs_stat_invalid_fst, path_new, path_free, SIGABRT)
     fs_stat(path, NULL);
 }
 
-test_suite_ct test_suite_fsys(void)
+test_suite_ct test_suite_sys_fsys(void)
 {
     return test_suite_new_with_cases("fs"
         , test_case_new(fs_stat_invalid_path)

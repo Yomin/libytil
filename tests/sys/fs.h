@@ -25,6 +25,6 @@
 
 #include <ytil/test/suite.h>
 
-test_suite_ct test_suite_fsys(void);
+test_suite_ct test_suite_sys_fsys(void);
 
 #endif

@@ -20,11 +20,11 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_TEST_GEN_ERROR_H__
-#define __YTIL_TEST_GEN_ERROR_H__
+#ifndef __YTIL_TEST_SYS_PATH_H__
+#define __YTIL_TEST_SYS_PATH_H__
 
 #include <ytil/test/suite.h>
 
-test_suite_ct test_suite_gen_error(void);
+test_suite_ct test_suite_sys_path(void);
 
 #endif

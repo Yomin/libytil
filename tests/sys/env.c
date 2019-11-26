@@ -24,17 +24,7 @@
 #include <ytil/test/test.h>
 #include <ytil/sys/env.h>
 
-#ifdef _WIN32
-#   include <ShlObj.h>
-#else
-#   include <unistd.h>
-#   include <pwd.h>
-#endif
-
 str_const_ct value, str;
-const char *cstr;
-char *tmp;
-path_ct path;
 
 
 TEST_SETUP(env_init)
@@ -45,6 +35,27 @@ TEST_SETUP(env_init)
 TEST_TEARDOWN(env_free)
 {
     test_void(env_free());
+}
+
+TEST_CASE_FIXTURE_ABORT(env_is_set_invalid_name1, env_init, env_free)
+{
+    env_is_set(NULL);
+}
+
+TEST_CASE_FIXTURE(env_is_set_invalid_name2, env_init, env_free)
+{
+    test_false(env_is_set(LIT("")));
+    test_error(0, E_ENV_INVALID_NAME);
+}
+
+TEST_CASE_FIXTURE(env_is_set_false, env_init, env_free)
+{
+    test_false(env_is_set(LIT("YTIL_ENV_TEST")));
+}
+
+TEST_CASE_FIXTURE(env_is_set_true, env_init, env_free)
+{
+    test_true(env_is_set(LIT("PATH")));
 }
 
 TEST_CASE_FIXTURE_ABORT(env_get_invalid_name1, env_init, env_free)
@@ -85,6 +96,7 @@ TEST_CASE_FIXTURE_ABORT(env_set_invalid_value, env_init, env_free)
 TEST_CASE_FIXTURE(env_set_new, env_init, env_free)
 {
     test_int_success(env_set(LIT("YTIL_ENV_TEST"), LIT("test")));
+    test_true(env_is_set(LIT("YTIL_ENV_TEST")));
     test_ptr_success(value = env_get(LIT("YTIL_ENV_TEST")));
     test_str_eq(str_c(value), "test");
 }
@@ -92,6 +104,7 @@ TEST_CASE_FIXTURE(env_set_new, env_init, env_free)
 TEST_CASE_FIXTURE(env_set_new_empty, env_init, env_free)
 {
     test_int_success(env_set(LIT("YTIL_ENV_TEST"), LIT("")));
+    test_true(env_is_set(LIT("YTIL_ENV_TEST")));
     test_ptr_success(value = env_get(LIT("YTIL_ENV_TEST")));
     test_true(str_is_empty(value));
 }
@@ -99,6 +112,7 @@ TEST_CASE_FIXTURE(env_set_new_empty, env_init, env_free)
 TEST_CASE_FIXTURE(env_set_overwrite_def, env_init, env_free)
 {
     test_int_success(env_set(LIT("PATH"), LIT("foo")));
+    test_true(env_is_set(LIT("PATH")));
     test_ptr_success(value = env_get(LIT("PATH")));
     test_str_eq(str_c(value), "foo");
 }
@@ -107,6 +121,7 @@ TEST_CASE_FIXTURE(env_set_overwrite_new, env_init, env_free)
 {
     test_int_success(env_set(LIT("YTIL_ENV_TEST"), LIT("foo")));
     test_int_success(env_set(LIT("YTIL_ENV_TEST"), LIT("bar")));
+    test_true(env_is_set(LIT("YTIL_ENV_TEST")));
     test_ptr_success(value = env_get(LIT("YTIL_ENV_TEST")));
     test_str_eq(str_c(value), "bar");
 }
@@ -115,6 +130,7 @@ TEST_CASE_FIXTURE(env_set_unset_def, env_init, env_free)
 {
     test_int_success(env_unset(LIT("PATH")));
     test_int_success(env_set(LIT("PATH"), LIT("foo")));
+    test_true(env_is_set(LIT("PATH")));
     test_ptr_success(value = env_get(LIT("PATH")));
     test_str_eq(str_c(value), "foo");
 }
@@ -132,6 +148,7 @@ TEST_CASE_FIXTURE(env_reset_invalid_name2, env_init, env_free)
 TEST_CASE_FIXTURE(env_reset_missing, env_init, env_free)
 {
     test_int_success(env_reset(LIT("YTIL_ENV_TEST")));
+    test_false(env_is_set(LIT("YTIL_ENV_TEST")));
     test_ptr_error(env_get(LIT("YTIL_ENV_TEST")), E_ENV_NOT_FOUND);
 }
 
@@ -139,6 +156,7 @@ TEST_CASE_FIXTURE(env_reset_def, env_init, env_free)
 {
     test_int_success(env_set(LIT("PATH"), LIT("test")));
     test_int_success(env_reset(LIT("PATH")));
+    test_true(env_is_set(LIT("PATH")));
     test_ptr_success(value = env_get(LIT("PATH")));
     test_str_ne(str_c(value), "test");
 }
@@ -147,6 +165,7 @@ TEST_CASE_FIXTURE(env_reset_new, env_init, env_free)
 {
     test_int_success(env_set(LIT("YTIL_ENV_TEST"), LIT("test")));
     test_int_success(env_reset(LIT("YTIL_ENV_TEST")));
+    test_false(env_is_set(LIT("YTIL_ENV_TEST")));
     test_ptr_error(env_get(LIT("YTIL_ENV_TEST")), E_ENV_NOT_FOUND);
 }
 
@@ -154,6 +173,7 @@ TEST_CASE_FIXTURE(env_reset_unset_def, env_init, env_free)
 {
     test_int_success(env_unset(LIT("PATH")));
     test_int_success(env_reset(LIT("PATH")));
+    test_true(env_is_set(LIT("PATH")));
     test_ptr_success(env_get(LIT("PATH")));
 }
 
@@ -170,12 +190,14 @@ TEST_CASE_FIXTURE(env_unset_invalid_name2, env_init, env_free)
 TEST_CASE_FIXTURE(env_unset_missing, env_init, env_free)
 {
     test_int_success(env_unset(LIT("YTIL_ENV_TEST")));
+    test_false(env_is_set(LIT("YTIL_ENV_TEST")));
     test_ptr_error(env_get(LIT("YTIL_ENV_TEST")), E_ENV_NOT_FOUND);
 }
 
 TEST_CASE_FIXTURE(env_unset_def, env_init, env_free)
 {
     test_int_success(env_unset(LIT("PATH")));
+    test_false(env_is_set(LIT("YTIL_ENV_TEST")));
     test_ptr_error(env_get(LIT("PATH")), E_ENV_NOT_FOUND);
 }
 
@@ -183,6 +205,7 @@ TEST_CASE_FIXTURE(env_unset_new, env_init, env_free)
 {
     test_int_success(env_set(LIT("YTIL_ENV_TEST"), LIT("test")));
     test_int_success(env_unset(LIT("YTIL_ENV_TEST")));
+    test_false(env_is_set(LIT("YTIL_ENV_TEST")));
     test_ptr_error(env_get(LIT("YTIL_ENV_TEST")), E_ENV_NOT_FOUND);
 }
 
@@ -190,277 +213,18 @@ TEST_CASE_FIXTURE(env_unset_unset_def, env_init, env_free)
 {
     test_int_success(env_unset(LIT("PATH")));
     test_int_success(env_unset(LIT("PATH")));
+    test_false(env_is_set(LIT("PATH")));
     test_ptr_error(env_get(LIT("PATH")), E_ENV_NOT_FOUND);
 }
 
-TEST_CASE_FIXTURE_ABORT(env_get_user_dir_invalid_ident, env_init, env_free)
-{
-    env_get_user_dir(999);
-}
-
-TEST_CASE_FIXTURE(env_get_user_dir_home_from_home, env_init, env_free)
-{
-    test_int_success(env_set(LIT("HOME"), LIT("/home/foo")));
-    test_ptr_success(path = env_get_user_dir(ENV_USER_DIR_HOME));
-    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(str), "/home/foo");
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_user_dir_home_from_userprofile, env_init, env_free)
-{
-    test_int_success(env_unset(LIT("HOME")));
-    test_int_success(env_set(LIT("USERPROFILE"), LIT("/users/foo")));
-    test_ptr_success(path = env_get_user_dir(ENV_USER_DIR_HOME));
-    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(str), "/users/foo");
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_user_dir_home_native, env_init, env_free)
-{
-    test_int_success(env_unset(LIT("HOME")));
-    test_int_success(env_unset(LIT("USERPROFILE")));
-    test_ptr_success(path = env_get_user_dir(ENV_USER_DIR_HOME));
-    
-#ifdef _WIN32
-    SHGetFolderPath(NULL, CSIDL_PROFILE, NULL, SHGFP_TYPE_CURRENT, (tmp = alloca(MAX_PATH)));
-    cstr = tmp;
-#else
-    cstr = getpwuid(getuid())->pw_dir;
-#endif
-    
-    test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
-    test_str_eq(str_c(str), cstr);
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE_ABORT(env_get_app_dir_invalid_ident, env_init, env_free)
-{
-    env_get_app_dir(999, LIT("ACME"), LIT("tron"), NULL);
-}
-
-TEST_CASE_FIXTURE_ABORT(env_get_app_dir_invalid_author, env_init, env_free)
-{
-    env_get_app_dir(ENV_APP_DIR_CACHE, NULL, LIT("tron"), NULL);
-}
-
-TEST_CASE_FIXTURE_ABORT(env_get_app_dir_invalid_name, env_init, env_free)
-{
-    env_get_app_dir(ENV_APP_DIR_CACHE, LIT("ACME"), NULL, NULL);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_cache_from_xdg_cache_home, env_init, env_free)
-{
-    test_int_success(env_set(LIT("XDG_CACHE_HOME"), LIT("/home/foo/my_cache")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_CACHE, LIT("ACME"), LIT("tron"), NULL));
-    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(str), "/home/foo/my_cache/tron");
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_cache_from_localappdata, env_init, env_free)
-{
-    test_int_success(env_unset(LIT("XDG_CACHE_HOME")));
-    test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/foo/appdata/glocal")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_CACHE, LIT("ACME"), LIT("tron"), NULL));
-    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(str), "/users/foo/appdata/glocal/ACME/tron/cache");
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_cache_native, env_init, env_free)
-{
-    test_int_success(env_set(LIT("HOME"), LIT("/home/foo")));
-    test_int_success(env_unset(LIT("XDG_CACHE_HOME")));
-    test_int_success(env_unset(LIT("LOCALAPPDATA")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_CACHE, LIT("ACME"), LIT("tron"), NULL));
-    
-#ifdef _WIN32
-    SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, SHGFP_TYPE_CURRENT, (tmp = alloca(MAX_PATH)));
-    cstr = strcat(tmp, "\\ACME\\tron\\cache");
-#else
-    cstr = "/home/foo/.cache/tron";
-#endif
-    
-    test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
-    test_str_eq(str_c(str), cstr);
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_config_from_xdg_config_home, env_init, env_free)
-{
-    test_int_success(env_set(LIT("XDG_CONFIG_HOME"), LIT("/home/foo/my_config")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_CONFIG, LIT("ACME"), LIT("tron"), NULL));
-    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(str), "/home/foo/my_config/tron");
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_config_from_appdata, env_init, env_free)
-{
-    test_int_success(env_unset(LIT("XDG_CONFIG_HOME")));
-    test_int_success(env_set(LIT("APPDATA"), LIT("/users/foo/appdata/goofing")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_CONFIG, LIT("ACME"), LIT("tron"), NULL));
-    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(str), "/users/foo/appdata/goofing/ACME/tron");
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_config_native, env_init, env_free)
-{
-    test_int_success(env_set(LIT("HOME"), LIT("/home/foo")));
-    test_int_success(env_unset(LIT("XDG_CONFIG_HOME")));
-    test_int_success(env_unset(LIT("APPDATA")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_CONFIG, LIT("ACME"), LIT("tron"), NULL));
-    
-#ifdef _WIN32
-    SHGetFolderPath(NULL, CSIDL_APPDATA, NULL, SHGFP_TYPE_CURRENT, (tmp = alloca(MAX_PATH)));
-    cstr = strcat(tmp, "\\ACME\\tron");
-#else
-    cstr = "/home/foo/.config/tron";
-#endif
-    
-    test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
-    test_str_eq(str_c(str), cstr);
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_data_from_xdg_data_home, env_init, env_free)
-{
-    test_int_success(env_set(LIT("XDG_DATA_HOME"), LIT("/home/foo/my_data")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_DATA, LIT("ACME"), LIT("tron"), NULL));
-    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(str), "/home/foo/my_data/tron");
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_data_from_localappdata, env_init, env_free)
-{
-    test_int_success(env_unset(LIT("XDG_DATA_HOME")));
-    test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/foo/appdata/glocal")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_DATA, LIT("ACME"), LIT("tron"), NULL));
-    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(str), "/users/foo/appdata/glocal/ACME/tron");
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_data_native, env_init, env_free)
-{
-    test_int_success(env_set(LIT("HOME"), LIT("/home/foo")));
-    test_int_success(env_unset(LIT("XDG_DATA_HOME")));
-    test_int_success(env_unset(LIT("LOCALAPPDATA")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_DATA, LIT("ACME"), LIT("tron"), NULL));
-    
-#ifdef _WIN32
-    SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, SHGFP_TYPE_CURRENT, (tmp = alloca(MAX_PATH)));
-    cstr = strcat(tmp, "\\ACME\\tron");
-#else
-    cstr = "/home/foo/.local/share/tron";
-#endif
-    
-    test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
-    test_str_eq(str_c(str), cstr);
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_log_from_xdg_cache_home, env_init, env_free)
-{
-    test_int_success(env_set(LIT("XDG_CACHE_HOME"), LIT("/home/foo/my_cache")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_LOG, LIT("ACME"), LIT("tron"), NULL));
-    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(str), "/home/foo/my_cache/tron/logs");
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_log_from_localappdata, env_init, env_free)
-{
-    test_int_success(env_unset(LIT("XDG_CACHE_HOME")));
-    test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/foo/appdata/glocal")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_LOG, LIT("ACME"), LIT("tron"), NULL));
-    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(str), "/users/foo/appdata/glocal/ACME/tron/logs");
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_log_native, env_init, env_free)
-{
-    test_int_success(env_set(LIT("HOME"), LIT("/home/foo")));
-    test_int_success(env_unset(LIT("XDG_CACHE_HOME")));
-    test_int_success(env_unset(LIT("LOCALAPPDATA")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_LOG, LIT("ACME"), LIT("tron"), NULL));
-    
-#ifdef _WIN32
-    SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, SHGFP_TYPE_CURRENT, (tmp = alloca(MAX_PATH)));
-    cstr = strcat(tmp, "\\ACME\\tron\\logs");
-#else
-    cstr = "/home/foo/.cache/tron/logs";
-#endif
-    
-    test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
-    test_str_eq(str_c(str), cstr);
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_runtime_from_xdg_runtime_dir, env_init, env_free)
-{
-    test_int_success(env_set(LIT("XDG_RUNTIME_DIR"), LIT("/home/foo/my_sockets")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_RUNTIME, LIT("ACME"), LIT("tron"), NULL));
-    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(str), "/home/foo/my_sockets/tron");
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_runtime_from_localappdata, env_init, env_free)
-{
-    test_int_success(env_unset(LIT("XDG_RUNTIME_DIR")));
-    test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/foo/appdata/glocal")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_RUNTIME, LIT("ACME"), LIT("tron"), NULL));
-    test_ptr_success(str = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(str), "/users/foo/appdata/glocal/ACME/tron/run");
-    str_unref(str);
-    path_free(path);
-}
-
-TEST_CASE_FIXTURE(env_get_app_dir_runtime_native, env_init, env_free)
-{
-    test_int_success(env_set(LIT("HOME"), LIT("/home/foo")));
-    test_int_success(env_unset(LIT("XDG_RUNTIME_DIR")));
-    test_int_success(env_unset(LIT("LOCALAPPDATA")));
-    test_ptr_success(path = env_get_app_dir(ENV_APP_DIR_RUNTIME, LIT("ACME"), LIT("tron"), NULL));
-    
-#ifdef _WIN32
-    SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, SHGFP_TYPE_CURRENT, (tmp = alloca(MAX_PATH)));
-    cstr = strcat(tmp, "\\ACME\\tron\\run");
-#else
-    cstr = "/home/foo/.cache/tron/run";
-#endif
-    
-    test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
-    test_str_eq(str_c(str), cstr);
-    str_unref(str);
-    path_free(path);
-}
-
-test_suite_ct test_suite_env(void)
+test_suite_ct test_suite_sys_env(void)
 {
     return test_suite_new_with_cases("env"
+        , test_case_new(env_is_set_invalid_name1)
+        , test_case_new(env_is_set_invalid_name2)
+        , test_case_new(env_is_set_false)
+        , test_case_new(env_is_set_true)
+        
         , test_case_new(env_get_invalid_name1)
         , test_case_new(env_get_invalid_name2)
         , test_case_new(env_get_not_found)
@@ -488,29 +252,5 @@ test_suite_ct test_suite_env(void)
         , test_case_new(env_unset_def)
         , test_case_new(env_unset_new)
         , test_case_new(env_unset_unset_def)
-        
-        , test_case_new(env_get_user_dir_invalid_ident)
-        , test_case_new(env_get_user_dir_home_from_home)
-        , test_case_new(env_get_user_dir_home_from_userprofile)
-        , test_case_new(env_get_user_dir_home_native)
-        
-        , test_case_new(env_get_app_dir_invalid_ident)
-        , test_case_new(env_get_app_dir_invalid_author)
-        , test_case_new(env_get_app_dir_invalid_name)
-        , test_case_new(env_get_app_dir_cache_from_xdg_cache_home)
-        , test_case_new(env_get_app_dir_cache_from_localappdata)
-        , test_case_new(env_get_app_dir_cache_native)
-        , test_case_new(env_get_app_dir_config_from_xdg_config_home)
-        , test_case_new(env_get_app_dir_config_from_appdata)
-        , test_case_new(env_get_app_dir_config_native)
-        , test_case_new(env_get_app_dir_data_from_xdg_data_home)
-        , test_case_new(env_get_app_dir_data_from_localappdata)
-        , test_case_new(env_get_app_dir_data_native)
-        , test_case_new(env_get_app_dir_log_from_xdg_cache_home)
-        , test_case_new(env_get_app_dir_log_from_localappdata)
-        , test_case_new(env_get_app_dir_log_native)
-        , test_case_new(env_get_app_dir_runtime_from_xdg_runtime_dir)
-        , test_case_new(env_get_app_dir_runtime_from_localappdata)
-        , test_case_new(env_get_app_dir_runtime_native)
     );
 }

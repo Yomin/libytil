@@ -23,12 +23,14 @@
 #include "sys.h"
 #include "env.h"
 #include "fs.h"
+#include "path.h"
 
 
 test_suite_ct test_suite_sys(void)
 {
     return test_suite_new_with_suites("sys"
-        , test_suite_env()
-        , test_suite_fsys()
+        , test_suite_sys_env()
+        , test_suite_sys_fsys()
+        , test_suite_sys_path()
     );
 }

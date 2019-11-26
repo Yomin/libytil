@@ -24,36 +24,13 @@
 #define __YTIL_SYS_ENV_H__
 
 #include <ytil/gen/str.h>
-#include <ytil/gen/path.h>
+#include <stdbool.h>
 
 typedef enum env_error
 {
       E_ENV_INVALID_NAME
-    , E_ENV_NOT_AVAILABLE
     , E_ENV_NOT_FOUND
 } env_error_id;
-
-typedef enum env_user_dir
-{
-      ENV_USER_DIR_HOME
-    , ENV_USER_DIR_DESKTOP
-    , ENV_USER_DIR_DOCUMENTS
-    , ENV_USER_DIR_DOWNLOADS
-    , ENV_USER_DIR_MUSIC
-    , ENV_USER_DIR_PICTURES
-    , ENV_USER_DIR_VIDEOS
-    , ENV_USER_DIRS
-} env_user_dir_id;
-
-typedef enum env_app_dir
-{
-      ENV_APP_DIR_CACHE
-    , ENV_APP_DIR_CONFIG
-    , ENV_APP_DIR_DATA
-    , ENV_APP_DIR_LOG
-    , ENV_APP_DIR_RUNTIME
-    , ENV_APP_DIRS
-} env_app_dir_id;
 
 // return 0 to continue fold, anything else stops fold
 typedef int (*env_fold_cb)(str_const_ct name, str_const_ct value, void *ctx);
@@ -65,22 +42,23 @@ int  env_init(void);
 // free env
 void env_free(void);
 
+// check whether environment variable 'name' is set
+bool env_is_set(str_const_ct name);
+
 // add/overwrite environment variable 'name' with 'value'
-int          env_set(str_const_ct name, str_const_ct value);
+int env_set(str_const_ct name, str_const_ct value);
+
 // retrieve environment variable 'name'
 str_const_ct env_get(str_const_ct name);
-// reset/unset environment variable 'name' to default/nothing
-int          env_reset(str_const_ct name);
-// unset environment variable 'name'
-int          env_unset(str_const_ct name);
-// apply fold to each environment variable
-int          env_fold(env_fold_cb fold, void *ctx);
-// dump all environment variables to stdout
-void         env_dump(void);
 
-// get user directory
-path_ct env_get_user_dir(env_user_dir_id id);
-// get application directory, version may be NULL
-path_ct env_get_app_dir(env_app_dir_id id, str_const_ct author, str_const_ct app, str_const_ct version);
+// reset/unset environment variable 'name' to default/nothing
+int env_reset(str_const_ct name);
+// unset environment variable 'name'
+int env_unset(str_const_ct name);
+
+// apply fold to each environment variable
+int  env_fold(env_fold_cb fold, void *ctx);
+// dump all environment variables to stdout
+void env_dump(void);
 
 #endif

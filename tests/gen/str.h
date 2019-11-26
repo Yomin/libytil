@@ -25,6 +25,6 @@
 
 #include <ytil/test/suite.h>
 
-test_suite_ct test_suite_str(void);
+test_suite_ct test_suite_gen_str(void);
 
 #endif
