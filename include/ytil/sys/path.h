@@ -37,10 +37,10 @@ typedef enum path_user_dir
 {
       PATH_USER_DIR_DESKTOP
     , PATH_USER_DIR_DOCUMENTS
-    , PATH_USER_DIR_DOWNLOAD
+    , PATH_USER_DIR_DOWNLOADS
     , PATH_USER_DIR_MUSIC
     , PATH_USER_DIR_PICTURES
-    , PATH_USER_DIR_PUBLICSHARE
+    , PATH_USER_DIR_PUBLIC
     , PATH_USER_DIR_TEMPLATES
     , PATH_USER_DIR_VIDEOS
     , PATH_USER_DIRS
@@ -55,6 +55,11 @@ typedef enum path_app_dir
     , PATH_APP_DIR_RUNTIME
     , PATH_APP_DIRS
 } path_app_dir_id;
+
+typedef enum path_sys_dir
+{
+      PATH_SYS_DIR_TEMP
+} path_sys_dir_id;
 
 
 // get user home directory

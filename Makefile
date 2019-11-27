@@ -16,11 +16,17 @@ LIBNAME  := lib$(NAME).a
 INCLUDES := $(INCLUDES) -Iinclude
 CFLAGS   := $(CFLAGS) -Wall -Wextra -Wpedantic -Woverflow -Wno-unused-parameter
 CFLAGS   := $(CFLAGS) -Werror -Wfatal-errors -std=gnu11 -march=native $(INCLUDES)
-DFLAGS   := $(CFLAGS) $(DFLAGS) -ggdb3 -O0
-CFLAGS   := $(CFLAGS) -DNDEBUG -DNVALGRIND -O2
+DFLAGS   := $(DFLAGS) -ggdb3 -O0
+PFLAGS   := $(PFLAGS) -DNDEBUG -DNVALGRIND -O2
 SOURCES  := $(shell find src -type f -name "*.c")
 TESTS    := $(shell find tests -type f -name "*.c")
 TESTOBJS := $(patsubst tests/%.c, test/%.o, $(TESTS))
+
+ifeq ($(OS), Windows_NT)
+    LIBS   := $(LIBS) -lole32
+    CFLAGS := $(CFLAGS) -D__USE_MINGW_ANSI_STDIO=1
+endif
+
 
 .PHONY: all
 all: debug
@@ -37,7 +43,7 @@ prod: prod/$(LIBNAME)
 
 prod/%.o: src/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) $(PFLAGS) -o $@ $<
 	@gcc -MM $(INCLUDES) $< | sed -e 's|[^:]*:|$@:|' > $(@:%.o=%.d)
 	@sed -e 's/.*: *//; s/\\$$//g; s/ /:\n/g; s/$$/:/' < $(@:%.o=%.d) >> $(@:%.o=%.d)
 
@@ -52,7 +58,7 @@ debug: debug/$(LIBNAME)
 
 debug/%.o: src/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(DFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) $(DFLAGS) -o $@ $<
 	@gcc -MM $(INCLUDES) $< | sed -e 's|[^:]*:|$@:|' > $(@:%.o=%.d)
 	@sed -e 's/.*: *//; s/\\$$//g; s/ /:\n/g; s/$$/:/' < $(@:%.o=%.d) >> $(@:%.o=%.d)
 
@@ -67,9 +73,9 @@ test: test/$(NAME)
 
 test/%.o: tests/%.c
 	@mkdir -p $(dir $@)
-	$(CC) $(DFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) $(DFLAGS) -o $@ $<
 	@gcc -MM $(INCLUDES) $< | sed -e 's|[^:]*:|$@:|' > $(@:%.o=%.d)
 	@sed -e 's/.*: *//; s/\\$$//g; s/ /:\n/g; s/$$/:/' < $(@:%.o=%.d) >> $(@:%.o=%.d)
 
 test/$(NAME): debug/$(LIBNAME) $(TESTOBJS)
-	$(LD) $(DFLAGS) -o $@ $(TESTOBJS) -Ldebug -l$(NAME)
+	$(LD) $(CFLAGS) $(DFLAGS) -o $@ $(TESTOBJS) -Ldebug -l$(NAME) $(LIBS)
