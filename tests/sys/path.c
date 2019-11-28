@@ -53,20 +53,25 @@ static char *_test_path_windows_folder(const KNOWNFOLDERID *id, char *buf)
 }
 #endif
 
-TEST_CASE(path_get_user_home_env)
+TEST_CASE_ABORT(path_get_sys_dir_invalid_ident)
+{
+    path_get_sys_dir(999);
+}
+
+TEST_CASE(path_get_sys_dir_home_home_set)
 {
     test_int_success(env_set(LIT("HOME"), LIT("/home/foo")));
-    test_ptr_success(path = path_get_user_home());
+    test_ptr_success(path = path_get_sys_dir(PATH_SYS_DIR_HOME));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(cpath), "/home/foo");
     str_unref(cpath);
     path_free(path);
 }
 
-TEST_CASE(path_get_user_home_native)
+TEST_CASE(path_get_sys_dir_home_home_unset)
 {
     test_int_success(env_unset(LIT("HOME")));
-    test_ptr_success(path = path_get_user_home());
+    test_ptr_success(path = path_get_sys_dir(PATH_SYS_DIR_HOME));
     
 #ifdef _WIN32
     cstr = _test_path_windows_folder(&FOLDERID_Profile, alloca(MAX_PATH));
@@ -78,6 +83,35 @@ TEST_CASE(path_get_user_home_native)
     test_str_eq(str_c(cpath), cstr);
     str_unref(cpath);
     path_free(path);
+}
+
+TEST_CASE(path_get_sys_dir_tmp_tmp_set_temp_set)
+{
+    test_int_success(env_set(LIT("TMP"), LIT("/foo/tmp")));
+    test_int_success(env_set(LIT("TEMP"), LIT("/bar/tmp")));
+    test_ptr_success(path = path_get_sys_dir(PATH_SYS_DIR_TMP));
+    test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
+    test_str_eq(str_c(cpath), "/foo/tmp");
+    str_unref(cpath);
+    path_free(path);
+}
+
+TEST_CASE(path_get_sys_dir_tmp_tmp_unset_temp_set)
+{
+    test_int_success(env_unset(LIT("TMP")));
+    test_int_success(env_set(LIT("TEMP"), LIT("/bar/tmp")));
+    test_ptr_success(path = path_get_sys_dir(PATH_SYS_DIR_TMP));
+    test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
+    test_str_eq(str_c(cpath), "/bar/tmp");
+    str_unref(cpath);
+    path_free(path);
+}
+
+TEST_CASE(path_get_sys_dir_tmp_tmp_unset_temp_unset)
+{
+    test_int_success(env_unset(LIT("TMP")));
+    test_int_success(env_unset(LIT("TEMP")));
+    test_ptr_error(path_get_sys_dir(PATH_SYS_DIR_TMP), E_PATH_NOT_AVAILABLE);
 }
 
 TEST_CASE_ABORT(path_get_user_dir_invalid_ident)
@@ -407,27 +441,17 @@ TEST_CASE(path_get_user_dir_videos_xdg_unset_home_unset)
 
 TEST_CASE_ABORT(path_get_app_dir_invalid_ident)
 {
-    path_get_app_dir(999, LIT("ACME"), LIT("tron"), NULL);
+    path_get_app_dir(999, LIT("ACME"), LIT("tron"), LIT("1.2.3"));
 }
 
-TEST_CASE_ABORT(path_get_app_dir_invalid_author1)
+TEST_CASE(path_get_app_dir_invalid_author)
 {
-    path_get_app_dir(PATH_APP_DIR_CACHE, NULL, LIT("tron"), NULL);
+    test_ptr_error(path_get_app_dir(PATH_APP_DIR_CACHE, LIT(""), LIT("tron"), LIT("1.2.3")), E_PATH_INVALID_APP_AUTHOR);
 }
 
-TEST_CASE(path_get_app_dir_invalid_author2)
+TEST_CASE(path_get_app_dir_invalid_name)
 {
-    test_ptr_error(path_get_app_dir(PATH_APP_DIR_CACHE, LIT(""), LIT("tron"), NULL), E_PATH_INVALID_APP_AUTHOR);
-}
-
-TEST_CASE_ABORT(path_get_app_dir_invalid_name1)
-{
-    path_get_app_dir(PATH_APP_DIR_CACHE, LIT("ACME"), NULL, NULL);
-}
-
-TEST_CASE(path_get_app_dir_invalid_name2)
-{
-    test_ptr_error(path_get_app_dir(PATH_APP_DIR_CACHE, LIT("ACME"), LIT(""), NULL), E_PATH_INVALID_APP_NAME);
+    test_ptr_error(path_get_app_dir(PATH_APP_DIR_CACHE, LIT("ACME"), LIT(""), LIT("1.2.3")), E_PATH_INVALID_APP_NAME);
 }
 
 TEST_CASE(path_get_app_dir_invalid_version)
@@ -440,9 +464,9 @@ TEST_CASE(path_get_app_dir_cache_xdg_set_home_set_win_set)
     test_int_success(env_set(LIT("XDG_CACHE_HOME"), LIT("/home/foo/my_cache")));
     test_int_success(env_set(LIT("HOME"), LIT("/home/bar/")));
     test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/baz/my_data/local")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CACHE, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CACHE, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/home/foo/my_cache/tron");
+    test_str_eq(str_c(cpath), "/home/foo/my_cache/ACME/tron/1.2.3");
     str_unref(cpath);
     path_free(path);
 }
@@ -452,9 +476,9 @@ TEST_CASE(path_get_app_dir_cache_xdg_unset_home_set_win_set)
     test_int_success(env_unset(LIT("XDG_CACHE_HOME")));
     test_int_success(env_set(LIT("HOME"), LIT("/home/bar")));
     test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/baz/my_data/local")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CACHE, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CACHE, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/home/bar/.cache/tron");
+    test_str_eq(str_c(cpath), "/home/bar/.cache/ACME/tron/1.2.3");
     str_unref(cpath);
     path_free(path);
 }
@@ -465,9 +489,9 @@ TEST_CASE(path_get_app_dir_cache_xdg_unset_home_unset_win_set)
     test_int_success(env_unset(LIT("XDG_CACHE_HOME")));
     test_int_success(env_unset(LIT("HOME")));
     test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/baz/my_data/local")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CACHE, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CACHE, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/users/baz/my_data/local/ACME/tron/cache");
+    test_str_eq(str_c(cpath), "/users/baz/my_data/local/ACME/tron/1.2.3/cache");
     str_unref(cpath);
     path_free(path);
 }
@@ -478,13 +502,13 @@ TEST_CASE(path_get_app_dir_cache_xdg_unset_home_unset_win_unset)
     test_int_success(env_unset(LIT("XDG_CACHE_HOME")));
     test_int_success(env_unset(LIT("HOME")));
     test_int_success(env_unset(LIT("LOCALAPPDATA")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CACHE, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CACHE, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     
 #ifdef _WIN32
     buf = _test_path_windows_folder(&FOLDERID_LocalAppData, alloca(MAX_PATH));
-    strcat(buf, "\\ACME\\tron\\cache");
+    strcat(buf, "\\ACME\\tron\\1.2.3\\cache");
 #else
-    sprintf(buf, "%s/.cache/tron", getpwuid(getuid())->pw_dir);
+    sprintf(buf, "%s/.cache/ACME/tron/1.2.3", getpwuid(getuid())->pw_dir);
 #endif
     
     test_ptr_success(cpath = path_get(path, PATH_STYLE_NATIVE));
@@ -498,9 +522,9 @@ TEST_CASE(path_get_app_dir_config_xdg_set_home_set_win_set)
     test_int_success(env_set(LIT("XDG_CONFIG_HOME"), LIT("/home/foo/my_config")));
     test_int_success(env_set(LIT("HOME"), LIT("/home/bar/")));
     test_int_success(env_set(LIT("APPDATA"), LIT("/users/baz/my_data/roaming")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CONFIG, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CONFIG, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/home/foo/my_config/tron");
+    test_str_eq(str_c(cpath), "/home/foo/my_config/ACME/tron/1.2.3");
     str_unref(cpath);
     path_free(path);
 }
@@ -510,9 +534,9 @@ TEST_CASE(path_get_app_dir_config_xdg_unset_home_set_win_set)
     test_int_success(env_unset(LIT("XDG_CONFIG_HOME")));
     test_int_success(env_set(LIT("HOME"), LIT("/home/bar")));
     test_int_success(env_set(LIT("APPDATA"), LIT("/users/baz/my_data/roaming")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CONFIG, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CONFIG, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/home/bar/.config/tron");
+    test_str_eq(str_c(cpath), "/home/bar/.config/ACME/tron/1.2.3");
     str_unref(cpath);
     path_free(path);
 }
@@ -523,9 +547,9 @@ TEST_CASE(path_get_app_dir_config_xdg_unset_home_unset_win_set)
     test_int_success(env_unset(LIT("XDG_CONFIG_HOME")));
     test_int_success(env_unset(LIT("HOME")));
     test_int_success(env_set(LIT("APPDATA"), LIT("/users/baz/my_data/roaming")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CONFIG, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CONFIG, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/users/baz/my_data/roaming/ACME/tron");
+    test_str_eq(str_c(cpath), "/users/baz/my_data/roaming/ACME/tron/1.2.3");
     str_unref(cpath);
     path_free(path);
 }
@@ -536,13 +560,13 @@ TEST_CASE(path_get_app_dir_config_xdg_unset_home_unset_win_unset)
     test_int_success(env_unset(LIT("XDG_CONFIG_HOME")));
     test_int_success(env_unset(LIT("HOME")));
     test_int_success(env_unset(LIT("APPDATA")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CONFIG, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CONFIG, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     
 #ifdef _WIN32
     buf = _test_path_windows_folder(&FOLDERID_RoamingAppData, alloca(MAX_PATH));
-    strcat(buf, "\\ACME\\tron");
+    strcat(buf, "\\ACME\\tron\\1.2.3");
 #else
-    sprintf(buf, "%s/.config/tron", getpwuid(getuid())->pw_dir);
+    sprintf(buf, "%s/.config/ACME/tron/1.2.3", getpwuid(getuid())->pw_dir);
 #endif
     
     test_ptr_success(cpath = path_get(path, PATH_STYLE_NATIVE));
@@ -556,9 +580,9 @@ TEST_CASE(path_get_app_dir_data_xdg_set_home_set_win_set)
     test_int_success(env_set(LIT("XDG_DATA_HOME"), LIT("/home/foo/my_data")));
     test_int_success(env_set(LIT("HOME"), LIT("/home/bar/")));
     test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/baz/my_data/local")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_DATA, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_DATA, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/home/foo/my_data/tron");
+    test_str_eq(str_c(cpath), "/home/foo/my_data/ACME/tron/1.2.3");
     str_unref(cpath);
     path_free(path);
 }
@@ -568,9 +592,9 @@ TEST_CASE(path_get_app_dir_data_xdg_unset_home_set_win_set)
     test_int_success(env_unset(LIT("XDG_DATA_HOME")));
     test_int_success(env_set(LIT("HOME"), LIT("/home/bar")));
     test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/baz/my_data/local")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_DATA, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_DATA, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/home/bar/.local/share/tron");
+    test_str_eq(str_c(cpath), "/home/bar/.local/share/ACME/tron/1.2.3");
     str_unref(cpath);
     path_free(path);
 }
@@ -581,9 +605,9 @@ TEST_CASE(path_get_app_dir_data_xdg_unset_home_unset_win_set)
     test_int_success(env_unset(LIT("XDG_DATA_HOME")));
     test_int_success(env_unset(LIT("HOME")));
     test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/baz/my_data/local")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_DATA, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_DATA, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/users/baz/my_data/local/ACME/tron");
+    test_str_eq(str_c(cpath), "/users/baz/my_data/local/ACME/tron/1.2.3");
     str_unref(cpath);
     path_free(path);
 }
@@ -594,13 +618,13 @@ TEST_CASE(path_get_app_dir_data_xdg_unset_home_unset_win_unset)
     test_int_success(env_unset(LIT("XDG_DATA_HOME")));
     test_int_success(env_unset(LIT("HOME")));
     test_int_success(env_unset(LIT("LOCALAPPDATA")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_DATA, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_DATA, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     
 #ifdef _WIN32
     buf = _test_path_windows_folder(&FOLDERID_LocalAppData, alloca(MAX_PATH));
-    strcat(buf, "\\ACME\\tron");
+    strcat(buf, "\\ACME\\tron\\1.2.3");
 #else
-    sprintf(buf, "%s/.local/share/tron", getpwuid(getuid())->pw_dir);
+    sprintf(buf, "%s/.local/share/ACME/tron/1.2.3", getpwuid(getuid())->pw_dir);
 #endif
     
     test_ptr_success(cpath = path_get(path, PATH_STYLE_NATIVE));
@@ -614,9 +638,9 @@ TEST_CASE(path_get_app_dir_log_xdg_set_home_set_win_set)
     test_int_success(env_set(LIT("XDG_CACHE_HOME"), LIT("/home/foo/my_cache")));
     test_int_success(env_set(LIT("HOME"), LIT("/home/bar/")));
     test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/baz/my_data/local")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_LOG, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_LOG, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/home/foo/my_cache/tron/logs");
+    test_str_eq(str_c(cpath), "/home/foo/my_cache/ACME/tron/1.2.3/logs");
     str_unref(cpath);
     path_free(path);
 }
@@ -626,9 +650,9 @@ TEST_CASE(path_get_app_dir_log_xdg_unset_home_set_win_set)
     test_int_success(env_unset(LIT("XDG_CACHE_HOME")));
     test_int_success(env_set(LIT("HOME"), LIT("/home/bar")));
     test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/baz/my_data/local")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_LOG, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_LOG, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/home/bar/.cache/tron/logs");
+    test_str_eq(str_c(cpath), "/home/bar/.cache/ACME/tron/1.2.3/logs");
     str_unref(cpath);
     path_free(path);
 }
@@ -639,9 +663,9 @@ TEST_CASE(path_get_app_dir_log_xdg_unset_home_unset_win_set)
     test_int_success(env_unset(LIT("XDG_CACHE_HOME")));
     test_int_success(env_unset(LIT("HOME")));
     test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/baz/my_data/local")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_LOG, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_LOG, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/users/baz/my_data/local/ACME/tron/logs");
+    test_str_eq(str_c(cpath), "/users/baz/my_data/local/ACME/tron/1.2.3/logs");
     str_unref(cpath);
     path_free(path);
 }
@@ -652,13 +676,13 @@ TEST_CASE(path_get_app_dir_log_xdg_unset_home_unset_win_unset)
     test_int_success(env_unset(LIT("XDG_CACHE_HOME")));
     test_int_success(env_unset(LIT("HOME")));
     test_int_success(env_unset(LIT("LOCALAPPDATA")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_LOG, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_LOG, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     
 #ifdef _WIN32
     buf = _test_path_windows_folder(&FOLDERID_LocalAppData, alloca(MAX_PATH));
-    strcat(buf, "\\ACME\\tron\\logs");
+    strcat(buf, "\\ACME\\tron\\1.2.3\\logs");
 #else
-    sprintf(buf, "%s/.cache/tron/logs", getpwuid(getuid())->pw_dir);
+    sprintf(buf, "%s/.cache/ACME/tron/1.2.3/logs", getpwuid(getuid())->pw_dir);
 #endif
     
     test_ptr_success(cpath = path_get(path, PATH_STYLE_NATIVE));
@@ -672,9 +696,9 @@ TEST_CASE(path_get_app_dir_runtime_xdg_set_home_set_win_set)
     test_int_success(env_set(LIT("XDG_RUNTIME_DIR"), LIT("/home/foo/my_run")));
     test_int_success(env_set(LIT("HOME"), LIT("/home/bar/")));
     test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/baz/my_data/local")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_RUNTIME, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_RUNTIME, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/home/foo/my_run/tron");
+    test_str_eq(str_c(cpath), "/home/foo/my_run/ACME/tron/1.2.3");
     str_unref(cpath);
     path_free(path);
 }
@@ -684,9 +708,9 @@ TEST_CASE(path_get_app_dir_runtime_xdg_unset_home_set_win_set)
     test_int_success(env_unset(LIT("XDG_RUNTIME_DIR")));
     test_int_success(env_set(LIT("HOME"), LIT("/home/bar")));
     test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/baz/my_data/local")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_RUNTIME, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_RUNTIME, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/home/bar/.cache/tron/run");
+    test_str_eq(str_c(cpath), "/home/bar/.cache/ACME/tron/1.2.3/run");
     str_unref(cpath);
     path_free(path);
 }
@@ -697,9 +721,9 @@ TEST_CASE(path_get_app_dir_runtime_xdg_unset_home_unset_win_set)
     test_int_success(env_unset(LIT("XDG_RUNTIME_DIR")));
     test_int_success(env_unset(LIT("HOME")));
     test_int_success(env_set(LIT("LOCALAPPDATA"), LIT("/users/baz/my_data/local")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_RUNTIME, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_RUNTIME, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-    test_str_eq(str_c(cpath), "/users/baz/my_data/local/ACME/tron/run");
+    test_str_eq(str_c(cpath), "/users/baz/my_data/local/ACME/tron/1.2.3/run");
     str_unref(cpath);
     path_free(path);
 }
@@ -710,11 +734,11 @@ TEST_CASE(path_get_app_dir_runtime_xdg_unset_home_unset_win_unset)
     test_int_success(env_unset(LIT("XDG_RUNTIME_DIR")));
     test_int_success(env_unset(LIT("HOME")));
     test_int_success(env_unset(LIT("LOCALAPPDATA")));
-    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_RUNTIME, LIT("ACME"), LIT("tron"), NULL));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_RUNTIME, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     
 #ifdef _WIN32
     buf = _test_path_windows_folder(&FOLDERID_LocalAppData, alloca(MAX_PATH));
-    strcat(buf, "\\ACME\\tron\\run");
+    strcat(buf, "\\ACME\\tron\\1.2.3\\run");
 #else
     sprintf(buf, "%s/.cache/run", getpwuid(getuid())->pw_dir);
 #endif
@@ -728,8 +752,15 @@ TEST_CASE(path_get_app_dir_runtime_xdg_unset_home_unset_win_unset)
 test_suite_ct test_suite_sys_path(void)
 {
     return test_suite_new_with_cases("path"
-        , test_case_new(path_get_user_home_env)
-        , test_case_new(path_get_user_home_native)
+        , test_case_new(path_get_sys_dir_invalid_ident)
+        
+        , test_case_new(path_get_sys_dir_home_home_set)
+        , test_case_new(path_get_sys_dir_home_home_unset)
+        
+        , test_case_new(path_get_sys_dir_tmp_tmp_set_temp_set)
+        , test_case_new(path_get_sys_dir_tmp_tmp_unset_temp_set)
+        , test_case_new(path_get_sys_dir_tmp_tmp_unset_temp_unset)
+        
         
         , test_case_new(path_get_user_dir_invalid_ident)
         
@@ -765,11 +796,10 @@ test_suite_ct test_suite_sys_path(void)
         , test_case_new(path_get_user_dir_videos_xdg_unset_home_set)
         , test_case_new(path_get_user_dir_videos_xdg_unset_home_unset)
         
+        
         , test_case_new(path_get_app_dir_invalid_ident)
-        , test_case_new(path_get_app_dir_invalid_author1)
-        , test_case_new(path_get_app_dir_invalid_author2)
-        , test_case_new(path_get_app_dir_invalid_name1)
-        , test_case_new(path_get_app_dir_invalid_name2)
+        , test_case_new(path_get_app_dir_invalid_author)
+        , test_case_new(path_get_app_dir_invalid_name)
         , test_case_new(path_get_app_dir_invalid_version)
         
         , test_case_new(path_get_app_dir_cache_xdg_set_home_set_win_set)

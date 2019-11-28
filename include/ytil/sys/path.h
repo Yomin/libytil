@@ -33,6 +33,13 @@ typedef enum sys_path_error
     , E_PATH_NOT_AVAILABLE
 } sys_path_error_id;
 
+typedef enum path_sys_dir
+{
+      PATH_SYS_DIR_HOME
+    , PATH_SYS_DIR_TMP
+    , PATH_SYS_DIRS
+} path_sys_dir_id;
+
 typedef enum path_user_dir
 {
       PATH_USER_DIR_DESKTOP
@@ -53,20 +60,16 @@ typedef enum path_app_dir
     , PATH_APP_DIR_DATA
     , PATH_APP_DIR_LOG
     , PATH_APP_DIR_RUNTIME
+    , PATH_APP_DIR_TMP
     , PATH_APP_DIRS
 } path_app_dir_id;
 
-typedef enum path_sys_dir
-{
-      PATH_SYS_DIR_TEMP
-} path_sys_dir_id;
 
-
-// get user home directory
-path_ct path_get_user_home(void);
+// get system directory
+path_ct path_get_sys_dir(path_sys_dir_id id);
 // get user directory
 path_ct path_get_user_dir(path_user_dir_id id);
-// get application directory, version may be NULL
+// get application directory, author/app/version may be NULL
 path_ct path_get_app_dir(path_app_dir_id id, str_const_ct author, str_const_ct app, str_const_ct version);
 
 #endif

@@ -64,7 +64,7 @@ static path_ct path_get_windows_folder(const KNOWNFOLDERID *id)
 }
 #endif
 
-path_ct path_get_user_home(void)
+static path_ct path_get_sys_dir_home(void)
 {
     str_const_ct value;
     
@@ -81,6 +81,28 @@ path_ct path_get_user_home(void)
     
     return error_wrap_ptr(path_new_c(pwd->pw_dir, PATH_STYLE_NATIVE));
 #endif
+}
+
+static path_ct path_get_sys_dir_tmp(void)
+{
+    str_const_ct value;
+    
+    if((value = env_get(LIT("TMP"))) || (value = env_get(LIT("TEMP"))))
+        return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
+    
+    return error_set(E_PATH_NOT_AVAILABLE), NULL;
+}
+
+path_ct path_get_sys_dir(path_sys_dir_id id)
+{
+    assert(id < PATH_SYS_DIRS);
+    
+    switch(id)
+    {
+    case PATH_SYS_DIR_HOME: return error_pass_ptr(path_get_sys_dir_home());
+    case PATH_SYS_DIR_TMP:  return error_pass_ptr(path_get_sys_dir_tmp());
+    default:                abort();
+    }
 }
 
 typedef struct path_user_dir_xdg_info
@@ -112,7 +134,7 @@ static path_ct path_get_user_dir_xdg(path_user_dir_id id, bool def)
     if(!def)
         return error_set(E_PATH_NOT_AVAILABLE), NULL;
     
-    if(!(path = path_get_user_home()))
+    if(!(path = path_get_sys_dir(PATH_SYS_DIR_HOME)))
         return error_pass(), NULL;
     
     if(!path_append_c(path, info->def, PATH_STYLE_POSIX))
@@ -191,7 +213,7 @@ static const path_app_dir_xdg_info_st path_app_dir_xdg_infos[] =
     , [PATH_APP_DIR_RUNTIME] = { "XDG_RUNTIME_DIR", NULL,   ".cache",       "run" }
 };
 
-static path_ct path_get_app_dir_xdg(path_app_dir_id id, str_const_ct app, str_const_ct version, bool def)
+static path_ct path_get_app_dir_xdg(path_app_dir_id id, str_const_ct author, str_const_ct app, str_const_ct version, bool def)
 {
     const path_app_dir_xdg_info_st *info = &path_app_dir_xdg_infos[id];
     str_const_ct value;
@@ -202,18 +224,20 @@ static path_ct path_get_app_dir_xdg(path_app_dir_id id, str_const_ct app, str_co
         if(!(path = path_new(value, PATH_STYLE_NATIVE)))
             return error_wrap(), NULL;
         
-        if(!path_append(path, app, PATH_STYLE_NATIVE)
+        if((author && !path_append(path, author, PATH_STYLE_NATIVE))
+        || (app && !path_append(path, app, PATH_STYLE_NATIVE))
         || (version && !path_append(path, version, PATH_STYLE_NATIVE))
         || (info->sub && !path_append_c(path, info->sub, PATH_STYLE_POSIX)))
             return error_wrap(), path_free(path), NULL;
     }
     else if(def)
     {
-        if(!(path = path_get_user_home()))
+        if(!(path = path_get_sys_dir(PATH_SYS_DIR_HOME)))
             return error_pass(), NULL;
         
         if(!path_append_c(path, info->def, PATH_STYLE_POSIX)
-        || !path_append(path, app, PATH_STYLE_NATIVE)
+        || (author && !path_append(path, author, PATH_STYLE_NATIVE))
+        || (app && !path_append(path, app, PATH_STYLE_NATIVE))
         || (version && !path_append(path, version, PATH_STYLE_NATIVE))
         || (info->sub_def && !path_append_c(path, info->sub_def, PATH_STYLE_POSIX)))
             return error_wrap(), path_free(path), NULL;
@@ -256,8 +280,8 @@ static path_ct path_get_app_dir_windows(path_app_dir_id id, str_const_ct author,
     else if(!(path = path_get_windows_folder(info->id)))
         return error_pass(), NULL;
     
-    if(!path_append(path, author, PATH_STYLE_NATIVE)
-    || !path_append(path, app, PATH_STYLE_NATIVE)
+    if((author && !path_append(path, author, PATH_STYLE_NATIVE))
+    || (app && !path_append(path, app, PATH_STYLE_NATIVE))
     || (version && !path_append(path, version, PATH_STYLE_NATIVE))
     || (info->sub && !path_append_c(path, info->sub, PATH_STYLE_POSIX)))
         return error_wrap(), path_free(path), NULL;
@@ -270,24 +294,24 @@ static path_ct path_get_app_dir_windows(path_app_dir_id id, str_const_ct author,
 path_ct path_get_app_dir(path_app_dir_id id, str_const_ct author, str_const_ct app, str_const_ct version)
 {
     assert(id < PATH_APP_DIRS);
-    return_error_if_pass(str_is_empty(author), E_PATH_INVALID_APP_AUTHOR, NULL);
-    return_error_if_pass(str_is_empty(app), E_PATH_INVALID_APP_NAME, NULL);
+    return_error_if_pass(author && str_is_empty(author), E_PATH_INVALID_APP_AUTHOR, NULL);
+    return_error_if_pass(app && str_is_empty(app), E_PATH_INVALID_APP_NAME, NULL);
     return_error_if_pass(version && str_is_empty(version), E_PATH_INVALID_APP_VERSION, NULL);
     
 #ifndef _WIN32
-    return error_pass_ptr(path_get_app_dir_xdg(id, app, version, true));
+    return error_pass_ptr(path_get_app_dir_xdg(id, author, app, version, true));
 #else
     path_ct path;
     
     // use XDG directories/defaults if HOME available (MSYS)
     if(env_get(LIT("HOME")))
-        return error_pass_ptr(path_get_app_dir_xdg(id, app, version, true));
+        return error_pass_ptr(path_get_app_dir_xdg(id, author, app, version, true));
     
     if(!error_check(0, E_ENV_NOT_FOUND))
         return error_pass(), NULL;
     
     // recognize XDG directories if available
-    if((path = path_get_app_dir_xdg(id, app, version, false)))
+    if((path = path_get_app_dir_xdg(id, author, app, version, false)))
         return path;
     
     if(!error_check(0, E_PATH_NOT_AVAILABLE))
