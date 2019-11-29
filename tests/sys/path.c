@@ -32,22 +32,26 @@
 #else
 #   include <unistd.h>
 #   include <pwd.h>
+#   include <stdio.h>
+#   include <limits.h>
+#   define MAX_PATH PATH_MAX
 #endif
 
-char *buf;
-const char *cstr;
-path_ct path;
-str_const_ct cpath;
+static char buf[MAX_PATH];
+static const char *cstr;
+static path_ct path;
+static str_const_ct cpath;
 
 
 #ifdef _WIN32
-static char *_test_path_windows_folder(const KNOWNFOLDERID *id, char *buf)
+static char *_test_path_get_windows_folder(const KNOWNFOLDERID *id, const char *append)
 {
     wchar_t *wfolder = NULL;
     
     SHGetKnownFolderPath(id, KF_FLAG_DEFAULT, NULL, &wfolder);
     wcstombs(buf, wfolder, MAX_PATH);
     CoTaskMemFree(wfolder);
+    strcat(buf, append);
     
     return buf;
 }
@@ -74,7 +78,7 @@ TEST_CASE(path_get_sys_dir_home_home_unset)
     test_ptr_success(path = path_get_sys_dir(PATH_SYS_DIR_HOME));
     
 #ifdef _WIN32
-    cstr = _test_path_windows_folder(&FOLDERID_Profile, alloca(MAX_PATH));
+    cstr = _test_path_get_windows_folder(&FOLDERID_Profile, "");
 #else
     cstr = getpwuid(getuid())->pw_dir;
 #endif
@@ -148,7 +152,7 @@ TEST_CASE(path_get_user_dir_desktop_xdg_unset_home_unset)
     test_ptr_success(path = path_get_user_dir(PATH_USER_DIR_DESKTOP));
     
 #ifdef _WIN32
-    buf = _test_path_windows_folder(&FOLDERID_Desktop, alloca(MAX_PATH));
+    _test_path_get_windows_folder(&FOLDERID_Desktop, "");
 #else
     sprintf(buf, "%s/Desktop", getpwuid(getuid())->pw_dir);
 #endif
@@ -188,7 +192,7 @@ TEST_CASE(path_get_user_dir_documents_xdg_unset_home_unset)
     test_ptr_success(path = path_get_user_dir(PATH_USER_DIR_DOCUMENTS));
     
 #ifdef _WIN32
-    buf = _test_path_windows_folder(&FOLDERID_Documents, alloca(MAX_PATH));
+    _test_path_get_windows_folder(&FOLDERID_Documents, "");
 #else
     sprintf(buf, "%s/Documents", getpwuid(getuid())->pw_dir);
 #endif
@@ -228,7 +232,7 @@ TEST_CASE(path_get_user_dir_downloads_xdg_unset_home_unset)
     test_ptr_success(path = path_get_user_dir(PATH_USER_DIR_DOWNLOADS));
     
 #ifdef _WIN32
-    buf = _test_path_windows_folder(&FOLDERID_Downloads, alloca(MAX_PATH));
+    _test_path_get_windows_folder(&FOLDERID_Downloads, "");
 #else
     sprintf(buf, "%s/Downloads", getpwuid(getuid())->pw_dir);
 #endif
@@ -268,7 +272,7 @@ TEST_CASE(path_get_user_dir_music_xdg_unset_home_unset)
     test_ptr_success(path = path_get_user_dir(PATH_USER_DIR_MUSIC));
     
 #ifdef _WIN32
-    buf = _test_path_windows_folder(&FOLDERID_Music, alloca(MAX_PATH));
+    _test_path_get_windows_folder(&FOLDERID_Music, "");
 #else
     sprintf(buf, "%s/Music", getpwuid(getuid())->pw_dir);
 #endif
@@ -308,7 +312,7 @@ TEST_CASE(path_get_user_dir_pictures_xdg_unset_home_unset)
     test_ptr_success(path = path_get_user_dir(PATH_USER_DIR_PICTURES));
     
 #ifdef _WIN32
-    buf = _test_path_windows_folder(&FOLDERID_Pictures, alloca(MAX_PATH));
+    _test_path_get_windows_folder(&FOLDERID_Pictures, "");
 #else
     sprintf(buf, "%s/Pictures", getpwuid(getuid())->pw_dir);
 #endif
@@ -348,7 +352,7 @@ TEST_CASE(path_get_user_dir_public_xdg_unset_home_unset)
     test_ptr_success(path = path_get_user_dir(PATH_USER_DIR_PUBLIC));
     
 #ifdef _WIN32
-    buf = _test_path_windows_folder(&FOLDERID_Public, alloca(MAX_PATH));
+    _test_path_get_windows_folder(&FOLDERID_Public, "");
 #else
     sprintf(buf, "%s/Public", getpwuid(getuid())->pw_dir);
 #endif
@@ -388,7 +392,7 @@ TEST_CASE(path_get_user_dir_templates_xdg_unset_home_unset)
     test_ptr_success(path = path_get_user_dir(PATH_USER_DIR_TEMPLATES));
     
 #ifdef _WIN32
-    buf = _test_path_windows_folder(&FOLDERID_Templates, alloca(MAX_PATH));
+    _test_path_get_windows_folder(&FOLDERID_Templates, "");
 #else
     sprintf(buf, "%s/Templates", getpwuid(getuid())->pw_dir);
 #endif
@@ -428,7 +432,7 @@ TEST_CASE(path_get_user_dir_videos_xdg_unset_home_unset)
     test_ptr_success(path = path_get_user_dir(PATH_USER_DIR_VIDEOS));
     
 #ifdef _WIN32
-    buf = _test_path_windows_folder(&FOLDERID_Videos, alloca(MAX_PATH));
+    _test_path_get_windows_folder(&FOLDERID_Videos, "");
 #else
     sprintf(buf, "%s/Videos", getpwuid(getuid())->pw_dir);
 #endif
@@ -505,8 +509,7 @@ TEST_CASE(path_get_app_dir_cache_xdg_unset_home_unset_win_unset)
     test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CACHE, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     
 #ifdef _WIN32
-    buf = _test_path_windows_folder(&FOLDERID_LocalAppData, alloca(MAX_PATH));
-    strcat(buf, "\\ACME\\tron\\1.2.3\\cache");
+    _test_path_get_windows_folder(&FOLDERID_LocalAppData, "\\ACME\\tron\\1.2.3\\cache");
 #else
     sprintf(buf, "%s/.cache/ACME/tron/1.2.3", getpwuid(getuid())->pw_dir);
 #endif
@@ -563,8 +566,7 @@ TEST_CASE(path_get_app_dir_config_xdg_unset_home_unset_win_unset)
     test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_CONFIG, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     
 #ifdef _WIN32
-    buf = _test_path_windows_folder(&FOLDERID_RoamingAppData, alloca(MAX_PATH));
-    strcat(buf, "\\ACME\\tron\\1.2.3");
+    _test_path_get_windows_folder(&FOLDERID_RoamingAppData, "\\ACME\\tron\\1.2.3");
 #else
     sprintf(buf, "%s/.config/ACME/tron/1.2.3", getpwuid(getuid())->pw_dir);
 #endif
@@ -621,8 +623,7 @@ TEST_CASE(path_get_app_dir_data_xdg_unset_home_unset_win_unset)
     test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_DATA, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     
 #ifdef _WIN32
-    buf = _test_path_windows_folder(&FOLDERID_LocalAppData, alloca(MAX_PATH));
-    strcat(buf, "\\ACME\\tron\\1.2.3");
+    _test_path_get_windows_folder(&FOLDERID_LocalAppData, "\\ACME\\tron\\1.2.3");
 #else
     sprintf(buf, "%s/.local/share/ACME/tron/1.2.3", getpwuid(getuid())->pw_dir);
 #endif
@@ -679,8 +680,7 @@ TEST_CASE(path_get_app_dir_log_xdg_unset_home_unset_win_unset)
     test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_LOG, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     
 #ifdef _WIN32
-    buf = _test_path_windows_folder(&FOLDERID_LocalAppData, alloca(MAX_PATH));
-    strcat(buf, "\\ACME\\tron\\1.2.3\\logs");
+    _test_path_get_windows_folder(&FOLDERID_LocalAppData, "\\ACME\\tron\\1.2.3\\logs");
 #else
     sprintf(buf, "%s/.cache/ACME/tron/1.2.3/logs", getpwuid(getuid())->pw_dir);
 #endif
@@ -737,10 +737,9 @@ TEST_CASE(path_get_app_dir_runtime_xdg_unset_home_unset_win_unset)
     test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_RUNTIME, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     
 #ifdef _WIN32
-    buf = _test_path_windows_folder(&FOLDERID_LocalAppData, alloca(MAX_PATH));
-    strcat(buf, "\\ACME\\tron\\1.2.3\\run");
+    _test_path_get_windows_folder(&FOLDERID_LocalAppData, "\\ACME\\tron\\1.2.3\\run");
 #else
-    sprintf(buf, "%s/.cache/run", getpwuid(getuid())->pw_dir);
+    sprintf(buf, "%s/.cache/ACME/tron/1.2.3/run", getpwuid(getuid())->pw_dir);
 #endif
     
     test_ptr_success(cpath = path_get(path, PATH_STYLE_NATIVE));
