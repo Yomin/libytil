@@ -89,21 +89,27 @@ void _test_abort(void *vctx, const char *file, size_t line, bool backtrace, cons
         {
             switch(error_stack_get_type(e))
             {
-            case ERROR_TYPE_WRAPPER:
-                test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: <wrapper>",
-                    e, error_stack_get_func(e));
-                break;
-            case ERROR_TYPE_PASS:
-                test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s",
-                    e, error_stack_get_func(e));
-                break;
-            case ERROR_TYPE_ERRNO:
             case ERROR_TYPE_ERROR:
+                switch(error_stack_get_error(e))
+                {
+                case E_ERROR_UNSET:
+                    abort();
+                case E_ERROR_WRAPPER:
+                    test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: <wrapper>",
+                        e, error_stack_get_func(e));
+                    continue;
+                case E_ERROR_PASS:
+                    test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s",
+                        e, error_stack_get_func(e));
+                    continue;
+                default:
+                    break;
+                }
+                // fallthrough
+            default:
                 test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: %s",
                     e, error_stack_get_func(e), error_stack_get_name(e));
                 break;
-            default:
-                abort();
             }
             
             if(!e)

@@ -27,18 +27,49 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdio.h>
 
+#ifdef _WIN32
+#   include <winerror.h>
+#   include <ntstatus.h>
+#endif
 
 #ifndef ERROR_STACK_SIZE
 #   define ERROR_STACK_SIZE 20
 #endif
 
+typedef union error_value
+{
+    struct error_value_error
+    {
+        ssize_t code;
+        const error_info_st *infos;
+    } error;
+    struct error_value_errno
+    {
+        int code;
+    } _errno;
+#ifdef _WIN32
+    struct error_value_win32
+    {
+        DWORD code;
+    } win32;
+    struct error_value_hresult
+    {
+        HRESULT result;
+    } hresult;
+    struct error_value_ntstatus
+    {
+        NTSTATUS status;
+    } ntstatus;
+#endif
+} error_value_un;
+
 typedef struct error_entry
 {
     error_type_id type;
-    ssize_t error;
     const char *func;
-    const error_info_st *infos;
+    error_value_un value;
 } error_entry_st;
 
 typedef struct error_state
@@ -49,44 +80,52 @@ typedef struct error_state
 
 static error_state_st errors;
 
-
-static void error_add(error_type_id type, const char *func, ssize_t error, const error_info_st *infos)
+static const error_info_st error_infos[] =
 {
-    size_t entry = errors.size < ERROR_STACK_SIZE ? errors.size : ERROR_STACK_SIZE-1;
+      [-E_ERROR_UNSET]   = { .name = "E_ERROR_UNSET",   .desc = "Error Unset" }
+    , [-E_ERROR_WRAPPER] = { .name = "E_ERROR_WRAPPER", .desc = "Error Wrapper" }
+    , [-E_ERROR_PASS]    = { .name = "E_ERROR_PASS",    .desc = "Error Pass" }
+};
+
+
+static error_entry_st *error_add(error_type_id type, const char *func)
+{
+    size_t id = errors.size < ERROR_STACK_SIZE ? errors.size : ERROR_STACK_SIZE-1;
+    error_entry_st *entry = &errors.stack[id];
     
-    errors.stack[entry] = (error_entry_st)
-    {
-          .type = type
-        , .func = func
-        , .error = error
-        , .infos = infos
-    };
+    entry->type = type;
+    entry->func = func;
     
-    errors.size = entry+1;
+    errors.size = id+1;
+    
+    return entry;
 }
 
 void _error_set(const char *func, const error_info_st *infos, size_t error)
 {
     errors.size = 0;
-    error_add(ERROR_TYPE_ERROR, func, error, infos);
+    _error_push(func, infos, error);
 }
 
 void _error_push(const char *func, const error_info_st *infos, size_t error)
 {
-    error_add(ERROR_TYPE_ERROR, func, error, infos);
+    error_entry_st *entry = error_add(ERROR_TYPE_ERROR, func);
+    
+    entry->value.error.code = error;
+    entry->value.error.infos = infos;
 }
 
 void _error_wrap(const char *func)
 {
-    error_add(ERROR_TYPE_WRAPPER, func, E_ERROR_WRAPPER, NULL);
+    _error_push(func, error_infos, E_ERROR_WRAPPER);
 }
 
 void _error_pack(const char *func, const error_info_st *infos, size_t error)
 {
-    if(error_get(0) < 0)
-        error_add(ERROR_TYPE_WRAPPER, func, E_ERROR_WRAPPER, NULL);
+    if(error_type(0) == ERROR_TYPE_ERROR && error_get(0) == E_ERROR_WRAPPER)
+        _error_wrap(func);
     else
-        error_add(ERROR_TYPE_ERROR, func, error, infos);
+        _error_push(func, infos, error);
 }
 
 void _error_map(const char *func, size_t depth, const error_info_st *infos, ...)
@@ -100,12 +139,12 @@ void _error_map(const char *func, size_t depth, const error_info_st *infos, ...)
     {
         if((match = va_arg(ap, int)) == E_ERROR_UNSET)
         {
-            error_add(ERROR_TYPE_WRAPPER, func, E_ERROR_WRAPPER, NULL);
+            _error_wrap(func);
             break;
         }
         else if(match == error)
         {
-            error_add(ERROR_TYPE_ERROR, func, va_arg(ap, int), infos);
+            _error_push(func, infos, va_arg(ap, int));
             break;
         }
         else
@@ -119,40 +158,139 @@ void _error_map(const char *func, size_t depth, const error_info_st *infos, ...)
 
 void _error_pass(const char *func)
 {
-    error_add(ERROR_TYPE_PASS, func, -1, NULL);
+    _error_push(func, error_infos, E_ERROR_PASS);
 }
 
 void _errno_set(const char *func, int error)
 {
     errors.size = 0;
-    error_add(ERROR_TYPE_ERRNO, func, error, NULL);
+    _errno_push(func, error);
 }
 
 void _errno_push(const char *func, int error)
 {
-    error_add(ERROR_TYPE_ERRNO, func, error, NULL);
+    error_entry_st *entry = error_add(ERROR_TYPE_ERRNO, func);
+    
+    entry->value._errno.code = error;
 }
 
 void _error_push_errno(const char *func, const error_info_st *infos, size_t error, const char *sub)
 {
-    errors.size = 0;
-    error_add(ERROR_TYPE_ERRNO, sub, errno, NULL);
-    error_add(ERROR_TYPE_ERROR, func, error, infos);
+    _errno_set(sub, errno);
+    _error_push(func, infos, error);
 }
 
 void _error_wrap_errno(const char *func, const char *sub)
 {
-    errors.size = 0;
-    error_add(ERROR_TYPE_ERRNO, sub, errno, NULL);
-    error_add(ERROR_TYPE_WRAPPER, func, E_ERROR_WRAPPER, NULL);
+    _errno_set(sub, errno);
+    _error_wrap(func);
 }
 
 void _error_pass_errno(const char *func, const char *sub)
 {
-    errors.size = 0;
-    error_add(ERROR_TYPE_ERRNO, sub, errno, NULL);
-    error_add(ERROR_TYPE_PASS, func, -1, NULL);
+    _errno_set(sub, errno);
+    _error_pass(func);
 }
+
+#ifdef _WIN32
+
+static void error_set_win32(const char *sub, DWORD error)
+{
+    error_entry_st *entry;
+    
+    errors.size = 0;
+    entry = error_add(ERROR_TYPE_WIN32, sub);
+    entry->value.win32.code = error;
+}
+
+void _error_push_win32(const char *func, const error_info_st *infos, size_t error, const char *sub, DWORD error32)
+{
+    error_set_win32(sub, error32);
+    _error_push(func, infos, error);
+}
+
+void _error_push_last_win32(const char *func, const error_info_st *infos, size_t error, const char *sub)
+{
+    _error_push_win32(func, infos, error, sub, GetLastError());
+}
+
+void _error_wrap_win32(const char *func, const char *sub, DWORD error)
+{
+    error_set_win32(sub, error);
+    _error_wrap(func);
+}
+
+void _error_wrap_last_win32(const char *func, const char *sub)
+{
+    _error_wrap_win32(func, sub, GetLastError());
+}
+
+void _error_pass_win32(const char *func, const char *sub, DWORD error)
+{
+    error_set_win32(sub, error);
+    _error_pass(func);
+}
+
+void _error_pass_last_win32(const char *func, const char *sub)
+{
+    _error_pass_win32(func, sub, GetLastError());
+}
+
+static void error_set_hresult(const char *sub, HRESULT result)
+{
+    error_entry_st *entry;
+    
+    errors.size = 0;
+    entry = error_add(ERROR_TYPE_HRESULT, sub);
+    entry->value.hresult.result = result;
+}
+
+void _error_push_hresult(const char *func, const error_info_st *infos, size_t error, const char *sub, HRESULT result)
+{
+    error_set_hresult(sub, result);
+    _error_push(func, infos, error);
+}
+
+void _error_wrap_hresult(const char *func, const char *sub, HRESULT result)
+{
+    error_set_hresult(sub, result);
+    _error_wrap(func);
+}
+
+void _error_pass_hresult(const char *func, const char *sub, HRESULT result)
+{
+    error_set_hresult(sub, result);
+    _error_pass(func);
+}
+
+static void error_set_ntstatus(const char *sub, NTSTATUS status)
+{
+    error_entry_st *entry;
+    
+    errors.size = 0;
+    entry = error_add(ERROR_TYPE_NTSTATUS, sub);
+    entry->value.ntstatus.status = status;
+}
+
+void _error_push_ntstatus(const char *func, const error_info_st *infos, size_t error, const char *sub, NTSTATUS status)
+{
+    error_set_ntstatus(sub, status);
+    _error_push(func, infos, error);
+}
+
+void _error_wrap_ntstatus(const char *func, const char *sub, NTSTATUS status)
+{
+    error_set_ntstatus(sub, status);
+    _error_wrap(func);
+}
+
+void _error_pass_ntstatus(const char *func, const char *sub, NTSTATUS status)
+{
+    error_set_ntstatus(sub, status);
+    _error_pass(func);
+}
+
+#endif // _WIN32
 
 void error_clear(void)
 {
@@ -164,41 +302,181 @@ size_t error_depth(void)
     return errors.size;
 }
 
+const char *error_strtype(error_type_id type)
+{
+    switch(type)
+    {
+    case ERROR_TYPE_INVALID:  return "ERROR_TYPE_INVALID";
+    case ERROR_TYPE_ERROR:    return "ERROR_TYPE_ERROR";
+    case ERROR_TYPE_ERRNO:    return "ERROR_TYPE_ERRNO";
+#ifdef _WIN32
+    case ERROR_TYPE_WIN32:    return "ERROR_TYPE_WIN32";
+    case ERROR_TYPE_HRESULT:  return "ERROR_TYPE_HRESULT";
+    case ERROR_TYPE_NTSTATUS: return "ERROR_TYPE_NTSTATUS";
+#endif
+    default:                  abort();
+    }
+}
+
 static error_entry_st *error_get_entry(size_t depth)
 {
     size_t level;
     
     return_value_if_fail(errors.size, NULL);
     
-    for(level = errors.size-1; level && errors.stack[level].type == ERROR_TYPE_PASS; level--);
+    for(level = errors.size-1;
+        level && errors.stack[level].type == ERROR_TYPE_ERROR
+              && errors.stack[level].value.error.code == E_ERROR_PASS;
+        level--);
     
     for(; level && depth; depth--)
-        for(level--; level && errors.stack[level].type == ERROR_TYPE_PASS; level--);
+        for(level--;
+            level && errors.stack[level].type == ERROR_TYPE_ERROR
+                  && errors.stack[level].value.error.code == E_ERROR_PASS;
+            level--);
     
-    if(depth || errors.stack[level].type == ERROR_TYPE_PASS)
+    if(depth || (errors.stack[level].type == ERROR_TYPE_ERROR
+             &&  errors.stack[level].value.error.code == E_ERROR_PASS))
         return NULL;
     
     return &errors.stack[level];
 }
 
+static inline const char *error_entry_get_error_name(error_entry_st *entry)
+{
+    return entry->value.error.infos[ABS(entry->value.error.code)].name;
+}
+
+static inline const char *error_entry_get_errno_name(error_entry_st *entry)
+{
+    return IFNULL(strerrno(entry->value._errno.code), "<unknown_errno>");
+}
+
+#ifdef _WIN32
+
+static char error_name_buf[20];
+
+static inline const char *error_entry_get_win32_name(error_entry_st *entry)
+{
+    snprintf(error_name_buf, sizeof(error_name_buf),
+        "WIN32_%08lX", entry->value.win32.code);
+    
+    return error_name_buf;
+}
+
+static inline const char *error_entry_get_hresult_name(error_entry_st *entry)
+{
+    snprintf(error_name_buf, sizeof(error_name_buf),
+        "HRESULT_%08lX", entry->value.hresult.result);
+    
+    return error_name_buf;
+}
+
+static inline const char *error_entry_get_ntstatus_name(error_entry_st *entry)
+{
+    snprintf(error_name_buf, sizeof(error_name_buf),
+        "NTSTATUS_%08lX", entry->value.ntstatus.status);
+    
+    return error_name_buf;
+}
+
+#endif
+
 static const char *error_entry_get_name(error_entry_st *entry)
 {
     switch(entry->type)
     {
-    case ERROR_TYPE_WRAPPER:    return "E_ERROR_WRAPPER";
-    case ERROR_TYPE_ERROR:      return entry->infos[entry->error].name;
-    case ERROR_TYPE_ERRNO:      return IFNULL(strerrno(entry->error), "<unknown_errno>");
+    case ERROR_TYPE_ERROR:      return error_entry_get_error_name(entry);
+    case ERROR_TYPE_ERRNO:      return error_entry_get_errno_name(entry);
+#ifdef _WIN32
+    case ERROR_TYPE_WIN32:      return error_entry_get_win32_name(entry);
+    case ERROR_TYPE_HRESULT:    return error_entry_get_hresult_name(entry);
+    case ERROR_TYPE_NTSTATUS:   return error_entry_get_ntstatus_name(entry);
+#endif
     default:                    abort();
     }
 }
+
+static inline const char *error_entry_get_error_desc(error_entry_st *entry)
+{
+    return entry->value.error.infos[ABS(entry->value.error.code)].desc;
+}
+
+static inline const char *error_entry_get_errno_desc(error_entry_st *entry)
+{
+    return strerror(entry->value._errno.code);
+}
+
+#ifdef _WIN32
+
+static char error_desc_buf[200];
+
+static inline const char *error_entry_get_win32_desc(error_entry_st *entry)
+{
+    DWORD rc;
+    char *tmp;
+    
+    rc = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, entry->value.win32.code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        error_desc_buf, sizeof(error_desc_buf), NULL);
+    
+    if(rc)
+    {
+        for(; rc && (error_desc_buf[rc-1] == '\n' || error_desc_buf[rc-1] == '\r'); rc--)
+            error_desc_buf[rc-1] = '\0';
+        
+        return error_desc_buf;
+    }
+    
+    if((rc = GetLastError()) != ERROR_INSUFFICIENT_BUFFER)
+    {
+        snprintf(error_desc_buf, sizeof(error_desc_buf), "<WIN32_FormatMessage_Error_%08lX>", rc);
+        
+        return error_desc_buf;
+    }
+    
+    rc = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS|FORMAT_MESSAGE_ALLOCATE_BUFFER,
+        NULL, entry->value.win32.code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (char*)&tmp, 0, NULL);
+    
+    if(!rc)
+    {
+        rc = GetLastError();
+        snprintf(error_desc_buf, sizeof(error_desc_buf), "<WIN32_FormatMessage_Error_%08lX>", rc);
+        
+        return error_desc_buf;
+    }
+    
+    strncpy(error_desc_buf, tmp, sizeof(error_desc_buf));
+    strncpy(&error_desc_buf[sizeof(error_desc_buf)-4], "...", 4);
+    LocalFree(tmp);
+    
+    return error_desc_buf;
+}
+
+static inline const char *error_entry_get_hresult_desc(error_entry_st *entry)
+{
+    return "<HRESULT_MESSAGE>"; // todo
+}
+
+static inline const char *error_entry_get_ntstatus_desc(error_entry_st *entry)
+{
+    return "<NTSTATUS_MESSAGE>"; // todo
+}
+
+#endif
 
 static const char *error_entry_get_desc(error_entry_st *entry)
 {
     switch(entry->type)
     {
-    case ERROR_TYPE_WRAPPER:    return "Error Wrapper";
-    case ERROR_TYPE_ERROR:      return entry->infos[entry->error].desc;
-    case ERROR_TYPE_ERRNO:      return strerror(entry->error);
+    case ERROR_TYPE_ERROR:      return error_entry_get_error_desc(entry);
+    case ERROR_TYPE_ERRNO:      return error_entry_get_errno_desc(entry);
+#ifdef _WIN32
+    case ERROR_TYPE_WIN32:      return error_entry_get_win32_desc(entry);
+    case ERROR_TYPE_HRESULT:    return error_entry_get_hresult_desc(entry);
+    case ERROR_TYPE_NTSTATUS:   return error_entry_get_ntstatus_desc(entry);
+#endif
     default:                    abort();
     }
 }
@@ -206,16 +484,86 @@ static const char *error_entry_get_desc(error_entry_st *entry)
 ssize_t error_get(size_t depth)
 {
     error_entry_st *entry = error_get_entry(depth);
+    assert(!entry || entry->type == ERROR_TYPE_ERROR);
     
-    return entry ? entry->error : E_ERROR_UNSET;
+    return entry ? entry->value.error.code : E_ERROR_UNSET;
 }
 
 bool error_check(size_t depth, ssize_t error)
 {
     error_entry_st *entry = error_get_entry(depth);
+    assert(!entry || entry->type == ERROR_TYPE_ERROR);
     
-    return entry && entry->error == error;
+    return entry && entry->value.error.code == error;
 }
+
+int error_get_errno(size_t depth)
+{
+    error_entry_st *entry = error_get_entry(depth);
+    assert(!entry || entry->type == ERROR_TYPE_ERRNO);
+    
+    return entry ? entry->value._errno.code : 0;
+}
+
+bool error_check_errno(size_t depth, int error)
+{
+    error_entry_st *entry = error_get_entry(depth);
+    assert(!entry || entry->type == ERROR_TYPE_ERRNO);
+    
+    return entry && entry->value._errno.code == error;
+}
+
+#ifdef _WIN32
+
+DWORD error_get_win32(size_t depth)
+{
+    error_entry_st *entry = error_get_entry(depth);
+    assert(!entry || entry->type == ERROR_TYPE_WIN32);
+    
+    return entry ? entry->value.win32.code : ERROR_SUCCESS;
+}
+
+bool error_check_win32(size_t depth, DWORD error)
+{
+    error_entry_st *entry = error_get_entry(depth);
+    assert(!entry || entry->type == ERROR_TYPE_WIN32);
+    
+    return entry && entry->value.win32.code == error;
+}
+
+HRESULT error_get_hresult(size_t depth)
+{
+    error_entry_st *entry = error_get_entry(depth);
+    assert(!entry || entry->type == ERROR_TYPE_HRESULT);
+    
+    return entry ? entry->value.hresult.result : S_OK;
+}
+
+bool error_check_hresult(size_t depth, HRESULT result)
+{
+    error_entry_st *entry = error_get_entry(depth);
+    assert(!entry || entry->type == ERROR_TYPE_HRESULT);
+    
+    return entry && entry->value.hresult.result == result;
+}
+
+NTSTATUS error_get_ntstatus(size_t depth)
+{
+    error_entry_st *entry = error_get_entry(depth);
+    assert(!entry || entry->type == ERROR_TYPE_NTSTATUS);
+    
+    return entry ? entry->value.ntstatus.status : STATUS_SUCCESS;
+}
+
+bool error_check_ntstatus(size_t depth, NTSTATUS status)
+{
+    error_entry_st *entry = error_get_entry(depth);
+    assert(!entry || entry->type == ERROR_TYPE_NTSTATUS);
+    
+    return entry && entry->value.ntstatus.status == status;
+}
+
+#endif // _WIN32
 
 error_type_id error_type(size_t depth)
 {
@@ -255,6 +603,50 @@ bool error_origin_check(ssize_t error)
     return error_stack_check_error(0, error);
 }
 
+int error_origin_get_errno(void)
+{
+    return error_stack_get_errno(0);
+}
+
+bool error_origin_check_errno(int error)
+{
+    return error_stack_check_errno(0, error);
+}
+
+#ifdef _WIN32
+
+DWORD error_origin_get_win32(void)
+{
+    return error_stack_get_win32(0);
+}
+
+bool error_origin_check_win32(DWORD error)
+{
+    return error_stack_check_win32(0, error);
+}
+
+HRESULT error_origin_get_hresult(void)
+{
+    return error_stack_get_hresult(0);
+}
+
+bool error_origin_check_hresult(HRESULT result)
+{
+    return error_stack_check_hresult(0, result);
+}
+
+NTSTATUS error_origin_get_ntstatus(void)
+{
+    return error_stack_get_ntstatus(0);
+}
+
+bool error_origin_check_ntstatus(NTSTATUS status)
+{
+    return error_stack_check_ntstatus(0, status);
+}
+
+#endif // _WIN32
+
 error_type_id error_origin_type(void)
 {
     return error_stack_get_type(0);
@@ -277,13 +669,87 @@ const char *error_origin_desc(void)
 
 ssize_t error_stack_get_error(size_t level)
 {
-    return level >= errors.size ? E_ERROR_UNSET : errors.stack[level].error;
+    return_value_if_fail(level < errors.size, E_ERROR_UNSET);
+    assert(errors.stack[level].type == ERROR_TYPE_ERROR);
+    
+    return errors.stack[level].value.error.code;
 }
 
 bool error_stack_check_error(size_t level, ssize_t error)
 {
-    return level < errors.size && errors.stack[level].error == error;
+    return_value_if_fail(level < errors.size, false);
+    assert(errors.stack[level].type == ERROR_TYPE_ERROR);
+    
+    return errors.stack[level].value.error.code == error;
 }
+
+int error_stack_get_errno(size_t level)
+{
+    return_value_if_fail(level < errors.size, 0);
+    assert(errors.stack[level].type == ERROR_TYPE_ERRNO);
+    
+    return errors.stack[level].value._errno.code;
+}
+
+bool error_stack_check_errno(size_t level, int error)
+{
+    return_value_if_fail(level < errors.size, false);
+    assert(errors.stack[level].type == ERROR_TYPE_ERRNO);
+    
+    return errors.stack[level].value._errno.code == error;
+}
+
+#ifdef _WIN32
+
+DWORD error_stack_get_win32(size_t level)
+{
+    return_value_if_fail(level < errors.size, ERROR_SUCCESS);
+    assert(errors.stack[level].type == ERROR_TYPE_WIN32);
+    
+    return errors.stack[level].value.win32.code;
+}
+
+bool error_stack_check_win32(size_t level, DWORD error)
+{
+    return_value_if_fail(level < errors.size, false);
+    assert(errors.stack[level].type == ERROR_TYPE_WIN32);
+    
+    return errors.stack[level].value.win32.code == error;
+}
+
+HRESULT error_stack_get_hresult(size_t level)
+{
+    return_value_if_fail(level < errors.size, S_OK);
+    assert(errors.stack[level].type == ERROR_TYPE_HRESULT);
+    
+    return errors.stack[level].value.hresult.result;
+}
+
+bool error_stack_check_hresult(size_t level, HRESULT result)
+{
+    return_value_if_fail(level < errors.size, false);
+    assert(errors.stack[level].type == ERROR_TYPE_HRESULT);
+    
+    return errors.stack[level].value.hresult.result == result;
+}
+
+NTSTATUS error_stack_get_ntstatus(size_t level)
+{
+    return_value_if_fail(level < errors.size, STATUS_SUCCESS);
+    assert(errors.stack[level].type == ERROR_TYPE_NTSTATUS);
+    
+    return errors.stack[level].value.ntstatus.status;
+}
+
+bool error_stack_check_ntstatus(size_t level, NTSTATUS status)
+{
+    return_value_if_fail(level < errors.size, false);
+    assert(errors.stack[level].type == ERROR_TYPE_NTSTATUS);
+    
+    return errors.stack[level].value.ntstatus.status == status;
+}
+
+#endif // _WIN32
 
 error_type_id error_stack_get_type(size_t level)
 {
