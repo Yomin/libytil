@@ -233,7 +233,7 @@ path_ct path_get_base_dir(path_base_dir_id id)
         return error_pass_ptr(path_get_tmp());
     default:
 #ifndef _WIN32
-        return error_pass_ptr(path_get_xdg_dir(&path_xdg_dir_base_infos[id]));
+        return error_pass_ptr(path_get_xdg_dir(&path_xdg_dir_base_infos[id], true));
 #else
         return error_pass_ptr(path_get_xdg_win_dir(&path_xdg_dir_base_infos[id], &path_win_dir_base_infos[id]));
 #endif
@@ -245,7 +245,7 @@ path_ct path_get_user_dir(path_user_dir_id id)
     assert(id < PATH_USER_DIRS);
     
 #ifndef _WIN32
-    return error_pass_ptr(path_get_xdg_dir(&path_xdg_dir_user_infos[id]));
+    return error_pass_ptr(path_get_xdg_dir(&path_xdg_dir_user_infos[id], true));
 #else
     return error_pass_ptr(path_get_xdg_win_dir(&path_xdg_dir_user_infos[id], &path_win_dir_user_infos[id]));
 #endif
