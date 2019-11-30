@@ -20,33 +20,45 @@
  * THE SOFTWARE.
  */
 
-#include <ytil/test/run.h>
-#include "con/cont.h"
-#include "gen/gen.h"
-#include "sys/sys.h"
-#include <stdio.h>
+#ifndef __YTIL_SYS_ENV_H__
+#define __YTIL_SYS_ENV_H__
 
+#include <ytil/gen/str.h>
+#include <stdbool.h>
 
-int main(int argc, char *argv[])
+typedef enum env_error
 {
-    test_suite_ct suite;
-    test_run_ct run;
-    int rc;
-    
-    if(!(suite = test_suite_new_with_suites("ytil"
-            , test_suite_con()
-            , test_suite_gen()
-            , test_suite_sys()
-        )))
-        return perror("failed to setup test suites"), -1;
-    
-    if((run = test_run_new_with_args(argc, argv)))
-    {
-        rc = test_run_exec(run, suite);
-        test_run_free(run);
-    }
-    
-    test_suite_free(suite);
-    
-    return rc;
-}
+      E_ENV_INVALID_NAME
+    , E_ENV_NOT_FOUND
+} env_error_id;
+
+// return 0 to continue fold, anything else stops fold
+typedef int (*env_fold_cb)(str_const_ct name, str_const_ct value, void *ctx);
+
+
+// initialize env from environ
+// this is implicitly called by most env functions if not initialized yet
+int  env_init(void);
+// free env
+void env_free(void);
+
+// check whether environment variable 'name' is set
+bool env_is_set(str_const_ct name);
+
+// add/overwrite environment variable 'name' with 'value'
+int env_set(str_const_ct name, str_const_ct value);
+
+// retrieve environment variable 'name'
+str_const_ct env_get(str_const_ct name);
+
+// reset/unset environment variable 'name' to default/nothing
+int env_reset(str_const_ct name);
+// unset environment variable 'name'
+int env_unset(str_const_ct name);
+
+// apply fold to each environment variable
+int  env_fold(env_fold_cb fold, void *ctx);
+// dump all environment variables to stdout
+void env_dump(void);
+
+#endif

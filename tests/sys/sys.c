@@ -20,33 +20,13 @@
  * THE SOFTWARE.
  */
 
-#include <ytil/test/run.h>
-#include "con/cont.h"
-#include "gen/gen.h"
-#include "sys/sys.h"
-#include <stdio.h>
+#include "sys.h"
+#include "env.h"
 
 
-int main(int argc, char *argv[])
+test_suite_ct test_suite_sys(void)
 {
-    test_suite_ct suite;
-    test_run_ct run;
-    int rc;
-    
-    if(!(suite = test_suite_new_with_suites("ytil"
-            , test_suite_con()
-            , test_suite_gen()
-            , test_suite_sys()
-        )))
-        return perror("failed to setup test suites"), -1;
-    
-    if((run = test_run_new_with_args(argc, argv)))
-    {
-        rc = test_run_exec(run, suite);
-        test_run_free(run);
-    }
-    
-    test_suite_free(suite);
-    
-    return rc;
+    return test_suite_new_with_suites("sys"
+        , test_suite_sys_env()
+    );
 }
