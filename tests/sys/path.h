@@ -20,15 +20,11 @@
  * THE SOFTWARE.
  */
 
-#include "sys.h"
-#include "env.h"
-#include "path.h"
+#ifndef __YTIL_TEST_SYS_PATH_H__
+#define __YTIL_TEST_SYS_PATH_H__
 
+#include <ytil/test/suite.h>
 
-test_suite_ct test_suite_sys(void)
-{
-    return test_suite_new_with_suites("sys"
-        , test_suite_sys_env()
-        , test_suite_sys_path()
-    );
-}
+test_suite_ct test_suite_sys_path(void);
+
+#endif
