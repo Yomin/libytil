@@ -40,7 +40,7 @@ TEST_TEARDOWN(path_free)
 
 TEST_CASE_SIGNAL(path_new_invalid_str, SIGABRT)
 {
-    path_new((str_ct)&not_a_path, PATH_STYLE_SYSTEM);
+    path_new((str_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
 TEST_CASE_SIGNAL(path_new_invalid_style, SIGABRT)
@@ -50,7 +50,7 @@ TEST_CASE_SIGNAL(path_new_invalid_style, SIGABRT)
 
 TEST_CASE(path_new_empty)
 {
-    test_ptr_error(path_new(LIT(""), PATH_STYLE_SYSTEM), E_PATH_MALFORMED);
+    test_ptr_error(path_new(LIT(""), PATH_STYLE_NATIVE), E_PATH_MALFORMED);
 }
 
 TEST_CASE(path_new_current)
@@ -1236,7 +1236,7 @@ TEST_CASE_SIGNAL(path_depth_invalid_magic, SIGABRT)
 
 TEST_CASE_SIGNAL(path_len_invalid_magic, SIGABRT)
 {
-    path_len((path_ct)&not_a_path, PATH_STYLE_SYSTEM);
+    path_len((path_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
 TEST_CASE_SIGNAL(path_current_invalid_style, SIGABRT)
@@ -1286,7 +1286,7 @@ TEST_CASE(path_separator_windows)
 
 TEST_CASE_SIGNAL(path_set_invalid_magic, SIGABRT)
 {
-    path_set((path_ct)&not_a_path, LIT("foo.txt"), PATH_STYLE_SYSTEM);
+    path_set((path_ct)&not_a_path, LIT("foo.txt"), PATH_STYLE_NATIVE);
 }
 
 TEST_CASE_FIXTURE_SIGNAL(path_set_invalid_style, path_new_path_absolute, path_free, SIGABRT)
@@ -1517,12 +1517,12 @@ TEST_CASE_FIXTURE(path_add_suffix_dir, path_new_dir_absolute, path_free)
 
 TEST_CASE_SIGNAL(path_append_invalid_magic, SIGABRT)
 {
-    path_append((path_ct)&not_a_path, LIT("blubb"), PATH_STYLE_SYSTEM);
+    path_append((path_ct)&not_a_path, LIT("blubb"), PATH_STYLE_NATIVE);
 }
 
 TEST_CASE_FIXTURE_SIGNAL(path_append_invalid_str, path_new_path_absolute, path_free, SIGABRT)
 {
-    path_append(path, NULL, PATH_STYLE_SYSTEM);
+    path_append(path, NULL, PATH_STYLE_NATIVE);
 }
 
 TEST_CASE_FIXTURE_SIGNAL(path_append_invalid_style, path_new_path_absolute, path_free, SIGABRT)
@@ -1532,7 +1532,7 @@ TEST_CASE_FIXTURE_SIGNAL(path_append_invalid_style, path_new_path_absolute, path
 
 TEST_CASE_FIXTURE(path_append_empty, path_new_path_absolute, path_free)
 {
-    test_ptr_error(path_append(path, LIT(""), PATH_STYLE_SYSTEM), E_PATH_MALFORMED);
+    test_ptr_error(path_append(path, LIT(""), PATH_STYLE_NATIVE), E_PATH_MALFORMED);
 }
 
 TEST_CASE_FIXTURE(path_append_file_relative, path_new_path_absolute, path_free)
@@ -1758,7 +1758,7 @@ TEST_CASE_FIXTURE(path_drop_suffix_hidden, path_new_path_absolute, path_free)
 
 TEST_CASE_SIGNAL(path_get_invalid_magic, SIGABRT)
 {
-    path_get((path_ct)&not_a_path, PATH_STYLE_SYSTEM);
+    path_get((path_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
 TEST_CASE_FIXTURE_SIGNAL(path_get_invalid_style, path_new_path_absolute, path_free, SIGABRT)
@@ -1911,7 +1911,7 @@ TEST_CASE_FIXTURE(path_get_suffix_dir, path_new_dir_absolute, path_free)
 
 TEST_CASE_SIGNAL(path_basename_invalid_magic, SIGABRT)
 {
-    path_basename((path_ct)&not_a_path, PATH_STYLE_SYSTEM);
+    path_basename((path_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
 TEST_CASE_FIXTURE_SIGNAL(path_basename_invalid_style, path_new_path_absolute, path_free, SIGABRT)
@@ -1970,7 +1970,7 @@ TEST_CASE_FIXTURE(path_basename_parent, path_new_parent, path_free)
 
 TEST_CASE_SIGNAL(path_dirname_invalid_magic, SIGABRT)
 {
-    path_dirname((path_ct)&not_a_path, PATH_STYLE_SYSTEM);
+    path_dirname((path_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
 TEST_CASE_FIXTURE_SIGNAL(path_dirname_invalid_style, path_new_path_absolute, path_free, SIGABRT)
