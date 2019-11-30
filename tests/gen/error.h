@@ -25,6 +25,6 @@
 
 #include <ytil/test/suite.h>
 
-test_suite_ct test_suite_error(void);
+test_suite_ct test_suite_gen_error(void);
 
 #endif

@@ -2237,7 +2237,7 @@ TEST_CASE_FIXTURE(vec_fold_r, vec_int, vec)
 }
 
 
-test_suite_ct test_suite_vec(void)
+test_suite_ct test_suite_con_vec(void)
 {
     return test_suite_new_with_cases("vec"
         , test_case_new(vec_new_invalid_capacity)

@@ -2027,7 +2027,7 @@ TEST_CASE_FIXTURE(path_dirname_parent, path_new_parent, path_free)
     str_unref(str);
 }
 
-test_suite_ct test_suite_path(void)
+test_suite_ct test_suite_gen_path(void)
 {
     return test_suite_new_with_cases("path"
         , test_case_new(path_new_invalid_str)

@@ -367,7 +367,7 @@ TEST_CASE(error_stack_get_desc_oob)
     test_ptr_eq(error_stack_get_desc(1), NULL);
 }
 
-test_suite_ct test_suite_error(void)
+test_suite_ct test_suite_gen_error(void)
 {
     return test_suite_new_with_cases("error"
         , test_case_new(error_set)

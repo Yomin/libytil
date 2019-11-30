@@ -901,7 +901,7 @@ TEST_CASE_FIXTURE(art_complete_end, art_new4, art_free)
     str_unref(key);
 }
 
-test_suite_ct test_suite_art(void)
+test_suite_ct test_suite_con_art(void)
 {
     return test_suite_new_with_cases("art"
         , test_case_new(art_is_empty_invalid_magic)

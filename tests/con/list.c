@@ -885,7 +885,7 @@ TEST_CASE_FIXTURE(list_fold_r, list_new, list_free)
     test_int_eq(sum, 4321);
 }
 
-test_suite_ct test_suite_list(void)
+test_suite_ct test_suite_con_list(void)
 {
     return test_suite_new_with_cases("list"
         , test_case_new(list_free_invalid_magic)

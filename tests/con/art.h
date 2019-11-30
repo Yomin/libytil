@@ -25,6 +25,6 @@
 
 #include <ytil/test/suite.h>
 
-test_suite_ct test_suite_art(void);
+test_suite_ct test_suite_con_art(void);
 
 #endif
