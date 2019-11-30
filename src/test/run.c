@@ -984,7 +984,7 @@ static int test_run_case(test_run_ct run, test_case_const_ct tcase)
     
     if(!run->fork)
     {
-        if(run->skip && (test_case_expects_exit(tcase) || test_case_expects_signal(tcase)))
+        if(run->skip && !test_case_expects_nothing(tcase))
             test_state_set_result(run->state, TEST_RESULT_SKIP);
         else
             rc = test_run_worker(run, tcase);

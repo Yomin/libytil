@@ -86,6 +86,7 @@ void _test_abort(void *vctx, const char *file, size_t line, bool backtrace, cons
     
     if(backtrace)
         for(e=0; e < error_depth(); e++)
+        {
             switch(error_stack_get_type(e))
             {
             case ERROR_TYPE_WRAPPER:
@@ -104,6 +105,10 @@ void _test_abort(void *vctx, const char *file, size_t line, bool backtrace, cons
             default:
                 abort();
             }
+            
+            if(!e)
+                test_com_send_msg(ctx->com, TEST_MSG_ERROR, 2, "%s", error_stack_get_desc(0));
+        }
     
     if(ctx->jump)
         longjmp(*ctx->jump, 1);

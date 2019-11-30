@@ -62,20 +62,20 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define  test_state_free() test_free(TEST_STATE)
 
 
-#define test_info(expr) do { \
+#define test_case_info(expr, ...) do { \
     test_begin(); \
     \
-    if(!(expr)) \
-        test_msg_info("test failed: "#expr); \
+    if(expr) \
+        test_msg_info(__VA_ARGS__); \
     \
     test_end(); \
 } while(0)
 
-#define test_warn(expr) do { \
+#define test_case_warn(expr, ...) do { \
     test_begin(); \
     \
-    if(!(expr)) \
-        test_msg_warn("test failed: "#expr); \
+    if(expr) \
+        test_msg_warn(__VA_ARGS__); \
     \
     test_end(); \
 } while(0)

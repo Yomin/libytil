@@ -242,6 +242,9 @@ static test_suite_ct test_suite_add_entry(test_suite_ct suite, test_entry_id typ
     if(!entry)
         return error_wrap(), test_suite_free(suite), NULL;
     
+    if(type == TEST_ENTRY_CASE && entry == TEST_CASE_NOP)
+        return suite;
+    
     if(!suite->entries && !(suite->entries = vec_new(10, sizeof(test_entry_st))))
         return error_wrap(), test_suite_free(suite), test_entry_free(type, entry), NULL;
     

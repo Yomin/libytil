@@ -76,7 +76,8 @@ void test_case_free(test_case_ct tcase)
 {
     assert(tcase);
     
-    free(tcase);
+    if(tcase != TEST_CASE_NOP)
+        free(tcase);
 }
 
 void test_case_set_timeout(test_case_ct tcase, size_t ms)
@@ -111,6 +112,11 @@ int test_case_set_fixture(test_case_ct tcase, test_case_cb setup, test_case_cb t
     tcase->teardown = teardown;
     
     return 0;
+}
+
+bool test_case_expects_nothing(test_case_const_ct tcase)
+{
+    return tcase->end == TEST_CASE_END_NORMAL;
 }
 
 bool test_case_expects_exit(test_case_const_ct tcase)
