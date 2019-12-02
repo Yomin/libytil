@@ -96,13 +96,19 @@ static path_ct path_get_tmp(void)
 {
     str_const_ct value;
     
-    if((value = env_get(LIT("TMP"))) || (value = env_get(LIT("TEMP"))))
+    if((value = env_get(LIT("TMP")))
+    || (value = env_get(LIT("TEMP")))
+    || (value = env_get(LIT("TMPDIR"))))
         return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
     
     if(!error_check(0, E_ENV_NOT_FOUND))
         return error_wrap(), NULL;
     
-    return error_set(E_PATH_NOT_AVAILABLE), NULL;
+#ifdef _WIN32
+    return error_wrap_ptr(path_new(LIT("/windows/temp"), PATH_STYLE_NATIVE));
+#else
+    return error_wrap_ptr(path_new(LIT("/tmp"), PATH_STYLE_NATIVE));
+#endif
 }
 
 typedef struct path_xdg_dir_info

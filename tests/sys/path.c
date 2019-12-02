@@ -114,10 +114,11 @@ TEST_CASE_FIXTURE(path_get_base_dir_home_home_unset_profile_unset, env_init, env
     path_free(path);
 }
 
-TEST_CASE_FIXTURE(path_get_base_dir_tmp_tmp_set_temp_set, env_init, env_free)
+TEST_CASE_FIXTURE(path_get_base_dir_tmp_tmp_set_temp_set_tmpdir_set, env_init, env_free)
 {
     test_int_success(env_set(LIT("TMP"), LIT("/foo/tmp")));
     test_int_success(env_set(LIT("TEMP"), LIT("/bar/tmp")));
+    test_int_success(env_set(LIT("TMPDIR"), LIT("/baz/tmp")));
     test_ptr_success(path = path_get_base_dir(PATH_BASE_DIR_TMP));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(cpath), "/foo/tmp");
@@ -125,10 +126,11 @@ TEST_CASE_FIXTURE(path_get_base_dir_tmp_tmp_set_temp_set, env_init, env_free)
     path_free(path);
 }
 
-TEST_CASE_FIXTURE(path_get_base_dir_tmp_tmp_unset_temp_set, env_init, env_free)
+TEST_CASE_FIXTURE(path_get_base_dir_tmp_tmp_unset_temp_set_tmpdir_set, env_init, env_free)
 {
     test_int_success(env_unset(LIT("TMP")));
     test_int_success(env_set(LIT("TEMP"), LIT("/bar/tmp")));
+    test_int_success(env_set(LIT("TMPDIR"), LIT("/baz/tmp")));
     test_ptr_success(path = path_get_base_dir(PATH_BASE_DIR_TMP));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(cpath), "/bar/tmp");
@@ -136,11 +138,32 @@ TEST_CASE_FIXTURE(path_get_base_dir_tmp_tmp_unset_temp_set, env_init, env_free)
     path_free(path);
 }
 
-TEST_CASE_FIXTURE(path_get_base_dir_tmp_tmp_unset_temp_unset, env_init, env_free)
+TEST_CASE_FIXTURE(path_get_base_dir_tmp_tmp_unset_temp_unset_tmpdir_set, env_init, env_free)
 {
     test_int_success(env_unset(LIT("TMP")));
     test_int_success(env_unset(LIT("TEMP")));
-    test_ptr_error(path_get_base_dir(PATH_BASE_DIR_TMP), E_PATH_NOT_AVAILABLE);
+    test_int_success(env_set(LIT("TMPDIR"), LIT("/baz/tmp")));
+    test_ptr_success(path = path_get_base_dir(PATH_BASE_DIR_TMP));
+    test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
+    test_str_eq(str_c(cpath), "/baz/tmp");
+    str_unref(cpath);
+    path_free(path);
+}
+
+TEST_CASE_FIXTURE(path_get_base_dir_tmp_tmp_unset_temp_unset_tmpdir_unset, env_init, env_free)
+{
+    test_int_success(env_unset(LIT("TMP")));
+    test_int_success(env_unset(LIT("TEMP")));
+    test_int_success(env_unset(LIT("TMPDIR")));
+    test_ptr_success(path = path_get_base_dir(PATH_BASE_DIR_TMP));
+    test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
+#ifdef _WIN32
+    test_str_eq(str_c(cpath), "/windows/temp");
+#else
+    test_str_eq(str_c(cpath), "/tmp");
+#endif
+    str_unref(cpath);
+    path_free(path);
 }
 
 TEST_CASE_FIXTURE(path_get_base_dir_cache_xdg_set_home_set_win_set, env_init, env_free)
@@ -937,10 +960,11 @@ TEST_CASE_FIXTURE(path_get_app_dir_runtime_xdg_unset_home_unset, env_init, env_f
     test_ptr_error(path_get_app_dir(PATH_APP_DIR_RUNTIME, LIT("ACME"), LIT("tron"), LIT("1.2.3")), E_PATH_NOT_AVAILABLE);
 }
 
-TEST_CASE_FIXTURE(path_get_app_dir_tmp_tmp_set_temp_set, env_init, env_free)
+TEST_CASE_FIXTURE(path_get_app_dir_tmp_tmp_set_temp_set_tmpdir_set, env_init, env_free)
 {
     test_int_success(env_set(LIT("TMP"), LIT("/foo/tmp")));
     test_int_success(env_set(LIT("TEMP"), LIT("/bar/tmp")));
+    test_int_success(env_set(LIT("TMPDIR"), LIT("/baz/tmp")));
     test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_TMP, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(cpath), "/foo/tmp/ACME/tron/1.2.3");
@@ -948,10 +972,11 @@ TEST_CASE_FIXTURE(path_get_app_dir_tmp_tmp_set_temp_set, env_init, env_free)
     path_free(path);
 }
 
-TEST_CASE_FIXTURE(path_get_app_dir_tmp_tmp_unset_temp_set, env_init, env_free)
+TEST_CASE_FIXTURE(path_get_app_dir_tmp_tmp_unset_temp_set_tmpdir_set, env_init, env_free)
 {
     test_int_success(env_unset(LIT("TMP")));
     test_int_success(env_set(LIT("TEMP"), LIT("/bar/tmp")));
+    test_int_success(env_set(LIT("TMPDIR"), LIT("/baz/tmp")));
     test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_TMP, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
     test_str_eq(str_c(cpath), "/bar/tmp/ACME/tron/1.2.3");
@@ -959,11 +984,32 @@ TEST_CASE_FIXTURE(path_get_app_dir_tmp_tmp_unset_temp_set, env_init, env_free)
     path_free(path);
 }
 
-TEST_CASE_FIXTURE(path_get_app_dir_tmp_tmp_unset_temp_unset, env_init, env_free)
+TEST_CASE_FIXTURE(path_get_app_dir_tmp_tmp_unset_temp_unset_tmpdir_set, env_init, env_free)
 {
     test_int_success(env_unset(LIT("TMP")));
     test_int_success(env_unset(LIT("TEMP")));
-    test_ptr_error(path_get_app_dir(PATH_APP_DIR_TMP, LIT("ACME"), LIT("tron"), LIT("1.2.3")), E_PATH_NOT_AVAILABLE);
+    test_int_success(env_set(LIT("TMPDIR"), LIT("/baz/tmp")));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_TMP, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
+    test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
+    test_str_eq(str_c(cpath), "/baz/tmp/ACME/tron/1.2.3");
+    str_unref(cpath);
+    path_free(path);
+}
+
+TEST_CASE_FIXTURE(path_get_app_dir_tmp_tmp_unset_temp_unset_tmpdir_unset, env_init, env_free)
+{
+    test_int_success(env_unset(LIT("TMP")));
+    test_int_success(env_unset(LIT("TEMP")));
+    test_int_success(env_unset(LIT("TMPDIR")));
+    test_ptr_success(path = path_get_app_dir(PATH_APP_DIR_TMP, LIT("ACME"), LIT("tron"), LIT("1.2.3")));
+    test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
+#ifdef _WIN32
+    test_str_eq(str_c(cpath), "/windows/temp/ACME/tron/1.2.3");
+#else
+    test_str_eq(str_c(cpath), "/tmp/ACME/tron/1.2.3");
+#endif
+    str_unref(cpath);
+    path_free(path);
 }
 
 test_suite_ct test_suite_sys_path(void)
@@ -975,9 +1021,10 @@ test_suite_ct test_suite_sys_path(void)
         , test_case_new_windows(path_get_base_dir_home_home_unset_profile_set)
         , test_case_new(path_get_base_dir_home_home_unset_profile_unset)
         
-        , test_case_new(path_get_base_dir_tmp_tmp_set_temp_set)
-        , test_case_new(path_get_base_dir_tmp_tmp_unset_temp_set)
-        , test_case_new(path_get_base_dir_tmp_tmp_unset_temp_unset)
+        , test_case_new(path_get_base_dir_tmp_tmp_set_temp_set_tmpdir_set)
+        , test_case_new(path_get_base_dir_tmp_tmp_unset_temp_set_tmpdir_set)
+        , test_case_new(path_get_base_dir_tmp_tmp_unset_temp_unset_tmpdir_set)
+        , test_case_new(path_get_base_dir_tmp_tmp_unset_temp_unset_tmpdir_unset)
         
         , test_case_new(path_get_base_dir_cache_xdg_set_home_set_win_set)
         , test_case_new(path_get_base_dir_cache_xdg_unset_home_set_win_set)
@@ -1063,8 +1110,9 @@ test_suite_ct test_suite_sys_path(void)
         , test_case_new(path_get_app_dir_runtime_xdg_unset_home_set)
         , test_case_new(path_get_app_dir_runtime_xdg_unset_home_unset)
         
-        , test_case_new(path_get_app_dir_tmp_tmp_set_temp_set)
-        , test_case_new(path_get_app_dir_tmp_tmp_unset_temp_set)
-        , test_case_new(path_get_app_dir_tmp_tmp_unset_temp_unset)
+        , test_case_new(path_get_app_dir_tmp_tmp_set_temp_set_tmpdir_set)
+        , test_case_new(path_get_app_dir_tmp_tmp_unset_temp_set_tmpdir_set)
+        , test_case_new(path_get_app_dir_tmp_tmp_unset_temp_unset_tmpdir_set)
+        , test_case_new(path_get_app_dir_tmp_tmp_unset_temp_unset_tmpdir_unset)
     );
 }

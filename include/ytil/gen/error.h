@@ -254,6 +254,32 @@ size_t error_depth(void);
 // get error type name
 const char *error_strtype(error_type_id type);
 
+// get module error name
+const char *error_name_error(const error_info_st *infos, size_t error);
+// get errno name
+const char *error_name_errno(int error);
+#ifdef _WIN32
+// get win32 error name
+const char *error_name_win32(DWORD error);
+// get HRESULT name
+const char *error_name_hresult(HRESULT result);
+// get NTSTATUS name
+const char *error_name_ntstatus(NTSTATUS status);
+#endif
+
+// get module error description
+const char *error_desc_error(const error_info_st *infos, size_t error);
+// get errno description
+const char *error_desc_errno(int error);
+#ifdef _WIN32
+// get win32 error description
+const char *error_desc_win32(DWORD error);
+// get HRESULT description
+const char *error_desc_hresult(HRESULT result);
+// get NTSTATUS description
+const char *error_desc_ntstatus(NTSTATUS status);
+#endif
+
 
 // get module error from last error
 ssize_t error_get(size_t depth);

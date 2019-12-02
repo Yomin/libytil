@@ -204,43 +204,14 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 
 // --- [PTR RC] ---
 
-// todo find better heuristics for determining pointer validity
-
-#ifndef _WIN32
-extern int main(int argc, char *argv[], char **env);
-extern char **environ;
-
 #define test_ptr_success(expr) do { \
-    const void *ptr; \
-    \
     test_begin(); \
     \
-    if(!(ptr = (expr))) \
-        test_abort_backtrace("PTR SUCCESS test failed: "#expr" (%s)", error_name(0)); \
-    else if(ptr <= (void*)(intptr_t)main) \
-        test_msg_warn("PTR SUCCESS test warning: "#expr" > main (%p > %p)", \
-            ptr, (void*)(intptr_t)main); \
-    else if(ptr >= (void*)environ) \
-        test_msg_warn("PTR SUCCESS test warning: "#expr" < environ (%p < %p)", \
-            ptr, (void*)environ); \
-    \
-    test_end(); \
-} while(0)
-
-#else
-
-#define test_ptr_success(expr) do { \
-    const void *ptr; \
-    \
-    test_begin(); \
-    \
-    if(!(ptr = (expr))) \
+    if(!(expr)) \
         test_abort_backtrace("PTR SUCCESS test failed: "#expr" (%s)", error_name(0)); \
     \
     test_end(); \
 } while(0)
-
-#endif // _WIN32
 
 #define test_ptr_error(expr, err) do { \
     const void *ptr; \
