@@ -29,14 +29,18 @@ typedef enum fs_error
 {
       E_FS_ERRNO
     , E_FS_INVALID_PATH
+    , E_FS_NOT_FOUND
 } fs_error_id;
 
-typedef enum fs_mode
+typedef enum fs_flags
 {
-      FS_MODE_REPLACE
-    , FS_MODE_MERGE
-    , FS_MODES
-} fs_mode_id;
+      FS_FLAG_FOLLOW   = 0
+    , FS_FLAG_NOFOLLOW = 1
+    , FS_FLAG_?
+    , FS_FLAG_RECURSE  = 2
+    , FS_FLAG_REPLACE  = 0
+    , FS_FLAG_MERGE    = 4
+} fs_flag_fs;
 
 typedef enum fs_type
 {
@@ -61,17 +65,17 @@ typedef struct fs_stat
 typedef int (*fs_walk_cb)(path_const_ct file, fs_stat_st *info, void *ctx);
 
 // get file status
-fs_stat_st *fs_stat(path_const_ct file, fs_stat_st *fst);
+fs_stat_st *fs_stat(path_const_ct file, fs_flag_fs flags, fs_stat_st *fst);
 
 // iterate over all files in directory
-int fs_walk(path_const_ct dir, fs_walk_cb walk, void *ctx);
+int fs_walk(path_const_ct dir, fs_flag_fs flags, fs_walk_cb walk, void *ctx);
 
 //path_ct fs_tmp
 
 // move file from src to dst
-int fs_move(path_const_ct dst, path_const_ct src, fs_mode_id mode);
+int fs_move(path_const_ct dst, path_const_ct src, fs_flag_fs flags);
 // copy file from src to dst
-int fs_copy(path_const_ct dst, path_const_ct src, fs_mode_id mode);
+int fs_copy(path_const_ct dst, path_const_ct src, fs_flag_fs flags);
 // remove file
 int fs_remove(path_const_ct file);
 

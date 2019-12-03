@@ -30,8 +30,6 @@
 
 static path_ct path;
 static str_ct str;
-static fs_stat_st fst;
-static struct stat st;
 
 
 TEST_SETUP(path_new)
@@ -43,74 +41,55 @@ TEST_TEARDOWN(path_free)
 {
     path_free(path);
 }
-/*
-static FILE *_test_fopen(const char *file, const char *mode)
+
+TEST_CASE_ABORT(fs_stat_invalid_path1)
 {
-    FILE *fp;
+    fs_stat_st fst;
     
-    if(!(fp = fopen(file, mode)))
-        return error_pass_errno(fopen), NULL;
-    
-    return fp;
+    fs_stat(NULL, FS_FLAG_FOLLOW, &fst);
 }
 
-static int _test_unlink(const char *file)
+#ifndef _WIN32
+TEST_CASE(fs_stat_invalid_path2)
 {
-    if(unlink(file))
-        return error_pass_errno(unlink), -1;
+    fs_stat_st fst;
     
-    return 0;
-}
-
-TEST_SETUP(tmp_new)
-{
-    str_ct str;
-    FILE *fp;
-    
-    test_ptr_success(path = path_get_base_dir(PATH_BASE_DIR_TMP));
-    test_ptr_success(path_append(path, LIT("foo.tmp"), PATH_STYLE_NATIVE));
-    
-    test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
-    test_ptr_success(fp = _test_fopen(str_c(str), "w+b"));
-    str_unref(str);
-    
-    fprintf(fp, "YTIL TEST\n");
-    fclose(fp);
-}
-
-TEST_TEARDOWN(tmp_free)
-{
-    str_ct str;
-    
-    test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
-    test_int_success(_test_unlink(str_c(str)));
-    str_unref(str);
+    test_ptr_success(path = path_new(LIT("c:\\foo"), PATH_STYLE_WINDOWS));
+    test_ptr_error(fs_stat(path, FS_FLAG_FOLLOW, &fst), E_FS_INVALID_PATH);
     path_free(path);
 }
-*/
-TEST_CASE_ABORT(fs_stat_invalid_path)
-{
-    fs_stat(NULL, &fst);
-}
+#endif
 
 TEST_CASE_FIXTURE_ABORT(fs_stat_invalid_fst, path_new, path_free)
 {
-    fs_stat(path, NULL);
+    fs_stat(path, FS_FLAG_FOLLOW, NULL);
+}
+
+TEST_CASE(fs_stat_not_found)
+{
+    fs_stat_st fst;
+    
+    test_ptr_success(path = path_new(LIT("/ytil_test"), PATH_STYLE_NATIVE));
+    test_ptr_error(fs_stat(path, FS_FLAG_FOLLOW, &fst), E_FS_NOT_FOUND);
+    path_free(path);
 }
 
 TEST_CASE(fs_stat)
 {
     FILE *fp;
+    fs_stat_st fst;
+    struct stat st;
     
     test_ptr_success(path = path_get_base_dir(PATH_BASE_DIR_TMP));
     test_ptr_success(path_append(path, LIT("ytil_test_file"), PATH_STYLE_NATIVE));
     test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
-    test_ptr_success(fp = fopen(str_c(str), "w+b"));
-    fprintf(fp, "YTIL TEST\n");
-    fclose(fp);
-    stat(str_c(str), &st);
     
-    test_ptr_success(fs_stat(path, &fst));
+    test_ptr_success_errno(fp = fopen(str_c(str), "wb+"));
+    test_int_success_errno(fprintf(fp, "YTIL TEST\n"));
+    test_int_success_errno(fclose(fp));
+    test_int_success_errno(stat(str_c(str), &st));
+    
+    test_ptr_success(fs_stat(path, FS_FLAG_FOLLOW, &fst));
     test_uint_eq(fst.type, FS_TYPE_REGULAR);
     test_int_eq(fst.size, st.st_size);
     test_int_eq(fst.uid, st.st_uid);
@@ -124,8 +103,10 @@ TEST_CASE(fs_stat)
 test_suite_ct test_suite_sys_fsys(void)
 {
     return test_suite_new_with_cases("fs"
-        , test_case_new(fs_stat_invalid_path)
+        , test_case_new(fs_stat_invalid_path1)
+        , test_case_new_unix(fs_stat_invalid_path2)
         , test_case_new(fs_stat_invalid_fst)
+        , test_case_new(fs_stat_not_found)
         , test_case_new(fs_stat)
     );
 }

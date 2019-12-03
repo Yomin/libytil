@@ -30,13 +30,15 @@ static const error_info_st error_infos[] =
 {
       ERROR_INFO(E_FS_ERRNO, "ERRNO wrapper.")
     , ERROR_INFO(E_FS_INVALID_PATH, "Invalid path.")
+    , ERROR_INFO(E_FS_NOT_FOUND, "File not found.")
 };
 
 
-fs_stat_st *fs_stat(path_const_ct file, fs_stat_st *fst)
+fs_stat_st *fs_stat(path_const_ct file, fs_flag_fs flags, fs_stat_st *fst)
 {
     struct stat st;
     str_ct path;
+    int rc;
     
     assert(fst);
     
@@ -44,14 +46,21 @@ fs_stat_st *fs_stat(path_const_ct file, fs_stat_st *fst)
         return error_pack(E_FS_INVALID_PATH), NULL;
     
 #ifdef _WIN32
-    if(stat(str_c(path), &st))
-        return error_push_errno(E_FS_ERRNO, stat), str_unref(path), NULL;
+    rc = stat(str_c(path), &st);
 #else
-    if(lstat(str_c(path), &st))
-        return error_push_errno(E_FS_ERRNO, lstat), str_unref(path), NULL;
+    if(flags & FS_FLAG_NOFOLLOW)
+        rc = lstat(str_c(path), &st);
+    else
+        rc = stat(str_c(path), &st);
 #endif
     
     str_unref(path);
+    
+    if(rc) switch(errno)
+    {
+    case ENOENT:    return error_push_errno(E_FS_NOT_FOUND, stat), NULL;
+    default:        return error_push_errno(E_FS_ERRNO, stat), NULL;
+    }
     
     switch(st.st_mode & S_IFMT)
     {
@@ -77,7 +86,7 @@ fs_stat_st *fs_stat(path_const_ct file, fs_stat_st *fst)
     return fst;
 }
 
-int fs_walk(path_const_ct dir, fs_walk_cb walk, void *ctx)
+int fs_walk(path_const_ct dir, fs_flag_fs flags, fs_walk_cb walk, void *ctx)
 {
     path_ct path;
     str_ct str;
@@ -108,7 +117,7 @@ int fs_walk(path_const_ct dir, fs_walk_cb walk, void *ctx)
         if(!path_append_c(path, ep->d_name, PATH_STYLE_NATIVE))
             return error_wrap(), path_free(path), closedir(dp), -1;
         
-        if(fs_stat(path, &fst))
+        if(fs_stat(path, flags, &fst))
             return error_pass(), path_free(path), closedir(dp), -1;
         
         if((rc = walk(path, &fst, ctx)))
