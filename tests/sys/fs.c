@@ -46,7 +46,7 @@ TEST_CASE_ABORT(fs_stat_invalid_path1)
 {
     fs_stat_st fst;
     
-    fs_stat(NULL, FS_FLAG_FOLLOW, &fst);
+    fs_stat(NULL, FS_FLAGS_DEFAULT, &fst);
 }
 
 #ifndef _WIN32
@@ -55,14 +55,14 @@ TEST_CASE(fs_stat_invalid_path2)
     fs_stat_st fst;
     
     test_ptr_success(path = path_new(LIT("c:\\foo"), PATH_STYLE_WINDOWS));
-    test_ptr_error(fs_stat(path, FS_FLAG_FOLLOW, &fst), E_FS_INVALID_PATH);
+    test_ptr_error(fs_stat(path, FS_FLAGS_DEFAULT, &fst), E_FS_INVALID_PATH);
     path_free(path);
 }
 #endif
 
 TEST_CASE_FIXTURE_ABORT(fs_stat_invalid_fst, path_new, path_free)
 {
-    fs_stat(path, FS_FLAG_FOLLOW, NULL);
+    fs_stat(path, FS_FLAGS_DEFAULT, NULL);
 }
 
 TEST_CASE(fs_stat_not_found)
@@ -70,7 +70,7 @@ TEST_CASE(fs_stat_not_found)
     fs_stat_st fst;
     
     test_ptr_success(path = path_new(LIT("/ytil_test"), PATH_STYLE_NATIVE));
-    test_ptr_error(fs_stat(path, FS_FLAG_FOLLOW, &fst), E_FS_NOT_FOUND);
+    test_ptr_error(fs_stat(path, FS_FLAGS_DEFAULT, &fst), E_FS_NOT_FOUND);
     path_free(path);
 }
 
@@ -89,7 +89,7 @@ TEST_CASE(fs_stat)
     test_int_success_errno(fclose(fp));
     test_int_success_errno(stat(str_c(str), &st));
     
-    test_ptr_success(fs_stat(path, FS_FLAG_FOLLOW, &fst));
+    test_ptr_success(fs_stat(path, FS_FLAGS_DEFAULT, &fst));
     test_uint_eq(fst.type, FS_TYPE_REGULAR);
     test_int_eq(fst.size, st.st_size);
     test_int_eq(fst.uid, st.st_uid);

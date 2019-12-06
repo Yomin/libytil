@@ -30,6 +30,7 @@ static const error_info_st error_infos[] =
 {
       ERROR_INFO(E_FS_ERRNO, "ERRNO wrapper.")
     , ERROR_INFO(E_FS_INVALID_PATH, "Invalid path.")
+    , ERROR_INFO(E_FS_NOT_DIRECTORY, "Path is not a directory.")
     , ERROR_INFO(E_FS_NOT_FOUND, "File not found.")
 };
 
@@ -48,7 +49,7 @@ fs_stat_st *fs_stat(path_const_ct file, fs_flag_fs flags, fs_stat_st *fst)
 #ifdef _WIN32
     rc = stat(str_c(path), &st);
 #else
-    if(flags & FS_FLAG_NOFOLLOW)
+    if(flags & FS_LINK_NOFOLLOW)
         rc = lstat(str_c(path), &st);
     else
         rc = stat(str_c(path), &st);
@@ -56,11 +57,12 @@ fs_stat_st *fs_stat(path_const_ct file, fs_flag_fs flags, fs_stat_st *fst)
     
     str_unref(path);
     
-    if(rc) switch(errno)
-    {
-    case ENOENT:    return error_push_errno(E_FS_NOT_FOUND, stat), NULL;
-    default:        return error_push_errno(E_FS_ERRNO, stat), NULL;
-    }
+    if(rc)
+        switch(errno)
+        {
+        case ENOENT:    return error_push_errno(E_FS_NOT_FOUND, stat), NULL;
+        default:        return error_push_errno(E_FS_ERRNO, stat), NULL;
+        }
     
     switch(st.st_mode & S_IFMT)
     {
@@ -86,27 +88,27 @@ fs_stat_st *fs_stat(path_const_ct file, fs_flag_fs flags, fs_stat_st *fst)
     return fst;
 }
 
-int fs_walk(path_const_ct dir, fs_flag_fs flags, fs_walk_cb walk, void *ctx)
+static int fs_walk_dir(path_ct path, fs_flag_fs flags, fs_walk_cb walk, void *ctx)
 {
-    path_ct path;
     str_ct str;
     DIR *dp;
     struct dirent *ep;
     fs_stat_st fst;
     int rc;
     
-    assert(walk);
-    
-    if(!(path = path_dup(dir)))
-        return error_wrap(), -1;
-    
     if(!(str = path_get(path, PATH_STYLE_NATIVE)))
-        return error_pack(E_FS_INVALID_PATH), path_free(path), -1;
+        return error_pack(E_FS_INVALID_PATH), -1;
     
-    if(!(dp = opendir(str_c(str))))
-        return error_push_errno(E_FS_ERRNO, opendir), str_unref(str), path_free(path), -1;
-    
+    dp = opendir(str_c(str));
     str_unref(str);
+    
+    if(!dp)
+        switch(errno)
+        {
+        case ENOENT:    return error_push_errno(E_FS_NOT_FOUND, opendir), -1;
+        case ENOTDIR:   return error_push_errno(E_FS_NOT_DIRECTORY, opendir), -1;
+        default:        return error_push_errno(E_FS_ERRNO, opendir), -1;
+        }
     
     for(errno = 0; (ep = readdir(dp)); errno = 0)
     {
@@ -115,24 +117,44 @@ int fs_walk(path_const_ct dir, fs_flag_fs flags, fs_walk_cb walk, void *ctx)
             continue;
         
         if(!path_append_c(path, ep->d_name, PATH_STYLE_NATIVE))
-            return error_wrap(), path_free(path), closedir(dp), -1;
+            return error_wrap(), closedir(dp), -1;
         
         if(fs_stat(path, flags, &fst))
-            return error_pass(), path_free(path), closedir(dp), -1;
+            return error_pass(), closedir(dp), -1;
         
-        if((rc = walk(path, &fst, ctx)))
-            return error_wrap(), path_free(path), closedir(dp), rc;
+        if(flags & FS_WALK_RECURSIVE && fst.type == FS_TYPE_DIRECTORY)
+        {
+            if((rc = fs_walk_dir(path, flags, walk, ctx)))
+                return closedir(dp), rc;
+        }
+        else if((rc = walk(path, &fst, ctx)))
+            return error_wrap(), closedir(dp), rc;
         
         path_drop(path, 1);
     }
     
     if(errno)
-        return error_push_errno(E_FS_ERRNO, readdir), path_free(path), closedir(dp), -1;
+        return error_push_errno(E_FS_ERRNO, readdir), closedir(dp), -1;
     
-    path_free(path);
     closedir(dp);
     
     return 0;
+}
+
+int fs_walk(path_const_ct dir, fs_flag_fs flags, fs_walk_cb walk, void *ctx)
+{
+    path_ct path;
+    int rc;
+    
+    assert(walk);
+    
+    if(!(path = path_dup(dir)))
+        return error_wrap(), -1;
+    
+    rc = fs_walk_dir(path, flags, walk, ctx);
+    path_free(path);
+    
+    return error_pass_int(rc);
 }
 
 /*

@@ -29,17 +29,16 @@ typedef enum fs_error
 {
       E_FS_ERRNO
     , E_FS_INVALID_PATH
+    , E_FS_NOT_DIRECTORY
     , E_FS_NOT_FOUND
 } fs_error_id;
 
 typedef enum fs_flags
 {
-      FS_FLAG_FOLLOW   = 0
-    , FS_FLAG_NOFOLLOW = 1
-    , FS_FLAG_?
-    , FS_FLAG_RECURSE  = 2
-    , FS_FLAG_REPLACE  = 0
-    , FS_FLAG_MERGE    = 4
+      FS_FLAGS_DEFAULT  = 0
+    , FS_LINK_NOFOLLOW  = 1
+    , FS_WALK_RECURSIVE = 2
+    , FS_INSERT_MERGE   = 4
 } fs_flag_fs;
 
 typedef enum fs_type
@@ -69,8 +68,6 @@ fs_stat_st *fs_stat(path_const_ct file, fs_flag_fs flags, fs_stat_st *fst);
 
 // iterate over all files in directory
 int fs_walk(path_const_ct dir, fs_flag_fs flags, fs_walk_cb walk, void *ctx);
-
-//path_ct fs_tmp
 
 // move file from src to dst
 int fs_move(path_const_ct dst, path_const_ct src, fs_flag_fs flags);

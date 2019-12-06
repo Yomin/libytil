@@ -356,7 +356,7 @@ const char *error_name_errno(int error)
 
 static char error_name_buf[20];
 
-const char *error_name_win32(DWORD error);
+const char *error_name_win32(DWORD error)
 {
     snprintf(error_name_buf, sizeof(error_name_buf), "WIN32_%08lX", error);
     
