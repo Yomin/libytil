@@ -29,7 +29,8 @@
 
 typedef enum ring_error
 {
-      E_RING_EMPTY
+      E_RING_CALLBACK
+    , E_RING_EMPTY
     , E_RING_INVALID_ELEMSIZE
     , E_RING_NO_SPACE
 } ring_error_id;

@@ -169,6 +169,33 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define test_int_success_errno(expr) _test_int_success((expr), #expr, errno, errno)
 #define test_int_success_win32(expr) _test_int_success((expr), #expr, win32, GetLastError())
 
+#define test_int_maybe(expr, err) do { \
+    test_begin(); \
+    error_clear(); \
+    \
+    intmax_t rc; \
+    \
+    if((rc = (expr)) < 0 && !error_check(0, err)) \
+        test_abort_backtrace("INT MAYBE test failed: "#expr" (%jd, %s == "#err")", rc, error_name(0)); \
+    \
+    test_end(); \
+} while(0)
+
+#define _test_int_maybe(expr, expr_s, err, err_s, type, value) do { \
+    test_begin(); \
+    \
+    intmax_t rc = (expr); \
+    __auto_type _value = (value); \
+    \
+    if(rc < 0 && err != _value) \
+        test_abort("INT MAYBE test failed: "expr_s" (%jd, %s == "err_s")", rc, error_name_##type(_value)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_int_maybe_errno(expr, err) _test_int_maybe((expr), #expr, (err), #err, errno, errno)
+#define test_int_maybe_win32(expr, err) _test_int_maybe((expr), #expr, (err), #err, win32, GetLastError())
+
 #define test_int_error(expr, err) do { \
     test_begin(); \
     error_clear(); \
@@ -186,10 +213,10 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define _test_int_error(expr, expr_s, err, err_s, type, value) do { \
     test_begin(); \
     \
-    intmax_t rc; \
+    intmax_t rc = (expr); \
     __auto_type _value = (value); \
     \
-    if((rc = (expr)) >= 0) \
+    if(rc >= 0) \
         test_abort("INT ERROR test failed: "expr_s" (%jd)", rc); \
     else if(err != _value) \
         test_abort("INT ERROR test failed: "expr_s" (%s == "err_s")", error_name_##type(_value)); \
@@ -249,10 +276,10 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define _test_rc_error(expr, expr_s, trc, trc_s, err, err_s, type, value) do { \
     test_begin(); \
     \
-    intmax_t rc, _trc = (trc); \
+    intmax_t rc = (expr), _trc = (trc); \
     __auto_type _value = (value); \
     \
-    if((rc = (expr)) != _trc) \
+    if(rc != _trc) \
         test_abort("RC ERROR test failed: "expr_s" == "trc_s" (%jd == %jd)", rc, _trc); \
     else if(err != _value) \
         test_abort("RC ERROR test failed: "expr_s" (%s == "err_s")", error_name_##type(_value)); \
@@ -287,6 +314,31 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define test_ptr_success_errno(expr) _test_ptr_success((expr), #expr, errno, errno)
 #define test_ptr_success_win32(expr) _test_ptr_success((expr), #expr, win32, GetLastError())
 
+#define test_ptr_maybe(expr, err) do { \
+    test_begin(); \
+    error_clear(); \
+    \
+    if(!(expr) && !error_check(0, err)) \
+        test_abort_backtrace("PTR MAYBE test failed: "#expr" (%s == "#err")", error_name(0)); \
+    \
+    test_end(); \
+} while(0)
+
+#define _test_ptr_maybe(expr, expr_s, err, err_s, type, value) do { \
+    test_begin(); \
+    \
+    const void *ptr = (expr); \
+    __auto_type _value = (value); \
+    \
+    if(!ptr && err != _value) \
+        test_abort("PTR MAYBE test failed: "expr_s" (%s == "err_s")", error_name_##type(_value)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_ptr_maybe_errno(expr, err) _test_ptr_maybe((expr), #expr, (err), #err, errno, errno)
+#define test_ptr_maybe_win32(expr, err) _test_ptr_maybe((expr), #expr, (err), #err, win32, GetLastError())
+
 #define test_ptr_error(expr, err) do { \
     test_begin(); \
     error_clear(); \
@@ -304,10 +356,10 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define _test_ptr_error(expr, expr_s, err, err_s, type, value) do { \
     test_begin(); \
     \
-    const void *ptr; \
+    const void *ptr = (expr); \
     __auto_type _value = (value); \
     \
-    if((ptr = (expr))) \
+    if(ptr) \
         test_abort("PTR ERROR test failed: "expr_s" (%p)", ptr); \
     else if(err != _value) \
         test_abort("PTR ERROR test failed: "expr_s" (%s == "err_s")", error_name_##type(_value)); \
@@ -645,10 +697,21 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define test_hresult_success(expr) do { \
     test_begin(); \
     \
-    HRESULT result; \
+    HRESULT result = (expr); \
     \
-    if((result = (expr)) != S_OK) \
+    if(result != S_OK) \
         test_abort("HRESULT SUCCESS test failed: "#expr" (%s)", error_name_hresult(result)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_hresult_maybe(expr, eresult) do { \
+    test_begin(); \
+    \
+    HRESULT result = (expr); \
+    \
+    if(result != S_OK && result != (eresult)) \
+        test_abort("HRESULT MAYBE test failed: "#expr" (%s == "#eresult")", error_name_hresult(result)); \
     \
     test_end(); \
 } while(0)
@@ -656,9 +719,9 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define test_hresult_error(expr, eresult) do { \
     test_begin(); \
     \
-    HRESULT result; \
+    HRESULT result = (expr); \
     \
-    if((result = (expr)) != (eresult)) \
+    if(result != (eresult)) \
         test_abort("HRESULT ERROR test failed: "#expr" (%s == "#eresult")", error_name_hresult(result)); \
     \
     test_end(); \
@@ -670,10 +733,21 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define test_ntstatus_success(expr) do { \
     test_begin(); \
     \
-    NTSTATUS status; \
+    NTSTATUS status = (expr); \
     \
-    if((status = (expr)) != STATUS_SUCCESS) \
+    if(status != STATUS_SUCCESS) \
         test_abort_backtrace("NTSTATUS SUCCESS test failed: "#expr" (%s)", error_name_ntstatus(status)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_ntstatus_maybe(expr, estatus) do { \
+    test_begin(); \
+    \
+    NTSTATUS status = (expr); \
+    \
+    if(status != STATUS_SUCCESS && status != (estatus)) \
+        test_abort("NTSTATUS MAYBE test failed: "#expr" (%s == "#estatus")", error_name_ntstatus(status)); \
     \
     test_end(); \
 } while(0)
@@ -681,9 +755,9 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define test_ntstatus_error(expr, estatus) do { \
     test_begin(); \
     \
-    NTSTATUS status; \
+    NTSTATUS status = (expr); \
     \
-    if((status = (expr)) != (estatus)) \
+    if(status != (estatus)) \
         test_abort("NTSTATUS ERROR test failed: "#expr" (%s == "#estatus")", error_name_ntstatus(status)); \
     \
     test_end(); \

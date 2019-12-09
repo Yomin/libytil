@@ -27,19 +27,33 @@
 
 typedef enum fs_error
 {
-      E_FS_ERRNO
+      E_FS_CALLBACK
+    , E_FS_ERRNO
     , E_FS_INVALID_PATH
     , E_FS_NOT_DIRECTORY
     , E_FS_NOT_FOUND
 } fs_error_id;
 
-typedef enum fs_flags
+typedef enum fs_link_mode
 {
-      FS_FLAGS_DEFAULT  = 0
-    , FS_LINK_NOFOLLOW  = 1
-    , FS_WALK_RECURSIVE = 2
-    , FS_INSERT_MERGE   = 4
-} fs_flag_fs;
+      FS_LINK_FOLLOW
+    , FS_LINK_NOFOLLOW
+    , FS_LINK_MODES
+} fs_link_mode_id;
+
+typedef enum fs_walk_order
+{
+      FS_WALK_PREORDER
+    , FS_WALK_POSTORDER
+    , FS_WALK_ORDERS
+} fs_walk_order_id;
+
+typedef enum fs_copy_mode
+{
+      FS_COPY_REPLACE
+    , FS_COPY_MERGE
+    , FS_COPY_MODES
+} fs_copy_mode_id;
 
 typedef enum fs_type
 {
@@ -61,18 +75,19 @@ typedef struct fs_stat
     time_t atime, mtime, ctime;
 } fs_stat_st;
 
-typedef int (*fs_walk_cb)(path_const_ct file, fs_stat_st *info, void *ctx);
+typedef int (*fs_walk_cb)(path_const_ct file, size_t depth, fs_stat_st *info, void *ctx);
 
 // get file status
-fs_stat_st *fs_stat(path_const_ct file, fs_flag_fs flags, fs_stat_st *fst);
+fs_stat_st *fs_stat(path_const_ct file, fs_link_mode_id mode, fs_stat_st *fst);
 
 // iterate over all files in directory
-int fs_walk(path_const_ct dir, fs_flag_fs flags, fs_walk_cb walk, void *ctx);
+// negative depth recurses indefinitely
+int fs_walk(path_const_ct dir, ssize_t depth, fs_walk_order_id order, fs_link_mode_id link, fs_walk_cb walk, void *ctx);
 
 // move file from src to dst
-int fs_move(path_const_ct dst, path_const_ct src, fs_flag_fs flags);
+int fs_move(path_const_ct dst, path_const_ct src, fs_copy_mode_id mode);
 // copy file from src to dst
-int fs_copy(path_const_ct dst, path_const_ct src, fs_flag_fs flags);
+int fs_copy(path_const_ct dst, path_const_ct src, fs_copy_mode_id mode);
 // remove file
 int fs_remove(path_const_ct file);
 

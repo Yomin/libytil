@@ -28,7 +28,8 @@
 
 typedef enum env_error
 {
-      E_ENV_INVALID_NAME
+      E_ENV_CALLBACK
+    , E_ENV_INVALID_NAME
     , E_ENV_NOT_FOUND
 } env_error_id;
 

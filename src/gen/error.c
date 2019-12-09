@@ -85,6 +85,7 @@ static const error_info_st error_infos[] =
       [-E_ERROR_UNSET]   = { .name = "E_ERROR_UNSET",   .desc = "Error Unset" }
     , [-E_ERROR_WRAPPER] = { .name = "E_ERROR_WRAPPER", .desc = "Error Wrapper" }
     , [-E_ERROR_PASS]    = { .name = "E_ERROR_PASS",    .desc = "Error Pass" }
+    , [-E_ERROR_SKIP]    = { .name = "E_ERROR_SKIP",    .desc = "Error Skipper" }
 };
 
 
@@ -159,6 +160,14 @@ void _error_map(const char *func, size_t depth, const error_info_st *infos, ...)
 void _error_pass(const char *func)
 {
     _error_push(func, error_infos, E_ERROR_PASS);
+}
+
+void _error_skip(const char *func, size_t error)
+{
+    if(error_check(0, error))
+        _error_push(func, error_infos, E_ERROR_SKIP);
+    else
+        _error_wrap(func);
 }
 
 void _errno_set(const char *func, int error)

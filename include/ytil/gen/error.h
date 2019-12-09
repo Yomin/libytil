@@ -92,6 +92,7 @@ typedef enum error_error
       E_ERROR_UNSET   = -1
     , E_ERROR_WRAPPER = -2
     , E_ERROR_PASS    = -3
+    , E_ERROR_SKIP    = -4
 } error_error_id;
 
 typedef enum error_type
@@ -139,6 +140,11 @@ void    _error_map(const char *func, size_t depth, const error_info_st *infos, .
 // push transparent wrapper error
 void    _error_pass(const char *func);
 #define  error_pass() _error_pass(__func__)
+
+// if matched push transparent skipper error which skips the matched error
+// else push generic wrapper error
+void    _error_skip(const char *func, size_t error);
+#define  error_skip(error) _error_skip(__func__, error)
 
 
 // clear stack, push errno error
@@ -219,31 +225,35 @@ void    _error_pass_ntstatus(const char *func, const char *sub, NTSTATUS status)
 
 
 // convenience macro for enclosing functions with int rc
-// to wrap/pass error on the fly
-#define error_pack_int(action, sub) __extension__ ({ \
+// to push/wrap/pass/skip error on the fly
+#define error_pack_int(action, sub, arg) __extension__ ({ \
     __auto_type rc = (sub); \
     \
     if(rc < 0) \
-        error_##action(); \
+        error_##action(arg); \
     \
     rc; \
 })
 
 // convenience macro for enclosing functions with pointer rc
-// to wrap/pass error on the fly
-#define error_pack_ptr(action, sub) __extension__ ({ \
+// to push/wrap/pass/skip error on the fly
+#define error_pack_ptr(action, sub, arg) __extension__ ({ \
     __auto_type rc = (sub); \
     \
     if(!rc) \
-        error_##action(); \
+        error_##action(arg); \
     \
     rc; \
 })
 
-#define error_wrap_int(sub) error_pack_int(wrap, sub)
-#define error_wrap_ptr(sub) error_pack_ptr(wrap, sub)
-#define error_pass_int(sub) error_pack_int(pass, sub)
-#define error_pass_ptr(sub) error_pack_ptr(pass, sub)
+#define error_push_int(err, sub) error_pack_int(push, sub, err)
+#define error_push_ptr(err, sub) error_pack_ptr(push, sub, err)
+#define error_wrap_int(sub)      error_pack_int(wrap, sub, )
+#define error_wrap_ptr(sub)      error_pack_ptr(wrap, sub, )
+#define error_pass_int(sub)      error_pack_int(pass, sub, )
+#define error_pass_ptr(sub)      error_pack_ptr(pass, sub, )
+#define error_skip_int(err, sub) error_pack_int(skip, sub, err)
+#define error_skip_ptr(err, sub) error_pack_ptr(skip, sub, err)
 
 
 // clear error stack

@@ -31,7 +31,8 @@
 
 typedef enum art_error
 {
-      E_ART_EMPTY
+      E_ART_CALLBACK
+    , E_ART_EMPTY
     , E_ART_EXISTS
     , E_ART_INVALID_KEY
     , E_ART_NOT_FOUND

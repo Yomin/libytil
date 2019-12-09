@@ -48,7 +48,8 @@ typedef struct vector
 
 static const error_info_st error_infos[] =
 {
-      ERROR_INFO(E_VEC_EMPTY, "Vector is empty.")
+      ERROR_INFO(E_VEC_CALLBACK, "Callback error.")
+    , ERROR_INFO(E_VEC_EMPTY, "Vector is empty.")
     , ERROR_INFO(E_VEC_INVALID_ELEMSIZE, "Invalid element size.")
     , ERROR_INFO(E_VEC_NO_BUFFER, "No buffer available.")
     , ERROR_INFO(E_VEC_NOT_FOUND, "Element not found.")
@@ -1195,8 +1196,8 @@ int vec_fold(vec_const_ct vec, vec_fold_cb fold, void *ctx)
     assert(fold);
     
     for(i=0; i < vec->size; i++)
-        if((rc = error_wrap_int(fold(vec, i, ELEM(i), ctx))))
-            return rc;
+        if((rc = fold(vec, i, ELEM(i), ctx)))
+            return error_push_int(E_VEC_CALLBACK, rc);
     
     return 0;
 }
@@ -1210,8 +1211,8 @@ int vec_fold_r(vec_const_ct vec, vec_fold_cb fold, void *ctx)
     assert(fold);
     
     for(i=0; i < vec->size; i++)
-        if((rc = error_wrap_int(fold(vec, i, ELEM(vec->size-i-1), ctx))))
-            return rc;
+        if((rc = fold(vec, i, ELEM(vec->size-i-1), ctx)))
+            return error_push_int(E_VEC_CALLBACK, rc);
     
     return 0;
 }

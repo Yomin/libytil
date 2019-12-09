@@ -24,6 +24,7 @@
 #include <ytil/test/test.h>
 #include <ytil/sys/path.h>
 #include <ytil/sys/env.h>
+#include <stdio.h>
 
 #ifdef _WIN32
 #   include <initguid.h>
@@ -32,7 +33,6 @@
 #else
 #   include <unistd.h>
 #   include <pwd.h>
-#   include <stdio.h>
 #   include <limits.h>
 #   define MAX_PATH PATH_MAX
 #endif
@@ -157,11 +157,15 @@ TEST_CASE_FIXTURE(path_get_base_dir_tmp_tmp_unset_temp_unset_tmpdir_unset, env_i
     test_int_success(env_unset(LIT("TMPDIR")));
     test_ptr_success(path = path_get_base_dir(PATH_BASE_DIR_TMP));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
-#ifdef _WIN32
+    
+#ifdef P_tmpdir
+    test_str_eq(str_c(cpath), P_tmpdir);
+#elif defined(_WIN32)
     test_str_eq(str_c(cpath), "/windows/temp");
 #else
     test_str_eq(str_c(cpath), "/tmp");
 #endif
+    
     str_unref(cpath);
     path_free(path);
 }

@@ -23,6 +23,7 @@
 #include <ytil/sys/path.h>
 #include <ytil/sys/env.h>
 #include <ytil/def.h>
+#include <stdio.h>
 
 #ifdef _WIN32
 #   include <initguid.h>
@@ -104,7 +105,9 @@ static path_ct path_get_tmp(void)
     if(!error_check(0, E_ENV_NOT_FOUND))
         return error_wrap(), NULL;
     
-#ifdef _WIN32
+#ifdef P_tmpdir
+    return error_wrap_ptr(path_new_c(P_tmpdir, PATH_STYLE_NATIVE));
+#elif defined(_WIN32)
     return error_wrap_ptr(path_new(LIT("/windows/temp"), PATH_STYLE_NATIVE));
 #else
     return error_wrap_ptr(path_new(LIT("/tmp"), PATH_STYLE_NATIVE));

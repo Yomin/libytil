@@ -44,7 +44,8 @@ typedef struct test_fold_state
 
 static const error_info_st error_infos[] =
 {
-      ERROR_INFO(E_TEST_STATE_INVALID_OBJECT, "Invalid test state object.")
+      ERROR_INFO(E_TEST_STATE_CALLBACK, "Callback error.")
+    , ERROR_INFO(E_TEST_STATE_INVALID_OBJECT, "Invalid test state object.")
     , ERROR_INFO(E_TEST_STATE_INVALID_STATUS_TYPE, "Invalid status type.")
     , ERROR_INFO(E_TEST_STATE_INVALID_RESULT_TYPE, "Invalid result type.")
     , ERROR_INFO(E_TEST_STATE_INVALID_FILE, "Invalid file.")
@@ -306,7 +307,8 @@ static int test_state_vec_fold_msg(vec_const_ct vec, size_t index, void *elem, v
     test_fold_state_st *fstate = ctx;
     test_msg_st *msg = elem;
     
-    return error_wrap_int(fstate->fold(&msg->pos, msg->type, msg->level, msg->text, fstate->ctx));
+    return error_push_int(E_TEST_STATE_CALLBACK,
+        fstate->fold(&msg->pos, msg->type, msg->level, msg->text, fstate->ctx));
 }
 
 int test_state_fold_msg(test_state_ct state, test_state_msg_cb fold, void *ctx)
@@ -319,5 +321,6 @@ int test_state_fold_msg(test_state_ct state, test_state_msg_cb fold, void *ctx)
     if(!state->msg)
         return 0;
     
-    return error_wrap_int(vec_fold(state->msg, test_state_vec_fold_msg, &fstate));
+    return error_skip_int(E_VEC_CALLBACK,
+        vec_fold(state->msg, test_state_vec_fold_msg, &fstate));
 }

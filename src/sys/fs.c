@@ -28,20 +28,22 @@
 
 static const error_info_st error_infos[] =
 {
-      ERROR_INFO(E_FS_ERRNO, "ERRNO wrapper.")
+      ERROR_INFO(E_FS_CALLBACK, "Callback error.")
+    , ERROR_INFO(E_FS_ERRNO, "ERRNO wrapper.")
     , ERROR_INFO(E_FS_INVALID_PATH, "Invalid path.")
     , ERROR_INFO(E_FS_NOT_DIRECTORY, "Path is not a directory.")
     , ERROR_INFO(E_FS_NOT_FOUND, "File not found.")
 };
 
 
-fs_stat_st *fs_stat(path_const_ct file, fs_flag_fs flags, fs_stat_st *fst)
+fs_stat_st *fs_stat(path_const_ct file, fs_link_mode_id mode, fs_stat_st *fst)
 {
     struct stat st;
     str_ct path;
     int rc;
     
     assert(fst);
+    assert(mode < FS_LINK_MODES);
     
     if(!(path = path_get(file, PATH_STYLE_NATIVE)))
         return error_pack(E_FS_INVALID_PATH), NULL;
@@ -49,10 +51,12 @@ fs_stat_st *fs_stat(path_const_ct file, fs_flag_fs flags, fs_stat_st *fst)
 #ifdef _WIN32
     rc = stat(str_c(path), &st);
 #else
-    if(flags & FS_LINK_NOFOLLOW)
-        rc = lstat(str_c(path), &st);
-    else
-        rc = stat(str_c(path), &st);
+    switch(mode)
+    {
+    case FS_LINK_FOLLOW:    rc = stat(str_c(path), &st); break;
+    case FS_LINK_NOFOLLOW:  rc = lstat(str_c(path), &st); break;
+    default:                abort();
+    }
 #endif
     
     str_unref(path);
@@ -88,7 +92,7 @@ fs_stat_st *fs_stat(path_const_ct file, fs_flag_fs flags, fs_stat_st *fst)
     return fst;
 }
 
-static int fs_walk_dir(path_ct path, fs_flag_fs flags, fs_walk_cb walk, void *ctx)
+static int fs_walk_dir(path_ct path, ssize_t maxdepth, size_t depth, fs_walk_order_id order, fs_link_mode_id link, fs_walk_cb walk, void *ctx)
 {
     str_ct str;
     DIR *dp;
@@ -96,62 +100,91 @@ static int fs_walk_dir(path_ct path, fs_flag_fs flags, fs_walk_cb walk, void *ct
     fs_stat_st fst;
     int rc;
     
-    if(!(str = path_get(path, PATH_STYLE_NATIVE)))
-        return error_pack(E_FS_INVALID_PATH), -1;
-    
-    dp = opendir(str_c(str));
-    str_unref(str);
-    
-    if(!dp)
-        switch(errno)
-        {
-        case ENOENT:    return error_push_errno(E_FS_NOT_FOUND, opendir), -1;
-        case ENOTDIR:   return error_push_errno(E_FS_NOT_DIRECTORY, opendir), -1;
-        default:        return error_push_errno(E_FS_ERRNO, opendir), -1;
-        }
-    
-    for(errno = 0; (ep = readdir(dp)); errno = 0)
+    if(order == FS_WALK_PREORDER)
     {
-        if(!strcmp(ep->d_name, path_current(PATH_STYLE_NATIVE))
-        || !strcmp(ep->d_name, path_parent(PATH_STYLE_NATIVE)))
-            continue;
+        if(!fs_stat(path, link, &fst))
+            return error_pass(), -1;
         
-        if(!path_append_c(path, ep->d_name, PATH_STYLE_NATIVE))
-            return error_wrap(), closedir(dp), -1;
+        if(fst.type != FS_TYPE_DIRECTORY)
+            return error_set(E_FS_NOT_DIRECTORY), -1;
         
-        if(fs_stat(path, flags, &fst))
-            return error_pass(), closedir(dp), -1;
-        
-        if(flags & FS_WALK_RECURSIVE && fst.type == FS_TYPE_DIRECTORY)
-        {
-            if((rc = fs_walk_dir(path, flags, walk, ctx)))
-                return closedir(dp), rc;
-        }
-        else if((rc = walk(path, &fst, ctx)))
-            return error_wrap(), closedir(dp), rc;
-        
-        path_drop(path, 1);
+        if((rc = walk(path, depth, &fst, ctx)))
+            return error_push_int(E_FS_CALLBACK, rc);
     }
     
-    if(errno)
-        return error_push_errno(E_FS_ERRNO, readdir), closedir(dp), -1;
+    if(maxdepth < 0 || depth < (size_t)maxdepth)
+    {
+        if(!(str = path_get(path, PATH_STYLE_NATIVE)))
+            return error_pack(E_FS_INVALID_PATH), -1;
+        
+        dp = opendir(str_c(str));
+        str_unref(str);
+        
+        if(!dp)
+            switch(errno)
+            {
+            case ENOENT:    return error_push_errno(E_FS_NOT_FOUND, opendir), -1;
+            case ENOTDIR:   return error_push_errno(E_FS_NOT_DIRECTORY, opendir), -1;
+            default:        return error_push_errno(E_FS_ERRNO, opendir), -1;
+            }
+        
+        for(errno = 0; (ep = readdir(dp)); errno = 0)
+        {
+            if(!strcmp(ep->d_name, path_current(PATH_STYLE_NATIVE))
+            || !strcmp(ep->d_name, path_parent(PATH_STYLE_NATIVE)))
+                continue;
+            
+            if(!path_append_c(path, ep->d_name, PATH_STYLE_NATIVE))
+                return error_wrap(), closedir(dp), -1;
+            
+            if(!fs_stat(path, link, &fst))
+                return error_pass(), closedir(dp), -1;
+            
+            if(fst.type != FS_TYPE_DIRECTORY)
+            {
+                if((rc = walk(path, depth+1, &fst, ctx)))
+                    return error_push_int(E_FS_CALLBACK, rc), closedir(dp), rc;
+            }
+            else
+            {
+                if((rc = fs_walk_dir(path, maxdepth, depth+1, order, link, walk, ctx)))
+                    return closedir(dp), rc;
+            }
+            
+            path_drop(path, 1);
+        }
+        
+        if(errno)
+            return error_push_errno(E_FS_ERRNO, readdir), closedir(dp), -1;
+        
+        closedir(dp);
+    }
     
-    closedir(dp);
+    if(order == FS_WALK_POSTORDER)
+    {
+        if(!fs_stat(path, link, &fst))
+            return error_pass(), -1;
+        
+        if((rc = walk(path, depth, &fst, ctx)))
+            return error_push_int(E_FS_CALLBACK, rc);
+    }
     
     return 0;
 }
 
-int fs_walk(path_const_ct dir, fs_flag_fs flags, fs_walk_cb walk, void *ctx)
+int fs_walk(path_const_ct dir, ssize_t depth, fs_walk_order_id order, fs_link_mode_id link, fs_walk_cb walk, void *ctx)
 {
     path_ct path;
     int rc;
     
     assert(walk);
+    assert(order < FS_WALK_ORDERS);
+    assert(link < FS_LINK_MODES);
     
     if(!(path = path_dup(dir)))
         return error_wrap(), -1;
     
-    rc = fs_walk_dir(path, flags, walk, ctx);
+    rc = fs_walk_dir(path, depth, 0, order, link, walk, ctx);
     path_free(path);
     
     return error_pass_int(rc);
@@ -186,9 +219,16 @@ int fs_copy(path_const_ct dst, path_const_ct src, fs_mode_id mode)
 {
     return 0;
 }
+*/
 
-int fs_remove(path_const_ct file)
+static int fs_walk_remove(path_const_ct file, size_t depth, fs_stat_st *info, void *ctx)
 {
     return 0;
 }
-*/
+
+int fs_remove(path_const_ct file)
+{
+    fs_walk(file, -1, FS_WALK_POSTORDER, FS_LINK_NOFOLLOW, fs_walk_remove, NULL);
+    
+    return 0;
+}

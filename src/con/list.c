@@ -61,7 +61,8 @@ typedef struct list
 
 static const error_info_st error_infos[] =
 {
-      ERROR_INFO(E_LIST_EMPTY, "List is empty.")
+      ERROR_INFO(E_LIST_CALLBACK, "Callback error.")
+    , ERROR_INFO(E_LIST_EMPTY, "List is empty.")
     , ERROR_INFO(E_LIST_END, "List end.")
     , ERROR_INFO(E_LIST_NOT_FOUND, "Node not found.")
     , ERROR_INFO(E_LIST_OUT_OF_BOUNDS, "Out of bounds access.")
@@ -571,8 +572,8 @@ int list_fold(list_const_ct list, list_fold_cb fold, void *ctx)
     assert(fold);
     
     LIST_FOREACH_SAFE(list, next, node, next)
-        if((rc = error_wrap_int(fold(list, node->data, ctx))))
-            return rc;
+        if((rc = fold(list, node->data, ctx)))
+            return error_push_int(E_LIST_CALLBACK, rc);
     
     return 0;
 }
@@ -586,8 +587,8 @@ int list_fold_r(list_const_ct list, list_fold_cb fold, void *ctx)
     assert(fold);
     
     LIST_FOREACH_SAFE(list, prev, node, prev)
-        if((rc = error_wrap_int(fold(list, node->data, ctx))))
-            return rc;
+        if((rc = fold(list, node->data, ctx)))
+            return error_push_int(E_LIST_CALLBACK, rc);
     
     return 0;
 }
