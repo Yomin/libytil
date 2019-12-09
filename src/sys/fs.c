@@ -92,25 +92,16 @@ fs_stat_st *fs_stat(path_const_ct file, fs_link_mode_id mode, fs_stat_st *fst)
     return fst;
 }
 
-static int fs_walk_dir(path_ct path, ssize_t maxdepth, size_t depth, fs_walk_order_id order, fs_link_mode_id link, fs_walk_cb walk, void *ctx)
+static int fs_walk_dir(path_ct path, ssize_t maxdepth, size_t depth, fs_walk_order_id order, fs_link_mode_id link, fs_stat_st *fst_parent, fs_walk_cb walk, void *ctx)
 {
     str_ct str;
     DIR *dp;
     struct dirent *ep;
-    fs_stat_st fst;
+    fs_stat_st fst_child;
     int rc;
     
-    if(order == FS_WALK_PREORDER)
-    {
-        if(!fs_stat(path, link, &fst))
-            return error_pass(), -1;
-        
-        if(fst.type != FS_TYPE_DIRECTORY)
-            return error_set(E_FS_NOT_DIRECTORY), -1;
-        
-        if((rc = walk(path, depth, &fst, ctx)))
-            return error_push_int(E_FS_CALLBACK, rc);
-    }
+    if(order == FS_WALK_PREORDER && (rc = walk(path, depth, fst_parent, ctx)))
+        return error_push_int(E_FS_CALLBACK, rc);
     
     if(maxdepth < 0 || depth < (size_t)maxdepth)
     {
@@ -137,17 +128,17 @@ static int fs_walk_dir(path_ct path, ssize_t maxdepth, size_t depth, fs_walk_ord
             if(!path_append_c(path, ep->d_name, PATH_STYLE_NATIVE))
                 return error_wrap(), closedir(dp), -1;
             
-            if(!fs_stat(path, link, &fst))
+            if(!fs_stat(path, link, &fst_child))
                 return error_pass(), closedir(dp), -1;
             
-            if(fst.type != FS_TYPE_DIRECTORY)
+            if(fst_child.type != FS_TYPE_DIRECTORY)
             {
-                if((rc = walk(path, depth+1, &fst, ctx)))
+                if((rc = walk(path, depth+1, &fst_child, ctx)))
                     return error_push_int(E_FS_CALLBACK, rc), closedir(dp), rc;
             }
             else
             {
-                if((rc = fs_walk_dir(path, maxdepth, depth+1, order, link, walk, ctx)))
+                if((rc = fs_walk_dir(path, maxdepth, depth+1, order, link, &fst_child, walk, ctx)))
                     return closedir(dp), rc;
             }
             
@@ -160,20 +151,15 @@ static int fs_walk_dir(path_ct path, ssize_t maxdepth, size_t depth, fs_walk_ord
         closedir(dp);
     }
     
-    if(order == FS_WALK_POSTORDER)
-    {
-        if(!fs_stat(path, link, &fst))
-            return error_pass(), -1;
-        
-        if((rc = walk(path, depth, &fst, ctx)))
-            return error_push_int(E_FS_CALLBACK, rc);
-    }
+    if(order == FS_WALK_POSTORDER && (rc = walk(path, depth, fst_parent, ctx)))
+        return error_push_int(E_FS_CALLBACK, rc);
     
     return 0;
 }
 
 int fs_walk(path_const_ct dir, ssize_t depth, fs_walk_order_id order, fs_link_mode_id link, fs_walk_cb walk, void *ctx)
 {
+    fs_stat_st fst;
     path_ct path;
     int rc;
     
@@ -181,10 +167,16 @@ int fs_walk(path_const_ct dir, ssize_t depth, fs_walk_order_id order, fs_link_mo
     assert(order < FS_WALK_ORDERS);
     assert(link < FS_LINK_MODES);
     
+    if(!fs_stat(dir, link, &fst))
+        return error_pass(), -1;
+    
+    if(fst.type != FS_TYPE_DIRECTORY)
+        return error_push_int(E_FS_CALLBACK, walk(dir, 0, &fst, ctx));
+    
     if(!(path = path_dup(dir)))
         return error_wrap(), -1;
     
-    rc = fs_walk_dir(path, depth, 0, order, link, walk, ctx);
+    rc = fs_walk_dir(path, depth, 0, order, link, &fst, walk, ctx);
     path_free(path);
     
     return error_pass_int(rc);
@@ -221,14 +213,51 @@ int fs_copy(path_const_ct dst, path_const_ct src, fs_mode_id mode)
 }
 */
 
+typedef struct fs_remove_state
+{
+    fs_remove_mode_id mode;
+    path_ct *blocker;
+} fs_remove_st;
+
 static int fs_walk_remove(path_const_ct file, size_t depth, fs_stat_st *info, void *ctx)
 {
-    return 0;
+    fs_remove_st *state = ctx;
+    str_ct str;
+    int rc;
+    
+    if(!(str = path_get(file, PATH_STYLE_NATIVE)))
+        return error_wrap(), -1;
+    
+    if(info->type == FS_TYPE_DIRECTORY)
+    {
+        if((rc = rmdir(str_c(str))) && (!state->blocker || !*state->blocker))
+            error_push_errno(rmdir);
+    }
+    else
+    {
+        if((rc = unlink(str_c(str))))
+            error_push_errno(unlink);
+    }
+    
+    str_unref(str);
+    
+    if(!rc)
+        return 0;
+    
+    if(state->blocker && !*state->blocker)
+        *state->blocker = path_dup(file); // may fail, user has to check if set
+    
+    return state->mode == FS_REMOVE_STOP ? rc : 0;
 }
 
-int fs_remove(path_const_ct file)
+int fs_remove(path_const_ct file, fs_remove_mode_id mode, path_ct *blocker)
 {
-    fs_walk(file, -1, FS_WALK_POSTORDER, FS_LINK_NOFOLLOW, fs_walk_remove, NULL);
+    fs_remove_st state = { .mode = mode, .blocker = blocker };
     
-    return 0;
+    assert(mode < FS_REMOVE_MODES);
+    
+    if(blocker)
+        *blocker = NULL;
+    
+    return error_pass_int(fs_walk(file, -1, FS_WALK_POSTORDER, FS_LINK_NOFOLLOW, fs_walk_remove, &state));
 }

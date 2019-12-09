@@ -55,6 +55,13 @@ typedef enum fs_copy_mode
     , FS_COPY_MODES
 } fs_copy_mode_id;
 
+typedef enum fs_remove_mode
+{
+      FS_REMOVE_STOP
+    , FS_REMOVE_CONTINUE
+    , FS_REMOVE_MODES
+} fs_remove_mode_id;
+
 typedef enum fs_type
 {
       FS_TYPE_UNKNOWN
@@ -89,6 +96,6 @@ int fs_move(path_const_ct dst, path_const_ct src, fs_copy_mode_id mode);
 // copy file from src to dst
 int fs_copy(path_const_ct dst, path_const_ct src, fs_copy_mode_id mode);
 // remove file
-int fs_remove(path_const_ct file);
+int fs_remove(path_const_ct file, fs_remove_mode_id mode, path_ct *blocker);
 
 #endif

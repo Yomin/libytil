@@ -225,35 +225,37 @@ void    _error_pass_ntstatus(const char *func, const char *sub, NTSTATUS status)
 
 
 // convenience macro for enclosing functions with int rc
-// to push/wrap/pass/skip error on the fly
-#define error_pack_int(action, sub, arg) __extension__ ({ \
+// to push/wrap/pack/pass/skip error on the fly
+#define error_proc_int(action, sub, ...) __extension__ ({ \
     __auto_type rc = (sub); \
     \
     if(rc < 0) \
-        error_##action(arg); \
+        error_##action(__VA_ARGS__); \
     \
     rc; \
 })
 
 // convenience macro for enclosing functions with pointer rc
-// to push/wrap/pass/skip error on the fly
-#define error_pack_ptr(action, sub, arg) __extension__ ({ \
+// to push/wrap/pack/pass/skip error on the fly
+#define error_proc_ptr(action, sub, ...) __extension__ ({ \
     __auto_type rc = (sub); \
     \
     if(!rc) \
-        error_##action(arg); \
+        error_##action(__VA_ARGS__); \
     \
     rc; \
 })
 
-#define error_push_int(err, sub) error_pack_int(push, sub, err)
-#define error_push_ptr(err, sub) error_pack_ptr(push, sub, err)
-#define error_wrap_int(sub)      error_pack_int(wrap, sub, )
-#define error_wrap_ptr(sub)      error_pack_ptr(wrap, sub, )
-#define error_pass_int(sub)      error_pack_int(pass, sub, )
-#define error_pass_ptr(sub)      error_pack_ptr(pass, sub, )
-#define error_skip_int(err, sub) error_pack_int(skip, sub, err)
-#define error_skip_ptr(err, sub) error_pack_ptr(skip, sub, err)
+#define error_push_int(err, sub) error_proc_int(push, sub, err)
+#define error_push_ptr(err, sub) error_proc_ptr(push, sub, err)
+#define error_wrap_int(sub)      error_proc_int(wrap, sub)
+#define error_wrap_ptr(sub)      error_proc_ptr(wrap, sub)
+#define error_pack_int(err, sub) error_proc_int(pack, sub, err)
+#define error_pack_ptr(err, sub) error_proc_ptr(pack, sub, err)
+#define error_pass_int(sub)      error_proc_int(pass, sub)
+#define error_pass_ptr(sub)      error_proc_ptr(pass, sub)
+#define error_skip_int(err, sub) error_proc_int(skip, sub, err)
+#define error_skip_ptr(err, sub) error_proc_ptr(skip, sub, err)
 
 
 // clear error stack

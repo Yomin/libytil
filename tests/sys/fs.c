@@ -30,6 +30,12 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
+#ifdef _WIN32
+#   define mkdir(path, mode) mkdir(path)
+#else
+#   define mkdir(path, mode) mkdir(path, mode)
+#endif
+
 static path_ct path;
 static str_ct str;
 
@@ -41,6 +47,28 @@ TEST_SETUP(path_new)
 
 TEST_TEARDOWN(path_free)
 {
+    path_free(path);
+}
+
+TEST_SETUP(fs_mkfile)
+{
+    FILE *fp;
+    
+    test_ptr_success(path = path_get_base_dir(PATH_BASE_DIR_TMP));
+    test_void(env_free());
+    
+    test_ptr_success(path_append(path, LIT("ytil_test_file"), PATH_STYLE_NATIVE));
+    test_ptr_success(str = path_get(path, PATH_STYLE_NATIVE));
+    
+    test_ptr_success_errno(fp = fopen(str_c(str), "wb+"));
+    test_int_success_errno(fprintf(fp, "YTIL TEST\n"));
+    test_int_success_errno(fclose(fp));
+}
+
+TEST_TEARDOWN(fs_rmfile)
+{
+    unlink(str_c(str));
+    str_unref(str);
     path_free(path);
 }
 
@@ -76,27 +104,11 @@ TEST_CASE(fs_stat_not_found)
     path_free(path);
 }
 
-static void _test_fs_file_new(void *_test_case_ctx, path_ct *path, str_ct *str)
-{
-    FILE *fp;
-    
-    test_ptr_success(*path = path_get_base_dir(PATH_BASE_DIR_TMP));
-    test_void(env_free());
-    
-    test_ptr_success(path_append(*path, LIT("ytil_test_file"), PATH_STYLE_NATIVE));
-    test_ptr_success(*str = path_get(*path, PATH_STYLE_NATIVE));
-    
-    test_ptr_success_errno(fp = fopen(str_c(*str), "wb+"));
-    test_int_success_errno(fprintf(fp, "YTIL TEST\n"));
-    test_int_success_errno(fclose(fp));
-}
-
-TEST_CASE(fs_stat_file)
+TEST_CASE_FIXTURE(fs_stat_file, fs_mkfile, fs_rmfile)
 {
     fs_stat_st fst;
     struct stat st;
     
-    _test_fs_file_new(TEST_CTX, &path, &str);
     test_int_success_errno(stat(str_c(str), &st));
     
     test_ptr_success(fs_stat(path, FS_LINK_FOLLOW, &fst));
@@ -107,19 +119,14 @@ TEST_CASE(fs_stat_file)
     test_int_eq(fst.atime, st.st_atime);
     test_int_eq(fst.mtime, st.st_mtime);
     test_int_eq(fst.ctime, st.st_ctime);
-    
-    test_int_success_errno(unlink(str_c(str)));
-    str_unref(str);
-    path_free(path);
 }
 
 #ifndef _WIN32
-TEST_CASE(fs_stat_link)
+TEST_CASE_FIXTURE(fs_stat_link, fs_mkfile, fs_rmfile)
 {
     str_ct lstr;
     fs_stat_st fst;
     
-    _test_fs_file_new(TEST_CTX, &path, &str);
     test_ptr_success(path_drop(path, 1));
     test_ptr_success(path_append(path, LIT("ytil_test_link"), PATH_STYLE_NATIVE));
     test_ptr_success(lstr = path_get(path, PATH_STYLE_NATIVE));
@@ -130,11 +137,8 @@ TEST_CASE(fs_stat_link)
     test_ptr_success(fs_stat(path, FS_LINK_NOFOLLOW, &fst));
     test_uint_eq(fst.type, FS_TYPE_LINK);
     
-    test_int_success_errno(unlink(str_c(lstr)));
-    test_int_success_errno(unlink(str_c(str)));
+    unlink(str_c(lstr));
     str_unref(lstr);
-    str_unref(str);
-    path_free(path);
 }
 #endif
 
@@ -178,25 +182,6 @@ static int _test_fs_walk(path_const_ct file, size_t depth, fs_stat_st *info, voi
     return 0;
 }
 
-TEST_CASE_ABORT(fs_walk_invalid_path1)
-{
-    fs_walk(NULL, 0, FS_WALK_PREORDER, FS_LINK_FOLLOW, _test_fs_walk, NULL);
-}
-
-#ifndef _WIN32
-TEST_CASE(fs_walk_invalid_path2)
-{
-    test_ptr_success(path = path_new(LIT("c:\\foo"), PATH_STYLE_WINDOWS));
-    test_int_error(fs_walk(path, 0, FS_WALK_PREORDER, FS_LINK_FOLLOW, _test_fs_walk, NULL), E_FS_INVALID_PATH);
-    path_free(path);
-}
-#endif
-
-TEST_CASE_FIXTURE_ABORT(fs_walk_invalid_callback, path_new, path_free)
-{
-    fs_walk(path, 0, FS_WALK_PREORDER, FS_LINK_FOLLOW, NULL, NULL);
-}
-
 static void _test_fs_mkdir(void *_test_case_ctx, path_ct base, const char *dir, bool mkfile, size_t drop)
 {
     FILE *fp;
@@ -237,27 +222,36 @@ TEST_SETUP(fs_mktree)
     _test_fs_mkdir(TEST_CTX, path, "baz3", true, 2);
 }
 
-static int _test_fs_rmdir(path_const_ct file, size_t depth, fs_stat_st *info, void *ctx)
-{
-    str_ct str = path_get(file, PATH_STYLE_NATIVE);
-    
-    switch(info->type)
-    {
-    case FS_TYPE_REGULAR:   unlink(str_c(str)); break;
-    case FS_TYPE_DIRECTORY: rmdir(str_c(str)); break;
-    default:                abort();
-    }
-    
-    str_unref(str);
-    
-    return 0;
-}
-
 TEST_TEARDOWN(fs_rmtree)
 {
-    fs_walk(path, -1, FS_WALK_POSTORDER, FS_LINK_NOFOLLOW, _test_fs_rmdir, NULL);
-    
+    fs_remove(path);
     env_free();
+    path_free(path);
+}
+
+TEST_CASE_ABORT(fs_walk_invalid_path1)
+{
+    fs_walk(NULL, 0, FS_WALK_PREORDER, FS_LINK_FOLLOW, _test_fs_walk, NULL);
+}
+
+#ifndef _WIN32
+TEST_CASE(fs_walk_invalid_path2)
+{
+    test_ptr_success(path = path_new(LIT("c:\\foo"), PATH_STYLE_WINDOWS));
+    test_int_error(fs_walk(path, 0, FS_WALK_PREORDER, FS_LINK_FOLLOW, _test_fs_walk, NULL), E_FS_INVALID_PATH);
+    path_free(path);
+}
+#endif
+
+TEST_CASE_FIXTURE_ABORT(fs_walk_invalid_callback, path_new, path_free)
+{
+    fs_walk(path, 0, FS_WALK_PREORDER, FS_LINK_FOLLOW, NULL, NULL);
+}
+
+TEST_CASE(fs_walk_not_found)
+{
+    test_ptr_success(path = path_new(LIT("/ytil_test"), PATH_STYLE_NATIVE));
+    test_int_error(fs_walk(path, 0, FS_WALK_PREORDER, FS_LINK_FOLLOW, _test_fs_walk, NULL), E_FS_NOT_FOUND);
     path_free(path);
 }
 
@@ -299,6 +293,43 @@ TEST_CASE_FIXTURE(fs_walk_recursive_postorder, fs_mktree, fs_rmtree)
     test_uint_eq(test.depth, 0);
 }
 
+TEST_CASE_ABORT(fs_remove_invalid_path1)
+{
+    fs_remove(NULL);
+}
+
+#ifndef _WIN32
+TEST_CASE(fs_remove_invalid_path2)
+{
+    test_ptr_success(path = path_new(LIT("c:\\foo"), PATH_STYLE_WINDOWS));
+    test_ptr_error(fs_remove(path), E_FS_INVALID_PATH);
+    path_free(path);
+}
+#endif
+
+TEST_CASE(fs_remove_not_found)
+{
+    test_ptr_success(path = path_new(LIT("/ytil_test"), PATH_STYLE_NATIVE));
+    test_int_error(fs_remove(path), E_FS_NOT_FOUND);
+    path_free(path);
+}
+
+TEST_CASE_FIXTURE(fs_remove_file, fs_mkfile, fs_rmfile)
+{
+    fs_stat_st fst;
+    
+    test_int_success(fs_remove(path));
+    test_ptr_error(fs_stat(path, FS_LINK_NOFOLLOW, &fst), E_FS_NOT_FOUND);
+}
+
+TEST_CASE_FIXTURE(fs_remove_dir, fs_mktree, fs_rmtree)
+{
+    fs_stat_st fst;
+    
+    test_int_success(fs_remove(path));
+    test_ptr_error(fs_stat(path, FS_LINK_NOFOLLOW, &fst), E_FS_NOT_FOUND);
+}
+
 test_suite_ct test_suite_sys_fsys(void)
 {
     return test_suite_new_with_cases("fs"
@@ -313,9 +344,16 @@ test_suite_ct test_suite_sys_fsys(void)
         , test_case_new(fs_walk_invalid_path1)
         , test_case_new_unix(fs_walk_invalid_path2)
         , test_case_new(fs_walk_invalid_callback)
+        , test_case_new(fs_walk_not_found)
         , test_case_new(fs_walk_depth0)
         , test_case_new(fs_walk_depth1)
         , test_case_new(fs_walk_recursive_preorder)
         , test_case_new(fs_walk_recursive_postorder)
+        
+        , test_case_new(fs_remove_invalid_path1)
+        , test_case_new_unix(fs_remove_invalid_path2)
+        , test_case_new(fs_remove_not_found)
+        , test_case_new(fs_remove_file)
+        , test_case_new(fs_remove_dir)
     );
 }

@@ -24,7 +24,6 @@
 #include <ytil/test/test.h>
 #include <ytil/sys/path.h>
 #include <ytil/sys/env.h>
-#include <stdio.h>
 
 #ifdef _WIN32
 #   include <initguid.h>
@@ -158,9 +157,7 @@ TEST_CASE_FIXTURE(path_get_base_dir_tmp_tmp_unset_temp_unset_tmpdir_unset, env_i
     test_ptr_success(path = path_get_base_dir(PATH_BASE_DIR_TMP));
     test_ptr_success(cpath = path_get(path, PATH_STYLE_POSIX));
     
-#ifdef P_tmpdir
-    test_str_eq(str_c(cpath), P_tmpdir);
-#elif defined(_WIN32)
+#ifdef _WIN32
     test_str_eq(str_c(cpath), "/windows/temp");
 #else
     test_str_eq(str_c(cpath), "/tmp");
