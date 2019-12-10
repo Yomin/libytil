@@ -23,6 +23,7 @@
 #include <ytil/sys/fs.h>
 #include <ytil/def.h>
 #include <dirent.h>
+#include <unistd.h>
 #include <sys/stat.h>
 
 
@@ -217,6 +218,7 @@ typedef struct fs_remove_state
 {
     fs_remove_mode_id mode;
     path_ct *blocker;
+    bool error;
 } fs_remove_st;
 
 static int fs_walk_remove(path_const_ct file, size_t depth, fs_stat_st *info, void *ctx)
@@ -226,17 +228,17 @@ static int fs_walk_remove(path_const_ct file, size_t depth, fs_stat_st *info, vo
     int rc;
     
     if(!(str = path_get(file, PATH_STYLE_NATIVE)))
-        return error_wrap(), -1;
+        return error_pack(E_FS_INVALID_PATH), -1;
     
     if(info->type == FS_TYPE_DIRECTORY)
     {
-        if((rc = rmdir(str_c(str))) && (!state->blocker || !*state->blocker))
-            error_push_errno(rmdir);
+        if((rc = rmdir(str_c(str))) && !state->error)
+            error_push_errno(E_FS_ERRNO, rmdir);
     }
     else
     {
-        if((rc = unlink(str_c(str))))
-            error_push_errno(unlink);
+        if((rc = unlink(str_c(str))) && !state->error)
+            error_push_errno(E_FS_ERRNO, unlink);
     }
     
     str_unref(str);
@@ -244,8 +246,13 @@ static int fs_walk_remove(path_const_ct file, size_t depth, fs_stat_st *info, vo
     if(!rc)
         return 0;
     
-    if(state->blocker && !*state->blocker)
-        *state->blocker = path_dup(file); // may fail, user has to check if set
+    if(!state->error && state->blocker)
+    {
+        // may fail, user has to check if set
+        *state->blocker = error_freezer(path_dup(file));
+    }
+    
+    state->error = true;
     
     return state->mode == FS_REMOVE_STOP ? rc : 0;
 }
@@ -253,11 +260,15 @@ static int fs_walk_remove(path_const_ct file, size_t depth, fs_stat_st *info, vo
 int fs_remove(path_const_ct file, fs_remove_mode_id mode, path_ct *blocker)
 {
     fs_remove_st state = { .mode = mode, .blocker = blocker };
+    int rc;
     
     assert(mode < FS_REMOVE_MODES);
     
     if(blocker)
         *blocker = NULL;
     
-    return error_pass_int(fs_walk(file, -1, FS_WALK_POSTORDER, FS_LINK_NOFOLLOW, fs_walk_remove, &state));
+    rc = error_lift_int(E_FS_CALLBACK,
+        fs_walk(file, -1, FS_WALK_POSTORDER, FS_LINK_NOFOLLOW, fs_walk_remove, &state));
+    
+    return rc ? rc : state.error ? -1 : 0;
 }

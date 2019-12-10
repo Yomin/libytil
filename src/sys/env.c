@@ -256,7 +256,7 @@ int env_fold(env_fold_cb fold, void *ctx)
     if(!env && env_init())
         return error_pass(), -1;
     
-    return error_skip_int(E_ART_CALLBACK, art_fold_k(env, env_art_fold_value, &state));
+    return error_pick_int(E_ART_CALLBACK, art_fold_k(env, env_art_fold_value, &state));
 }
 
 static int env_dump_value(str_const_ct name, str_const_ct value, void *ctx)

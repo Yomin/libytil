@@ -357,6 +357,6 @@ int test_suite_fold(test_suite_const_ct suite, test_suite_fold_cb fold, void *ct
     return_error_if_fail(suite, E_TEST_SUITE_INVALID_OBJECT, -1);
     return_error_if_fail(fold, E_TEST_SUITE_INVALID_CALLBACK, -1);
     
-    return error_skip_int(E_VEC_CALLBACK,
+    return error_pick_int(E_VEC_CALLBACK,
         vec_fold(suite->entries, test_suite_vec_fold_entry, &state));
 }

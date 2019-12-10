@@ -137,14 +137,23 @@ void    _error_pack(const char *func, const error_info_st *infos, size_t error);
 void    _error_map(const char *func, size_t depth, const error_info_st *infos, ...);
 #define  error_map(depth, ...) _error_map(__func__, (depth), error_infos, __VA_ARGS__, E_ERROR_UNSET)
 
-// push transparent wrapper error
+// push transparent pass error
 void    _error_pass(const char *func);
 #define  error_pass() _error_pass(__func__)
 
-// if matched push transparent skipper error which skips the matched error
+// push transparent skip error, makes underlying error also transparent
+void    _error_skip(const char *func);
+#define  error_skip() _error_skip(__func__)
+
+// push transparent skip error if last error matches
 // else push generic wrapper error
-void    _error_skip(const char *func, size_t error);
-#define  error_skip(error) _error_skip(__func__, error)
+void    _error_pick(const char *func, size_t error);
+#define  error_pick(error) _error_pick(__func__, (error))
+
+// push transparent skip error if last error matches
+// else push transparent pass error
+void    _error_lift(const char *func, size_t error);
+#define  error_lift(error) _error_lift(__func__, (error))
 
 
 // clear stack, push errno error
@@ -164,7 +173,7 @@ void    _error_push_errno(const char *func, const error_info_st *infos, size_t e
 void    _error_wrap_errno(const char *func, const char *sub);
 #define  error_wrap_errno(sub) _error_wrap_errno(__func__, #sub)
 
-// clear stack, push errno error from sub, push transparent wrapper error
+// clear stack, push errno error from sub, push transparent pass error
 void    _error_pass_errno(const char *func, const char *sub);
 #define  error_pass_errno(sub) _error_pass_errno(__func__, #sub)
 
@@ -187,11 +196,11 @@ void    _error_wrap_win32(const char *func, const char *sub, DWORD error);
 void    _error_wrap_last_win32(const char *func, const char *sub);
 #define  error_wrap_last_win32(sub) _error_wrap_last_win32(__func__, #sub)
 
-// clear stack, push WIN32 error from sub, push transparent wrapper error
+// clear stack, push WIN32 error from sub, push transparent pass error
 void    _error_pass_win32(const char *func, const char *sub, DWORD error);
 #define  error_pass_win32(sub, error) _error_pass_win32(__func__, #sub, (error))
 
-// clear stack, push last WIN32 error from sub, push transparent wrapper error
+// clear stack, push last WIN32 error from sub, push transparent pass error
 void    _error_pass_last_win32(const char *func, const char *sub);
 #define  error_pass_last_win32(sub) _error_pass_last_win32(__func__, #sub)
 
@@ -204,7 +213,7 @@ void    _error_push_hresult(const char *func, const error_info_st *infos, size_t
 void    _error_wrap_hresult(const char *func, const char *sub, HRESULT result);
 #define  error_wrap_hresult(sub, result) _error_wrap_hresult(__func__, #sub, (result))
 
-// clear stack, push HRESULT error from sub, push transparent wrapper error
+// clear stack, push HRESULT error from sub, push transparent pass error
 void    _error_pass_hresult(const char *func, const char *sub, HRESULT result);
 #define  error_pass_hresult(sub, result) _error_pass_hresult(__func__, #sub, (result))
 
@@ -217,34 +226,25 @@ void    _error_push_ntstatus(const char *func, const error_info_st *infos, size_
 void    _error_wrap_ntstatus(const char *func, const char *sub, NTSTATUS status);
 #define  error_wrap_ntstatus(sub, status) _error_wrap_ntstatus(__func__, #sub, (status))
 
-// clear stack, push NTSTATUS error from sub, push transparent wrapper error
+// clear stack, push NTSTATUS error from sub, push transparent pass error
 void    _error_pass_ntstatus(const char *func, const char *sub, NTSTATUS status);
 #define  error_pass_ntstatus(sub, status) _error_pass_ntstatus(__func__, #sub, (status))
 
 #endif // _WIN32
 
 
-// convenience macro for enclosing functions with int rc
-// to push/wrap/pack/pass/skip error on the fly
-#define error_proc_int(action, sub, ...) __extension__ ({ \
+// convenience macro for enclosing functions to handle errors on the fly
+#define error_proc(action, sub, cond, ...) __extension__ ({ \
     __auto_type rc = (sub); \
     \
-    if(rc < 0) \
+    if(cond) \
         error_##action(__VA_ARGS__); \
     \
     rc; \
 })
 
-// convenience macro for enclosing functions with pointer rc
-// to push/wrap/pack/pass/skip error on the fly
-#define error_proc_ptr(action, sub, ...) __extension__ ({ \
-    __auto_type rc = (sub); \
-    \
-    if(!rc) \
-        error_##action(__VA_ARGS__); \
-    \
-    rc; \
-})
+#define error_proc_int(action, sub, ...) error_proc(action, sub, rc < 0, __VA_ARGS__)
+#define error_proc_ptr(action, sub, ...) error_proc(action, sub, !rc,    __VA_ARGS__)
 
 #define error_push_int(err, sub) error_proc_int(push, sub, err)
 #define error_push_ptr(err, sub) error_proc_ptr(push, sub, err)
@@ -254,14 +254,30 @@ void    _error_pass_ntstatus(const char *func, const char *sub, NTSTATUS status)
 #define error_pack_ptr(err, sub) error_proc_ptr(pack, sub, err)
 #define error_pass_int(sub)      error_proc_int(pass, sub)
 #define error_pass_ptr(sub)      error_proc_ptr(pass, sub)
-#define error_skip_int(err, sub) error_proc_int(skip, sub, err)
-#define error_skip_ptr(err, sub) error_proc_ptr(skip, sub, err)
+#define error_skip_int(sub)      error_proc_int(skip, sub)
+#define error_skip_ptr(sub)      error_proc_ptr(skip, sub)
+#define error_pick_int(err, sub) error_proc_int(pick, sub, err)
+#define error_pick_ptr(err, sub) error_proc_ptr(pick, sub, err)
+#define error_lift_int(err, sub) error_proc_int(lift, sub, err)
+#define error_lift_ptr(err, sub) error_proc_ptr(lift, sub, err)
 
 
 // clear error stack
 void   error_clear(void);
 // get number of errors on stack
 size_t error_depth(void);
+
+// freeze error stack, modifications are silently ignored
+void error_freeze(void);
+// unfreeze error stack
+void error_unfreeze(void);
+
+#define error_freezer(sub) __extension__ ({ \
+    error_freeze(); \
+    __auto_type rc = (sub); \
+    error_unfreeze(); \
+    rc; \
+})
 
 // get error type name
 const char *error_strtype(error_type_id type);

@@ -92,6 +92,9 @@ typedef struct test_case_config
 #define TEST_TEARDOWN(name) \
     static void _test_teardown_##name(void *_test_case_ctx, void **_test_case_state)
 
+#define TEST_FUNCTION(type, name, ...) \
+    static type _test_func_##name(void *_test_case_ctx, void **_test_case_state, __VA_ARGS__)
+
 #define TEST_STATE \
     (*_test_case_state)
 

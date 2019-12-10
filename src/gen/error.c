@@ -76,6 +76,7 @@ typedef struct error_state
 {
     error_entry_st stack[ERROR_STACK_SIZE];
     size_t size;
+    bool frozen;
 } error_state_st;
 
 static error_state_st errors;
@@ -91,8 +92,14 @@ static const error_info_st error_infos[] =
 
 static error_entry_st *error_add(error_type_id type, const char *func)
 {
-    size_t id = errors.size < ERROR_STACK_SIZE ? errors.size : ERROR_STACK_SIZE-1;
-    error_entry_st *entry = &errors.stack[id];
+    size_t id;
+    error_entry_st *entry;
+    
+    if(errors.frozen)
+        return NULL;
+    
+    id = errors.size < ERROR_STACK_SIZE ? errors.size : ERROR_STACK_SIZE-1;
+    entry = &errors.stack[id];
     
     entry->type = type;
     entry->func = func;
@@ -104,16 +111,22 @@ static error_entry_st *error_add(error_type_id type, const char *func)
 
 void _error_set(const char *func, const error_info_st *infos, size_t error)
 {
-    errors.size = 0;
-    _error_push(func, infos, error);
+    if(!errors.frozen)
+    {
+        errors.size = 0;
+        _error_push(func, infos, error);
+    }
 }
 
 void _error_push(const char *func, const error_info_st *infos, size_t error)
 {
-    error_entry_st *entry = error_add(ERROR_TYPE_ERROR, func);
+    error_entry_st *entry;
     
-    entry->value.error.code = error;
-    entry->value.error.infos = infos;
+    if((entry = error_add(ERROR_TYPE_ERROR, func)))
+    {
+        entry->value.error.code = error;
+        entry->value.error.infos = infos;
+    }
 }
 
 void _error_wrap(const char *func)
@@ -162,25 +175,42 @@ void _error_pass(const char *func)
     _error_push(func, error_infos, E_ERROR_PASS);
 }
 
-void _error_skip(const char *func, size_t error)
+void _error_skip(const char *func)
+{
+    _error_push(func, error_infos, E_ERROR_SKIP);
+}
+
+void _error_pick(const char *func, size_t error)
 {
     if(error_check(0, error))
-        _error_push(func, error_infos, E_ERROR_SKIP);
+        _error_skip(func);
     else
         _error_wrap(func);
 }
 
+void _error_lift(const char *func, size_t error)
+{
+    if(error_check(0, error))
+        _error_skip(func);
+    else
+        _error_pass(func);
+}
+
 void _errno_set(const char *func, int error)
 {
-    errors.size = 0;
-    _errno_push(func, error);
+    if(!errors.frozen)
+    {
+        errors.size = 0;
+        _errno_push(func, error);
+    }
 }
 
 void _errno_push(const char *func, int error)
 {
-    error_entry_st *entry = error_add(ERROR_TYPE_ERRNO, func);
+    error_entry_st *entry;
     
-    entry->value._errno.code = error;
+    if((entry = error_add(ERROR_TYPE_ERRNO, func)))
+        entry->value._errno.code = error;
 }
 
 void _error_push_errno(const char *func, const error_info_st *infos, size_t error, const char *sub)
@@ -207,9 +237,12 @@ static void error_set_win32(const char *sub, DWORD error)
 {
     error_entry_st *entry;
     
-    errors.size = 0;
-    entry = error_add(ERROR_TYPE_WIN32, sub);
-    entry->value.win32.code = error;
+    if(!errors.frozen)
+    {
+        errors.size = 0;
+        entry = error_add(ERROR_TYPE_WIN32, sub);
+        entry->value.win32.code = error;
+    }
 }
 
 void _error_push_win32(const char *func, const error_info_st *infos, size_t error, const char *sub, DWORD error32)
@@ -249,9 +282,12 @@ static void error_set_hresult(const char *sub, HRESULT result)
 {
     error_entry_st *entry;
     
-    errors.size = 0;
-    entry = error_add(ERROR_TYPE_HRESULT, sub);
-    entry->value.hresult.result = result;
+    if(!errors.frozen)
+    {
+        errors.size = 0;
+        entry = error_add(ERROR_TYPE_HRESULT, sub);
+        entry->value.hresult.result = result;
+    }
 }
 
 void _error_push_hresult(const char *func, const error_info_st *infos, size_t error, const char *sub, HRESULT result)
@@ -276,9 +312,12 @@ static void error_set_ntstatus(const char *sub, NTSTATUS status)
 {
     error_entry_st *entry;
     
-    errors.size = 0;
-    entry = error_add(ERROR_TYPE_NTSTATUS, sub);
-    entry->value.ntstatus.status = status;
+    if(!errors.frozen)
+    {
+        errors.size = 0;
+        entry = error_add(ERROR_TYPE_NTSTATUS, sub);
+        entry->value.ntstatus.status = status;
+    }
 }
 
 void _error_push_ntstatus(const char *func, const error_info_st *infos, size_t error, const char *sub, NTSTATUS status)
@@ -309,6 +348,16 @@ void error_clear(void)
 size_t error_depth(void)
 {
     return errors.size;
+}
+
+void error_freeze(void)
+{
+    errors.frozen = true;
+}
+
+void error_unfreeze(void)
+{
+    errors.frozen = false;
 }
 
 const char *error_strtype(error_type_id type)

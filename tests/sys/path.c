@@ -24,6 +24,7 @@
 #include <ytil/test/test.h>
 #include <ytil/sys/path.h>
 #include <ytil/sys/env.h>
+#include <stdio.h>
 
 #ifdef _WIN32
 #   include <initguid.h>

@@ -321,6 +321,6 @@ int test_state_fold_msg(test_state_ct state, test_state_msg_cb fold, void *ctx)
     if(!state->msg)
         return 0;
     
-    return error_skip_int(E_VEC_CALLBACK,
+    return error_pick_int(E_VEC_CALLBACK,
         vec_fold(state->msg, test_state_vec_fold_msg, &fstate));
 }

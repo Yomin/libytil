@@ -61,6 +61,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define  test_state_alloc(size) (TEST_STATE = test_alloc(size))
 #define  test_state_free() test_free(TEST_STATE)
 
+#define  test_call(name, ...) _test_func_##name(TEST_CTX, TEST_STATE, __VA_ARGS__)
+
 
 #define test_case_info(expr, ...) do { \
     test_begin(); \
