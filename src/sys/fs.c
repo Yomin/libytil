@@ -29,7 +29,8 @@
 
 static const error_info_st error_infos[] =
 {
-      ERROR_INFO(E_FS_CALLBACK, "Callback error.")
+      ERROR_INFO(E_FS_ACCESS_DENIED, "Access denied.")
+    , ERROR_INFO(E_FS_CALLBACK, "Callback error.")
     , ERROR_INFO(E_FS_ERRNO, "ERRNO wrapper.")
     , ERROR_INFO(E_FS_INVALID_PATH, "Invalid path.")
     , ERROR_INFO(E_FS_NOT_DIRECTORY, "Path is not a directory.")
@@ -115,6 +116,7 @@ static int fs_walk_dir(path_ct path, ssize_t maxdepth, size_t depth, fs_walk_ord
         if(!dp)
             switch(errno)
             {
+            case EACCES:    return error_push_errno(E_FS_ACCESS_DENIED, opendir), -1;
             case ENOENT:    return error_push_errno(E_FS_NOT_FOUND, opendir), -1;
             case ENOTDIR:   return error_push_errno(E_FS_NOT_DIRECTORY, opendir), -1;
             default:        return error_push_errno(E_FS_ERRNO, opendir), -1;

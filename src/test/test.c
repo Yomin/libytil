@@ -86,7 +86,6 @@ void _test_abort(void *vctx, const char *file, size_t line, bool backtrace, cons
     
     if(backtrace)
         for(e=0; e < error_depth(); e++)
-        {
             switch(error_stack_get_type(e))
             {
             case ERROR_TYPE_ERROR:
@@ -102,6 +101,10 @@ void _test_abort(void *vctx, const char *file, size_t line, bool backtrace, cons
                     test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s",
                         e, error_stack_get_func(e));
                     continue;
+                case E_ERROR_SKIP:
+                    test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: <skip>",
+                        e, error_stack_get_func(e));
+                    continue;
                 default:
                     break;
                 }
@@ -109,12 +112,9 @@ void _test_abort(void *vctx, const char *file, size_t line, bool backtrace, cons
             default:
                 test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: %s",
                     e, error_stack_get_func(e), error_stack_get_name(e));
-                break;
+                test_com_send_msg(ctx->com, TEST_MSG_ERROR, 2, "%s",
+                    error_stack_get_desc(e));
             }
-            
-            if(!e)
-                test_com_send_msg(ctx->com, TEST_MSG_ERROR, 2, "%s", error_stack_get_desc(0));
-        }
     
     if(ctx->jump)
         longjmp(*ctx->jump, 1);

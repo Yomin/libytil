@@ -189,13 +189,14 @@ static int _test_fs_walk(path_const_ct file, size_t depth, fs_stat_st *info, voi
     return 0;
 }
 
-TEST_FUNCTION(void, fs_mkdir, path_ct base, const char *dir, bool mkfile, size_t drop)
+TEST_FUNCTION(void, fs_mkdir, path_ct base, const char *dir, int mode, bool mkfile, size_t drop)
 {
     FILE *fp;
     
     test_ptr_success(path_append_c(base, dir, PATH_STYLE_POSIX));
     test_ptr_success(str = path_get(base, PATH_STYLE_NATIVE));
-    test_int_maybe_errno(mkdir(str_c(str), S_IRWXU|S_IRWXG), EEXIST);
+    test_int_maybe_errno(mkdir(str_c(str), mode), EEXIST);
+    test_int_success_errno(chmod(str_c(str), mode));
     str_unref(str);
     
     if(mkfile)
@@ -210,23 +211,40 @@ TEST_FUNCTION(void, fs_mkdir, path_ct base, const char *dir, bool mkfile, size_t
     test_ptr_success(path_drop(base, drop+(mkfile?1:0)));
 }
 
-TEST_SETUP(fs_mktree)
+TEST_FUNCTION(void, fs_mktree, bool blocker)
 {
     test_ptr_success(path = path_get_base_dir(PATH_BASE_DIR_TMP));
     
-    test_call(fs_mkdir, path, "ytil_test_dir2", false, 0);
-    test_call(fs_mkdir, path, "foo", false, 0);
-    test_call(fs_mkdir, path, "foo1", true, 1);
-    test_call(fs_mkdir, path, "foo2", true, 1);
-    test_call(fs_mkdir, path, "foo3", true, 2);
-    test_call(fs_mkdir, path, "bar", false, 0);
-    test_call(fs_mkdir, path, "bar1", true, 1);
-    test_call(fs_mkdir, path, "bar2", true, 1);
-    test_call(fs_mkdir, path, "bar3", true, 2);
-    test_call(fs_mkdir, path, "baz", false, 0);
-    test_call(fs_mkdir, path, "baz1", true, 1);
-    test_call(fs_mkdir, path, "baz2", true, 1);
-    test_call(fs_mkdir, path, "baz3", true, 2);
+    test_call(fs_mkdir, path, "ytil_test_dir2", S_IRWXU, false, 0);
+    test_call(fs_mkdir, path, "foo", S_IRWXU, false, 0);
+    test_call(fs_mkdir, path, "foo1", S_IRWXU, true, 1);
+    test_call(fs_mkdir, path, "foo2", S_IRWXU, true, 1);
+    test_call(fs_mkdir, path, "foo3", S_IRWXU, true, 2);
+    
+    if(blocker)
+        test_call(fs_mkdir, path, "bar", 0, false, 1);
+    else
+    {
+        test_call(fs_mkdir, path, "bar", S_IRWXU, false, 0);
+        test_call(fs_mkdir, path, "bar1", S_IRWXU, true, 1);
+        test_call(fs_mkdir, path, "bar2", S_IRWXU, true, 1);
+        test_call(fs_mkdir, path, "bar3", S_IRWXU, true, 2);
+    }
+    
+    test_call(fs_mkdir, path, "baz", S_IRWXU, false, 0);
+    test_call(fs_mkdir, path, "baz1", S_IRWXU, true, 1);
+    test_call(fs_mkdir, path, "baz2", S_IRWXU, true, 1);
+    test_call(fs_mkdir, path, "baz3", S_IRWXU, true, 2);
+}
+
+TEST_SETUP(fs_mktree)
+{
+    test_call(fs_mktree, false);
+}
+
+TEST_SETUP(fs_mktree_blocker)
+{
+    test_call(fs_mktree, true);
 }
 
 TEST_TEARDOWN(fs_rmtree)
@@ -352,6 +370,18 @@ TEST_CASE_FIXTURE(fs_remove_dir, fs_mktree, fs_rmtree)
     test_ptr_error(fs_stat(path, FS_LINK_NOFOLLOW, &fst), E_FS_NOT_FOUND);
 }
 
+TEST_CASE_FIXTURE(fs_remove_blocker, fs_mktree_blocker, fs_rmtree)
+{
+    path_ct blocker;
+    str_ct bstr;
+    
+    test_int_error(fs_remove(path, FS_REMOVE_STOP, &blocker), E_FS_ACCESS_DENIED);
+    test_ptr_success(bstr = path_get(blocker, PATH_STYLE_NATIVE));
+    test_msg_info("blocker %s", str_c(bstr));
+    str_unref(bstr);
+    path_free(blocker);
+}
+
 test_suite_ct test_suite_sys_fsys(void)
 {
     return test_suite_new_with_cases("fs"
@@ -381,5 +411,6 @@ test_suite_ct test_suite_sys_fsys(void)
         , test_case_new(fs_remove_not_found)
         , test_case_new(fs_remove_file)
         , test_case_new(fs_remove_dir)
+        , test_case_new(fs_remove_blocker)
     );
 }

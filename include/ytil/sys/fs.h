@@ -27,7 +27,8 @@
 
 typedef enum fs_error
 {
-      E_FS_CALLBACK
+      E_FS_ACCESS_DENIED
+    , E_FS_CALLBACK
     , E_FS_ERRNO
     , E_FS_INVALID_PATH
     , E_FS_NOT_DIRECTORY
