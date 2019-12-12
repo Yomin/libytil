@@ -38,6 +38,17 @@ static const error_info_st error_infos[] =
 };
 
 
+static fs_error_id fs_get_errno_error(void)
+{
+    switch(errno)
+    {
+    case EACCES:    return E_FS_ACCESS_DENIED;
+    case ENOENT:    return E_FS_NOT_FOUND;
+    case ENOTDIR:   return E_FS_NOT_DIRECTORY;
+    default:        return E_FS_ERRNO;
+    }
+}
+
 fs_stat_st *fs_stat(path_const_ct file, fs_link_mode_id mode, fs_stat_st *fst)
 {
     struct stat st;
@@ -64,11 +75,7 @@ fs_stat_st *fs_stat(path_const_ct file, fs_link_mode_id mode, fs_stat_st *fst)
     str_unref(path);
     
     if(rc)
-        switch(errno)
-        {
-        case ENOENT:    return error_push_errno(E_FS_NOT_FOUND, stat), NULL;
-        default:        return error_push_errno(E_FS_ERRNO, stat), NULL;
-        }
+        return error_push_errno(fs_get_errno_error(), stat), NULL;
     
     switch(st.st_mode & S_IFMT)
     {
@@ -114,13 +121,7 @@ static int fs_walk_dir(path_ct path, ssize_t maxdepth, size_t depth, fs_walk_ord
         str_unref(str);
         
         if(!dp)
-            switch(errno)
-            {
-            case EACCES:    return error_push_errno(E_FS_ACCESS_DENIED, opendir), -1;
-            case ENOENT:    return error_push_errno(E_FS_NOT_FOUND, opendir), -1;
-            case ENOTDIR:   return error_push_errno(E_FS_NOT_DIRECTORY, opendir), -1;
-            default:        return error_push_errno(E_FS_ERRNO, opendir), -1;
-            }
+            return error_push_errno(fs_get_errno_error(), opendir), -1;
         
         for(errno = 0; (ep = readdir(dp)); errno = 0)
         {
@@ -149,7 +150,7 @@ static int fs_walk_dir(path_ct path, ssize_t maxdepth, size_t depth, fs_walk_ord
         }
         
         if(errno)
-            return error_push_errno(E_FS_ERRNO, readdir), closedir(dp), -1;
+            return error_push_errno(fs_get_errno_error(), readdir), closedir(dp), -1;
         
         closedir(dp);
     }
@@ -235,12 +236,12 @@ static int fs_walk_remove(path_const_ct file, size_t depth, fs_stat_st *info, vo
     if(info->type == FS_TYPE_DIRECTORY)
     {
         if((rc = rmdir(str_c(str))) && !state->error)
-            error_push_errno(E_FS_ERRNO, rmdir);
+            error_push_errno(fs_get_errno_error(), rmdir);
     }
     else
     {
         if((rc = unlink(str_c(str))) && !state->error)
-            error_push_errno(E_FS_ERRNO, unlink);
+            error_push_errno(fs_get_errno_error(), unlink);
     }
     
     str_unref(str);

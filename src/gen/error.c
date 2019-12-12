@@ -83,10 +83,10 @@ static error_state_st errors;
 
 static const error_info_st error_infos[] =
 {
-      [-E_ERROR_UNSET]   = { .name = "E_ERROR_UNSET",   .desc = "Error Unset" }
-    , [-E_ERROR_WRAPPER] = { .name = "E_ERROR_WRAPPER", .desc = "Error Wrapper" }
-    , [-E_ERROR_PASS]    = { .name = "E_ERROR_PASS",    .desc = "Error Pass" }
-    , [-E_ERROR_SKIP]    = { .name = "E_ERROR_SKIP",    .desc = "Error Skipper" }
+      [-E_ERROR_UNSET]  = { .name = "E_ERROR_UNSET",    .desc = "Error unset." }
+    , [-E_ERROR_WRAP]   = { .name = "E_ERROR_WRAP",     .desc = "WRAP Error" }
+    , [-E_ERROR_PASS]   = { .name = "E_ERROR_PASS",     .desc = "PASS Error" }
+    , [-E_ERROR_SKIP]   = { .name = "E_ERROR_SKIP",     .desc = "SKIP Error" }
 };
 
 
@@ -131,12 +131,12 @@ void _error_push(const char *func, const error_info_st *infos, size_t error)
 
 void _error_wrap(const char *func)
 {
-    _error_push(func, error_infos, E_ERROR_WRAPPER);
+    _error_push(func, error_infos, E_ERROR_WRAP);
 }
 
 void _error_pack(const char *func, const error_info_st *infos, size_t error)
 {
-    if(error_type(0) == ERROR_TYPE_ERROR && error_get(0) == E_ERROR_WRAPPER)
+    if(error_type(0) == ERROR_TYPE_ERROR && error_get(0) == E_ERROR_WRAP)
         _error_wrap(func);
     else
         _error_push(func, infos, error);
@@ -376,28 +376,38 @@ const char *error_strtype(error_type_id type)
     }
 }
 
+static ssize_t error_next_level(ssize_t level)
+{
+    error_entry_st *entry;
+    
+    for(level--; level >= 0; level--)
+    {
+        entry = &errors.stack[level];
+        
+        if(entry->type != ERROR_TYPE_ERROR)
+            return level;
+        
+        switch(entry->value.error.code)
+        {
+        case E_ERROR_PASS:  break;
+        case E_ERROR_SKIP:  level = error_next_level(level); break;
+        default:            return level;
+        }
+    }
+    
+    return -1;
+}
+
 static error_entry_st *error_get_entry(size_t depth)
 {
-    size_t level;
+    ssize_t level;
     
     return_value_if_fail(errors.size, NULL);
     
-    for(level = errors.size-1;
-        level && errors.stack[level].type == ERROR_TYPE_ERROR
-              && errors.stack[level].value.error.code == E_ERROR_PASS;
-        level--);
+    for(level = errors.size, depth++; level >= 0 && depth; depth--)
+        level = error_next_level(level);
     
-    for(; level && depth; depth--)
-        for(level--;
-            level && errors.stack[level].type == ERROR_TYPE_ERROR
-                  && errors.stack[level].value.error.code == E_ERROR_PASS;
-            level--);
-    
-    if(depth || (errors.stack[level].type == ERROR_TYPE_ERROR
-             &&  errors.stack[level].value.error.code == E_ERROR_PASS))
-        return NULL;
-    
-    return &errors.stack[level];
+    return level < 0 || depth ? NULL : &errors.stack[level];
 }
 
 const char *error_name_error(const error_info_st *infos, size_t error)

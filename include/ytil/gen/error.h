@@ -89,10 +89,10 @@
 
 typedef enum error_error
 {
-      E_ERROR_UNSET   = -1
-    , E_ERROR_WRAPPER = -2
-    , E_ERROR_PASS    = -3
-    , E_ERROR_SKIP    = -4
+      E_ERROR_UNSET = -1
+    , E_ERROR_WRAP  = -2
+    , E_ERROR_PASS  = -3
+    , E_ERROR_SKIP  = -4
 } error_error_id;
 
 typedef enum error_type
@@ -105,6 +105,7 @@ typedef enum error_type
     , ERROR_TYPE_HRESULT
     , ERROR_TYPE_NTSTATUS
 #endif
+    , ERROR_TYPES
 } error_type_id;
 
 typedef struct error_info
