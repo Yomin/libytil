@@ -196,7 +196,9 @@ TEST_FUNCTION(void, fs_mkdir, path_ct base, const char *dir, int mode, bool mkfi
     test_ptr_success(path_append_c(base, dir, PATH_STYLE_POSIX));
     test_ptr_success(str = path_get(base, PATH_STYLE_NATIVE));
     test_int_maybe_errno(mkdir(str_c(str), mode), EEXIST);
+#ifdef _WIN32
     test_int_success_errno(chmod(str_c(str), mode));
+#endif
     str_unref(str);
     
     if(mkfile)
@@ -370,16 +372,25 @@ TEST_CASE_FIXTURE(fs_remove_dir, fs_mktree, fs_rmtree)
     test_ptr_error(fs_stat(path, FS_LINK_NOFOLLOW, &fst), E_FS_NOT_FOUND);
 }
 
-TEST_CASE_FIXTURE(fs_remove_blocker, fs_mktree_blocker, fs_rmtree)
+TEST_CASE_FIXTURE(fs_remove_fail_stop, fs_mktree_blocker, fs_rmtree)
 {
-    path_ct blocker;
-    str_ct bstr;
+    path_ct blocker1, blocker2;
+    str_ct bstr1, bstr2;
     
-    test_int_error(fs_remove(path, FS_REMOVE_STOP, &blocker), E_FS_ACCESS_DENIED);
-    test_ptr_success(bstr = path_get(blocker, PATH_STYLE_NATIVE));
-    test_msg_info("blocker %s", str_c(bstr));
-    str_unref(bstr);
-    path_free(blocker);
+    test_int_error(fs_remove(path, FS_REMOVE_STOP, &blocker1), E_FS_ACCESS_DENIED);
+    test_ptr_success(bstr1 = path_get(blocker1, PATH_STYLE_NATIVE));
+    
+    test_ptr_success(blocker2 = path_get_base_dir(PATH_BASE_DIR_TMP));
+    test_ptr_success(path_append(blocker2, LIT("ytil_test_dir2/bar"), PATH_STYLE_POSIX));
+    test_ptr_success(bstr2 = path_get(blocker2, PATH_STYLE_NATIVE));
+    test_void(env_free());
+    
+    test_str_eq(str_c(bstr1), str_c(bstr2));
+    
+    str_unref(bstr1);
+    str_unref(bstr2);
+    path_free(blocker1);
+    path_free(blocker2);
 }
 
 test_suite_ct test_suite_sys_fsys(void)
@@ -411,6 +422,6 @@ test_suite_ct test_suite_sys_fsys(void)
         , test_case_new(fs_remove_not_found)
         , test_case_new(fs_remove_file)
         , test_case_new(fs_remove_dir)
-        , test_case_new(fs_remove_blocker)
+        , test_case_new(fs_remove_fail_stop)
     );
 }
