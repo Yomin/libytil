@@ -37,11 +37,12 @@ void    _test_pos(void *ctx, test_pos_id type, const char *file, size_t line);
 #define  test_pos()       _test_pos(TEST_CTX, TEST_POS_EXACT, __FILE__, __LINE__)
 #define  test_pos_after() _test_pos(TEST_CTX, TEST_POS_AFTER, __FILE__, __LINE__)
 
-void    _test_msg(void *ctx, const char *file, size_t line, test_msg_id type, size_t level, const char *msg, ...);
-#define  test_msg(type, ...) _test_msg(TEST_CTX, __FILE__, __LINE__, (type), 0, __VA_ARGS__)
-#define  test_msg_info(...)   test_msg(TEST_MSG_INFO, __VA_ARGS__)
-#define  test_msg_warn(...)   test_msg(TEST_MSG_WARNING, __VA_ARGS__)
-#define  test_msg_error(...)  test_msg(TEST_MSG_ERROR, __VA_ARGS__)
+void    _test_msg(void *ctx, const char *file, size_t line, test_msg_id type, size_t level, bool backtrace, const char *msg, ...);
+#define  test_msg(type, bt, ...) _test_msg(TEST_CTX, __FILE__, __LINE__, (type), 0, (bt), __VA_ARGS__)
+#define  test_msg_info(...)       test_msg(TEST_MSG_INFO, false, __VA_ARGS__)
+#define  test_msg_warn(...)       test_msg(TEST_MSG_WARNING, false, __VA_ARGS__)
+#define  test_msg_error(...)      test_msg(TEST_MSG_ERROR, false, __VA_ARGS__)
+#define  test_msg_backtrace(...)  test_msg(TEST_MSG_ERROR, true, __VA_ARGS__)
 
 void    _test_begin(void *ctx, const char *file, size_t line);
 #define  test_begin() _test_begin(TEST_CTX, __FILE__, __LINE__)
@@ -152,7 +153,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     intmax_t rc; \
     \
     if((rc = (expr)) < 0) \
-        test_abort_backtrace("INT SUCCESS test failed: "#expr" (%jd, %s)", rc, error_name(0)); \
+        test_abort_backtrace("INT SUCCESS test failed: "#expr" (%jd)", rc); \
     \
     test_end(); \
 } while(0)
@@ -238,7 +239,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     intmax_t rc, _trc = (trc); \
     \
     if((rc = (expr)) < 0) \
-        test_abort_backtrace("RC SUCCESS test failed: "#expr" (%jd, %s)", rc, error_name(0)); \
+        test_abort_backtrace("RC SUCCESS test failed: "#expr" (%jd)", rc); \
     else if(rc != _trc) \
         test_abort("RC SUCCESS test failed: "#expr" == "#trc" (%jd == %jd)", rc, _trc); \
     \
@@ -299,7 +300,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     if(!(expr)) \
-        test_abort_backtrace("PTR SUCCESS test failed: "#expr" (%s)", error_name(0)); \
+        test_abort_backtrace("PTR SUCCESS test failed: "#expr); \
     \
     test_end(); \
 } while(0)
@@ -738,7 +739,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     NTSTATUS status = (expr); \
     \
     if(status != STATUS_SUCCESS) \
-        test_abort_backtrace("NTSTATUS SUCCESS test failed: "#expr" (%s)", error_name_ntstatus(status)); \
+        test_abort("NTSTATUS SUCCESS test failed: "#expr" (%s)", error_name_ntstatus(status)); \
     \
     test_end(); \
 } while(0)

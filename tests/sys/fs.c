@@ -170,24 +170,22 @@ TEST_CASE(fs_stat_dir)
 
 typedef struct fs_walk_test
 {
-    size_t dir, file, depth;
+    size_t dir_pre, dir_post, file;
 } fs_walk_test_st;
 
-static int _test_fs_walk(fs_walk_status_id status, path_const_ct file, size_t depth, fs_stat_st *info, void *ctx)
+static int _test_fs_walk(fs_walk_type_id type, path_const_ct file, size_t depth, fs_stat_st *info, void *ctx)
 {
     fs_walk_test_st *test = ctx;
     
-    if(status == FS_WALK_ERROR)
-        return error_pass(), -1;
-    
-    switch(info->type)
+    switch(type)
     {
-    case FS_TYPE_REGULAR:   test->file++; break;
-    case FS_TYPE_DIRECTORY: test->dir++; break;
-    default:                abort();
+    case FS_WALK_FILE:          test->file++; break;
+    case FS_WALK_DIR_PRE:       test->dir_pre++; break;
+    case FS_WALK_DIR_POST:      test->dir_post++; break;
+    case FS_WALK_DIR_ERROR:
+    case FS_WALK_STAT_ERROR:    error_pass(); return -1;
+    default:                    abort();
     }
-    
-    test->depth = depth;
     
     return 0;
 }
@@ -250,46 +248,59 @@ TEST_SETUP(fs_mktree_blocker)
     test_call(fs_mktree, true);
 }
 
+static int _test_fs_rmtree_error(fs_walk_type_id type, path_const_ct file, size_t depth, fs_stat_st *info, void *ctx)
+{
+    void *_test_case_ctx = ctx;
+    str_ct str;
+    
+    if(!error_check(0, E_FS_NOT_FOUND) && (str = path_get(file, PATH_STYLE_NATIVE)))
+    {
+        if(!chmod(str_c(str), S_IRWXU) && !rmdir(str_c(str)))
+            return 0;
+        
+        test_msg_backtrace("failed to remove '%s'", str_c(str));
+        str_unref(str);
+    }
+    
+    return 0;
+}
+
 TEST_TEARDOWN(fs_rmtree)
 {
-    fs_remove(path, FS_REMOVE_CONTINUE, NULL);
+    fs_remove(path, _test_fs_rmtree_error, TEST_CTX);
     env_free();
     path_free(path);
 }
 
 TEST_CASE_ABORT(fs_walk_invalid_path1)
 {
-    fs_walk(NULL, 0, FS_WALK_PREORDER, FS_LINK_FOLLOW, _test_fs_walk, NULL);
+    fs_walk(NULL, 0, FS_LINK_FOLLOW, _test_fs_walk, NULL);
 }
 
 #ifndef _WIN32
 TEST_CASE(fs_walk_invalid_path2)
 {
     test_ptr_success(path = path_new(LIT("c:\\foo"), PATH_STYLE_WINDOWS));
-    test_int_error(fs_walk(path, 0, FS_WALK_PREORDER, FS_LINK_FOLLOW, _test_fs_walk, NULL), E_FS_INVALID_PATH);
+    test_int_error(fs_walk(path, 0, FS_LINK_FOLLOW, _test_fs_walk, NULL), E_FS_INVALID_PATH);
     path_free(path);
 }
 #endif
 
-TEST_CASE_FIXTURE_ABORT(fs_walk_invalid_order, path_new, path_free)
-{
-    fs_walk(path, 0, 999, FS_LINK_FOLLOW, _test_fs_walk, NULL);
-}
-
 TEST_CASE_FIXTURE_ABORT(fs_walk_invalid_link_mode, path_new, path_free)
 {
-    fs_walk(path, 0, FS_WALK_PREORDER, 999, _test_fs_walk, NULL);
+    fs_walk(path, 0, 999, _test_fs_walk, NULL);
 }
 
 TEST_CASE_FIXTURE_ABORT(fs_walk_invalid_callback, path_new, path_free)
 {
-    fs_walk(path, 0, FS_WALK_PREORDER, FS_LINK_FOLLOW, NULL, NULL);
+    fs_walk(path, 0, FS_LINK_FOLLOW, NULL, NULL);
 }
 
 TEST_CASE(fs_walk_not_found)
 {
     test_ptr_success(path = path_new(LIT("/ytil_test"), PATH_STYLE_NATIVE));
-    test_int_error(fs_walk(path, 0, FS_WALK_PREORDER, FS_LINK_FOLLOW, _test_fs_walk, NULL), E_FS_NOT_FOUND);
+    test_int_error(fs_walk(path, 0, FS_LINK_FOLLOW, _test_fs_walk, NULL), E_FS_CALLBACK);
+    test_error(1, E_FS_NOT_FOUND);
     path_free(path);
 }
 
@@ -297,8 +308,9 @@ TEST_CASE_FIXTURE(fs_walk_depth0, fs_mktree, fs_rmtree)
 {
     fs_walk_test_st test = {0};
     
-    test_int_success(fs_walk(path, 0, FS_WALK_PREORDER, FS_LINK_FOLLOW, _test_fs_walk, &test));
-    test_uint_eq(test.dir, 1);
+    test_int_success(fs_walk(path, 0, FS_LINK_FOLLOW, _test_fs_walk, &test));
+    test_uint_eq(test.dir_pre, 1);
+    test_uint_eq(test.dir_post, 1);
     test_uint_eq(test.file, 0);
 }
 
@@ -306,54 +318,40 @@ TEST_CASE_FIXTURE(fs_walk_depth1, fs_mktree, fs_rmtree)
 {
     fs_walk_test_st test = {0};
     
-    test_int_success(fs_walk(path, 1, FS_WALK_PREORDER, FS_LINK_FOLLOW, _test_fs_walk, &test));
-    test_uint_eq(test.dir, 4);
+    test_int_success(fs_walk(path, 1, FS_LINK_FOLLOW, _test_fs_walk, &test));
+    test_uint_eq(test.dir_pre, 4);
+    test_uint_eq(test.dir_post, 4);
     test_uint_eq(test.file, 0);
 }
 
-TEST_CASE_FIXTURE(fs_walk_recursive_preorder, fs_mktree, fs_rmtree)
+TEST_CASE_FIXTURE(fs_walk_recursive, fs_mktree, fs_rmtree)
 {
     fs_walk_test_st test = {0};
     
-    test_int_success(fs_walk(path, -1, FS_WALK_PREORDER, FS_LINK_FOLLOW, _test_fs_walk, &test));
-    test_uint_eq(test.dir, 13);
+    test_int_success(fs_walk(path, -1, FS_LINK_FOLLOW, _test_fs_walk, &test));
+    test_uint_eq(test.dir_pre, 13);
+    test_uint_eq(test.dir_post, 13);
     test_uint_eq(test.file, 9);
-    test_uint_eq(test.depth, 3);
-}
-
-TEST_CASE_FIXTURE(fs_walk_recursive_postorder, fs_mktree, fs_rmtree)
-{
-    fs_walk_test_st test = {0};
-    
-    test_int_success(fs_walk(path, -1, FS_WALK_POSTORDER, FS_LINK_FOLLOW, _test_fs_walk, &test));
-    test_uint_eq(test.dir, 13);
-    test_uint_eq(test.file, 9);
-    test_uint_eq(test.depth, 0);
 }
 
 TEST_CASE_ABORT(fs_remove_invalid_path1)
 {
-    fs_remove(NULL, FS_REMOVE_STOP, NULL);
+    fs_remove(NULL, NULL, NULL);
 }
 
 #ifndef _WIN32
 TEST_CASE(fs_remove_invalid_path2)
 {
     test_ptr_success(path = path_new(LIT("c:\\foo"), PATH_STYLE_WINDOWS));
-    test_int_error(fs_remove(path, FS_REMOVE_STOP, NULL), E_FS_INVALID_PATH);
+    test_int_error(fs_remove(path, NULL, NULL), E_FS_INVALID_PATH);
     path_free(path);
 }
 #endif
 
-TEST_CASE_FIXTURE_ABORT(fs_remove_invalid_mode, path_new, path_free)
-{
-    fs_remove(path, 999, NULL);
-}
-
 TEST_CASE(fs_remove_not_found)
 {
     test_ptr_success(path = path_new(LIT("/ytil_test"), PATH_STYLE_NATIVE));
-    test_int_error(fs_remove(path, FS_REMOVE_STOP, NULL), E_FS_NOT_FOUND);
+    test_int_error(fs_remove(path, NULL, NULL), E_FS_NOT_FOUND);
     path_free(path);
 }
 
@@ -361,7 +359,7 @@ TEST_CASE_FIXTURE(fs_remove_file, fs_mkfile, fs_rmfile)
 {
     fs_stat_st fst;
     
-    test_int_success(fs_remove(path, FS_REMOVE_STOP, NULL));
+    test_int_success(fs_remove(path, NULL, NULL));
     test_ptr_error(fs_stat(path, FS_LINK_NOFOLLOW, &fst), E_FS_NOT_FOUND);
 }
 
@@ -369,29 +367,28 @@ TEST_CASE_FIXTURE(fs_remove_dir, fs_mktree, fs_rmtree)
 {
     fs_stat_st fst;
     
-    test_int_success(fs_remove(path, FS_REMOVE_STOP, NULL));
+    test_int_success(fs_remove(path, NULL, NULL));
     test_ptr_error(fs_stat(path, FS_LINK_NOFOLLOW, &fst), E_FS_NOT_FOUND);
 }
 
-TEST_CASE_FIXTURE(fs_remove_fail_stop, fs_mktree_blocker, fs_rmtree)
+static int _test_fs_remove_error(fs_walk_type_id type, path_const_ct file, size_t depth, fs_stat_st *info, void *ctx)
 {
-    path_ct blocker1, blocker2;
-    str_ct bstr1, bstr2;
+    str_ct *blocker = ctx;
     
-    test_int_error(fs_remove(path, FS_REMOVE_STOP, &blocker1), E_FS_ACCESS_DENIED);
-    test_ptr_success(bstr1 = path_get(blocker1, PATH_STYLE_NATIVE));
+    *blocker = path_basename(file, PATH_STYLE_NATIVE);
     
-    test_ptr_success(blocker2 = path_get_base_dir(PATH_BASE_DIR_TMP));
-    test_ptr_success(path_append(blocker2, LIT("ytil_test_dir2/bar"), PATH_STYLE_POSIX));
-    test_ptr_success(bstr2 = path_get(blocker2, PATH_STYLE_NATIVE));
-    test_void(env_free());
+    return error_pass(), -1;
+}
+
+TEST_CASE_FIXTURE(fs_remove_fail, fs_mktree_blocker, fs_rmtree)
+{
+    str_ct blocker;
     
-    test_str_eq(str_c(bstr1), str_c(bstr2));
+    test_int_error(fs_remove(path, _test_fs_remove_error, &blocker), E_FS_CALLBACK);
+    test_error(1, E_FS_ACCESS_DENIED);
     
-    str_unref(bstr1);
-    str_unref(bstr2);
-    path_free(blocker1);
-    path_free(blocker2);
+    test_str_eq(str_c(blocker), "bar");
+    str_unref(blocker);
 }
 
 test_suite_ct test_suite_sys_fsys(void)
@@ -408,21 +405,18 @@ test_suite_ct test_suite_sys_fsys(void)
         
         , test_case_new(fs_walk_invalid_path1)
         , test_case_new_unix(fs_walk_invalid_path2)
-        , test_case_new(fs_walk_invalid_order)
         , test_case_new(fs_walk_invalid_link_mode)
         , test_case_new(fs_walk_invalid_callback)
         , test_case_new(fs_walk_not_found)
         , test_case_new(fs_walk_depth0)
         , test_case_new(fs_walk_depth1)
-        , test_case_new(fs_walk_recursive_preorder)
-        , test_case_new(fs_walk_recursive_postorder)
+        , test_case_new(fs_walk_recursive)
         
         , test_case_new(fs_remove_invalid_path1)
         , test_case_new_unix(fs_remove_invalid_path2)
-        , test_case_new(fs_remove_invalid_mode)
         , test_case_new(fs_remove_not_found)
         , test_case_new(fs_remove_file)
         , test_case_new(fs_remove_dir)
-        , test_case_new(fs_remove_fail_stop)
+        , test_case_new(fs_remove_fail)
     );
 }
