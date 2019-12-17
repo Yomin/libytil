@@ -173,9 +173,12 @@ typedef struct fs_walk_test
     size_t dir, file, depth;
 } fs_walk_test_st;
 
-static int _test_fs_walk(path_const_ct file, size_t depth, fs_stat_st *info, void *ctx)
+static int _test_fs_walk(fs_walk_status_id status, path_const_ct file, size_t depth, fs_stat_st *info, void *ctx)
 {
     fs_walk_test_st *test = ctx;
+    
+    if(status == FS_WALK_ERROR)
+        return error_pass(), -1;
     
     switch(info->type)
     {
@@ -196,9 +199,7 @@ TEST_FUNCTION(void, fs_mkdir, path_ct base, const char *dir, int mode, bool mkfi
     test_ptr_success(path_append_c(base, dir, PATH_STYLE_POSIX));
     test_ptr_success(str = path_get(base, PATH_STYLE_NATIVE));
     test_int_maybe_errno(mkdir(str_c(str), mode), EEXIST);
-#ifdef _WIN32
     test_int_success_errno(chmod(str_c(str), mode));
-#endif
     str_unref(str);
     
     if(mkfile)

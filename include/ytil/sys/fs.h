@@ -49,6 +49,12 @@ typedef enum fs_walk_order
     , FS_WALK_ORDERS
 } fs_walk_order_id;
 
+typedef enum fs_walk_status
+{
+      FS_WALK_SUCCESS
+    , FS_WALK_ERROR
+} fs_walk_status_id;
+
 typedef enum fs_copy_mode
 {
       FS_COPY_REPLACE
@@ -83,7 +89,7 @@ typedef struct fs_stat
     time_t atime, mtime, ctime;
 } fs_stat_st;
 
-typedef int (*fs_walk_cb)(path_const_ct file, size_t depth, fs_stat_st *info, void *ctx);
+typedef int (*fs_walk_cb)(fs_walk_status_id status, path_const_ct file, size_t depth, fs_stat_st *info, void *ctx);
 
 // get file status
 fs_stat_st *fs_stat(path_const_ct file, fs_link_mode_id mode, fs_stat_st *fst);

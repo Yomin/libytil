@@ -109,7 +109,7 @@ static int fs_walk_dir(path_ct path, ssize_t maxdepth, size_t depth, fs_walk_ord
     fs_stat_st fst_child;
     int rc;
     
-    if(order == FS_WALK_PREORDER && (rc = walk(path, depth, fst_parent, ctx)))
+    if(order == FS_WALK_PREORDER && (rc = walk(FS_WALK_SUCCESS, path, depth, fst_parent, ctx)))
         return error_push_int(E_FS_CALLBACK, rc);
     
     if(maxdepth < 0 || depth < (size_t)maxdepth)
@@ -121,7 +121,11 @@ static int fs_walk_dir(path_ct path, ssize_t maxdepth, size_t depth, fs_walk_ord
         str_unref(str);
         
         if(!dp)
-            return error_push_errno(fs_get_errno_error(), opendir), -1;
+        {
+            error_push_errno(fs_get_errno_error(), opendir);
+            
+            return error_push_int(E_FS_CALLBACK, walk(FS_WALK_ERROR, path, depth, fst_parent, ctx));
+        }
         
         for(errno = 0; (ep = readdir(dp)); errno = 0)
         {
@@ -133,11 +137,15 @@ static int fs_walk_dir(path_ct path, ssize_t maxdepth, size_t depth, fs_walk_ord
                 return error_wrap(), closedir(dp), -1;
             
             if(!fs_stat(path, link, &fst_child))
-                return error_pass(), closedir(dp), -1;
-            
-            if(fst_child.type != FS_TYPE_DIRECTORY)
             {
-                if((rc = walk(path, depth+1, &fst_child, ctx)))
+                error_pass();
+                
+                if((rc = walk(FS_WALK_ERROR, path, depth+1, NULL, ctx)))
+                    return error_push_int(E_FS_CALLBACK, rc), closedir(dp), rc;
+            }
+            else if(fst_child.type != FS_TYPE_DIRECTORY)
+            {
+                if((rc = walk(FS_WALK_SUCCESS, path, depth+1, &fst_child, ctx)))
                     return error_push_int(E_FS_CALLBACK, rc), closedir(dp), rc;
             }
             else
@@ -155,7 +163,7 @@ static int fs_walk_dir(path_ct path, ssize_t maxdepth, size_t depth, fs_walk_ord
         closedir(dp);
     }
     
-    if(order == FS_WALK_POSTORDER && (rc = walk(path, depth, fst_parent, ctx)))
+    if(order == FS_WALK_POSTORDER && (rc = walk(FS_WALK_SUCCESS, path, depth, fst_parent, ctx)))
         return error_push_int(E_FS_CALLBACK, rc);
     
     return 0;
@@ -172,10 +180,17 @@ int fs_walk(path_const_ct dir, ssize_t depth, fs_walk_order_id order, fs_link_mo
     assert(link < FS_LINK_MODES);
     
     if(!fs_stat(dir, link, &fst))
-        return error_pass(), -1;
+    {
+        error_pass();
+        
+        if(error_check(0, E_FS_INVALID_PATH))
+            return -1;
+        
+        return error_push_int(E_FS_CALLBACK, walk(FS_WALK_ERROR, dir, 0, NULL, ctx));
+    }
     
     if(fst.type != FS_TYPE_DIRECTORY)
-        return error_push_int(E_FS_CALLBACK, walk(dir, 0, &fst, ctx));
+        return error_push_int(E_FS_CALLBACK, walk(FS_WALK_SUCCESS, dir, 0, &fst, ctx));
     
     if(!(path = path_dup(dir)))
         return error_wrap(), -1;
@@ -224,30 +239,37 @@ typedef struct fs_remove_state
     bool error;
 } fs_remove_st;
 
-static int fs_walk_remove(path_const_ct file, size_t depth, fs_stat_st *info, void *ctx)
+static int fs_walk_remove(fs_walk_status_id status, path_const_ct file, size_t depth, fs_stat_st *info, void *ctx)
 {
     fs_remove_st *state = ctx;
     str_ct str;
     int rc;
     
-    if(!(str = path_get(file, PATH_STYLE_NATIVE)))
-        return error_pack(E_FS_INVALID_PATH), -1;
-    
-    if(info->type == FS_TYPE_DIRECTORY)
+    if(status == FS_WALK_ERROR)
     {
-        if((rc = rmdir(str_c(str))) && !state->error)
-            error_push_errno(fs_get_errno_error(), rmdir);
+        error_pass();
     }
     else
     {
-        if((rc = unlink(str_c(str))) && !state->error)
-            error_push_errno(fs_get_errno_error(), unlink);
+        if(!(str = path_get(file, PATH_STYLE_NATIVE)))
+            return error_pack(E_FS_INVALID_PATH), -1;
+        
+        if(info->type == FS_TYPE_DIRECTORY)
+        {
+            if((rc = rmdir(str_c(str))) && !state->error)
+                error_push_errno(fs_get_errno_error(), rmdir);
+        }
+        else
+        {
+            if((rc = unlink(str_c(str))) && !state->error)
+                error_push_errno(fs_get_errno_error(), unlink);
+        }
+        
+        str_unref(str);
+        
+        if(!rc)
+            return 0;
     }
-    
-    str_unref(str);
-    
-    if(!rc)
-        return 0;
     
     if(!state->error && state->blocker)
     {
