@@ -24,12 +24,14 @@
 #include <ytil/def.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <stdio.h>
 #include <sys/stat.h>
 
 
 static const error_info_st error_infos[] =
 {
       ERROR_INFO(E_FS_ACCESS_DENIED, "Access denied.")
+    , ERROR_INFO(E_FS_BUSY, "File is in use.")
     , ERROR_INFO(E_FS_CALLBACK, "Callback error.")
     , ERROR_INFO(E_FS_ERRNO, "ERRNO wrapper.")
     , ERROR_INFO(E_FS_INVALID_PATH, "Invalid path.")
@@ -42,7 +44,9 @@ static fs_error_id fs_get_errno_error(void)
 {
     switch(errno)
     {
+    case EPERM:
     case EACCES:    return E_FS_ACCESS_DENIED;
+    case EBUSY:     return E_FS_BUSY;
     case ENOENT:    return E_FS_NOT_FOUND;
     case ENOTDIR:   return E_FS_NOT_DIRECTORY;
     default:        return E_FS_ERRNO;
@@ -200,32 +204,50 @@ int fs_walk(path_const_ct dir, ssize_t depth, fs_link_mode_id link, fs_walk_cb w
     return error_pass_int(rc);
 }
 
-/*
-int fs_move(path_const_ct dst, path_const_ct src, fs_mode_id mode)
+int fs_move(path_const_ct dst, path_const_ct src, fs_copy_mode_id mode)
 {
-    assert(mode < FS_MODES);
+    str_ct str_dst, str_src;
     
-    if(!rename(str_c(src), str_c(dst)))
-        return 0;
+    assert(mode < FS_COPY_MODES);
+    
+    if(!(str_dst = path_get(dst, PATH_STYLE_NATIVE)))
+        return error_pack(E_FS_INVALID_PATH), -1;
+    
+    if(!(str_src = path_get(src, PATH_STYLE_NATIVE)))
+        return error_pack(E_FS_INVALID_PATH), str_unref(str_dst), -1;
+    
+    if(!rename(str_c(str_src), str_c(str_dst)))
+        return str_unref(str_dst), str_unref(str_src), 0;
     
     if(errno != EEXIST && errno != ENOTEMPTY)
-        return error_propagate_errno(), -1;
-    
-    if(mode == FS_MODE_REPLACE)
     {
-        if(fs_remove(dst))
-            return error_propagate(), -1;
+        error_push_errno(fs_get_errno_error(), rename);
+        str_unref(str_dst);
+        str_unref(str_src);
+        return -1;
+    }
+    
+    if(mode == FS_COPY_REPLACE)
+    {
+        if(fs_remove(dst, NULL, NULL))
+            return error_pass(), str_unref(str_dst), str_unref(str_src), -1;
         
-        if(rename(str_c(src), str_c(dst)))
-            return error_propagate_errno(), -1;
+        if(rename(str_c(str_src), str_c(str_dst)))
+        {
+            error_push_errno(fs_get_errno_error(), rename);
+            str_unref(str_dst);
+            str_unref(str_src);
+            return -1;
+        }
         
         return 0;
     }
     
-    return errno_set(ENOSYS), -1; // todo
+    return errno_set(ENOSYS), error_push(E_FS_ERRNO), -1;
 }
 
-int fs_copy(path_const_ct dst, path_const_ct src, fs_mode_id mode)
+/*
+int fs_copy(path_const_ct dst, path_const_ct src, fs_copy_mode_id mode)
 {
     return 0;
 }
