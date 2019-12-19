@@ -37,7 +37,7 @@ TEST_TEARDOWN(env_free)
     test_void(env_free());
 }
 
-TEST_CASE_FIXTURE_ABORT(env_is_set_invalid_name1, env_init, env_free)
+TEST_CASE_ABORT_FIXTURE(env_is_set_invalid_name1, env_init, env_free)
 {
     env_is_set(NULL);
 }
@@ -58,7 +58,7 @@ TEST_CASE_FIXTURE(env_is_set_true, env_init, env_free)
     test_true(env_is_set(LIT("PATH")));
 }
 
-TEST_CASE_FIXTURE_ABORT(env_get_invalid_name1, env_init, env_free)
+TEST_CASE_ABORT_FIXTURE(env_get_invalid_name1, env_init, env_free)
 {
     env_get(NULL);
 }
@@ -78,7 +78,7 @@ TEST_CASE_FIXTURE(env_get, env_init, env_free)
     test_ptr_success(env_get(LIT("PATH")));
 }
 
-TEST_CASE_FIXTURE_ABORT(env_set_invalid_name1, env_init, env_free)
+TEST_CASE_ABORT_FIXTURE(env_set_invalid_name1, env_init, env_free)
 {
     env_set(NULL, LIT("foo"));
 }
@@ -88,7 +88,7 @@ TEST_CASE_FIXTURE(env_set_invalid_name2, env_init, env_free)
     test_int_error(env_set(LIT(""), LIT("foo")), E_ENV_INVALID_NAME);
 }
 
-TEST_CASE_FIXTURE_ABORT(env_set_invalid_value, env_init, env_free)
+TEST_CASE_ABORT_FIXTURE(env_set_invalid_value, env_init, env_free)
 {
     env_set(LIT("foo"), NULL);
 }
@@ -135,7 +135,7 @@ TEST_CASE_FIXTURE(env_set_unset_def, env_init, env_free)
     test_str_eq(str_c(value), "foo");
 }
 
-TEST_CASE_FIXTURE_ABORT(env_reset_invalid_name1, env_init, env_free)
+TEST_CASE_ABORT_FIXTURE(env_reset_invalid_name1, env_init, env_free)
 {
     env_reset(NULL);
 }
@@ -177,7 +177,7 @@ TEST_CASE_FIXTURE(env_reset_unset_def, env_init, env_free)
     test_ptr_success(env_get(LIT("PATH")));
 }
 
-TEST_CASE_FIXTURE_ABORT(env_unset_invalid_name1, env_init, env_free)
+TEST_CASE_ABORT_FIXTURE(env_unset_invalid_name1, env_init, env_free)
 {
     env_unset(NULL);
 }

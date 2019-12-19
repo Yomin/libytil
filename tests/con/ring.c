@@ -406,7 +406,7 @@ TEST_CASE_SIGNAL(ring_fold_invalid_magic, SIGABRT)
     ring_fold((ring_ct)&not_a_ring, _test_ring_fold, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(ring_fold_invalid_callback, ring_new, ring_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(ring_fold_invalid_callback, ring_new, ring_free)
 {
     ring_fold(ring, NULL, NULL);
 }
@@ -423,7 +423,7 @@ TEST_CASE_SIGNAL(ring_fold_r_invalid_magic, SIGABRT)
     ring_fold_r((ring_ct)&not_a_ring, _test_ring_fold, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(ring_fold_r_invalid_callback, ring_new, ring_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(ring_fold_r_invalid_callback, ring_new, ring_free)
 {
     ring_fold_r(ring, NULL, NULL);
 }

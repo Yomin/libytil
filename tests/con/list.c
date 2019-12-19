@@ -262,17 +262,17 @@ TEST_CASE_FIXTURE(list_last, list_new, list_free)
     test_int_eq(list_node_get_value(node, int), i[3]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_next_invalid_list_magic, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_next_invalid_list_magic, list_new, list_free)
 {
     list_next((list_ct)&not_a_list, list_first(list));
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_next_invalid_node_magic, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_next_invalid_node_magic, list_new, list_free)
 {
     list_next(list, (list_node_ct)&not_a_node);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_next_node_not_member, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_next_node_not_member, list_new2, list_free2)
 {
     list_next(list, list_first(list2));
 }
@@ -288,17 +288,17 @@ TEST_CASE_FIXTURE(list_next_end, list_new, list_free)
     test_ptr_error(list_next(list, list_last(list)), E_LIST_END);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_prev_invalid_list_magic, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_prev_invalid_list_magic, list_new, list_free)
 {
     list_prev((list_ct)&not_a_list, list_last(list));
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_prev_invalid_node_magic, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_prev_invalid_node_magic, list_new, list_free)
 {
     list_prev(list, (list_node_ct)&not_a_node);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_prev_node_not_member, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_prev_node_not_member, list_new2, list_free2)
 {
     list_prev(list, list_first(list2));
 }
@@ -369,17 +369,17 @@ TEST_CASE_FIXTURE(list_data_last, list_new, list_free)
     test_rc_success(list_value_last(list, int), i[3]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_pos_invalid_list_magic, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_pos_invalid_list_magic, list_new, list_free)
 {
     list_pos((list_ct)&not_a_list, list_first(list));
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_pos_invalid_node_magic, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_pos_invalid_node_magic, list_new, list_free)
 {
     list_pos(list, (list_node_ct)&not_a_node);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_pos_node_not_member, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_pos_node_not_member, list_new2, list_free2)
 {
     list_pos(list, list_first(list2));
 }
@@ -462,17 +462,17 @@ TEST_CASE_FIXTURE(list_insert_tail_negative_index, list_new, list_free)
     test_int_eq(list_node_get_value(node, int), 42);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_insert_before_invalid_list_magic, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_insert_before_invalid_list_magic, list_new2, list_free2)
 {
     list_insert_before((list_ct)&not_a_list, list_first(list2), NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_insert_before_invalid_node_magic, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_insert_before_invalid_node_magic, list_new2, list_free2)
 {
     list_insert_before(list, (list_node_ct)&not_a_node, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_insert_before_node_not_member, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_insert_before_node_not_member, list_new2, list_free2)
 {
     list_insert_before(list, list_first(list2), NULL);
 }
@@ -485,17 +485,17 @@ TEST_CASE_FIXTURE(list_insert_before, list_new, list_free)
     test_int_eq(list_node_get_value(node, int), 42);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_insert_after_invalid_list_magic, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_insert_after_invalid_list_magic, list_new2, list_free2)
 {
     list_insert_after((list_ct)&not_a_list, list_first(list2), NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_insert_after_invalid_node_magic, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_insert_after_invalid_node_magic, list_new2, list_free2)
 {
     list_insert_after(list, (list_node_ct)&not_a_node, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_insert_after_node_not_member, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_insert_after_node_not_member, list_new2, list_free2)
 {
     list_insert_after(list, list_first(list2), NULL);
 }
@@ -508,17 +508,17 @@ TEST_CASE_FIXTURE(list_insert_after, list_new, list_free)
     test_int_eq(list_node_get_value(node, int), 42);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_remove_invalid_list_magic, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_remove_invalid_list_magic, list_new2, list_free2)
 {
     list_remove((list_ct)&not_a_list, list_first(list2));
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_remove_invalid_node_magic, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_remove_invalid_node_magic, list_new2, list_free2)
 {
     list_remove(list, (list_node_ct)&not_a_node);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_remove_node_not_member, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_remove_node_not_member, list_new2, list_free2)
 {
     list_remove(list, list_first(list2));
 }
@@ -641,7 +641,7 @@ TEST_CASE_SIGNAL(list_find_invalid_magic, SIGABRT)
     list_find((list_ct)&not_a_list, _test_list_pred, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_find_invalid_pred, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_find_invalid_pred, list_new, list_free)
 {
     list_find(list, NULL, NULL);
 }
@@ -662,7 +662,7 @@ TEST_CASE_SIGNAL(list_find_r_invalid_magic, SIGABRT)
     list_find_r((list_ct)&not_a_list, _test_list_pred, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_find_r_invalid_pred, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_find_r_invalid_pred, list_new, list_free)
 {
     list_find_r(list, NULL, NULL);
 }
@@ -683,7 +683,7 @@ TEST_CASE_SIGNAL(list_find_remove_invalid_magic, SIGABRT)
     list_find_remove((list_ct)&not_a_list, _test_list_pred, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_find_remove_invalid_pred, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_find_remove_invalid_pred, list_new, list_free)
 {
     list_find_remove(list, NULL, NULL);
 }
@@ -705,7 +705,7 @@ TEST_CASE_SIGNAL(list_find_remove_f_invalid_magic, SIGABRT)
     list_find_remove_f((list_ct)&not_a_list, _test_list_pred, NULL, _test_list_dtor, &count);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_find_remove_f_invalid_pred, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_find_remove_f_invalid_pred, list_new, list_free)
 {
     list_find_remove_f(list, NULL, NULL, _test_list_dtor, &count);
 }
@@ -729,7 +729,7 @@ TEST_CASE_SIGNAL(list_find_remove_r_invalid_magic, SIGABRT)
     list_find_remove_r((list_ct)&not_a_list, _test_list_pred, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_find_remove_r_invalid_pred, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_find_remove_r_invalid_pred, list_new, list_free)
 {
     list_find_remove_r(list, NULL, NULL);
 }
@@ -751,7 +751,7 @@ TEST_CASE_SIGNAL(list_find_remove_rf_invalid_magic, SIGABRT)
     list_find_remove_rf((list_ct)&not_a_list, _test_list_pred, NULL, _test_list_dtor, &count);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_find_remove_rf_invalid_pred, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_find_remove_rf_invalid_pred, list_new, list_free)
 {
     list_find_remove_rf(list, NULL, NULL, _test_list_dtor, &count);
 }
@@ -775,7 +775,7 @@ TEST_CASE_SIGNAL(list_find_remove_all_invalid_magic, SIGABRT)
     list_find_remove_all((list_ct)&not_a_list, _test_list_pred, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_find_remove_all_invalid_pred, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_find_remove_all_invalid_pred, list_new, list_free)
 {
     list_find_remove_all(list, NULL, NULL);
 }
@@ -798,7 +798,7 @@ TEST_CASE_SIGNAL(list_find_remove_all_f_invalid_magic, SIGABRT)
     list_find_remove_all_f((list_ct)&not_a_list, _test_list_pred, NULL, _test_list_dtor, &count);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_find_remove_all_f_invalid_pred, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_find_remove_all_f_invalid_pred, list_new, list_free)
 {
     list_find_remove_all_f(list, NULL, NULL, _test_list_dtor, &count);
 }
@@ -818,17 +818,17 @@ TEST_CASE_FIXTURE(list_find_remove_all_f, list_new, list_free)
     test_int_eq(count, 2);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_swap_invalid_node1_magic, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_swap_invalid_node1_magic, list_new2, list_free2)
 {
     list_swap((list_node_ct)&not_a_node, list_first(list2));
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_swap_invalid_node2_magic, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_swap_invalid_node2_magic, list_new2, list_free2)
 {
     list_swap(list_first(list), (list_node_ct)&not_a_node);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_swap_nodes_in_different_lists, list_new2, list_free2, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_swap_nodes_in_different_lists, list_new2, list_free2)
 {
     list_swap(list_first(list), list_first(list2));
 }
@@ -856,7 +856,7 @@ TEST_CASE_SIGNAL(list_fold_invalid_magic, SIGABRT)
     list_fold((list_ct)&not_a_list, _test_list_fold, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_fold_invalid_callback, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_fold_invalid_callback, list_new, list_free)
 {
     list_fold(list, NULL, NULL);
 }
@@ -873,7 +873,7 @@ TEST_CASE_SIGNAL(list_fold_r_invalid_magic, SIGABRT)
     list_fold_r((list_ct)&not_a_list, _test_list_fold, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(list_fold_r_invalid_callback, list_new, list_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(list_fold_r_invalid_callback, list_new, list_free)
 {
     list_fold_r(list, NULL, NULL);
 }

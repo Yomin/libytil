@@ -90,9 +90,9 @@ fs_stat_st *fs_stat(path_const_ct file, fs_link_mode_id mode, fs_stat_st *fst);
 int fs_walk(path_const_ct dir, ssize_t depth, fs_link_mode_id link, fs_walk_cb walk, void *ctx);
 
 // move file from src to dst
-int fs_move(path_const_ct dst, path_const_ct src, fs_copy_mode_id mode);
+int fs_move(path_const_ct src, path_const_ct dst, fs_copy_mode_id mode);
 // copy file from src to dst
-int fs_copy(path_const_ct dst, path_const_ct src, fs_copy_mode_id mode);
+int fs_copy(path_const_ct src, path_const_ct dst, fs_copy_mode_id mode);
 // remove file
 int fs_remove(path_const_ct file, fs_walk_cb error, void *ctx);
 

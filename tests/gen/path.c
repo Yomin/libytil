@@ -1289,7 +1289,7 @@ TEST_CASE_SIGNAL(path_set_invalid_magic, SIGABRT)
     path_set((path_ct)&not_a_path, LIT("foo.txt"), PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_set_invalid_style, path_new_path_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_set_invalid_style, path_new_path_absolute, path_free)
 {
     path_set(path, LIT("foo.txt"), 999);
 }
@@ -1327,7 +1327,7 @@ TEST_CASE_FIXTURE(path_set_unc_invalid_type, path_new_path_absolute, path_free)
     test_ptr_error(path_set_unc(path, LIT("mail"), LIT("spam")), E_PATH_INVALID_TYPE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_set_unc_invalid_host1, path_new_unc_path, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_set_unc_invalid_host1, path_new_unc_path, path_free)
 {
     path_set_unc(path, NULL, LIT("spam"));
 }
@@ -1337,7 +1337,7 @@ TEST_CASE_FIXTURE(path_set_unc_invalid_host2, path_new_unc_path, path_free)
     test_ptr_error(path_set_unc(path, LIT(""), LIT("spam")), E_PATH_INVALID_UNC_HOST);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_set_unc_invalid_share1, path_new_unc_path, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_set_unc_invalid_share1, path_new_unc_path, path_free)
 {
     path_set_unc(path, LIT("mail"), NULL);
 }
@@ -1365,7 +1365,7 @@ TEST_CASE_FIXTURE(path_set_unc_share_invalid_type, path_new_path_absolute, path_
     test_ptr_error(path_set_unc_share(path, LIT("stuff")), E_PATH_INVALID_TYPE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_set_unc_share_invalid_share1, path_new_unc_path, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_set_unc_share_invalid_share1, path_new_unc_path, path_free)
 {
     path_set_unc_share(path, NULL);
 }
@@ -1393,7 +1393,7 @@ TEST_CASE_FIXTURE(path_set_device_invalid_type, path_new_path_absolute, path_fre
     test_ptr_error(path_set_device(path, LIT("flux"), 88), E_PATH_INVALID_TYPE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_set_device_invalid_name1, path_new_device, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_set_device_invalid_name1, path_new_device, path_free)
 {
     path_set_device(path, NULL, 88);
 }
@@ -1434,7 +1434,7 @@ TEST_CASE_SIGNAL(path_set_suffix_invalid_magic, SIGABRT)
     path_set_suffix((path_ct)&not_a_path, LIT("pdf"));
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_set_suffix_invalid_suffix1, path_new_file_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_set_suffix_invalid_suffix1, path_new_file_absolute, path_free)
 {
     path_set_suffix(path, NULL);
 }
@@ -1477,7 +1477,7 @@ TEST_CASE_SIGNAL(path_add_suffix_invalid_magic, SIGABRT)
     path_add_suffix((path_ct)&not_a_path, LIT("pdf"));
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_add_suffix_invalid_suffix1, path_new_file_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_add_suffix_invalid_suffix1, path_new_file_absolute, path_free)
 {
     path_add_suffix(path, NULL);
 }
@@ -1520,12 +1520,12 @@ TEST_CASE_SIGNAL(path_append_invalid_magic, SIGABRT)
     path_append((path_ct)&not_a_path, LIT("blubb"), PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_append_invalid_str, path_new_path_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_append_invalid_str, path_new_path_absolute, path_free)
 {
     path_append(path, NULL, PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_append_invalid_style, path_new_path_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_append_invalid_style, path_new_path_absolute, path_free)
 {
     path_append(path, LIT("blubb"), 999);
 }
@@ -1761,7 +1761,7 @@ TEST_CASE_SIGNAL(path_get_invalid_magic, SIGABRT)
     path_get((path_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_get_invalid_style, path_new_path_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_get_invalid_style, path_new_path_absolute, path_free)
 {
     path_get(path, 999);
 }
@@ -1914,7 +1914,7 @@ TEST_CASE_SIGNAL(path_basename_invalid_magic, SIGABRT)
     path_basename((path_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_basename_invalid_style, path_new_path_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_basename_invalid_style, path_new_path_absolute, path_free)
 {
     path_basename(path, 999);
 }
@@ -1973,7 +1973,7 @@ TEST_CASE_SIGNAL(path_dirname_invalid_magic, SIGABRT)
     path_dirname((path_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_dirname_invalid_style, path_new_path_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_dirname_invalid_style, path_new_path_absolute, path_free)
 {
     path_dirname(path, 999);
 }

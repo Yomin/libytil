@@ -61,39 +61,62 @@ typedef struct test_case_config
 } test_case_config_st;
 
 
-#define _TEST_CASE(name, _setup, _teardown, _end, _endval) \
+#define _TEST_DELEGATE(name, setup, ...) \
+    static void _test_delegate_##name(void *_test_case_ctx, void **_test_case_state) \
+    { \
+        setup(_test_case_ctx, _test_case_state, __VA_ARGS__); \
+    }
+
+#define _TEST_CASE(name, _end, _endval, _setup, _teardown) \
     \
-    static const test_case_config_st _test_config_##name = { \
-        .setup = _setup, .teardown = _teardown, .end = _end, .endval = _endval }; \
+    static const test_case_config_st _test_config_##name = \
+    { \
+        .setup = _setup, .teardown = _teardown, \
+        .end = _end, .endval = _endval \
+    }; \
     \
     static void _test_case_##name(void *_test_case_ctx, void **_test_case_state)
 
+#define _TEST_CASE_ARGS(name, end, endval, setup, teardown, ...) \
+    _TEST_DELEGATE(name, setup, __VA_ARGS__) \
+    _TEST_CASE(name, end, endval, _test_delegate_##name, teardown)
+
+
 #define TEST_CASE(name) \
-    _TEST_CASE(name, NULL, NULL, TEST_CASE_END_NORMAL, 0)
+    _TEST_CASE(name, TEST_CASE_END_NORMAL, 0, NULL, NULL)
 #define TEST_CASE_EXIT(name, rc) \
-    _TEST_CASE(name, NULL, NULL, TEST_CASE_END_EXIT, rc)
+    _TEST_CASE(name, TEST_CASE_END_EXIT, rc, NULL, NULL)
 #define TEST_CASE_SIGNAL(name, signal) \
-    _TEST_CASE(name, NULL, NULL, TEST_CASE_END_SIGNAL, signal)
+    _TEST_CASE(name, TEST_CASE_END_SIGNAL, signal, NULL, NULL)
 #define TEST_CASE_ABORT(name) \
-    _TEST_CASE(name, NULL, NULL, TEST_CASE_END_SIGNAL, SIGABRT)
+    _TEST_CASE(name, TEST_CASE_END_SIGNAL, SIGABRT, NULL, NULL)
 
 #define TEST_CASE_FIXTURE(name, setup, teardown) \
-    _TEST_CASE(name, _test_setup_##setup, _test_teardown_##teardown, TEST_CASE_END_NORMAL, 0)
-#define TEST_CASE_FIXTURE_EXIT(name, setup, teardown, rc) \
-    _TEST_CASE(name, _test_setup_##setup, _test_teardown_##teardown, TEST_CASE_END_EXIT, rc)
-#define TEST_CASE_FIXTURE_SIGNAL(name, setup, teardown, signal) \
-    _TEST_CASE(name, _test_setup_##setup, _test_teardown_##teardown, TEST_CASE_END_SIGNAL, signal)
-#define TEST_CASE_FIXTURE_ABORT(name, setup, teardown) \
-    _TEST_CASE(name, _test_setup_##setup, _test_teardown_##teardown, TEST_CASE_END_SIGNAL, SIGABRT)
+    _TEST_CASE(name, TEST_CASE_END_NORMAL, 0, _test_setup_##setup, _test_teardown_##teardown)
+#define TEST_CASE_EXIT_FIXTURE(name, rc, setup, teardown) \
+    _TEST_CASE(name, TEST_CASE_END_EXIT, rc, _test_setup_##setup, _test_teardown_##teardown)
+#define TEST_CASE_SIGNAL_FIXTURE(name, signal, setup, teardown) \
+    _TEST_CASE(name, TEST_CASE_END_SIGNAL, signal, _test_setup_##setup, _test_teardown_##teardown)
+#define TEST_CASE_ABORT_FIXTURE(name, setup, teardown) \
+    _TEST_CASE(name, TEST_CASE_END_SIGNAL, SIGABRT, _test_setup_##setup, _test_teardown_##teardown)
 
-#define TEST_SETUP(name) \
-    static void _test_setup_##name(void *_test_case_ctx, void **_test_case_state)
+#define TEST_CASE_ARGS(name, setup, teardown, ...) \
+    _TEST_CASE_ARGS(name, TEST_CASE_END_NORMAL, 0, _test_setup_##setup, _test_teardown_##teardown, __VA_ARGS__)
+#define TEST_CASE_EXIT_ARGS(name, rc, setup, teardown, ...) \
+    _TEST_CASE_ARGS(name, TEST_CASE_END_EXIT, rc, _test_setup_##setup, _test_teardown_##teardown, __VA_ARGS__)
+#define TEST_CASE_SIGNAL_ARGS(name, signal, setup, teardown, ...) \
+    _TEST_CASE_ARGS(name, TEST_CASE_END_SIGNAL, signal, _test_setup_##setup, _test_teardown_##teardown, __VA_ARGS__)
+#define TEST_CASE_ABORT_ARGS(name, setup, teardown, ...) \
+    _TEST_CASE_ARGS(name, TEST_CASE_END_SIGNAL, SIGABRT, _test_setup_##setup, _test_teardown_##teardown, __VA_ARGS__)
+
+#define TEST_SETUP(name, ...) \
+    static void _test_setup_##name(void *_test_case_ctx, void **_test_case_state __VA_OPT__(,) __VA_ARGS__)
 
 #define TEST_TEARDOWN(name) \
     static void _test_teardown_##name(void *_test_case_ctx, void **_test_case_state)
 
 #define TEST_FUNCTION(type, name, ...) \
-    static type _test_func_##name(void *_test_case_ctx, void **_test_case_state, __VA_ARGS__)
+    static type _test_func_##name(void *_test_case_ctx, void **_test_case_state __VA_OPT__(,) __VA_ARGS__)
 
 #define TEST_STATE \
     (*_test_case_state)

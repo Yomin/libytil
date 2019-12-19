@@ -186,7 +186,7 @@ TEST_CASE_SIGNAL(vec_pos_invalid_magic, SIGABRT)
     vec_pos((vec_const_ct)&not_a_vector, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_pos_invalid_elem, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_pos_invalid_elem, vec_int, vec)
 {
     vec_pos(vec, NULL);
 }
@@ -244,7 +244,7 @@ TEST_CASE_SIGNAL(vec_first_p_invalid_magic, SIGABRT)
     vec_first_p((vec_const_ct)&not_a_vector);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_first_p_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_first_p_invalid_type, vec_int, vec)
 {
     vec_first_p(vec);
 }
@@ -279,7 +279,7 @@ TEST_CASE_SIGNAL(vec_last_p_invalid_magic, SIGABRT)
     vec_last_p((vec_const_ct)&not_a_vector);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_last_p_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_last_p_invalid_type, vec_int, vec)
 {
     vec_last_p(vec);
 }
@@ -324,7 +324,7 @@ TEST_CASE_SIGNAL(vec_at_p_invalid_magic, SIGABRT)
     vec_at_p((vec_const_ct)&not_a_vector, 0);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_at_p_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_at_p_invalid_type, vec_int, vec)
 {
     vec_at_p(vec, 0);
 }
@@ -473,7 +473,7 @@ TEST_CASE_SIGNAL(vec_push_p_invalid_magic, SIGABRT)
     vec_push_p((vec_ct)&not_a_vector, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_push_p_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_push_p_invalid_type, vec_int, vec)
 {
     vec_push_p(vec, NULL);
 }
@@ -540,7 +540,7 @@ TEST_CASE_SIGNAL(vec_push_args_p_invalid_magic, SIGABRT)
     vec_push_args_p((vec_ct)&not_a_vector, 0);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_push_args_p_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_push_args_p_invalid_type, vec_int, vec)
 {
     vec_push_args_p(vec, 0);
 }
@@ -650,7 +650,7 @@ TEST_CASE_SIGNAL(vec_insert_p_invalid_magic, SIGABRT)
     vec_insert_p((vec_ct)&not_a_vector, 0, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_insert_p_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_insert_p_invalid_type, vec_int, vec)
 {
     vec_insert_p(vec, 0, NULL);
 }
@@ -817,7 +817,7 @@ TEST_CASE_SIGNAL(vec_insert_before_invalid_magic, SIGABRT)
     vec_insert_before((vec_ct)&not_a_vector, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_insert_before_invalid_elem, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_insert_before_invalid_elem, vec_int, vec)
 {
     vec_insert_before(vec, NULL);
 }
@@ -847,7 +847,7 @@ TEST_CASE_SIGNAL(vec_insert_before_e_invalid_magic, SIGABRT)
     vec_insert_before_e((vec_ct)&not_a_vector, NULL, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_insert_before_e_invalid_elem, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_insert_before_e_invalid_elem, vec_int, vec)
 {
     vec_insert_before_e(vec, NULL, NULL);
 }
@@ -878,12 +878,12 @@ TEST_CASE_SIGNAL(vec_insert_before_p_invalid_magic, SIGABRT)
     vec_insert_before_p((vec_ct)&not_a_vector, NULL, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_insert_before_p_invalid_elem, vec_ptr, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_insert_before_p_invalid_elem, vec_ptr, vec)
 {
     vec_insert_before_p(vec, NULL, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_insert_before_p_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_insert_before_p_invalid_type, vec_int, vec)
 {
     vec_insert_before_p(vec, vec_at(vec, 0), NULL);
 }
@@ -914,7 +914,7 @@ TEST_CASE_SIGNAL(vec_insert_before_n_invalid_magic, SIGABRT)
     vec_insert_before_n((vec_ct)&not_a_vector, NULL, 1);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_insert_before_n_invalid_elem, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_insert_before_n_invalid_elem, vec_int, vec)
 {
     vec_insert_before_n(vec, NULL, 1);
 }
@@ -949,7 +949,7 @@ TEST_CASE_SIGNAL(vec_insert_before_en_invalid_magic, SIGABRT)
     vec_insert_before_en((vec_ct)&not_a_vector, NULL, 1, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_insert_before_en_invalid_elem, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_insert_before_en_invalid_elem, vec_int, vec)
 {
     vec_insert_before_en(vec, NULL, 1, NULL);
 }
@@ -985,7 +985,7 @@ TEST_CASE_SIGNAL(vec_insert_after_invalid_magic, SIGABRT)
     vec_insert_after((vec_ct)&not_a_vector, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_insert_after_invalid_elem, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_insert_after_invalid_elem, vec_int, vec)
 {
     vec_insert_after(vec, NULL);
 }
@@ -1015,7 +1015,7 @@ TEST_CASE_SIGNAL(vec_insert_after_e_invalid_magic, SIGABRT)
     vec_insert_after_e((vec_ct)&not_a_vector, NULL, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_insert_after_e_invalid_elem, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_insert_after_e_invalid_elem, vec_int, vec)
 {
     vec_insert_after_e(vec, NULL, NULL);
 }
@@ -1046,12 +1046,12 @@ TEST_CASE_SIGNAL(vec_insert_after_p_invalid_magic, SIGABRT)
     vec_insert_after_p((vec_ct)&not_a_vector, NULL, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_insert_after_p_invalid_elem, vec_ptr, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_insert_after_p_invalid_elem, vec_ptr, vec)
 {
     vec_insert_after_p(vec, NULL, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_insert_after_p_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_insert_after_p_invalid_type, vec_int, vec)
 {
     vec_insert_after_p(vec, vec_at(vec, 0), NULL);
 }
@@ -1082,7 +1082,7 @@ TEST_CASE_SIGNAL(vec_insert_after_n_invalid_magic, SIGABRT)
     vec_insert_after_n((vec_ct)&not_a_vector, NULL, 1);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_insert_after_n_invalid_elem, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_insert_after_n_invalid_elem, vec_int, vec)
 {
     vec_insert_after_n(vec, NULL, 1);
 }
@@ -1117,7 +1117,7 @@ TEST_CASE_SIGNAL(vec_insert_after_en_invalid_magic, SIGABRT)
     vec_insert_after_en((vec_ct)&not_a_vector, NULL, 1, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_insert_after_en_invalid_elem, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_insert_after_en_invalid_elem, vec_int, vec)
 {
     vec_insert_after_en(vec, NULL, 1, NULL);
 }
@@ -1188,7 +1188,7 @@ TEST_CASE_SIGNAL(vec_pop_p_invalid_magic, SIGABRT)
     vec_pop_p((vec_ct)&not_a_vector);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_pop_p_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_pop_p_invalid_type, vec_int, vec)
 {
     vec_pop_p(vec);
 }
@@ -1324,7 +1324,7 @@ TEST_CASE_SIGNAL(vec_remove_invalid_magic, SIGABRT)
     vec_remove((vec_ct)&not_a_vector, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_remove_invalid_elem, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_remove_invalid_elem, vec_int, vec)
 {
     vec_remove(vec, NULL);
 }
@@ -1353,7 +1353,7 @@ TEST_CASE_SIGNAL(vec_remove_n_invalid_magic, SIGABRT)
     vec_remove_n((vec_ct)&not_a_vector, NULL, 2);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_remove_n_invalid_elem, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_remove_n_invalid_elem, vec_int, vec)
 {
     vec_remove_n(vec, NULL, 2);
 }
@@ -1453,7 +1453,7 @@ TEST_CASE_SIGNAL(vec_remove_at_p_invalid_magic, SIGABRT)
     vec_remove_at_p((vec_ct)&not_a_vector, 0);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_remove_at_p_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_remove_at_p_invalid_type, vec_int, vec)
 {
     vec_remove_at_p(vec, 0);
 }
@@ -1701,7 +1701,7 @@ TEST_CASE_SIGNAL(vec_find_invalid_magic, SIGABRT)
     vec_find((vec_ct)&not_a_vector, _test_vec_pred_int, (void*)&i[2]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_invalid_pred, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_invalid_pred, vec_int, vec)
 {
     vec_find((vec_ct)&not_a_vector, NULL, NULL);
 }
@@ -1722,12 +1722,12 @@ TEST_CASE_SIGNAL(vec_find_p_invalid_magic, SIGABRT)
     vec_find_p((vec_ct)&not_a_vector, _test_vec_pred_ptr, (void*)&pi[2]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_p_invalid_pred, vec_ptr, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_p_invalid_pred, vec_ptr, vec)
 {
     vec_find_p((vec_ct)&not_a_vector, NULL, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_p_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_p_invalid_type, vec_int, vec)
 {
     vec_find_p(vec, _test_vec_pred_ptr, (void*)&pi[2]);
 }
@@ -1748,7 +1748,7 @@ TEST_CASE_SIGNAL(vec_find_r_invalid_magic, SIGABRT)
     vec_find_r((vec_ct)&not_a_vector, _test_vec_pred_int, (void*)&i[2]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_r_invalid_pred, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_r_invalid_pred, vec_int, vec)
 {
     vec_find_r((vec_ct)&not_a_vector, NULL, NULL);
 }
@@ -1769,12 +1769,12 @@ TEST_CASE_SIGNAL(vec_find_rp_invalid_magic, SIGABRT)
     vec_find_rp((vec_ct)&not_a_vector, _test_vec_pred_ptr, (void*)&pi[2]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_rp_invalid_pred, vec_ptr, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_rp_invalid_pred, vec_ptr, vec)
 {
     vec_find_rp((vec_ct)&not_a_vector, NULL, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_rp_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_rp_invalid_type, vec_int, vec)
 {
     vec_find_rp(vec, _test_vec_pred_ptr, (void*)&pi[2]);
 }
@@ -1795,7 +1795,7 @@ TEST_CASE_SIGNAL(vec_find_pos_invalid_magic, SIGABRT)
     vec_find_pos((vec_ct)&not_a_vector, _test_vec_pred_int, (void*)&i[2]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_pos_invalid_pred, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_pos_invalid_pred, vec_int, vec)
 {
     vec_find_pos(vec, NULL, NULL);
 }
@@ -1815,7 +1815,7 @@ TEST_CASE_SIGNAL(vec_find_pos_r_invalid_magic, SIGABRT)
     vec_find_pos_r((vec_ct)&not_a_vector, _test_vec_pred_int, (void*)&i[2]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_pos_r_invalid_pred, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_pos_r_invalid_pred, vec_int, vec)
 {
     vec_find_pos_r(vec, NULL, NULL);
 }
@@ -1835,7 +1835,7 @@ TEST_CASE_SIGNAL(vec_find_get_invalid_magic, SIGABRT)
     vec_find_get((vec_ct)&not_a_vector, j, _test_vec_pred_int, (void*)&i[2]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_get_invalid_pred, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_get_invalid_pred, vec_int, vec)
 {
     vec_find_get(vec, NULL, NULL, NULL);
 }
@@ -1856,7 +1856,7 @@ TEST_CASE_SIGNAL(vec_find_get_r_invalid_magic, SIGABRT)
     vec_find_get_r((vec_ct)&not_a_vector, j, _test_vec_pred_int, (void*)&i[2]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_get_r_invalid_pred, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_get_r_invalid_pred, vec_int, vec)
 {
     vec_find_get_r(vec, NULL, NULL, NULL);
 }
@@ -1877,7 +1877,7 @@ TEST_CASE_SIGNAL(vec_find_remove_invalid_magic, SIGABRT)
     vec_find_remove((vec_ct)&not_a_vector, _test_vec_pred_int, (void*)&i[2]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_remove_invalid_pred, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_remove_invalid_pred, vec_int, vec)
 {
     vec_find_remove(vec, NULL, NULL);
 }
@@ -1899,12 +1899,12 @@ TEST_CASE_SIGNAL(vec_find_remove_p_invalid_magic, SIGABRT)
     vec_find_remove_p((vec_ct)&not_a_vector, _test_vec_pred_ptr, (void*)&pi[2]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_remove_p_invalid_pred, vec_ptr, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_remove_p_invalid_pred, vec_ptr, vec)
 {
     vec_find_remove_p(vec, NULL, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_remove_p_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_remove_p_invalid_type, vec_int, vec)
 {
     vec_find_remove_p(vec, _test_vec_pred_ptr, (void*)&pi[2]);
 }
@@ -1927,7 +1927,7 @@ TEST_CASE_SIGNAL(vec_find_remove_f_invalid_magic, SIGABRT)
     vec_find_remove_f((vec_ct)&not_a_vector, _test_vec_pred_int, (void*)&i[2], _test_vec_dtor, &count);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_remove_f_invalid_pred, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_remove_f_invalid_pred, vec_int, vec)
 {
     vec_find_remove_f(vec, NULL, NULL, NULL, NULL);
 }
@@ -1950,7 +1950,7 @@ TEST_CASE_SIGNAL(vec_find_remove_r_invalid_magic, SIGABRT)
     vec_find_remove_r((vec_ct)&not_a_vector, _test_vec_pred_int, (void*)&i[2]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_remove_r_invalid_pred, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_remove_r_invalid_pred, vec_int, vec)
 {
     vec_find_remove_r(vec, NULL, NULL);
 }
@@ -1972,12 +1972,12 @@ TEST_CASE_SIGNAL(vec_find_remove_rp_invalid_magic, SIGABRT)
     vec_find_remove_rp((vec_ct)&not_a_vector, _test_vec_pred_ptr, (void*)&pi[2]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_remove_rp_invalid_pred, vec_ptr, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_remove_rp_invalid_pred, vec_ptr, vec)
 {
     vec_find_remove_rp(vec, NULL, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_remove_rp_invalid_type, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_remove_rp_invalid_type, vec_int, vec)
 {
     vec_find_remove_rp(vec, _test_vec_pred_ptr, (void*)&pi[2]);
 }
@@ -2000,7 +2000,7 @@ TEST_CASE_SIGNAL(vec_find_remove_rf_invalid_magic, SIGABRT)
     vec_find_remove_rf((vec_ct)&not_a_vector, _test_vec_pred_int, (void*)&i[2], _test_vec_dtor, &count);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_remove_rf_invalid_pred, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_remove_rf_invalid_pred, vec_int, vec)
 {
     vec_find_remove_rf(vec, NULL, NULL, NULL, NULL);
 }
@@ -2023,7 +2023,7 @@ TEST_CASE_SIGNAL(vec_find_remove_all_invalid_magic, SIGABRT)
     vec_find_remove_all((vec_ct)&not_a_vector, _test_vec_pred_int, (void*)&i[2]);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_remove_all_invalid_pred, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_remove_all_invalid_pred, vec_int, vec)
 {
     vec_find_remove_all(vec, NULL, NULL);
 }
@@ -2041,7 +2041,7 @@ TEST_CASE_SIGNAL(vec_find_remove_all_f_invalid_magic, SIGABRT)
     vec_find_remove_all_f((vec_ct)&not_a_vector, _test_vec_pred_int, (void*)&i[2], _test_vec_dtor, &count);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_find_remove_all_f_invalid_pred, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_find_remove_all_f_invalid_pred, vec_int, vec)
 {
     vec_find_remove_all_f(vec, NULL, NULL, NULL, NULL);
 }
@@ -2089,7 +2089,7 @@ TEST_CASE_SIGNAL(vec_get_buffer_invalid_magic, SIGABRT)
     vec_get_buffer((vec_ct)&not_a_vector, NULL, NULL, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_get_buffer_invalid_buffer, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_get_buffer_invalid_buffer, vec_int, vec)
 {
     vec_get_buffer(vec, NULL, NULL, NULL);
 }
@@ -2203,7 +2203,7 @@ TEST_CASE_SIGNAL(vec_fold_invalid_magic, SIGABRT)
     vec_fold((vec_ct)&not_a_vector, NULL, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_fold_invalid_fold, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_fold_invalid_fold, vec_int, vec)
 {
     vec_fold(vec, NULL, NULL);
 }
@@ -2222,7 +2222,7 @@ TEST_CASE_SIGNAL(vec_fold_r_invalid_magic, SIGABRT)
     vec_fold_r((vec_ct)&not_a_vector, NULL, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(vec_fold_r_invalid_fold, vec_int, vec, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(vec_fold_r_invalid_fold, vec_int, vec)
 {
     vec_fold_r(vec, NULL, NULL);
 }

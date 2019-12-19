@@ -204,39 +204,39 @@ int fs_walk(path_const_ct dir, ssize_t depth, fs_link_mode_id link, fs_walk_cb w
     return error_pass_int(rc);
 }
 
-int fs_move(path_const_ct dst, path_const_ct src, fs_copy_mode_id mode)
+int fs_move(path_const_ct src, path_const_ct dst, fs_copy_mode_id mode)
 {
-    str_ct str_dst, str_src;
+    str_ct str_src, str_dst;
     
     assert(mode < FS_COPY_MODES);
     
-    if(!(str_dst = path_get(dst, PATH_STYLE_NATIVE)))
+    if(!(str_src = path_get(src, PATH_STYLE_NATIVE)))
         return error_pack(E_FS_INVALID_PATH), -1;
     
-    if(!(str_src = path_get(src, PATH_STYLE_NATIVE)))
-        return error_pack(E_FS_INVALID_PATH), str_unref(str_dst), -1;
+    if(!(str_dst = path_get(dst, PATH_STYLE_NATIVE)))
+        return error_pack(E_FS_INVALID_PATH), str_unref(str_src), -1;
     
     if(!rename(str_c(str_src), str_c(str_dst)))
-        return str_unref(str_dst), str_unref(str_src), 0;
+        return str_unref(str_src), str_unref(str_dst), 0;
     
     if(errno != EEXIST && errno != ENOTEMPTY)
     {
         error_push_errno(fs_get_errno_error(), rename);
-        str_unref(str_dst);
         str_unref(str_src);
+        str_unref(str_dst);
         return -1;
     }
     
     if(mode == FS_COPY_REPLACE)
     {
         if(fs_remove(dst, NULL, NULL))
-            return error_pass(), str_unref(str_dst), str_unref(str_src), -1;
+            return error_pass(), str_unref(str_src), str_unref(str_dst), -1;
         
         if(rename(str_c(str_src), str_c(str_dst)))
         {
             error_push_errno(fs_get_errno_error(), rename);
-            str_unref(str_dst);
             str_unref(str_src);
+            str_unref(str_dst);
             return -1;
         }
         
@@ -247,7 +247,7 @@ int fs_move(path_const_ct dst, path_const_ct src, fs_copy_mode_id mode)
 }
 
 /*
-int fs_copy(path_const_ct dst, path_const_ct src, fs_copy_mode_id mode)
+int fs_copy(path_const_ct src, path_const_ct dst, fs_copy_mode_id mode)
 {
     return 0;
 }
