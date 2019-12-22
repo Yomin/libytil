@@ -75,12 +75,12 @@ static void _test_list_dtor(list_const_ct list, void *data, void *ctx)
     count[0]++;
 }
 
-TEST_CASE_SIGNAL(list_free_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_free_invalid_magic)
 {
     list_free((list_ct)&not_a_list);
 }
 
-TEST_CASE_SIGNAL(list_free_f_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_free_f_invalid_magic)
 {
     list_free_f((list_ct)&not_a_list, _test_list_dtor, &count);
 }
@@ -92,7 +92,7 @@ TEST_CASE_FIXTURE(list_free_f, list_new, NULL)
     test_int_eq(count, 4);
 }
 
-TEST_CASE_SIGNAL(list_clear_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_clear_invalid_magic)
 {
     list_clear((list_ct)&not_a_list);
 }
@@ -103,7 +103,7 @@ TEST_CASE_FIXTURE(list_clear, list_new, list_free)
     test_uint_eq(list_size(list), 0);
 }
 
-TEST_CASE_SIGNAL(list_clear_f_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_clear_f_invalid_magic)
 {
     list_clear_f((list_ct)&not_a_list, _test_list_dtor, &count);
 }
@@ -116,7 +116,7 @@ TEST_CASE_FIXTURE(list_clear_f, list_new, list_free)
     test_int_eq(count, 4);
 }
 
-TEST_CASE_SIGNAL(list_clone_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_clone_invalid_magic)
 {
     list_clone((list_ct)&not_a_list);
 }
@@ -139,7 +139,7 @@ static int _test_list_clone(list_const_ct list, void **dst, const void *src, voi
     return 0;
 }
 
-TEST_CASE_SIGNAL(list_clone_f_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_clone_f_invalid_magic)
 {
     list_clone_f((list_ct)&not_a_list, _test_list_clone, NULL, NULL);
 }
@@ -155,7 +155,7 @@ TEST_CASE_FIXTURE(list_clone_f, list_new, list_free)
     list_free(list2);
 }
 
-TEST_CASE_SIGNAL(list_is_empty_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_is_empty_invalid_magic)
 {
     list_is_empty((list_ct)&not_a_list);
 }
@@ -169,7 +169,7 @@ TEST_CASE_FIXTURE(list_is_empty, list_new_empty, list_free)
     test_true(list_is_empty(list));
 }
 
-TEST_CASE_SIGNAL(list_size_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_size_invalid_magic)
 {
     list_size((list_ct)&not_a_list);
 }
@@ -188,12 +188,12 @@ static size_t _test_list_memsize(list_const_ct list, const void *data, void *ctx
     return 100;
 }
 
-TEST_CASE_SIGNAL(list_memsize_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_memsize_invalid_magic)
 {
     list_memsize((list_ct)&not_a_list);
 }
 
-TEST_CASE_SIGNAL(list_memsize_f_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_memsize_f_invalid_magic)
 {
     list_memsize_f((list_ct)&not_a_list, _test_list_memsize, NULL);
 }
@@ -203,7 +203,7 @@ TEST_CASE_FIXTURE(list_memsize, list_new, list_free)
     test_uint_eq(list_memsize(list)+400, list_memsize_f(list, _test_list_memsize, NULL));
 }
 
-TEST_CASE_SIGNAL(list_at_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_at_invalid_magic)
 {
     list_at((list_ct)&not_a_list, 0);
 }
@@ -230,7 +230,7 @@ TEST_CASE_FIXTURE(list_at_negative_index, list_new, list_free)
     test_int_eq(list_node_get_value(node, int), i[0]);
 }
 
-TEST_CASE_SIGNAL(list_first_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_first_invalid_magic)
 {
     list_first((list_ct)&not_a_list);
 }
@@ -246,7 +246,7 @@ TEST_CASE_FIXTURE(list_first, list_new, list_free)
     test_int_eq(list_node_get_value(node, int), i[0]);
 }
 
-TEST_CASE_SIGNAL(list_last_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_last_invalid_magic)
 {
     list_last((list_ct)&not_a_list);
 }
@@ -314,7 +314,7 @@ TEST_CASE_FIXTURE(list_prev_end, list_new, list_free)
     test_ptr_error(list_prev(list, list_first(list)), E_LIST_END);
 }
 
-TEST_CASE_SIGNAL(list_data_at_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_data_at_invalid_magic)
 {
     list_data_at((list_ct)&not_a_list, 0);
 }
@@ -339,7 +339,7 @@ TEST_CASE_FIXTURE(list_data_at_negative_index, list_new, list_free)
     test_rc_success(list_value_at(list, -4, int), i[0]);
 }
 
-TEST_CASE_SIGNAL(list_data_first_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_data_first_invalid_magic)
 {
     list_data_first((list_ct)&not_a_list);
 }
@@ -354,7 +354,7 @@ TEST_CASE_FIXTURE(list_data_first, list_new, list_free)
     test_rc_success(list_value_first(list, int), i[0]);
 }
 
-TEST_CASE_SIGNAL(list_data_last_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_data_last_invalid_magic)
 {
     list_data_last((list_ct)&not_a_list);
 }
@@ -389,7 +389,7 @@ TEST_CASE_FIXTURE(list_pos, list_new, list_free)
     test_rc_success(list_pos(list, list_next(list, list_first(list))), 1);
 }
 
-TEST_CASE_SIGNAL(list_prepend_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_prepend_invalid_magic)
 {
     list_prepend((list_ct)&not_a_list, NULL);
 }
@@ -402,7 +402,7 @@ TEST_CASE_FIXTURE(list_prepend, list_new, list_free)
     test_int_eq(list_node_get_value(node, int), 42);
 }
 
-TEST_CASE_SIGNAL(list_append_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_append_invalid_magic)
 {
     list_append((list_ct)&not_a_list, NULL);
 }
@@ -415,7 +415,7 @@ TEST_CASE_FIXTURE(list_append, list_new, list_free)
     test_int_eq(list_node_get_value(node, int), 42);
 }
 
-TEST_CASE_SIGNAL(list_insert_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_insert_invalid_magic)
 {
     list_insert((list_ct)&not_a_list, 0, NULL);
 }
@@ -537,7 +537,7 @@ TEST_CASE_FIXTURE(list_remove_tail, list_new, list_free)
     test_int_eq(list_value_last(list, int), 3);
 }
 
-TEST_CASE_SIGNAL(list_remove_at_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_remove_at_invalid_magic)
 {
     list_remove_at((list_ct)&not_a_list, 0);
 }
@@ -580,7 +580,7 @@ TEST_CASE_FIXTURE(list_remove_at_tail_negative_index, list_new, list_free)
     test_int_eq(list_value_last(list, int), 3);
 }
 
-TEST_CASE_SIGNAL(list_remove_at_f_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_remove_at_f_invalid_magic)
 {
     list_remove_at_f((list_ct)&not_a_list, 0, _test_list_dtor, &count);
 }
@@ -636,7 +636,7 @@ static bool _test_list_pred(list_const_ct list, const void *data, void *ctx)
     return POINTER_TO_VALUE(data, int) % 2;
 }
 
-TEST_CASE_SIGNAL(list_find_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_find_invalid_magic)
 {
     list_find((list_ct)&not_a_list, _test_list_pred, NULL);
 }
@@ -657,7 +657,7 @@ TEST_CASE_FIXTURE(list_find, list_new, list_free)
     test_uint_eq(list_pos(list, node), 0);
 }
 
-TEST_CASE_SIGNAL(list_find_r_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_find_r_invalid_magic)
 {
     list_find_r((list_ct)&not_a_list, _test_list_pred, NULL);
 }
@@ -678,7 +678,7 @@ TEST_CASE_FIXTURE(list_find_r, list_new, list_free)
     test_uint_eq(list_pos(list, node), 2);
 }
 
-TEST_CASE_SIGNAL(list_find_remove_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_find_remove_invalid_magic)
 {
     list_find_remove((list_ct)&not_a_list, _test_list_pred, NULL);
 }
@@ -700,7 +700,7 @@ TEST_CASE_FIXTURE(list_find_remove, list_new, list_free)
     test_int_eq(list_value_first(list, int), 2);
 }
 
-TEST_CASE_SIGNAL(list_find_remove_f_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_find_remove_f_invalid_magic)
 {
     list_find_remove_f((list_ct)&not_a_list, _test_list_pred, NULL, _test_list_dtor, &count);
 }
@@ -724,7 +724,7 @@ TEST_CASE_FIXTURE(list_find_remove_f, list_new, list_free)
     test_int_eq(count, 1);
 }
 
-TEST_CASE_SIGNAL(list_find_remove_r_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_find_remove_r_invalid_magic)
 {
     list_find_remove_r((list_ct)&not_a_list, _test_list_pred, NULL);
 }
@@ -746,7 +746,7 @@ TEST_CASE_FIXTURE(list_find_remove_r, list_new, list_free)
     test_int_eq(list_value_at(list, 2, int), 4);
 }
 
-TEST_CASE_SIGNAL(list_find_remove_rf_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_find_remove_rf_invalid_magic)
 {
     list_find_remove_rf((list_ct)&not_a_list, _test_list_pred, NULL, _test_list_dtor, &count);
 }
@@ -770,7 +770,7 @@ TEST_CASE_FIXTURE(list_find_remove_rf, list_new, list_free)
     test_int_eq(count, 1);
 }
 
-TEST_CASE_SIGNAL(list_find_remove_all_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_find_remove_all_invalid_magic)
 {
     list_find_remove_all((list_ct)&not_a_list, _test_list_pred, NULL);
 }
@@ -793,7 +793,7 @@ TEST_CASE_FIXTURE(list_find_remove_all, list_new, list_free)
     test_int_eq(list_value_at(list, 1, int), 4);
 }
 
-TEST_CASE_SIGNAL(list_find_remove_all_f_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_find_remove_all_f_invalid_magic)
 {
     list_find_remove_all_f((list_ct)&not_a_list, _test_list_pred, NULL, _test_list_dtor, &count);
 }
@@ -851,7 +851,7 @@ static int _test_list_fold(list_const_ct list, void *data, void *ctx)
     return 0;
 }
 
-TEST_CASE_SIGNAL(list_fold_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_fold_invalid_magic)
 {
     list_fold((list_ct)&not_a_list, _test_list_fold, NULL);
 }
@@ -868,7 +868,7 @@ TEST_CASE_FIXTURE(list_fold, list_new, list_free)
     test_int_eq(sum, 1234);
 }
 
-TEST_CASE_SIGNAL(list_fold_r_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(list_fold_r_invalid_magic)
 {
     list_fold_r((list_ct)&not_a_list, _test_list_fold, NULL);
 }

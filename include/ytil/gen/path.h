@@ -46,6 +46,7 @@ typedef enum path_type
     , PATH_TYPE_DRIVE
     , PATH_TYPE_UNC
     , PATH_TYPE_DEVICE
+    , PATH_TYPES
 } path_type_id;
 
 typedef enum path_style
@@ -89,6 +90,9 @@ bool path_is_absolute(path_const_ct path);
 bool path_is_relative(path_const_ct path);
 // check whether path is directory (has trailing path separator)
 bool path_is_directory(path_const_ct path);
+
+// check if path1 equals path2
+bool path_is_equal(path_const_ct path1, path_const_ct path2, path_style_id style);
 
 // get path type
 path_type_id path_type(path_const_ct path);

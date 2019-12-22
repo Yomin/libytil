@@ -32,33 +32,28 @@ typedef enum fs_error
     , E_FS_CALLBACK
     , E_FS_ERRNO
     , E_FS_INVALID_PATH
+    , E_FS_NO_SPACE
     , E_FS_NOT_DIRECTORY
     , E_FS_NOT_FOUND
 } fs_error_id;
 
-typedef enum fs_link_mode
+typedef enum fs_stat_flag
 {
-      FS_LINK_FOLLOW
-    , FS_LINK_NOFOLLOW
-    , FS_LINK_MODES
-} fs_link_mode_id;
+      FS_STAT_DEFAULT       = 0
+    , FS_STAT_LINK_NOFOLLOW = 1
+} fs_stat_fs;
 
-typedef enum fs_walk_type
+typedef enum fs_move_flag
 {
-      FS_WALK_FILE
-    , FS_WALK_DIR_PRE
-    , FS_WALK_DIR_POST
-    , FS_WALK_DIR_ERROR
-    , FS_WALK_STAT_ERROR
-    , FS_WALK_TYPES
-} fs_walk_type_id;
+      FS_MOVE_DEFAULT   = 0
+    , FS_MOVE_MERGE     = 1
+} fs_move_fs;
 
-typedef enum fs_copy_mode
+typedef enum fs_copy_flag
 {
-      FS_COPY_REPLACE
-    , FS_COPY_MERGE
-    , FS_COPY_MODES
-} fs_copy_mode_id;
+      FS_COPY_DEFAULT   = 0
+    , FS_COPY_MERGE     = 1
+} fs_copy_fs;
 
 typedef enum fs_type
 {
@@ -72,6 +67,16 @@ typedef enum fs_type
     , FS_TYPE_DIRECTORY
 } fs_type_id;
 
+typedef enum fs_walk_type
+{
+      FS_WALK_FILE
+    , FS_WALK_DIR_PRE
+    , FS_WALK_DIR_POST
+    , FS_WALK_DIR_ERROR
+    , FS_WALK_STAT_ERROR
+    , FS_WALK_TYPES
+} fs_walk_type_id;
+
 typedef struct fs_stat
 {
     fs_type_id type;
@@ -83,16 +88,16 @@ typedef struct fs_stat
 typedef int (*fs_walk_cb)(fs_walk_type_id type, path_const_ct file, size_t depth, fs_stat_st *info, void *ctx);
 
 // get file status
-fs_stat_st *fs_stat(path_const_ct file, fs_link_mode_id mode, fs_stat_st *fst);
+fs_stat_st *fs_stat(path_const_ct file, fs_stat_fs flags, fs_stat_st *fst);
 
 // iterate over all files in directory
 // negative depth recurses indefinitely
-int fs_walk(path_const_ct dir, ssize_t depth, fs_link_mode_id link, fs_walk_cb walk, void *ctx);
+int fs_walk(path_const_ct dir, ssize_t depth, fs_stat_fs flags, fs_walk_cb walk, void *ctx);
 
 // move file from src to dst
-int fs_move(path_const_ct src, path_const_ct dst, fs_copy_mode_id mode);
+int fs_move(path_const_ct src, path_const_ct dst, fs_move_fs flags);
 // copy file from src to dst
-int fs_copy(path_const_ct src, path_const_ct dst, fs_copy_mode_id mode);
+int fs_copy(path_const_ct src, path_const_ct dst, fs_copy_fs flags);
 // remove file
 int fs_remove(path_const_ct file, fs_walk_cb error, void *ctx);
 
