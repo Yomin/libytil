@@ -61,6 +61,12 @@ typedef struct test_case_config
 } test_case_config_st;
 
 
+#define _TEST_DELEGATE(name, setup, ...) \
+    static void _test_delegate_##name(void *_test_case_ctx, void **_test_case_state) \
+    { \
+        setup(_test_case_ctx, _test_case_state, __VA_ARGS__); \
+    }
+
 #define _TEST_CASE(name, _end, _endval, _setup, _teardown) \
     \
     static const test_case_config_st _test_config_##name = \
@@ -70,6 +76,11 @@ typedef struct test_case_config
     }; \
     \
     static void _test_case_##name(void *_test_case_ctx, void **_test_case_state)
+
+#define _TEST_CASE_ARGS(name, end, endval, setup, teardown, ...) \
+    _TEST_DELEGATE(name, setup, __VA_ARGS__) \
+    _TEST_CASE(name, end, endval, _test_delegate_##name, teardown)
+
 
 #define TEST_CASE(name) \
     _TEST_CASE(name, TEST_CASE_END_NORMAL, 0, NULL, NULL)
@@ -89,11 +100,23 @@ typedef struct test_case_config
 #define TEST_CASE_ABORT_FIXTURE(name, setup, teardown) \
     _TEST_CASE(name, TEST_CASE_END_SIGNAL, SIGABRT, _test_setup_##setup, _test_teardown_##teardown)
 
-#define TEST_SETUP(name) \
-    static void _test_setup_##name(void *_test_case_ctx, void **_test_case_state)
+#define TEST_CASE_ARGS(name, setup, teardown, ...) \
+    _TEST_CASE_ARGS(name, TEST_CASE_END_NORMAL, 0, _test_setup_##setup, _test_teardown_##teardown, __VA_ARGS__)
+#define TEST_CASE_EXIT_ARGS(name, rc, setup, teardown, ...) \
+    _TEST_CASE_ARGS(name, TEST_CASE_END_EXIT, rc, _test_setup_##setup, _test_teardown_##teardown, __VA_ARGS__)
+#define TEST_CASE_SIGNAL_ARGS(name, signal, setup, teardown, ...) \
+    _TEST_CASE_ARGS(name, TEST_CASE_END_SIGNAL, signal, _test_setup_##setup, _test_teardown_##teardown, __VA_ARGS__)
+#define TEST_CASE_ABORT_ARGS(name, setup, teardown, ...) \
+    _TEST_CASE_ARGS(name, TEST_CASE_END_SIGNAL, SIGABRT, _test_setup_##setup, _test_teardown_##teardown, __VA_ARGS__)
+
+#define TEST_SETUP(name, ...) \
+    static void _test_setup_##name(void *_test_case_ctx, void **_test_case_state __VA_OPT__(,) __VA_ARGS__)
 
 #define TEST_TEARDOWN(name) \
     static void _test_teardown_##name(void *_test_case_ctx, void **_test_case_state)
+
+#define TEST_FUNCTION(type, name, ...) \
+    static type _test_func_##name(void *_test_case_ctx, void **_test_case_state __VA_OPT__(,) __VA_ARGS__)
 
 #define TEST_STATE \
     (*_test_case_state)
