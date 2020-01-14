@@ -60,7 +60,7 @@ TEST_CASE(ring_new_invalid_elemsize)
     test_ptr_error(ring_new(0, 0), E_RING_INVALID_ELEMSIZE);
 }
 
-TEST_CASE_SIGNAL(ring_free_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_free_invalid_magic)
 {
     ring_free((ring_ct)&not_a_ring);
 }
@@ -72,7 +72,7 @@ static void _test_ring_dtor(ring_const_ct r, void *elem, void *ctx)
     count[0]++;
 }
 
-TEST_CASE_SIGNAL(ring_free_f_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_free_f_invalid_magic)
 {
     ring_free_f((ring_ct)&not_a_ring, _test_ring_dtor, &count);
 }
@@ -84,7 +84,7 @@ TEST_CASE_FIXTURE(ring_free_f, ring_new, NULL)
     test_int_eq(count, 4);
 }
 
-TEST_CASE_SIGNAL(ring_clear_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_clear_invalid_magic)
 {
     ring_clear((ring_ct)&not_a_ring);
 }
@@ -95,7 +95,7 @@ TEST_CASE_FIXTURE(ring_clear, ring_new, ring_free)
     test_true(ring_is_empty(ring));
 }
 
-TEST_CASE_SIGNAL(ring_clear_f_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_clear_f_invalid_magic)
 {
     ring_clear_f((ring_ct)&not_a_ring, _test_ring_dtor, &count);
 }
@@ -108,7 +108,7 @@ TEST_CASE_FIXTURE(ring_clear_f, ring_new, ring_free)
     test_int_eq(count, 4);
 }
 
-TEST_CASE_SIGNAL(ring_is_empty_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_is_empty_invalid_magic)
 {
     ring_is_empty((ring_ct)&not_a_ring);
 }
@@ -122,7 +122,7 @@ TEST_CASE_FIXTURE(ring_is_empty, ring_new_empty, ring_free)
     test_true(ring_is_empty(ring));
 }
 
-TEST_CASE_SIGNAL(ring_size_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_size_invalid_magic)
 {
     ring_size((ring_ct)&not_a_ring);
 }
@@ -136,7 +136,7 @@ TEST_CASE_FIXTURE(ring_size, ring_new_empty, ring_free)
     test_uint_eq(ring_size(ring), 0);
 }
 
-TEST_CASE_SIGNAL(ring_put_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_put_invalid_magic)
 {
     ring_put((ring_ct)&not_a_ring);
 }
@@ -154,7 +154,7 @@ TEST_CASE_FIXTURE(ring_put_overflow, ring_new, ring_free)
     test_uint_eq(ring_size(ring), 4);
 }
 
-TEST_CASE_SIGNAL(ring_put_e_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_put_e_invalid_magic)
 {
     ring_put_e((ring_ct)&not_a_ring, &i[0]);
 }
@@ -192,7 +192,7 @@ static ring_action_id _test_ring_overflow_overwrite(ring_const_ct r, const void 
     return RING_OVERWRITE;
 }
 
-TEST_CASE_SIGNAL(ring_put_f_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_put_f_invalid_magic)
 {
     ring_put_f((ring_ct)&not_a_ring, _test_ring_overflow_reject, &action);
 }
@@ -221,7 +221,7 @@ TEST_CASE_FIXTURE(ring_put_f_overflow_overwrite, ring_new, ring_free)
     test_uint_eq(ring_size(ring), 4);
 }
 
-TEST_CASE_SIGNAL(ring_put_ef_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_put_ef_invalid_magic)
 {
     ring_put_ef((ring_ct)&not_a_ring, &i[0], _test_ring_overflow_reject, &action);
 }
@@ -254,7 +254,7 @@ TEST_CASE_FIXTURE(ring_put_ef_overflow_overwrite, ring_new, ring_free)
     test_int_eq(*(int*)ring_peek_head(ring), i[4]);
 }
 
-TEST_CASE_SIGNAL(ring_peek_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_peek_invalid_magic)
 {
     ring_peek((ring_ct)&not_a_ring);
 }
@@ -270,7 +270,7 @@ TEST_CASE_FIXTURE(ring_peek, ring_new, ring_free)
     test_int_eq(*j, i[0]);
 }
 
-TEST_CASE_SIGNAL(ring_drop_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_drop_invalid_magic)
 {
     ring_drop((ring_ct)&not_a_ring);
 }
@@ -287,7 +287,7 @@ TEST_CASE_FIXTURE(ring_drop, ring_new, ring_free)
     test_int_eq(*(int*)ring_peek(ring), i[1]);
 }
 
-TEST_CASE_SIGNAL(ring_drop_f_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_drop_f_invalid_magic)
 {
     ring_drop_f((ring_ct)&not_a_ring, _test_ring_dtor, &count);
 }
@@ -306,7 +306,7 @@ TEST_CASE_FIXTURE(ring_drop_f, ring_new, ring_free)
     test_int_eq(count, 1);
 }
 
-TEST_CASE_SIGNAL(ring_get_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_get_invalid_magic)
 {
     ring_get((ring_ct)&not_a_ring, &k);
 }
@@ -323,7 +323,7 @@ TEST_CASE_FIXTURE(ring_get, ring_new, ring_free)
     test_int_eq(k, i[0]);
 }
 
-TEST_CASE_SIGNAL(ring_peek_head_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_peek_head_invalid_magic)
 {
     ring_peek_head((ring_ct)&not_a_ring);
 }
@@ -339,7 +339,7 @@ TEST_CASE_FIXTURE(ring_peek_head, ring_new, ring_free)
     test_int_eq(*j, i[3]);
 }
 
-TEST_CASE_SIGNAL(ring_drop_head_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_drop_head_invalid_magic)
 {
     ring_drop_head((ring_ct)&not_a_ring);
 }
@@ -356,7 +356,7 @@ TEST_CASE_FIXTURE(ring_drop_head, ring_new, ring_free)
     test_int_eq(*(int*)ring_peek_head(ring), i[2]);
 }
 
-TEST_CASE_SIGNAL(ring_drop_head_f_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_drop_head_f_invalid_magic)
 {
     ring_drop_head_f((ring_ct)&not_a_ring, _test_ring_dtor, &count);
 }
@@ -375,7 +375,7 @@ TEST_CASE_FIXTURE(ring_drop_head_f, ring_new, ring_free)
     test_int_eq(count, 1);
 }
 
-TEST_CASE_SIGNAL(ring_get_head_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_get_head_invalid_magic)
 {
     ring_get_head((ring_ct)&not_a_ring, &k);
 }
@@ -401,12 +401,12 @@ static int _test_ring_fold(ring_const_ct r, void *elem, void *ctx)
     return 0;
 }
 
-TEST_CASE_SIGNAL(ring_fold_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_fold_invalid_magic)
 {
     ring_fold((ring_ct)&not_a_ring, _test_ring_fold, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(ring_fold_invalid_callback, ring_new, ring_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(ring_fold_invalid_callback, ring_new, ring_free)
 {
     ring_fold(ring, NULL, NULL);
 }
@@ -418,12 +418,12 @@ TEST_CASE_FIXTURE(ring_fold, ring_new, ring_free)
     test_int_eq(sum, 1234);
 }
 
-TEST_CASE_SIGNAL(ring_fold_r_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(ring_fold_r_invalid_magic)
 {
     ring_fold_r((ring_ct)&not_a_ring, _test_ring_fold, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(ring_fold_r_invalid_callback, ring_new, ring_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(ring_fold_r_invalid_callback, ring_new, ring_free)
 {
     ring_fold_r(ring, NULL, NULL);
 }

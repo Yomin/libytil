@@ -38,12 +38,12 @@ TEST_TEARDOWN(path_free)
     path_free(path);
 }
 
-TEST_CASE_SIGNAL(path_new_invalid_str, SIGABRT)
+TEST_CASE_ABORT(path_new_invalid_str)
 {
     path_new((str_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_SIGNAL(path_new_invalid_style, SIGABRT)
+TEST_CASE_ABORT(path_new_invalid_style)
 {
     path_new(LIT("foo"), 999);
 }
@@ -1179,7 +1179,7 @@ TEST_CASE_FIXTURE(path_new_windows_win32_device, path_new_device, path_free)
     str_unref(str);
 }
 
-TEST_CASE_SIGNAL(path_dup_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_dup_invalid_magic)
 {
     path_dup((path_ct)&not_a_path);
 }
@@ -1201,7 +1201,7 @@ TEST_CASE_FIXTURE(path_dup, path_new_dir_absolute, path_free)
     path_free(npath);
 }
 
-TEST_CASE_SIGNAL(path_reset_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_reset_invalid_magic)
 {
     path_reset((path_ct)&not_a_path);
 }
@@ -1214,32 +1214,32 @@ TEST_CASE_FIXTURE(path_reset, path_new_path_absolute, path_free)
     str_unref(str);
 }
 
-TEST_CASE_SIGNAL(path_is_absolute_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_is_absolute_invalid_magic)
 {
     path_is_absolute((path_ct)&not_a_path);
 }
 
-TEST_CASE_SIGNAL(path_is_relative_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_is_relative_invalid_magic)
 {
     path_is_relative((path_ct)&not_a_path);
 }
 
-TEST_CASE_SIGNAL(path_type_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_type_invalid_magic)
 {
     path_type((path_ct)&not_a_path);
 }
 
-TEST_CASE_SIGNAL(path_depth_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_depth_invalid_magic)
 {
     path_depth((path_ct)&not_a_path);
 }
 
-TEST_CASE_SIGNAL(path_len_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_len_invalid_magic)
 {
     path_len((path_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_SIGNAL(path_current_invalid_style, SIGABRT)
+TEST_CASE_ABORT(path_current_invalid_style)
 {
     path_current(999);
 }
@@ -1254,7 +1254,7 @@ TEST_CASE(path_current_windows)
     test_str_eq(path_current(PATH_STYLE_WINDOWS), ".");
 }
 
-TEST_CASE_SIGNAL(path_parent_invalid_style, SIGABRT)
+TEST_CASE_ABORT(path_parent_invalid_style)
 {
     path_parent(999);
 }
@@ -1269,7 +1269,7 @@ TEST_CASE(path_parent_windows)
     test_str_eq(path_parent(PATH_STYLE_WINDOWS), "..");
 }
 
-TEST_CASE_SIGNAL(path_separator_invalid_style, SIGABRT)
+TEST_CASE_ABORT(path_separator_invalid_style)
 {
     path_separator(999);
 }
@@ -1284,17 +1284,17 @@ TEST_CASE(path_separator_windows)
     test_str_eq(path_separator(PATH_STYLE_WINDOWS), "\\/");
 }
 
-TEST_CASE_SIGNAL(path_set_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_set_invalid_magic)
 {
     path_set((path_ct)&not_a_path, LIT("foo.txt"), PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_set_invalid_style, path_new_path_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_set_invalid_style, path_new_path_absolute, path_free)
 {
     path_set(path, LIT("foo.txt"), 999);
 }
 
-TEST_CASE_SIGNAL(path_set_drive_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_set_drive_invalid_magic)
 {
     path_set_drive((path_ct)&not_a_path, 'x');
 }
@@ -1317,7 +1317,7 @@ TEST_CASE_FIXTURE(path_set_drive, path_new_drive_path_absolute, path_free)
     str_unref(str);
 }
 
-TEST_CASE_SIGNAL(path_set_unc_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_set_unc_invalid_magic)
 {
     path_set_unc((path_ct)&not_a_path, LIT("mail"), LIT("spam"));
 }
@@ -1327,7 +1327,7 @@ TEST_CASE_FIXTURE(path_set_unc_invalid_type, path_new_path_absolute, path_free)
     test_ptr_error(path_set_unc(path, LIT("mail"), LIT("spam")), E_PATH_INVALID_TYPE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_set_unc_invalid_host1, path_new_unc_path, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_set_unc_invalid_host1, path_new_unc_path, path_free)
 {
     path_set_unc(path, NULL, LIT("spam"));
 }
@@ -1337,7 +1337,7 @@ TEST_CASE_FIXTURE(path_set_unc_invalid_host2, path_new_unc_path, path_free)
     test_ptr_error(path_set_unc(path, LIT(""), LIT("spam")), E_PATH_INVALID_UNC_HOST);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_set_unc_invalid_share1, path_new_unc_path, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_set_unc_invalid_share1, path_new_unc_path, path_free)
 {
     path_set_unc(path, LIT("mail"), NULL);
 }
@@ -1355,7 +1355,7 @@ TEST_CASE_FIXTURE(path_set_unc, path_new_unc_path, path_free)
     str_unref(str);
 }
 
-TEST_CASE_SIGNAL(path_set_unc_share_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_set_unc_share_invalid_magic)
 {
     path_set_unc_share((path_ct)&not_a_path, LIT("stuff"));
 }
@@ -1365,7 +1365,7 @@ TEST_CASE_FIXTURE(path_set_unc_share_invalid_type, path_new_path_absolute, path_
     test_ptr_error(path_set_unc_share(path, LIT("stuff")), E_PATH_INVALID_TYPE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_set_unc_share_invalid_share1, path_new_unc_path, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_set_unc_share_invalid_share1, path_new_unc_path, path_free)
 {
     path_set_unc_share(path, NULL);
 }
@@ -1383,7 +1383,7 @@ TEST_CASE_FIXTURE(path_set_unc_share, path_new_unc_path, path_free)
     str_unref(str);
 }
 
-TEST_CASE_SIGNAL(path_set_device_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_set_device_invalid_magic)
 {
     path_set_device((path_ct)&not_a_path, LIT("flux"), 88);
 }
@@ -1393,7 +1393,7 @@ TEST_CASE_FIXTURE(path_set_device_invalid_type, path_new_path_absolute, path_fre
     test_ptr_error(path_set_device(path, LIT("flux"), 88), E_PATH_INVALID_TYPE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_set_device_invalid_name1, path_new_device, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_set_device_invalid_name1, path_new_device, path_free)
 {
     path_set_device(path, NULL, 88);
 }
@@ -1411,7 +1411,7 @@ TEST_CASE_FIXTURE(path_set_device, path_new_device, path_free)
     str_unref(str);
 }
 
-TEST_CASE_SIGNAL(path_set_device_ident_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_set_device_ident_invalid_magic)
 {
     path_set_device_ident((path_ct)&not_a_path, 123);
 }
@@ -1429,12 +1429,12 @@ TEST_CASE_FIXTURE(path_set_device_ident, path_new_device, path_free)
     str_unref(str);
 }
 
-TEST_CASE_SIGNAL(path_set_suffix_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_set_suffix_invalid_magic)
 {
     path_set_suffix((path_ct)&not_a_path, LIT("pdf"));
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_set_suffix_invalid_suffix1, path_new_file_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_set_suffix_invalid_suffix1, path_new_file_absolute, path_free)
 {
     path_set_suffix(path, NULL);
 }
@@ -1472,12 +1472,12 @@ TEST_CASE_FIXTURE(path_set_suffix_dir, path_new_dir_absolute, path_free)
     test_ptr_error(path_set_suffix(path, LIT("pdf")), E_PATH_INVALID_PATH);
 }
 
-TEST_CASE_SIGNAL(path_add_suffix_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_add_suffix_invalid_magic)
 {
     path_add_suffix((path_ct)&not_a_path, LIT("pdf"));
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_add_suffix_invalid_suffix1, path_new_file_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_add_suffix_invalid_suffix1, path_new_file_absolute, path_free)
 {
     path_add_suffix(path, NULL);
 }
@@ -1515,17 +1515,17 @@ TEST_CASE_FIXTURE(path_add_suffix_dir, path_new_dir_absolute, path_free)
     test_ptr_error(path_add_suffix(path, LIT("pdf")), E_PATH_INVALID_PATH);
 }
 
-TEST_CASE_SIGNAL(path_append_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_append_invalid_magic)
 {
     path_append((path_ct)&not_a_path, LIT("blubb"), PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_append_invalid_str, path_new_path_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_append_invalid_str, path_new_path_absolute, path_free)
 {
     path_append(path, NULL, PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_append_invalid_style, path_new_path_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_append_invalid_style, path_new_path_absolute, path_free)
 {
     path_append(path, LIT("blubb"), 999);
 }
@@ -1689,7 +1689,7 @@ TEST_CASE_FIXTURE(path_append_squash_current, path_new_dir_current_absolute, pat
     str_unref(str);
 }
 
-TEST_CASE_SIGNAL(path_drop_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_drop_invalid_magic)
 {
     path_drop((path_ct)&not_a_path, 1);
 }
@@ -1714,7 +1714,7 @@ TEST_CASE_FIXTURE(path_drop_dir, path_new_dir_absolute, path_free)
     str_unref(str);
 }
 
-TEST_CASE_SIGNAL(path_drop_suffix_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_drop_suffix_invalid_magic)
 {
     path_drop_suffix((path_ct)&not_a_path);
 }
@@ -1756,12 +1756,12 @@ TEST_CASE_FIXTURE(path_drop_suffix_hidden, path_new_path_absolute, path_free)
     str_unref(str);
 }
 
-TEST_CASE_SIGNAL(path_get_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_get_invalid_magic)
 {
     path_get((path_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_get_invalid_style, path_new_path_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_get_invalid_style, path_new_path_absolute, path_free)
 {
     path_get(path, 999);
 }
@@ -1784,7 +1784,7 @@ TEST_CASE_FIXTURE(path_get_device_posix, path_new_device, path_free)
     test_uint_eq(path_len(path, PATH_STYLE_POSIX), 0);
 }
 
-TEST_CASE_SIGNAL(path_get_drive_letter_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_get_drive_letter_invalid_magic)
 {
     path_get_drive_letter((path_ct)&not_a_path);
 }
@@ -1799,7 +1799,7 @@ TEST_CASE_FIXTURE(path_get_drive_letter, path_new_drive_path_absolute, path_free
     test_rc_success(path_get_drive_letter(path), 'z');
 }
 
-TEST_CASE_SIGNAL(path_get_unc_host_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_get_unc_host_invalid_magic)
 {
     path_get_unc_host((path_ct)&not_a_path);
 }
@@ -1815,7 +1815,7 @@ TEST_CASE_FIXTURE(path_get_unc_host, path_new_unc_path, path_free)
     test_str_eq(str_c(cstr), "host");
 }
 
-TEST_CASE_SIGNAL(path_get_unc_share_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_get_unc_share_invalid_magic)
 {
     path_get_unc_share((path_ct)&not_a_path);
 }
@@ -1831,7 +1831,7 @@ TEST_CASE_FIXTURE(path_get_unc_share, path_new_unc_path, path_free)
     test_str_eq(str_c(cstr), "share");
 }
 
-TEST_CASE_SIGNAL(path_get_device_name_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_get_device_name_invalid_magic)
 {
     path_get_device_name((path_ct)&not_a_path);
 }
@@ -1847,7 +1847,7 @@ TEST_CASE_FIXTURE(path_get_device_name, path_new_device, path_free)
     test_str_eq(str_c(cstr), "com");
 }
 
-TEST_CASE_SIGNAL(path_get_device_ident_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_get_device_ident_invalid_magic)
 {
     path_get_device_ident((path_ct)&not_a_path);
 }
@@ -1862,7 +1862,7 @@ TEST_CASE_FIXTURE(path_get_device_ident, path_new_device, path_free)
     test_rc_success(path_get_device_ident(path), 42);
 }
 
-TEST_CASE_SIGNAL(path_get_suffix_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_get_suffix_invalid_magic)
 {
     path_get_suffix((path_ct)&not_a_path);
 }
@@ -1909,12 +1909,12 @@ TEST_CASE_FIXTURE(path_get_suffix_dir, path_new_dir_absolute, path_free)
     str_unref(str);
 }
 
-TEST_CASE_SIGNAL(path_basename_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_basename_invalid_magic)
 {
     path_basename((path_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_basename_invalid_style, path_new_path_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_basename_invalid_style, path_new_path_absolute, path_free)
 {
     path_basename(path, 999);
 }
@@ -1968,12 +1968,12 @@ TEST_CASE_FIXTURE(path_basename_parent, path_new_parent, path_free)
     str_unref(str);
 }
 
-TEST_CASE_SIGNAL(path_dirname_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(path_dirname_invalid_magic)
 {
     path_dirname((path_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(path_dirname_invalid_style, path_new_path_absolute, path_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(path_dirname_invalid_style, path_new_path_absolute, path_free)
 {
     path_dirname(path, 999);
 }

@@ -60,7 +60,7 @@ TEST_TEARDOWN(art_free)
     art_free(art);
 }
 
-TEST_CASE_SIGNAL(art_is_empty_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_is_empty_invalid_magic)
 {
     art_is_empty((art_ct)&not_an_art);
 }
@@ -74,7 +74,7 @@ TEST_CASE_FIXTURE(art_is_empty, art_new_empty, art_free)
     test_true(art_is_empty(art));
 }
 
-TEST_CASE_SIGNAL(art_size_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_size_invalid_magic)
 {
     art_size((art_ct)&not_an_art);
 }
@@ -88,7 +88,7 @@ TEST_CASE_FIXTURE(art_size, art_new_empty, art_free)
     test_uint_eq(art_size(art), 0);
 }
 
-TEST_CASE_SIGNAL(art_memsize_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_memsize_invalid_magic)
 {
     art_memsize((art_ct)&not_an_art);
 }
@@ -124,7 +124,7 @@ static art_ct _test_art_insert(art_ct art, int size)
     return art;
 }
 
-TEST_CASE_SIGNAL(art_insert_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_insert_invalid_magic)
 {
     art_insert((art_ct)&not_an_art, NULL, NULL);
 }
@@ -301,7 +301,7 @@ static art_ct _test_art_get(art_ct art, int size)
     return art;
 }
 
-TEST_CASE_SIGNAL(art_get_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_get_invalid_magic)
 {
     art_get((art_ct)&not_an_art, NULL);
 }
@@ -388,17 +388,17 @@ static int _test_art_remove(art_ct art, int size)
     return count;
 }
 
-TEST_CASE_SIGNAL(art_remove_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_remove_invalid_magic)
 {
     art_remove((art_ct)&not_an_art, NULL);
 }
 
-TEST_CASE_SIGNAL(art_remove_p_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_remove_p_invalid_magic)
 {
     art_remove_p((art_ct)&not_an_art, NULL);
 }
 
-TEST_CASE_SIGNAL(art_remove_pf_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_remove_pf_invalid_magic)
 {
     art_remove_pf((art_ct)&not_an_art, NULL, _test_art_dtor, NULL);
 }
@@ -493,12 +493,12 @@ static bool _test_art_pred_key(art_const_ct art, str_const_ct key1, const void *
     return !strcmp(str_bc(key1), key2);
 }
 
-TEST_CASE_SIGNAL(art_find_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_find_invalid_magic)
 {
     art_find((art_ct)&not_an_art, _test_art_pred_value, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_find_invalid_pred, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_find_invalid_pred, art_new_empty, art_free)
 {
     art_find(art, NULL, NULL);
 }
@@ -516,12 +516,12 @@ TEST_CASE_FIXTURE(art_find, art_new4, art_free)
     str_unref(key);
 }
 
-TEST_CASE_SIGNAL(art_find_k_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_find_k_invalid_magic)
 {
     art_find_k((art_ct)&not_an_art, _test_art_pred_key, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_find_k_invalid_pred, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_find_k_invalid_pred, art_new_empty, art_free)
 {
     art_find_k(art, NULL, NULL);
 }
@@ -537,12 +537,12 @@ TEST_CASE_FIXTURE(art_find_k, art_new4, art_free)
     test_int_eq(art_node_get_value(node, int), 3);
 }
 
-TEST_CASE_SIGNAL(art_find_r_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_find_r_invalid_magic)
 {
     art_find_r((art_ct)&not_an_art, _test_art_pred_value, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_find_r_invalid_pred, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_find_r_invalid_pred, art_new_empty, art_free)
 {
     art_find_r(art, NULL, NULL);
 }
@@ -560,12 +560,12 @@ TEST_CASE_FIXTURE(art_find_r, art_new4, art_free)
     str_unref(key);
 }
 
-TEST_CASE_SIGNAL(art_find_rk_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_find_rk_invalid_magic)
 {
     art_find_rk((art_ct)&not_an_art, _test_art_pred_key, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_find_rk_invalid_pred, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_find_rk_invalid_pred, art_new_empty, art_free)
 {
     art_find_rk(art, NULL, NULL);
 }
@@ -581,12 +581,12 @@ TEST_CASE_FIXTURE(art_find_rk, art_new4, art_free)
     test_int_eq(art_node_get_value(node, int), 1);
 }
 
-TEST_CASE_SIGNAL(art_find_p_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_find_p_invalid_magic)
 {
     art_find_p((art_ct)&not_an_art, BIN("foo"), _test_art_pred_value, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_find_p_invalid_pred, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_find_p_invalid_pred, art_new_empty, art_free)
 {
     art_find_p(art, LIT("foo"), NULL, NULL);
 }
@@ -609,12 +609,12 @@ TEST_CASE_FIXTURE(art_find_p, art_new4, art_free)
     str_unref(key);
 }
 
-TEST_CASE_SIGNAL(art_find_pk_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_find_pk_invalid_magic)
 {
     art_find_pk((art_ct)&not_an_art, BIN("foo"), _test_art_pred_key, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_find_pk_invalid_pred, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_find_pk_invalid_pred, art_new_empty, art_free)
 {
     art_find_pk(art, BIN("foo"), NULL, NULL);
 }
@@ -635,12 +635,12 @@ TEST_CASE_FIXTURE(art_find_pk, art_new4, art_free)
     test_int_eq(art_node_get_value(node, int), 3);
 }
 
-TEST_CASE_SIGNAL(art_find_pr_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_find_pr_invalid_magic)
 {
     art_find_pr((art_ct)&not_an_art, BIN("foo"), _test_art_pred_value, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_find_pr_invalid_pred, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_find_pr_invalid_pred, art_new_empty, art_free)
 {
     art_find_pr(art, BIN("foo"), NULL, NULL);
 }
@@ -663,12 +663,12 @@ TEST_CASE_FIXTURE(art_find_pr, art_new4, art_free)
     str_unref(key);
 }
 
-TEST_CASE_SIGNAL(art_find_prk_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_find_prk_invalid_magic)
 {
     art_find_prk((art_ct)&not_an_art, BIN("foo"), _test_art_pred_key, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_find_prk_invalid_pred, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_find_prk_invalid_pred, art_new_empty, art_free)
 {
     art_find_prk(art, BIN("foo"), NULL, NULL);
 }
@@ -705,12 +705,12 @@ static int _test_art_fold_key(art_const_ct art, str_const_ct key, void *data, vo
     return str_append_n(sum, key, str_len(key)-1) ? 0 : -1;
 }
 
-TEST_CASE_SIGNAL(art_fold_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_fold_invalid_magic)
 {
     art_fold((art_ct)&not_an_art, _test_art_fold_value, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_fold_invalid_callback, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_fold_invalid_callback, art_new_empty, art_free)
 {
     art_fold(art, NULL, NULL);
 }
@@ -722,12 +722,12 @@ TEST_CASE_FIXTURE(art_fold, art_new4, art_free)
     test_int_eq(sum, 1234);
 }
 
-TEST_CASE_SIGNAL(art_fold_k_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_fold_k_invalid_magic)
 {
     art_fold_k((art_ct)&not_an_art, _test_art_fold_key, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_fold_k_invalid_callback, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_fold_k_invalid_callback, art_new_empty, art_free)
 {
     art_fold_k(art, NULL, NULL);
 }
@@ -740,12 +740,12 @@ TEST_CASE_FIXTURE(art_fold_k, art_new4, art_free)
     str_unref(key);
 }
 
-TEST_CASE_SIGNAL(art_fold_r_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_fold_r_invalid_magic)
 {
     art_fold_r((art_ct)&not_an_art, _test_art_fold_value, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_fold_r_invalid_callback, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_fold_r_invalid_callback, art_new_empty, art_free)
 {
     art_fold_r(art, NULL, NULL);
 }
@@ -757,12 +757,12 @@ TEST_CASE_FIXTURE(art_fold_r, art_new4, art_free)
     test_int_eq(sum, 4321);
 }
 
-TEST_CASE_SIGNAL(art_fold_rk_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_fold_rk_invalid_magic)
 {
     art_fold_rk((art_ct)&not_an_art, _test_art_fold_key, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_fold_rk_invalid_callback, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_fold_rk_invalid_callback, art_new_empty, art_free)
 {
     art_fold_rk(art, NULL, NULL);
 }
@@ -775,12 +775,12 @@ TEST_CASE_FIXTURE(art_fold_rk, art_new4, art_free)
     str_unref(key);
 }
 
-TEST_CASE_SIGNAL(art_fold_p_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_fold_p_invalid_magic)
 {
     art_fold_p((art_ct)&not_an_art, BIN("foo"), _test_art_fold_value, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_fold_p_invalid_callback, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_fold_p_invalid_callback, art_new_empty, art_free)
 {
     art_fold_p(art, BIN("foo"), NULL, NULL);
 }
@@ -797,12 +797,12 @@ TEST_CASE_FIXTURE(art_fold_p, art_new4, art_free)
     test_int_eq(sum, 123);
 }
 
-TEST_CASE_SIGNAL(art_fold_pk_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_fold_pk_invalid_magic)
 {
     art_fold_pk((art_ct)&not_an_art, BIN("foo"), _test_art_fold_key, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_fold_pk_invalid_callback, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_fold_pk_invalid_callback, art_new_empty, art_free)
 {
     art_fold_pk(art, BIN("foo"), NULL, NULL);
 }
@@ -820,12 +820,12 @@ TEST_CASE_FIXTURE(art_fold_pk, art_new4, art_free)
     str_unref(key);
 }
 
-TEST_CASE_SIGNAL(art_fold_pr_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_fold_pr_invalid_magic)
 {
     art_fold_pr((art_ct)&not_an_art, BIN("foo"), _test_art_fold_value, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_fold_pr_invalid_callback, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_fold_pr_invalid_callback, art_new_empty, art_free)
 {
     art_fold_pr(art, BIN("foo"), NULL, NULL);
 }
@@ -842,12 +842,12 @@ TEST_CASE_FIXTURE(art_fold_pr, art_new4, art_free)
     test_int_eq(sum, 321);
 }
 
-TEST_CASE_SIGNAL(art_fold_prk_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_fold_prk_invalid_magic)
 {
     art_fold_prk((art_ct)&not_an_art, BIN("foo"), _test_art_fold_key, NULL);
 }
 
-TEST_CASE_FIXTURE_SIGNAL(art_fold_prk_invalid_callback, art_new_empty, art_free, SIGABRT)
+TEST_CASE_ABORT_FIXTURE(art_fold_prk_invalid_callback, art_new_empty, art_free)
 {
     art_fold_prk(art, BIN("foo"), NULL, NULL);
 }
@@ -865,7 +865,7 @@ TEST_CASE_FIXTURE(art_fold_prk, art_new4, art_free)
     str_unref(key);
 }
 
-TEST_CASE_SIGNAL(art_complete_invalid_magic, SIGABRT)
+TEST_CASE_ABORT(art_complete_invalid_magic)
 {
     art_complete((art_ct)&not_an_art, BIN("fo"));
 }
