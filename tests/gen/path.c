@@ -1239,6 +1239,198 @@ TEST_CASE_ABORT(path_len_invalid_magic)
     path_len((path_ct)&not_a_path, PATH_STYLE_NATIVE);
 }
 
+TEST_CASE_ABORT_FIXTURE(path_is_equal_invalid_magic1, path_new_root, path_free)
+{
+    path_is_equal((path_ct)&not_a_path, path, PATH_STYLE_POSIX);
+}
+
+TEST_CASE_ABORT_FIXTURE(path_is_equal_invalid_magic2, path_new_root, path_free)
+{
+    path_is_equal(path, (path_ct)&not_a_path, PATH_STYLE_POSIX);
+}
+
+TEST_CASE(path_is_equal_type_mismatch)
+{
+    path_ct path1, path2;
+    
+    test_ptr_success(path1 = path_new(LIT("/foo.txt"), PATH_STYLE_POSIX));
+    test_ptr_success(path2 = path_new(LIT("p:\\foo.txt"), PATH_STYLE_WINDOWS));
+    
+    test_false(path_is_equal(path1, path2, PATH_STYLE_WINDOWS));
+    test_false(path_is_equal(path2, path1, PATH_STYLE_WINDOWS));
+    
+    path_free(path1);
+    path_free(path2);
+}
+
+TEST_CASE(path_is_equal_drive_mismatch)
+{
+    path_ct path1, path2;
+    
+    test_ptr_success(path1 = path_new(LIT("a:\\foo.txt"), PATH_STYLE_WINDOWS));
+    test_ptr_success(path2 = path_new(LIT("b:\\foo.txt"), PATH_STYLE_WINDOWS));
+    
+    test_false(path_is_equal(path1, path2, PATH_STYLE_WINDOWS));
+    test_false(path_is_equal(path2, path1, PATH_STYLE_WINDOWS));
+    
+    path_free(path1);
+    path_free(path2);
+}
+
+TEST_CASE(path_is_equal_drive)
+{
+    path_ct path1, path2;
+    
+    test_ptr_success(path1 = path_new(LIT("c:\\foo.txt"), PATH_STYLE_WINDOWS));
+    test_ptr_success(path2 = path_new(LIT("C:\\foo.txt"), PATH_STYLE_WINDOWS));
+    
+    test_true(path_is_equal(path1, path2, PATH_STYLE_WINDOWS));
+    test_true(path_is_equal(path2, path1, PATH_STYLE_WINDOWS));
+    
+    path_free(path1);
+    path_free(path2);
+}
+
+TEST_CASE(path_is_equal_unc_host_mismatch)
+{
+    path_ct path1, path2;
+    
+    test_ptr_success(path1 = path_new(LIT("\\\\host1\\share\\foo.txt"), PATH_STYLE_WINDOWS));
+    test_ptr_success(path2 = path_new(LIT("\\\\host2\\share\\foo.txt"), PATH_STYLE_WINDOWS));
+    
+    test_false(path_is_equal(path1, path2, PATH_STYLE_WINDOWS));
+    test_false(path_is_equal(path2, path1, PATH_STYLE_WINDOWS));
+    
+    path_free(path1);
+    path_free(path2);
+}
+
+TEST_CASE(path_is_equal_unc_share_mismatch)
+{
+    path_ct path1, path2;
+    
+    test_ptr_success(path1 = path_new(LIT("\\\\host\\share1\\foo.txt"), PATH_STYLE_WINDOWS));
+    test_ptr_success(path2 = path_new(LIT("\\\\host\\share2\\foo.txt"), PATH_STYLE_WINDOWS));
+    
+    test_false(path_is_equal(path1, path2, PATH_STYLE_WINDOWS));
+    test_false(path_is_equal(path2, path1, PATH_STYLE_WINDOWS));
+    
+    path_free(path1);
+    path_free(path2);
+}
+
+TEST_CASE(path_is_equal_unc)
+{
+    path_ct path1, path2;
+    
+    test_ptr_success(path1 = path_new(LIT("\\\\host\\share\\foo.txt"), PATH_STYLE_WINDOWS));
+    test_ptr_success(path2 = path_new(LIT("\\\\HOST\\share\\foo.txt"), PATH_STYLE_WINDOWS));
+    
+    test_true(path_is_equal(path1, path2, PATH_STYLE_WINDOWS));
+    test_true(path_is_equal(path2, path1, PATH_STYLE_WINDOWS));
+    
+    path_free(path1);
+    path_free(path2);
+}
+
+TEST_CASE(path_is_equal_device_name_mismatch)
+{
+    path_ct path1, path2;
+    
+    test_ptr_success(path1 = path_new(LIT("\\.\\com1"), PATH_STYLE_WINDOWS));
+    test_ptr_success(path2 = path_new(LIT("\\.\\lpt1"), PATH_STYLE_WINDOWS));
+    
+    test_false(path_is_equal(path1, path2, PATH_STYLE_WINDOWS));
+    test_false(path_is_equal(path2, path1, PATH_STYLE_WINDOWS));
+    
+    path_free(path1);
+    path_free(path2);
+}
+
+TEST_CASE(path_is_equal_device_id_mismatch)
+{
+    path_ct path1, path2;
+    
+    test_ptr_success(path1 = path_new(LIT("\\.\\com1"), PATH_STYLE_WINDOWS));
+    test_ptr_success(path2 = path_new(LIT("\\.\\com2"), PATH_STYLE_WINDOWS));
+    
+    test_false(path_is_equal(path1, path2, PATH_STYLE_WINDOWS));
+    test_false(path_is_equal(path2, path1, PATH_STYLE_WINDOWS));
+    
+    path_free(path1);
+    path_free(path2);
+}
+
+TEST_CASE(path_is_equal_device)
+{
+    path_ct path1, path2;
+    
+    test_ptr_success(path1 = path_new(LIT("\\.\\com1"), PATH_STYLE_WINDOWS));
+    test_ptr_success(path2 = path_new(LIT("\\.\\COM1"), PATH_STYLE_WINDOWS));
+    
+    test_true(path_is_equal(path1, path2, PATH_STYLE_WINDOWS));
+    test_true(path_is_equal(path2, path1, PATH_STYLE_WINDOWS));
+    
+    path_free(path1);
+    path_free(path2);
+}
+
+TEST_CASE(path_is_equal_comp_mismatch)
+{
+    path_ct path1, path2;
+    
+    test_ptr_success(path1 = path_new(LIT("/foo/bar/baz.txt"), PATH_STYLE_POSIX));
+    test_ptr_success(path2 = path_new(LIT("/foo/rab/baz.txt"), PATH_STYLE_POSIX));
+    
+    test_false(path_is_equal(path1, path2, PATH_STYLE_POSIX));
+    test_false(path_is_equal(path2, path1, PATH_STYLE_POSIX));
+    
+    path_free(path1);
+    path_free(path2);
+}
+
+TEST_CASE(path_is_equal_posix_case_mismatch)
+{
+    path_ct path1, path2;
+    
+    test_ptr_success(path1 = path_new(LIT("/foo/bar/baz.txt"), PATH_STYLE_POSIX));
+    test_ptr_success(path2 = path_new(LIT("/FOO/bar/baz.txt"), PATH_STYLE_POSIX));
+    
+    test_false(path_is_equal(path1, path2, PATH_STYLE_POSIX));
+    test_false(path_is_equal(path2, path1, PATH_STYLE_POSIX));
+    
+    path_free(path1);
+    path_free(path2);
+}
+
+TEST_CASE(path_is_equal_posix)
+{
+    path_ct path1, path2;
+    
+    test_ptr_success(path1 = path_new(LIT("/foo/bar/baz.txt"), PATH_STYLE_POSIX));
+    test_ptr_success(path2 = path_new(LIT("/foo/bar/baz.txt"), PATH_STYLE_POSIX));
+    
+    test_true(path_is_equal(path1, path2, PATH_STYLE_POSIX));
+    test_true(path_is_equal(path2, path1, PATH_STYLE_POSIX));
+    
+    path_free(path1);
+    path_free(path2);
+}
+
+TEST_CASE(path_is_equal_windows)
+{
+    path_ct path1, path2;
+    
+    test_ptr_success(path1 = path_new(LIT("c:\\foo\\bar\\baz.txt"), PATH_STYLE_WINDOWS));
+    test_ptr_success(path2 = path_new(LIT("C:\\FOO\\bar\\Baz.txt"), PATH_STYLE_WINDOWS));
+    
+    test_true(path_is_equal(path1, path2, PATH_STYLE_WINDOWS));
+    test_true(path_is_equal(path2, path1, PATH_STYLE_WINDOWS));
+    
+    path_free(path1);
+    path_free(path2);
+}
+
 TEST_CASE_ABORT(path_current_invalid_style)
 {
     path_current(999);
@@ -2137,6 +2329,22 @@ test_suite_ct test_suite_gen_path(void)
         , test_case_new(path_type_invalid_magic)
         , test_case_new(path_depth_invalid_magic)
         , test_case_new(path_len_invalid_magic)
+        
+        , test_case_new(path_is_equal_invalid_magic1)
+        , test_case_new(path_is_equal_invalid_magic2)
+        , test_case_new(path_is_equal_type_mismatch)
+        , test_case_new(path_is_equal_drive_mismatch)
+        , test_case_new(path_is_equal_drive)
+        , test_case_new(path_is_equal_unc_host_mismatch)
+        , test_case_new(path_is_equal_unc_share_mismatch)
+        , test_case_new(path_is_equal_unc)
+        , test_case_new(path_is_equal_device_name_mismatch)
+        , test_case_new(path_is_equal_device_id_mismatch)
+        , test_case_new(path_is_equal_device)
+        , test_case_new(path_is_equal_comp_mismatch)
+        , test_case_new(path_is_equal_posix_case_mismatch)
+        , test_case_new(path_is_equal_posix)
+        , test_case_new(path_is_equal_windows)
         
         , test_case_new(path_current_invalid_style)
         , test_case_new(path_current_posix)

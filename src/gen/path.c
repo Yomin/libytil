@@ -269,6 +269,70 @@ bool path_is_directory(path_const_ct path)
     }
 }
 
+static bool path_compare_comp(path_const_ct path1, path_const_ct path2, path_style_id style)
+{
+    size_t c, comps;
+    path_comp_st *comp1, *comp2;
+    int rc;
+    
+    comps = vec_size(path1->comp);
+    return_value_if_fail(comps == vec_size(path2->comp), false);
+    
+    for(c=0; c < comps; c++)
+    {
+        comp1 = vec_at(path1->comp, c);
+        comp2 = vec_at(path2->comp, c);
+        
+        if(comp1->len != comp2->len)
+            return false;
+        
+        if(!comp1->name && !comp2->name)
+            continue;
+        
+        if(!comp1->name || !comp2->name)
+            return false;
+        
+        if(style == PATH_STYLE_POSIX)
+            rc = strcmp(comp1->name, comp2->name);
+        else
+            rc = strcasecmp(comp1->name, comp2->name);
+        
+        if(rc)
+            return false;
+    }
+    
+    return true;
+}
+
+bool path_is_equal(path_const_ct path1, path_const_ct path2, path_style_id style)
+{
+    assert_magic(path1);
+    assert_magic(path2);
+    
+    if(path1->type != path2->type
+    || path1->absolute != path2->absolute
+    || (style == PATH_STYLE_POSIX && path1->trailing != path2->trailing))
+        return false;
+    
+    switch(path1->type)
+    {
+    case PATH_TYPE_STANDARD:
+        return path_compare_comp(path1, path2, style);
+    case PATH_TYPE_DRIVE:
+        return toupper(path1->info.drive.letter) == toupper(path2->info.drive.letter)
+            && path_compare_comp(path1, path2, PATH_STYLE_WINDOWS);
+    case PATH_TYPE_UNC:
+        return !str_casecmp(path1->info.unc.host, path2->info.unc.host)
+            && !str_casecmp(path1->info.unc.share, path2->info.unc.share)
+            && path_compare_comp(path1, path2, PATH_STYLE_WINDOWS);
+    case PATH_TYPE_DEVICE:
+        return !str_casecmp(path1->info.device.name, path2->info.device.name)
+            && path1->info.device.id == path2->info.device.id;
+    default:
+        abort();
+    }
+}
+
 path_type_id path_type(path_const_ct path)
 {
     assert_magic(path);
