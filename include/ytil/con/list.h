@@ -31,7 +31,8 @@
 
 typedef enum list_error
 {
-      E_LIST_EMPTY
+      E_LIST_CALLBACK
+    , E_LIST_EMPTY
     , E_LIST_END
     , E_LIST_NOT_FOUND
     , E_LIST_OUT_OF_BOUNDS

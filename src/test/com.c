@@ -46,7 +46,8 @@ typedef struct test_com
 
 static const error_info_st error_infos[] =
 {
-      ERROR_INFO(E_TEST_COM_INVALID_MSG_TYPE, "Invalid message type.")
+      ERROR_INFO(E_TEST_COM_CALLBACK, "Callback error.")
+    , ERROR_INFO(E_TEST_COM_INVALID_MSG_TYPE, "Invalid message type.")
     , ERROR_INFO(E_TEST_COM_INVALID_STATUS_TYPE, "Invalid status type.")
     , ERROR_INFO(E_TEST_COM_INVALID_RESULT_TYPE, "Invalid result type.")
     , ERROR_INFO(E_TEST_COM_INVALID_POS_TYPE, "Invalid position type.")
@@ -181,7 +182,7 @@ int test_com_send_status(test_com_ct com, test_status_id status)
             , NULL));
 #endif
     
-    return error_wrap_int(com->cb(TEST_COM_STATUS, &msg, com->ctx));
+    return error_push_int(E_TEST_COM_CALLBACK, com->cb(TEST_COM_STATUS, &msg, com->ctx));
 }
 
 int test_com_send_result(test_com_ct com, test_result_id result)
@@ -198,7 +199,7 @@ int test_com_send_result(test_com_ct com, test_result_id result)
             , NULL));
 #endif
     
-    return error_wrap_int(com->cb(TEST_COM_RESULT, &msg, com->ctx));
+    return error_push_int(E_TEST_COM_CALLBACK, com->cb(TEST_COM_RESULT, &msg, com->ctx));
 }
 
 int test_com_send_duration(test_com_ct com, clockid_t clock, timespec_st *start)
@@ -219,7 +220,7 @@ int test_com_send_duration(test_com_ct com, clockid_t clock, timespec_st *start)
             , NULL));
 #endif
     
-    return error_wrap_int(com->cb(TEST_COM_DURATION, &msg, com->ctx));
+    return error_push_int(E_TEST_COM_CALLBACK, com->cb(TEST_COM_DURATION, &msg, com->ctx));
 }
 
 int test_com_send_position(test_com_ct com, test_pos_id type, const char *file, size_t line)
@@ -243,7 +244,7 @@ int test_com_send_position(test_com_ct com, test_pos_id type, const char *file, 
     }
 #endif
     
-    return error_wrap_int(com->cb(TEST_COM_POS, &msg, com->ctx));
+    return error_push_int(E_TEST_COM_CALLBACK, com->cb(TEST_COM_POS, &msg, com->ctx));
 }
 
 int test_com_send_pass(test_com_ct com)
@@ -255,7 +256,7 @@ int test_com_send_pass(test_com_ct com)
         return error_pass_int(test_com_send(com, TEST_COM_PASS, NULL));
 #endif
     
-    return error_wrap_int(com->cb(TEST_COM_PASS, NULL, com->ctx));
+    return error_push_int(E_TEST_COM_CALLBACK, com->cb(TEST_COM_PASS, NULL, com->ctx));
 }
 
 int test_com_send_msg(test_com_ct com, test_msg_id type, size_t level, const char *fmt, ...)
@@ -297,7 +298,7 @@ int test_com_send_msg_v(test_com_ct com, test_msg_id type, size_t level, const c
             , NULL));
 #endif
     
-    return error_wrap_int(com->cb(TEST_COM_MSG, &msg, com->ctx));
+    return error_push_int(E_TEST_COM_CALLBACK, com->cb(TEST_COM_MSG, &msg, com->ctx));
 }
 
 #ifndef _WIN32
@@ -452,7 +453,7 @@ static int test_com_recv_msg(test_com_ct com)
     if(rc)
         return error_pass(), rc;
     
-    rc = error_wrap_int(com->cb(type, &msg, com->ctx));
+    rc = error_push_int(E_TEST_COM_CALLBACK, com->cb(type, &msg, com->ctx));
     
     if(com->pos < com->size)
         memmove(com->buf, &com->buf[com->pos], com->size - com->pos);

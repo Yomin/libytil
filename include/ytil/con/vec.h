@@ -31,7 +31,8 @@
 
 typedef enum vec_error
 {
-      E_VEC_EMPTY
+      E_VEC_CALLBACK
+    , E_VEC_EMPTY
     , E_VEC_INVALID_ELEMSIZE
     , E_VEC_NO_BUFFER
     , E_VEC_NOT_FOUND

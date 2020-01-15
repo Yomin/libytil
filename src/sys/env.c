@@ -40,7 +40,8 @@ typedef struct env_fold_state
 
 static const error_info_st error_infos[] =
 {
-      ERROR_INFO(E_ENV_INVALID_NAME, "Invalid environment name.")
+      ERROR_INFO(E_ENV_CALLBACK, "Callback error.")
+    , ERROR_INFO(E_ENV_INVALID_NAME, "Invalid environment name.")
     , ERROR_INFO(E_ENV_NOT_FOUND, "Environment value not found.")
 };
 
@@ -243,7 +244,7 @@ static int env_art_fold_value(art_const_ct art, str_const_ct key, void *data, vo
     if(str == ENV_UNSET)
         return 0;
     
-    return error_wrap_int(state->fold(key, str, state->ctx));
+    return error_push_int(E_ENV_CALLBACK, state->fold(key, str, state->ctx));
 }
 
 int env_fold(env_fold_cb fold, void *ctx)
@@ -255,7 +256,7 @@ int env_fold(env_fold_cb fold, void *ctx)
     if(!env && env_init())
         return error_pass(), -1;
     
-    return error_wrap_int(art_fold_k(env, env_art_fold_value, &state));
+    return error_pick_int(E_ART_CALLBACK, art_fold_k(env, env_art_fold_value, &state));
 }
 
 static int env_dump_value(str_const_ct name, str_const_ct value, void *ctx)

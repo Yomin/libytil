@@ -50,7 +50,8 @@ typedef struct ring
 
 static const error_info_st error_infos[] =
 {
-      ERROR_INFO(E_RING_EMPTY, "Ring is empty.")
+      ERROR_INFO(E_RING_CALLBACK, "Callback error.")
+    , ERROR_INFO(E_RING_EMPTY, "Ring is empty.")
     , ERROR_INFO(E_RING_INVALID_ELEMSIZE, "Invalid element size.")
     , ERROR_INFO(E_RING_NO_SPACE, "No space to put element into available.")
 };
@@ -267,8 +268,8 @@ int ring_fold(ring_ct ring, ring_fold_cb fold, void *ctx)
     assert(fold);
     
     for(tail=ring->tail, size=ring->size; size; tail=INC(tail), size--)
-        if((rc = error_wrap_int(fold(ring, ELEM(tail), ctx))))
-            return rc;
+        if((rc = fold(ring, ELEM(tail), ctx)))
+            return error_push_int(E_RING_CALLBACK, rc);
     
     return 0;
 }
@@ -282,8 +283,8 @@ int ring_fold_r(ring_ct ring, ring_fold_cb fold, void *ctx)
     assert(fold);
     
     for(head=POS(ring->tail+ring->size-1), size=ring->size; size; head=DEC(head), size--)
-        if((rc = error_wrap_int(fold(ring, ELEM(head), ctx))))
-            return rc;
+        if((rc = fold(ring, ELEM(head), ctx)))
+            return error_push_int(E_RING_CALLBACK, rc);
     
     return 0;
 }

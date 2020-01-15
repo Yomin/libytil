@@ -215,7 +215,8 @@ typedef struct art_fold_state
 
 static const error_info_st error_infos[] =
 {
-      ERROR_INFO(E_ART_EMPTY, "ART is empty.")
+      ERROR_INFO(E_ART_CALLBACK, "Callback error.")
+    , ERROR_INFO(E_ART_EMPTY, "ART is empty.")
     , ERROR_INFO(E_ART_EXISTS, "Node already exists.")
     , ERROR_INFO(E_ART_INVALID_KEY, "Invalid key.")
     , ERROR_INFO(E_ART_NOT_FOUND, "Node not found.")
@@ -1626,7 +1627,8 @@ static int art_traverse_fold(art_ct art, art_node_ct node, str_ct path, void *ct
 {
     art_fold_st *state = ctx;
     
-    return error_wrap_int(state->fold(art, path, node->v.leaf.data, state->ctx));
+    return error_push_int(E_ART_CALLBACK,
+        state->fold(art, path, node->v.leaf.data, state->ctx));
 }
 
 static int _art_fold(art_ct art, str_const_ct prefix, bool key, bool reverse, art_fold_cb fold, void *ctx)
