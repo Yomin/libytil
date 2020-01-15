@@ -94,12 +94,16 @@ void _test_abort(void *vctx, const char *file, size_t line, bool backtrace, cons
                 {
                 case E_ERROR_UNSET:
                     abort();
-                case E_ERROR_WRAPPER:
-                    test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: <wrapper>",
+                case E_ERROR_WRAP:
+                    test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: <wrap>",
                         e, error_stack_get_func(e));
                     continue;
                 case E_ERROR_PASS:
                     test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s",
+                        e, error_stack_get_func(e));
+                    continue;
+                case E_ERROR_SKIP:
+                    test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: <skip>",
                         e, error_stack_get_func(e));
                     continue;
                 default:
