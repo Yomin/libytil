@@ -57,6 +57,9 @@ int env_init(void)
     char **var, *sep;
     str_ct name = LIT("");
     
+    if(env)
+        return 0;
+    
     if(!(env = art_new(ART_MODE_UNORDERED)))
         return error_wrap(), -1;
     
@@ -96,8 +99,11 @@ static void env_art_free_value(art_const_ct art, void *data, void *ctx)
 
 void env_free(void)
 {
-    art_free_f(env, env_art_free_value, NULL);
-    env = NULL;
+    if(env)
+    {
+        art_free_f(env, env_art_free_value, NULL);
+        env = NULL;
+    }
 }
 
 bool env_is_set(str_const_ct name)
@@ -106,7 +112,7 @@ bool env_is_set(str_const_ct name)
     
     return_error_if_pass(str_is_empty(name), E_ENV_INVALID_NAME, false);
     
-    if(!env && env_init())
+    if(env_init())
         return error_pass(), false;
     
     return (value = art_get_data(env, name)) && value->set != ENV_UNSET;
@@ -118,7 +124,7 @@ int env_set(str_const_ct name, str_const_ct str)
     
     return_error_if_pass(str_is_empty(name), E_ENV_INVALID_NAME, -1);
     
-    if(!env && env_init())
+    if(env_init())
         return error_pass(), -1;
     
     if(!(str = str_ref(str)))
@@ -156,7 +162,7 @@ str_const_ct env_get(str_const_ct name)
     
     return_error_if_pass(str_is_empty(name), E_ENV_INVALID_NAME, NULL);
     
-    if(!env && env_init())
+    if(env_init())
         return error_pass(), NULL;
     
     if(!(value = art_get_data(env, name)))
@@ -208,7 +214,7 @@ int env_unset(str_const_ct name)
     
     return_error_if_pass(str_is_empty(name), E_ENV_INVALID_NAME, -1);
     
-    if(!env && env_init())
+    if(env_init())
         return error_pass(), -1;
     
     if(!(node = art_get(env, name)))
@@ -253,7 +259,7 @@ int env_fold(env_fold_cb fold, void *ctx)
     
     assert(fold);
     
-    if(!env && env_init())
+    if(env_init())
         return error_pass(), -1;
     
     return error_pick_int(E_ART_CALLBACK, art_fold_k(env, env_art_fold_value, &state));
