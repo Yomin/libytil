@@ -37,11 +37,12 @@ void    _test_pos(void *ctx, test_pos_id type, const char *file, size_t line);
 #define  test_pos()       _test_pos(TEST_CTX, TEST_POS_EXACT, __FILE__, __LINE__)
 #define  test_pos_after() _test_pos(TEST_CTX, TEST_POS_AFTER, __FILE__, __LINE__)
 
-void    _test_msg(void *ctx, const char *file, size_t line, test_msg_id type, size_t level, const char *msg, ...);
-#define  test_msg(type, ...) _test_msg(TEST_CTX, __FILE__, __LINE__, (type), 0, __VA_ARGS__)
-#define  test_msg_info(...)   test_msg(TEST_MSG_INFO, __VA_ARGS__)
-#define  test_msg_warn(...)   test_msg(TEST_MSG_WARNING, __VA_ARGS__)
-#define  test_msg_error(...)  test_msg(TEST_MSG_ERROR, __VA_ARGS__)
+void    _test_msg(void *ctx, const char *file, size_t line, test_msg_id type, size_t level, bool backtrace, const char *msg, ...);
+#define  test_msg(type, bt, ...) _test_msg(TEST_CTX, __FILE__, __LINE__, (type), 0, (bt), __VA_ARGS__)
+#define  test_msg_info(...)       test_msg(TEST_MSG_INFO, false, __VA_ARGS__)
+#define  test_msg_warn(...)       test_msg(TEST_MSG_WARNING, false, __VA_ARGS__)
+#define  test_msg_error(...)      test_msg(TEST_MSG_ERROR, false, __VA_ARGS__)
+#define  test_msg_backtrace(...)  test_msg(TEST_MSG_ERROR, true, __VA_ARGS__)
 
 void    _test_begin(void *ctx, const char *file, size_t line);
 #define  test_begin() _test_begin(TEST_CTX, __FILE__, __LINE__)
@@ -147,31 +148,96 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 // --- [INT RC] ---
 
 #define test_int_success(expr) do { \
-    intmax_t rc; \
-    \
     test_begin(); \
     \
+    intmax_t rc; \
+    \
     if((rc = (expr)) < 0) \
-        test_abort_backtrace("INT SUCCESS test failed: "#expr" (%jd, %s)", rc, error_name(0)); \
-    else if(rc > 0) \
-        test_msg_warn("INT SUCCESS test warning: "#expr" == 0 (%jd)", rc); \
+        test_abort_backtrace("INT SUCCESS test failed: "#expr" (%jd)", rc); \
     \
     test_end(); \
 } while(0)
 
-#define test_int_error(expr, err) do { \
+#define _test_int_success_native(expr, expr_s, type, value) do { \
+    test_begin(); \
+    \
     intmax_t rc; \
     \
-    test_begin(); \
-    error_clear(); \
-    \
-    if((rc = (expr)) >= 0) \
-        test_abort("INT ERROR test failed: "#expr" (%jd)", rc); \
-    else if(!error_check(0, err)) \
-        test_abort_backtrace("INT ERROR test failed: "#expr" (%s == "#err")", error_name(0)); \
+    if((rc = (expr)) < 0) \
+        test_abort("INT SUCCESS test failed: "expr_s" (%jd, %s)", rc, error_name_##type(value)); \
     \
     test_end(); \
 } while(0)
+
+#define test_int_success_errno(expr) _test_int_success_native((expr), #expr, errno, errno)
+#define test_int_success_win32(expr) _test_int_success_native((expr), #expr, win32, GetLastError())
+
+#define _test_int_maybe(expr, expr_s, err, err_s) do { \
+    test_begin(); \
+    error_clear(); \
+    \
+    intmax_t rc; \
+    error_clear(); \
+    \
+    if((rc = expr) < 0 && !error_check(0, err)) \
+        test_abort_backtrace("INT MAYBE test failed: "expr_s" (%jd, %s == "err_s")", rc, error_name(0)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_int_maybe(expr, err)                _test_int_maybe((expr), #expr, (err), #err)
+#define test_int_pick_maybe(expr, pick_err, err) _test_int_maybe(error_pick_int((pick_err), (expr)), #expr, (err), #err)
+#define test_int_lift_maybe(expr, lift_err, err) _test_int_maybe(error_lift_int((lift_err), (expr)), #expr, (err), #err)
+
+#define _test_int_maybe_native(expr, expr_s, err, err_s, type, value) do { \
+    test_begin(); \
+    \
+    intmax_t rc = (expr); \
+    __auto_type _value = (value); \
+    \
+    if(rc < 0 && err != _value) \
+        test_abort("INT MAYBE test failed: "expr_s" (%jd, %s == "err_s")", rc, error_name_##type(_value)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_int_maybe_errno(expr, err) _test_int_maybe_native((expr), #expr, (err), #err, errno, errno)
+#define test_int_maybe_win32(expr, err) _test_int_maybe_native((expr), #expr, (err), #err, win32, GetLastError())
+
+#define _test_int_error(expr, expr_s, err, err_s) do { \
+    test_begin(); \
+    error_clear(); \
+    \
+    intmax_t rc; \
+    \
+    if((rc = expr) >= 0) \
+        test_abort("INT ERROR test failed: "expr_s" (%jd)", rc); \
+    else if(!error_check(0, err)) \
+        test_abort_backtrace("INT ERROR test failed: "expr_s" (%s == "err_s")", error_name(0)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_int_error(expr, err)                _test_int_error((expr), #expr, (err), #err)
+#define test_int_pick_error(expr, pick_err, err) _test_int_error(error_pick_int((pick_err), (expr)), #expr, (err), #err)
+#define test_int_lift_error(expr, lift_err, err) _test_int_error(error_lift_int((lift_err), (expr)), #expr, (err), #err)
+
+#define _test_int_error_native(expr, expr_s, err, err_s, type, value) do { \
+    test_begin(); \
+    \
+    intmax_t rc = (expr); \
+    __auto_type _value = (value); \
+    \
+    if(rc >= 0) \
+        test_abort("INT ERROR test failed: "expr_s" (%jd)", rc); \
+    else if(err != _value) \
+        test_abort("INT ERROR test failed: "expr_s" (%s == "err_s")", error_name_##type(_value)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_int_error_errno(expr, err) _test_int_error_native((expr), #expr, (err), #err, errno, errno)
+#define test_int_error_win32(expr, err) _test_int_error_native((expr), #expr, (err), #err, win32, GetLastError())
 
 
 // --- [INT VALUE RC] ---
@@ -182,82 +248,151 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     intmax_t rc, _trc = (trc); \
     \
     if((rc = (expr)) < 0) \
-        test_abort_backtrace("RC SUCCESS test failed: "#expr" (%jd, %s)", rc, error_name(0)); \
+        test_abort_backtrace("RC SUCCESS test failed: "#expr" (%jd)", rc); \
     else if(rc != _trc) \
         test_abort("RC SUCCESS test failed: "#expr" == "#trc" (%jd == %jd)", rc, _trc); \
     \
     test_end(); \
 } while(0)
 
-#define test_rc_error(expr, trc, err) do { \
+#define _test_rc_success_native(expr, expr_s, trc, trc_s, type, value) do { \
+    test_begin(); \
+    \
+    intmax_t rc, _trc = (trc); \
+    \
+    if((rc = (expr)) < 0) \
+        test_abort("RC SUCCESS test failed: "expr_s" (%jd, %s)", rc, error_name_##type(value)); \
+    else if(rc != _trc) \
+        test_abort("RC SUCCESS test failed: "expr_s" == "trc_s" (%jd == %jd)", rc, _trc); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_rc_success_errno(expr, trc) _test_rc_success_native((expr), #expr, (trc), #trc, errno, errno)
+#define test_rc_success_win32(expr, trc) _test_rc_success_native((expr), #expr, (trc), #trc, win32, GetLastError())
+
+#define _test_rc_error(expr, expr_s, trc, trc_s, err, err_s) do { \
     test_begin(); \
     \
     intmax_t rc, _trc = (trc); \
     error_clear(); \
     \
-    if((rc = (expr)) != _trc) \
-        test_abort("RC ERROR test failed: "#expr" == "#trc" (%jd == %jd)", rc, _trc); \
+    if((rc = expr) != _trc) \
+        test_abort("RC ERROR test failed: "expr_s" == "trc_s" (%jd == %jd)", rc, _trc); \
     else if(!error_check(0, err)) \
-        test_abort_backtrace("RC ERROR test failed: "#expr" (%s == "#err")", error_name(0)); \
+        test_abort_backtrace("RC ERROR test failed: "expr_s" (%s == "err_s")", error_name(0)); \
     \
     test_end(); \
 } while(0)
+
+#define test_rc_error(expr, trc, err)                _test_rc_error((expr), #expr, (trc), #trc, (err), #err)
+#define test_rc_pick_error(expr, trc, pick_err, err) _test_rc_error(error_pick_int((pick_err), (expr)), #expr, (trc), #trc, (err), #err)
+#define test_rc_lift_error(expr, trc, lift_err, err) _test_rc_error(error_lift_int((lift_err), (expr)), #expr, (trc), #trc, (err), #err)
+
+#define _test_rc_error_native(expr, expr_s, trc, trc_s, err, err_s, type, value) do { \
+    test_begin(); \
+    \
+    intmax_t rc = (expr), _trc = (trc); \
+    __auto_type _value = (value); \
+    \
+    if(rc != _trc) \
+        test_abort("RC ERROR test failed: "expr_s" == "trc_s" (%jd == %jd)", rc, _trc); \
+    else if(err != _value) \
+        test_abort("RC ERROR test failed: "expr_s" (%s == "err_s")", error_name_##type(_value)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_rc_error_errno(expr, trc, err) _test_rc_error_native((expr), #expr, (trc), #trc, (err), #err, errno, errno)
+#define test_rc_error_win32(expr, trc, err) _test_rc_error_native((expr), #expr, (trc), #trc, (err), #err, win32, GetLastError())
 
 
 // --- [PTR RC] ---
 
-// todo find better heuristics for determining pointer validity
-
-#ifndef _WIN32
-extern int main(int argc, char *argv[], char **env);
-extern char **environ;
-
 #define test_ptr_success(expr) do { \
-    const void *ptr; \
-    \
     test_begin(); \
     \
-    if(!(ptr = (expr))) \
-        test_abort_backtrace("PTR SUCCESS test failed: "#expr" (%s)", error_name(0)); \
-    else if(ptr <= (void*)(intptr_t)main) \
-        test_msg_warn("PTR SUCCESS test warning: "#expr" > main (%p > %p)", \
-            ptr, (void*)(intptr_t)main); \
-    else if(ptr >= (void*)environ) \
-        test_msg_warn("PTR SUCCESS test warning: "#expr" < environ (%p < %p)", \
-            ptr, (void*)environ); \
+    if(!(expr)) \
+        test_abort_backtrace("PTR SUCCESS test failed: "#expr); \
     \
     test_end(); \
 } while(0)
 
-#else
-
-#define test_ptr_success(expr) do { \
-    const void *ptr; \
-    \
+#define _test_ptr_success_native(expr, expr_s, type, value) do { \
     test_begin(); \
     \
-    if(!(ptr = (expr))) \
-        test_abort_backtrace("PTR SUCCESS test failed: "#expr" (%s)", error_name(0)); \
+    if(!(expr)) \
+        test_abort("PTR SUCCESS test failed: "expr_s" (%s)", error_name_##type(value)); \
     \
     test_end(); \
 } while(0)
 
-#endif // _WIN32
+#define test_ptr_success_errno(expr) _test_ptr_success_native((expr), #expr, errno, errno)
+#define test_ptr_success_win32(expr) _test_ptr_success_native((expr), #expr, win32, GetLastError())
 
-#define test_ptr_error(expr, err) do { \
-    const void *ptr; \
-    \
+#define _test_ptr_maybe(expr, expr_s, err, err_s) do { \
     test_begin(); \
     error_clear(); \
     \
-    if((ptr = (expr))) \
-        test_abort("PTR ERROR test failed: "#expr" (%p)", ptr); \
-    else if(!error_check(0, err)) \
-        test_abort_backtrace("PTR ERROR test failed: "#expr" (%s == "#err")", error_name(0)); \
+    if(!expr && !error_check(0, err)) \
+        test_abort_backtrace("PTR MAYBE test failed: "expr_s" (%s == "err_s")", error_name(0)); \
     \
     test_end(); \
 } while(0)
 
+#define test_ptr_maybe(expr, err)                _test_ptr_maybe((expr), #expr, (err), #err)
+#define test_ptr_pick_maybe(expr, pick_err, err) _test_ptr_maybe(error_pick_ptr((pick_err), (expr)), #expr, (err), #err)
+#define test_ptr_lift_maybe(expr, lift_err, err) _test_ptr_maybe(error_lift_ptr((lift_err), (expr)), #expr, (err), #err)
+
+#define _test_ptr_maybe_native(expr, expr_s, err, err_s, type, value) do { \
+    test_begin(); \
+    \
+    const void *ptr = (expr); \
+    __auto_type _value = (value); \
+    \
+    if(!ptr && err != _value) \
+        test_abort("PTR MAYBE test failed: "expr_s" (%s == "err_s")", error_name_##type(_value)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_ptr_maybe_errno(expr, err) _test_ptr_maybe_native((expr), #expr, (err), #err, errno, errno)
+#define test_ptr_maybe_win32(expr, err) _test_ptr_maybe_native((expr), #expr, (err), #err, win32, GetLastError())
+
+#define _test_ptr_error(expr, expr_s, err, err_s) do { \
+    test_begin(); \
+    error_clear(); \
+    \
+    const void *ptr; \
+    \
+    if((ptr = expr)) \
+        test_abort("PTR ERROR test failed: "expr_s" (%p)", ptr); \
+    else if(!error_check(0, err)) \
+        test_abort_backtrace("PTR ERROR test failed: "expr_s" (%s == "err_s")", error_name(0)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_ptr_error(expr, err)                _test_ptr_error((expr), #expr, (err), #err)
+#define test_ptr_pick_error(expr, pick_err, err) _test_ptr_error(error_pick_ptr((pick_err), (expr)), #expr, (err), #err)
+#define test_ptr_lift_error(expr, lift_err, err) _test_ptr_error(error_lift_ptr((lift_err), (expr)), #expr, (err), #err)
+
+#define _test_ptr_error_native(expr, expr_s, err, err_s, type, value) do { \
+    test_begin(); \
+    \
+    const void *ptr = (expr); \
+    __auto_type _value = (value); \
+    \
+    if(ptr) \
+        test_abort("PTR ERROR test failed: "expr_s" (%p)", ptr); \
+    else if(err != _value) \
+        test_abort("PTR ERROR test failed: "expr_s" (%s == "err_s")", error_name_##type(_value)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_ptr_error_errno(expr, err) _test_ptr_error_native((expr), #expr, (err), #err, errno, errno)
+#define test_ptr_error_win32(expr, err) _test_ptr_error_native((expr), #expr, (err), #err, win32, GetLastError())
 
 
 // --- [VOID] ---
@@ -578,5 +713,80 @@ extern char **environ;
 #define test_mem_ge(m1, m2, n) _test_mem((m1), #m1, >=, (m2), #m2, n)
 #define test_mem_gt(m1, m2, n) _test_mem((m1), #m1,  >, (m2), #m2, n)
 
+
+#ifdef _WIN32
+
+// --- [HRESULT] ---
+
+#define test_hresult_success(expr) do { \
+    test_begin(); \
+    \
+    HRESULT result = (expr); \
+    \
+    if(result != S_OK) \
+        test_abort("HRESULT SUCCESS test failed: "#expr" (%s)", error_name_hresult(result)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_hresult_maybe(expr, eresult) do { \
+    test_begin(); \
+    \
+    HRESULT result = (expr); \
+    \
+    if(result != S_OK && result != (eresult)) \
+        test_abort("HRESULT MAYBE test failed: "#expr" (%s == "#eresult")", error_name_hresult(result)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_hresult_error(expr, eresult) do { \
+    test_begin(); \
+    \
+    HRESULT result = (expr); \
+    \
+    if(result != (eresult)) \
+        test_abort("HRESULT ERROR test failed: "#expr" (%s == "#eresult")", error_name_hresult(result)); \
+    \
+    test_end(); \
+} while(0)
+
+
+// --- [NTSTATUS] ---
+
+#define test_ntstatus_success(expr) do { \
+    test_begin(); \
+    \
+    NTSTATUS status = (expr); \
+    \
+    if(status != STATUS_SUCCESS) \
+        test_abort("NTSTATUS SUCCESS test failed: "#expr" (%s)", error_name_ntstatus(status)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_ntstatus_maybe(expr, estatus) do { \
+    test_begin(); \
+    \
+    NTSTATUS status = (expr); \
+    \
+    if(status != STATUS_SUCCESS && status != (estatus)) \
+        test_abort("NTSTATUS MAYBE test failed: "#expr" (%s == "#estatus")", error_name_ntstatus(status)); \
+    \
+    test_end(); \
+} while(0)
+
+#define test_ntstatus_error(expr, estatus) do { \
+    test_begin(); \
+    \
+    NTSTATUS status = (expr); \
+    \
+    if(status != (estatus)) \
+        test_abort("NTSTATUS ERROR test failed: "#expr" (%s == "#estatus")", error_name_ntstatus(status)); \
+    \
+    test_end(); \
+} while(0)
+
+#endif // _WIN32
 
 #endif

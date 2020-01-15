@@ -37,12 +37,10 @@ void _test_pos(void *vctx, test_pos_id type, const char *file, size_t line)
         abort();
 }
 
-void _test_msg(void *vctx, const char *file, size_t line, test_msg_id type, size_t level, const char *msg, ...)
+static void _test_msg_v(void *vctx, const char *file, size_t line, test_msg_id type, size_t level, bool backtrace, const char *msg, va_list ap)
 {
     test_ctx_st *ctx = vctx;
-    va_list ap;
-    
-    va_start(ap, msg);
+    size_t e;
     
     if(test_com_send_duration(ctx->com, ctx->clock, &ctx->start)
     || test_com_send_position(ctx->com, TEST_POS_EXACT, file, line)
@@ -50,6 +48,45 @@ void _test_msg(void *vctx, const char *file, size_t line, test_msg_id type, size
     || clock_gettime(ctx->clock, &ctx->start))
         abort();
     
+    if(backtrace)
+        for(e=0; e < error_depth(); e++)
+            switch(error_stack_get_type(e))
+            {
+            case ERROR_TYPE_ERROR:
+                switch(error_stack_get_error(e))
+                {
+                case E_ERROR_UNSET:
+                    abort();
+                case E_ERROR_WRAP:
+                    test_com_send_msg(ctx->com, type, 1, "%02zu %s: <wrap>",
+                        e, error_stack_get_func(e));
+                    continue;
+                case E_ERROR_PASS:
+                    test_com_send_msg(ctx->com, type, 1, "%02zu %s",
+                        e, error_stack_get_func(e));
+                    continue;
+                case E_ERROR_SKIP:
+                    test_com_send_msg(ctx->com, type, 1, "%02zu %s: <skip>",
+                        e, error_stack_get_func(e));
+                    continue;
+                default:
+                    break;
+                }
+                // fallthrough
+            default:
+                test_com_send_msg(ctx->com, type, 1, "%02zu %s: %s",
+                    e, error_stack_get_func(e), error_stack_get_name(e));
+                test_com_send_msg(ctx->com, type, 2, "%s",
+                    error_stack_get_desc(e));
+            }
+}
+
+void _test_msg(void *ctx, const char *file, size_t line, test_msg_id type, size_t level, bool backtrace, const char *msg, ...)
+{
+    va_list ap;
+    
+    va_start(ap, msg);
+    _test_msg_v(ctx, file, line, type, level, backtrace, msg, ap);
     va_end(ap);
 }
 
@@ -73,52 +110,10 @@ void _test_abort(void *vctx, const char *file, size_t line, bool backtrace, cons
 {
     test_ctx_st *ctx = vctx;
     va_list ap;
-    size_t e;
     
     va_start(ap, msg);
-    
-    if(test_com_send_duration(ctx->com, ctx->clock, &ctx->start)
-    || test_com_send_position(ctx->com, TEST_POS_EXACT, file, line)
-    || test_com_send_msg_v(ctx->com, TEST_MSG_ERROR, 0, msg, ap))
-        abort();
-    
+    _test_msg_v(ctx, file, line, TEST_MSG_ERROR, 0, backtrace, msg, ap);
     va_end(ap);
-    
-    if(backtrace)
-        for(e=0; e < error_depth(); e++)
-        {
-            switch(error_stack_get_type(e))
-            {
-            case ERROR_TYPE_ERROR:
-                switch(error_stack_get_error(e))
-                {
-                case E_ERROR_UNSET:
-                    abort();
-                case E_ERROR_WRAP:
-                    test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: <wrap>",
-                        e, error_stack_get_func(e));
-                    continue;
-                case E_ERROR_PASS:
-                    test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s",
-                        e, error_stack_get_func(e));
-                    continue;
-                case E_ERROR_SKIP:
-                    test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: <skip>",
-                        e, error_stack_get_func(e));
-                    continue;
-                default:
-                    break;
-                }
-                // fallthrough
-            default:
-                test_com_send_msg(ctx->com, TEST_MSG_ERROR, 1, "%02zu %s: %s",
-                    e, error_stack_get_func(e), error_stack_get_name(e));
-                break;
-            }
-            
-            if(!e)
-                test_com_send_msg(ctx->com, TEST_MSG_ERROR, 2, "%s", error_stack_get_desc(0));
-        }
     
     if(ctx->jump)
         longjmp(*ctx->jump, 1);
