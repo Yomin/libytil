@@ -28,6 +28,8 @@
 #include <ytil/ext/stdlib.h>
 #include <string.h>
 
+#include <stdlib.h>
+
 
 /// offset of first vector element
 #define OFFSET DEBUG_RELEASE(vec->esize, 0)
@@ -430,6 +432,14 @@ ssize_t vec_pos(vec_const_ct vec, const void *elem)
         return error_pass(), -1;
 
     return ((char *)elem - vec->mem) / vec->esize;
+}
+
+bool vec_is_member(vec_const_ct vec, const void *elem)
+{
+    assert_magic(vec);
+    assert(elem);
+
+    return !vec_check_range(vec, elem);
 }
 
 int vec_get(vec_const_ct vec, void *dst, ssize_t pos)
@@ -1409,4 +1419,16 @@ void vec_sort(vec_ct vec, vec_sort_cb sort, const void *ctx)
 
     if(vec->mem)
         qsort_r(vec->mem, vec->size, vec->esize, sort, (void *)ctx);
+}
+
+type_id vec_type(void)
+{
+    static type_id type;
+
+    return_value_if_pass(type, type);
+
+    if(!(type = type_new("vec")))
+        abort();
+
+    return type;
 }
