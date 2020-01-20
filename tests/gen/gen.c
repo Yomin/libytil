@@ -21,6 +21,7 @@
  */
 
 #include "gen.h"
+#include "box.h"
 #include "error.h"
 #include "path.h"
 #include "str.h"
@@ -29,6 +30,7 @@
 test_suite_ct test_suite_gen(void)
 {
     return test_suite_new_with_suites("gen"
+        , test_suite_gen_box()
         , test_suite_gen_error()
         , test_suite_gen_path()
         , test_suite_gen_str()

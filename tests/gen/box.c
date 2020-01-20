@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,35 +20,32 @@
  * THE SOFTWARE.
  */
 
-#include <ytil/test/run.h>
-#include "con/cont.h"
-#include "gen/gen.h"
-#include "parsers/parsers.h"
-#include "sys/sys.h"
-#include <stdio.h>
+#include "box.h"
+#include <ytil/test/test.h>
+#include <ytil/gen/box.h>
 
-
-int main(int argc, char *argv[])
+static const struct not_a_box
 {
-    test_suite_ct suite;
-    test_run_ct run;
-    int rc;
-    
-    if(!(suite = test_suite_new_with_suites("ytil"
-            , test_suite_con()
-            , test_suite_gen()
-            , test_suite_parsers()
-            , test_suite_sys()
-        )))
-        return perror("failed to setup test suites"), -1;
-    
-    if((run = test_run_new_with_args(argc, argv)))
-    {
-        rc = test_run_exec(run, suite);
-        test_run_free(run);
-    }
-    
-    test_suite_free(suite);
-    
-    return rc;
+    int foo;
+} not_a_box = { 123 };
+
+static box_ct box;
+
+
+TEST_CASE(box_new)
+{
+    test_ptr_success(box = box_new(TYPE_INT, NULL));
+}
+
+TEST_CASE_ABORT(box_free_invalid_box)
+{
+    box_free((box_ct)&not_a_box);
+}
+
+test_suite_ct test_suite_gen_box(void)
+{
+    return test_suite_new_with_cases("box"
+        , test_case_new(box_new)
+        , test_case_new(box_free_invalid_box)
+    );
 }
