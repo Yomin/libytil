@@ -30,6 +30,7 @@
 #include <stdarg.h>
 #include <sys/types.h>
 #include <ytil/gen/error.h>
+#include <ytil/gen/type.h>
 
 
 /// vector error
@@ -314,6 +315,15 @@ void *vec_last_p(vec_const_ct vec);
 /// \returns                        element position
 /// \retval -1/E_VEC_OUT_OF_BOUNDS  \p elem not within vector memory
 ssize_t vec_pos(vec_const_ct vec, const void *elem);
+
+/// Check if element is in vector.
+///
+/// \param vec      vector
+/// \param elem     element to check
+///
+/// \retval true    element is in vector
+/// \retval false   element is not in vector
+bool vec_is_member(vec_const_ct vec, const void *elem);
 
 /// Get element from vector.
 ///
@@ -1125,6 +1135,17 @@ int vec_fold_r(vec_const_ct vec, vec_fold_cb fold, const void *ctx);
 /// \param sort     callback to compare two elements
 /// \param ctx      \p sort context
 void vec_sort(vec_ct vec, vec_sort_cb sort, const void *ctx);
+
+
+/// Initialize/Get vector type.
+///
+/// \returns    vector type ID
+type_id vec_type(void);
+
+/// Convenience macro to get vector type.
+///
+/// \returns    vector type ID
+#define TYPE_VEC vec_type()
 
 
 #endif // ifndef YTIL_CON_VEC_H_INCLUDED

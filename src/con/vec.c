@@ -26,7 +26,10 @@
 #include <ytil/def.h>
 #include <ytil/def/magic.h>
 #include <ytil/ext/stdlib.h>
+#include <ytil/itf/obj.h>
 #include <string.h>
+
+#include <stdlib.h>
 
 
 /// offset of first vector element
@@ -424,6 +427,14 @@ ssize_t vec_pos(vec_const_ct vec, const void *elem)
         return error_pass(), -1;
 
     return ((char *)elem - vec->mem) / vec->esize;
+}
+
+bool vec_is_member(vec_const_ct vec, const void *elem)
+{
+    assert_magic(vec);
+    assert(elem);
+
+    return !vec_check_range(vec, elem);
 }
 
 int vec_get(vec_const_ct vec, void *dst, ssize_t pos)
@@ -1393,4 +1404,27 @@ void vec_sort(vec_ct vec, vec_sort_cb sort, const void *ctx)
 
     if(vec->mem)
         qsort_r(vec->mem, vec->size, vec->esize, sort, (void *)ctx);
+}
+
+static int vec_obj_dup(void *dst, const void *src, void *ctx)
+{
+    return -1;
+}
+
+static void vec_obj_free(void *obj, void *ctx)
+{
+
+}
+
+type_id vec_type(void)
+{
+    static type_id type;
+
+    return_value_if_pass(type, type);
+
+    if(!(type = type_new("vec"))
+    || itf_obj_register(type, vec_obj_dup, vec_obj_free))
+        abort();
+
+    return type;
 }

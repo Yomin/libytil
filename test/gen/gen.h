@@ -25,6 +25,7 @@
 
 
 int test_suite_gen(void *param);
+int test_suite_gen_box(void *param);
 int test_suite_gen_error(void *param);
 int test_suite_gen_log(void *param);
 int test_suite_gen_path(void *param);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,16 +22,36 @@
 
 #include "gen.h"
 #include <ytil/test/run.h>
+#include <ytil/test/test.h>
+//#include <ytil/gen/box.h>
 
 
-int test_suite_gen(void *param)
+/*static const struct not_a_box
 {
-    return error_pass_int(test_run_suites("gen",
-        test_suite(gen_box),
-        test_suite(gen_error),
-        test_suite(gen_log),
-        test_suite(gen_path),
-        test_suite(gen_str),
+    int foo;
+} not_a_box = { 123 };
+
+static box_ct box;
+
+
+TEST_CASE(box_new)
+{
+    test_ptr_success(box = box_new(TYPE_INT, NULL));
+}
+
+TEST_CASE_ABORT(box_free_invalid_magic)
+{
+    box_free((box_ct)&not_a_box);
+}*/
+
+int test_suite_gen_box(void *param)
+{
+    /*return error_pass_int(test_run_cases("box",
+        test_case(box_new),
+        test_case(box_free_invalid_magic),
+
         NULL
-    ));
+    );*/
+
+    return 0;
 }
