@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Martin Rödel aka Yomin
+ * Copyright (c) 2020 Martin Rödel aka Yomin
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,24 +23,39 @@
 #ifndef __YTIL_ITF_ITF_H__
 #define __YTIL_ITF_ITF_H__
 
+#include <ytil/gen/type.h>
 #include <ytil/gen/str.h>
 
 typedef enum itf_error
 {
-      E_ITF_INVALID_NAME
+      E_ITF_INVALID_INTERFACE
+    , E_ITF_INVALID_NAME
+    , E_ITF_INVALID_TYPE
+    , E_ITF_REGISTERED
+    , E_ITF_UNSUPPORTED
 } itf_error_id;
 
-struct itf;
-typedef struct itf *itf_ct;
+typedef enum itfid
+{
+      ITF_INVALID
+} itf_id;
+
+typedef void (*itf_dtor_cb)(void *instance);
 
 
 // free all interfaces
-void itf_free(void);
+void itfs_free(void);
 
-// register new interface
-itf_ct itf_new(str_const_ct name);
+// create new interface
+itf_id itf_new(str_const_ct name, itf_dtor_cb dtor);
+
+// register new type for interface
+int itf_register(itf_id itf, type_id type, void *instance);
 
 // get interface name
-str_const_ct itf_name(itf_ct itf);
+str_const_ct itf_name(itf_id itf);
+
+// get type specific interface
+void *itf_get(itf_id itf, type_id type);
 
 #endif

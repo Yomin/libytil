@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Martin Rödel aka Yomin
+ * Copyright (c) 2020 Martin Rödel aka Yomin
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,12 +26,26 @@
 #include <ytil/gen/type.h>
 #include <stddef.h>
 
-typedef size_t (*obj_size_cb)(type_id type, void *ctx);
-typedef void   (*obj_free_cb)(type_id type, void *value, void *ctx);
+typedef enum obj_error
+{
+      E_OBJ_INVALID_TYPE
+} obj_error_id;
+
+struct obj;
+typedef struct obj *obj_ct;
+
+#define OBJ(obj) ((obj_ct)(obj))
+
+typedef size_t (*obj_size_cb)(obj_ct obj);
+typedef obj_ct (*obj_dup_cb)(obj_ct obj);
+typedef void   (*obj_free_cb)(obj_ct obj);
 
 
-size_t obj_size(type_id type, void *obj);
-void   obj_free(type_id type, void *obj);
+int obj_register(type_id type, obj_size_cb size, obj_dup_cb dup, obj_free_cb free);
+
+size_t obj_size(type_id type, obj_ct obj);
+obj_ct obj_dup(type_id type, obj_ct obj);
+void   obj_free(type_id type, obj_ct obj);
 
 
 #endif
