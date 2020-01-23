@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include <ytil/itf/itf.h>
+#include <ytil/gen/itf.h>
 #include <ytil/def.h>
 #include <ytil/con/vec.h>
 

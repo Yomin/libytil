@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_ITF_OBJ_H__
-#define __YTIL_IFF_OBJ_H__
+#ifndef __YTIL_GEN_OBJ_H__
+#define __YTIL_GEN_OBJ_H__
 
 #include <ytil/gen/type.h>
 #include <stddef.h>

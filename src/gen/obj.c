@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#include <ytil/itf/obj.h>
-#include <ytil/itf/itf.h>
+#include <ytil/gen/obj.h>
+#include <ytil/gen/itf.h>
 #include <ytil/def.h>
 #include <stdlib.h>
 
