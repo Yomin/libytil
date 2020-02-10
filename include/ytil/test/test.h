@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,11 +38,11 @@ void    _test_pos(void *ctx, test_pos_id type, const char *file, size_t line);
 #define  test_pos_after() _test_pos(TEST_CTX, TEST_POS_AFTER, __FILE__, __LINE__)
 
 void    _test_msg(void *ctx, const char *file, size_t line, test_msg_id type, size_t level, bool backtrace, const char *msg, ...);
-#define  test_msg(type, bt, ...) _test_msg(TEST_CTX, __FILE__, __LINE__, (type), 0, (bt), __VA_ARGS__)
-#define  test_msg_info(...)       test_msg(TEST_MSG_INFO, false, __VA_ARGS__)
-#define  test_msg_warn(...)       test_msg(TEST_MSG_WARNING, false, __VA_ARGS__)
-#define  test_msg_error(...)      test_msg(TEST_MSG_ERROR, false, __VA_ARGS__)
-#define  test_msg_backtrace(...)  test_msg(TEST_MSG_ERROR, true, __VA_ARGS__)
+#define  test_msg(type, bt, msg, ...) _test_msg(TEST_CTX, __FILE__, __LINE__, (type), 0, (bt), (msg) __VA_OPT__(,) __VA_ARGS__)
+#define  test_msg_info(msg, ...)       test_msg(TEST_MSG_INFO, false, (msg) __VA_OPT__(,) __VA_ARGS__)
+#define  test_msg_warn(msg, ...)       test_msg(TEST_MSG_WARNING, false, (msg) __VA_OPT__(,) __VA_ARGS__)
+#define  test_msg_error(msg, ...)      test_msg(TEST_MSG_ERROR, false, (msg) __VA_OPT__(,) __VA_ARGS__)
+#define  test_msg_backtrace(msg, ...)  test_msg(TEST_MSG_ERROR, true, (msg) __VA_OPT__(,) __VA_ARGS__)
 
 void    _test_begin(void *ctx, const char *file, size_t line);
 #define  test_begin() _test_begin(TEST_CTX, __FILE__, __LINE__)
@@ -51,8 +51,8 @@ void    _test_end(void *ctx, const char *file, size_t line);
 #define  test_end() _test_end(TEST_CTX, __FILE__, __LINE__)
 
 void    _test_abort(void *ctx, const char *file, size_t line, bool backtrace, const char *msg, ...);
-#define  test_abort(...)           _test_abort(TEST_CTX, __FILE__, __LINE__, false, __VA_ARGS__)
-#define  test_abort_backtrace(...) _test_abort(TEST_CTX, __FILE__, __LINE__, true, __VA_ARGS__)
+#define  test_abort(msg, ...)           _test_abort(TEST_CTX, __FILE__, __LINE__, false, (msg) __VA_OPT__(,) __VA_ARGS__)
+#define  test_abort_backtrace(msg, ...) _test_abort(TEST_CTX, __FILE__, __LINE__, true, (msg) __VA_OPT__(,) __VA_ARGS__)
 
 void   *_test_alloc(void *ctx, const char *file, size_t line, size_t size);
 #define  test_alloc(size) _test_alloc(TEST_CTX, __FILE__, __LINE__, (size))
@@ -62,23 +62,23 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define  test_state_alloc(size) (TEST_STATE = test_alloc(size))
 #define  test_state_free() test_free(TEST_STATE)
 
-#define  test_call(name, ...) _test_func_##name(TEST_CTX, &TEST_STATE, __VA_ARGS__)
+#define  test_call(name, ...) _test_func_##name(TEST_CTX, &TEST_STATE __VA_OPT__(,) __VA_ARGS__)
 
 
-#define test_case_info(expr, ...) do { \
+#define test_case_info(expr, msg, ...) do { \
     test_begin(); \
     \
     if(expr) \
-        test_msg_info(__VA_ARGS__); \
+        test_msg_info((msg) __VA_OPT__(,) __VA_ARGS__); \
     \
     test_end(); \
 } while(0)
 
-#define test_case_warn(expr, ...) do { \
+#define test_case_warn(expr, msg, ...) do { \
     test_begin(); \
     \
     if(expr) \
-        test_msg_warn(__VA_ARGS__); \
+        test_msg_warn((msg) __VA_OPT__(,) __VA_ARGS__); \
     \
     test_end(); \
 } while(0)
