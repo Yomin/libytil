@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -212,7 +212,6 @@ int fs_walk(path_const_ct dir, ssize_t depth, fs_stat_fs flags, fs_walk_cb walk,
 int fs_move(path_const_ct src, path_const_ct dst, fs_move_fs flags)
 {
     str_ct str_src, str_dst;
-    int rc;
     
     if(!(str_src = path_get(src, PATH_STYLE_NATIVE)))
         return error_pack(E_FS_INVALID_PATH), -1;
@@ -220,42 +219,16 @@ int fs_move(path_const_ct src, path_const_ct dst, fs_move_fs flags)
     if(!(str_dst = path_get(dst, PATH_STYLE_NATIVE)))
         return error_pack(E_FS_INVALID_PATH), str_unref(str_src), -1;
     
-    if(!rename(str_c(str_src), str_c(str_dst)))
-        return str_unref(str_src), str_unref(str_dst), 0;
+    if(fs_remove(dst) && !error_check(0, E_FS_NOT_FOUND))
+        return error_pass(), str_unref(str_src), str_unref(str_dst), -1;
     
-    switch(errno)
-    {
-    case EEXIST:
-    case EISDIR:
-    case ENOTDIR:
-    case ENOTEMPTY:
-        break;
-    default:
-        fs_error_push_errno(rename);
-        str_unref(str_src);
-        str_unref(str_dst);
-        return -1;
-    }
+    if(rename(str_c(str_src), str_c(str_dst)))
+        return fs_error_push_errno(rename), str_unref(str_src), str_unref(str_dst), -1;
     
-    if(flags & FS_MOVE_MERGE)
-    {
-        str_unref(str_src);
-        str_unref(str_dst);
-        
-        return errno_set(ENOSYS), error_push(E_FS_ERRNO), -1;
-    }
-    else
-    {
-        if((rc = fs_remove(dst, NULL, NULL)))
-            error_pass();
-        else if((rc = rename(str_c(str_src), str_c(str_dst))))
-            fs_error_push_errno(rename);
-        
-        str_unref(str_src);
-        str_unref(str_dst);
-        
-        return rc;
-    }
+    str_unref(str_src);
+    str_unref(str_dst);
+    
+    return 0;
 }
 
 static ssize_t fs_write(int fd, const void *vbuf, size_t size)
@@ -381,11 +354,16 @@ static int fs_walk_remove(fs_walk_type_id type, path_const_ct file, size_t depth
     }
     
     return !rc ? 0
-        : !state->error ? -1
+        : !state || !state->error ? -1
         : error_push_int(E_FS_CALLBACK, state->error(type, file, depth, info, state->ctx));
 }
 
-int fs_remove(path_const_ct file, fs_walk_cb error, void *ctx)
+int fs_remove(path_const_ct file)
+{
+    return error_lift_int(E_FS_CALLBACK, fs_walk(file, -1, FS_STAT_LINK_NOFOLLOW, fs_walk_remove, NULL));
+}
+
+int fs_remove_f(path_const_ct file, fs_walk_cb error, void *ctx)
 {
     fs_remove_st state = { .error = error, .ctx = ctx };
     

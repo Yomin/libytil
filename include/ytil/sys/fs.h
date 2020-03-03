@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -40,13 +40,13 @@ typedef enum fs_error
 typedef enum fs_stat_flag
 {
       FS_STAT_DEFAULT       = 0
-    , FS_STAT_LINK_NOFOLLOW = 1
+    , FS_STAT_LINK_NOFOLLOW = 1 // do not follow symlinks
 } fs_stat_fs;
 
 typedef enum fs_move_flag
 {
       FS_MOVE_DEFAULT   = 0
-    , FS_MOVE_MERGE     = 1
+    , FS_MOVE_REPLACE   = 1
 } fs_move_fs;
 
 typedef enum fs_copy_flag
@@ -99,6 +99,8 @@ int fs_move(path_const_ct src, path_const_ct dst, fs_move_fs flags);
 // copy file from src to dst
 int fs_copy(path_const_ct src, path_const_ct dst, fs_copy_fs flags);
 // remove file
-int fs_remove(path_const_ct file, fs_walk_cb error, void *ctx);
+int fs_remove(path_const_ct file);
+// remove file, apply error cb if not removeable file is encountered
+int fs_remove_f(path_const_ct file, fs_walk_cb error, void *ctx);
 
 #endif

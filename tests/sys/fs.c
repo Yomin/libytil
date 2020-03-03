@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -137,7 +137,7 @@ TEST_FUNCTION(void, mkfile, mkfile_type_id type, str_ct name, path_ct *path, str
         test_ptr_success(*path = path_get_base_dir(PATH_BASE_DIR_TMP));
         test_ptr_success(path_append(*path, name, PATH_STYLE_NATIVE));
         test_ptr_success(*str = path_get(*path, PATH_STYLE_NATIVE));
-        test_int_lift_maybe(fs_remove(*path, _test_rmfile_error, TEST_CTX), E_FS_CALLBACK, E_FS_NOT_FOUND);
+        test_int_lift_maybe(fs_remove_f(*path, _test_rmfile_error, TEST_CTX), E_FS_CALLBACK, E_FS_NOT_FOUND);
         break;
     case MKDRIVE:
         test_ptr_success(*path = path_new(LIT("c:\\"), PATH_STYLE_WINDOWS));
@@ -194,13 +194,13 @@ TEST_FUNCTION(void, rmfile, mkfile_type_id type, path_ct path, str_ct str)
     case MKFILE:
     case MKLINK:
     case MKDIR:
-        test_int_lift_maybe(fs_remove(path, _test_rmfile_error, TEST_CTX), E_FS_CALLBACK, E_FS_NOT_FOUND);
+        test_int_lift_maybe(fs_remove_f(path, _test_rmfile_error, TEST_CTX), E_FS_CALLBACK, E_FS_NOT_FOUND);
         path_free(path);
         str_unref(str);
         break;
     case MKTREE:
     case MKTREE_BLOCKER:
-        test_int_lift_maybe(fs_remove(path, _test_rmfile_error, TEST_CTX), E_FS_CALLBACK, E_FS_NOT_FOUND);
+        test_int_lift_maybe(fs_remove_f(path, _test_rmfile_error, TEST_CTX), E_FS_CALLBACK, E_FS_NOT_FOUND);
         path_free(path);
         break;
     default:
@@ -212,6 +212,11 @@ TEST_TEARDOWN(rmfile)
 {
     test_call(rmfile, type1, path1, str1);
     test_call(rmfile, type2, path2, str2);
+}
+
+TEST_FUNCTION(void, ckfile)
+{
+
 }
 
 TEST_CASE_ABORT(fs_stat_invalid_path1)
@@ -344,38 +349,38 @@ TEST_CASE_ARGS(fs_walk_recursive, mkfile, rmfile, MKTREE, MKNONE)
     test_uint_eq(test.file, 9);
 }
 
-TEST_CASE_ABORT(fs_remove_invalid_path1)
+TEST_CASE_ABORT(fs_remove_f_invalid_path1)
 {
-    fs_remove(NULL, NULL, NULL);
+    fs_remove_f(NULL, NULL, NULL);
 }
 
 #ifndef _WIN32
-TEST_CASE_ARGS(fs_remove_invalid_path2, mkfile, rmfile, MKDRIVE, MKNONE)
+TEST_CASE_ARGS(fs_remove_f_invalid_path2, mkfile, rmfile, MKDRIVE, MKNONE)
 {
-    test_int_error(fs_remove(path1, NULL, NULL), E_FS_INVALID_PATH);
+    test_int_error(fs_remove_f(path1, NULL, NULL), E_FS_INVALID_PATH);
 }
 #endif
 
-TEST_CASE_ARGS(fs_remove_not_found, mkfile, rmfile, MKPATH, MKNONE)
+TEST_CASE_ARGS(fs_remove_f_not_found, mkfile, rmfile, MKPATH, MKNONE)
 {
-    test_int_error(fs_remove(path1, NULL, NULL), E_FS_NOT_FOUND);
+    test_int_error(fs_remove_f(path1, NULL, NULL), E_FS_NOT_FOUND);
 }
 
-TEST_CASE_ARGS(fs_remove_file, mkfile, rmfile, MKFILE, MKNONE)
+TEST_CASE_ARGS(fs_remove_f_file, mkfile, rmfile, MKFILE, MKNONE)
 {
-    test_int_success(fs_remove(path1, NULL, NULL));
+    test_int_success(fs_remove_f(path1, NULL, NULL));
     test_ptr_error(fs_stat(path1, FS_STAT_LINK_NOFOLLOW, &fst), E_FS_NOT_FOUND);
 }
 
-TEST_CASE_ARGS(fs_remove_dir, mkfile, rmfile, MKDIR, MKNONE)
+TEST_CASE_ARGS(fs_remove_f_dir, mkfile, rmfile, MKDIR, MKNONE)
 {
-    test_int_success(fs_remove(path1, NULL, NULL));
+    test_int_success(fs_remove_f(path1, NULL, NULL));
     test_ptr_error(fs_stat(path1, FS_STAT_LINK_NOFOLLOW, &fst), E_FS_NOT_FOUND);
 }
 
-TEST_CASE_ARGS(fs_remove_tree, mkfile, rmfile, MKTREE, MKNONE)
+TEST_CASE_ARGS(fs_remove_f_tree, mkfile, rmfile, MKTREE, MKNONE)
 {
-    test_int_success(fs_remove(path1, NULL, NULL));
+    test_int_success(fs_remove_f(path1, NULL, NULL));
     test_ptr_error(fs_stat(path1, FS_STAT_LINK_NOFOLLOW, &fst), E_FS_NOT_FOUND);
 }
 
@@ -388,11 +393,11 @@ static int _test_fs_remove_error(fs_walk_type_id type, path_const_ct file, size_
     return error_pass(), -1;
 }
 
-TEST_CASE_ARGS(fs_remove_tree_fail, mkfile, rmfile, MKTREE_BLOCKER, MKNONE)
+TEST_CASE_ARGS(fs_remove_f_tree_fail, mkfile, rmfile, MKTREE_BLOCKER, MKNONE)
 {
     str_ct blocker;
     
-    test_int_lift_error(fs_remove(path1, _test_fs_remove_error, &blocker), E_FS_CALLBACK, E_FS_ACCESS_DENIED);
+    test_int_lift_error(fs_remove_f(path1, _test_fs_remove_error, &blocker), E_FS_CALLBACK, E_FS_ACCESS_DENIED);
     
     test_str_eq(str_c(blocker), "bar");
     str_unref(blocker);
@@ -431,6 +436,9 @@ TEST_CASE_ARGS(fs_move_file, mkfile, rmfile, MKFILE, MKPATH)
 {
     test_int_success(fs_move(path1, path2, FS_MOVE_DEFAULT));
     test_ptr_error(fs_stat(path1, FS_STAT_DEFAULT, &fst), E_FS_NOT_FOUND);
+    
+    test_call(ckfile);
+    
     test_ptr_success(fs_stat(path2, FS_STAT_DEFAULT, &fst));
     test_uint_eq(fst.type, FS_TYPE_REGULAR);
 }
@@ -579,13 +587,13 @@ test_suite_ct test_suite_sys_fsys(void)
         , test_case_new(fs_walk_depth1)
         , test_case_new(fs_walk_recursive)
         
-        , test_case_new(fs_remove_invalid_path1)
-        , test_case_new_unix(fs_remove_invalid_path2)
-        , test_case_new(fs_remove_not_found)
-        , test_case_new(fs_remove_file)
-        , test_case_new(fs_remove_dir)
-        , test_case_new(fs_remove_tree)
-        , test_case_new(fs_remove_tree_fail)
+        , test_case_new(fs_remove_f_invalid_path1)
+        , test_case_new_unix(fs_remove_f_invalid_path2)
+        , test_case_new(fs_remove_f_not_found)
+        , test_case_new(fs_remove_f_file)
+        , test_case_new(fs_remove_f_dir)
+        , test_case_new(fs_remove_f_tree)
+        , test_case_new(fs_remove_f_tree_fail)
         
         , test_case_new(fs_move_invalid_src1)
         , test_case_new_unix(fs_move_invalid_src2)
