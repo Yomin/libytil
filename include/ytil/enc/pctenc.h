@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,35 +20,24 @@
  * THE SOFTWARE.
  */
 
-#include <ytil/test/run.h>
-#include "con/cont.h"
-#include "enc/enc.h"
-#include "gen/gen.h"
-#include "sys/sys.h"
-#include <stdio.h>
+#ifndef __YTIL_ENC_PCTENC_H__
+#define __YTIL_ENC_PCTENC_H__
 
+#include <stdbool.h>
+#include <ytil/gen/str.h>
 
-int main(int argc, char *argv[])
+typedef enum pctenc_error
 {
-    test_suite_ct suite;
-    test_run_ct run;
-    int rc;
-    
-    if(!(suite = test_suite_new_with_suites("ytil"
-            , test_suite_con()
-            , test_suite_enc()
-            , test_suite_gen()
-            , test_suite_sys()
-        )))
-        return perror("failed to setup test suites"), -1;
-    
-    if((run = test_run_new_with_args(argc, argv)))
-    {
-        rc = test_run_exec(run, suite);
-        test_run_free(run);
-    }
-    
-    test_suite_free(suite);
-    
-    return rc;
-}
+      E_PCTENC_EMPTY
+    , E_PCTENC_INVALID_DATA
+} pctenc_error_id;
+
+
+// percent encode arbitrary data
+str_ct pctenc_encode(str_const_ct blob);
+// decode percent encoded data
+str_ct pctenc_decode(str_const_ct str);
+// check validity of percent encoded data
+bool pctenc_is_valid(str_const_ct str);
+
+#endif
