@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,107 +20,53 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_GEN_PATH_H__
-#define __YTIL_GEN_PATH_H__
+#ifndef __YTIL_GEN_REGPATH_H__
+#define __YTIL_GEN_REGPATH_H__
 
 #include <ytil/gen/str.h>
-#include <stdbool.h>
-#include <stddef.h>
 
-typedef enum path_error
+typedef enum regpath_error
 {
-      E_PATH_INVALID_DEVICE_NAME
-    , E_PATH_INVALID_DRIVE_LETTER
-    , E_PATH_INVALID_PATH
-    , E_PATH_INVALID_REGISTRY_BASE
-    , E_PATH_INVALID_SUFFIX
-    , E_PATH_INVALID_TYPE
-    , E_PATH_INVALID_UNC_HOST
-    , E_PATH_INVALID_UNC_SHARE
-    , E_PATH_MALFORMED
-    , E_PATH_UNSUPPORTED
-} path_error_id;
+      E_REGPATH_INVALID_BASE
+} regpath_error_id;
 
-typedef enum path_type
+typedef enum regpath_base
 {
-      PATH_TYPE_STANDARD
-    , PATH_TYPE_DRIVE
-    , PATH_TYPE_UNC
-    , PATH_TYPE_DEVICE
-    , PATH_TYPE_REGISTRY
-    , PATH_TYPES
-} path_type_id;
+      REGPATH_INVALID
+    , REGPATH_CLASSES_ROOT
+    , REGPATH_CURRENT_CONFIG
+    , REGPATH_CURRENT_USER
+    , REGPATH_LOCAL_MACHINE
+    , REGPATH_USERS
+    , REGPATH_BASES
+} regpath_base_id;
 
-typedef enum path_style
-{
-      PATH_STYLE_POSIX
-    , PATH_STYLE_WINDOWS
-    , PATH_STYLES
-} path_style_id;
-
-#ifdef _WIN32
-#   define PATH_STYLE_NATIVE PATH_STYLE_WINDOWS
-#else
-#   define PATH_STYLE_NATIVE PATH_STYLE_POSIX
-#endif
-
-typedef enum path_reg_base
-{
-      PATH_REG_INVALID
-    , PATH_REG_CLASSES_ROOT
-    , PATH_REG_CURRENT_CONFIG
-    , PATH_REG_CURRENT_USER
-    , PATH_REG_LOCAL_MACHINE
-    , PATH_REG_USERS
-    , PATH_REG_TYPES
-} path_reg_base_id;
-
-struct path;
-typedef struct path       *path_ct;
-typedef const struct path *path_const_ct;
+struct regpath;
+typedef struct regpath       *regpath_ct;
+typedef const struct regpath *regpath_const_ct;
 
 
-// create new path from str
-path_ct path_new(str_const_ct str, path_style_id style);
-// create new path from cstr
-path_ct path_new_c(const char *str, path_style_id style);
-// create new path from cstr of len
-path_ct path_new_cn(const char *str, size_t len, path_style_id style);
-// create new 'current' path
-path_ct path_new_current(void);
-// create new 'parent' path
-path_ct path_new_parent(void);
-// duplicate path
-path_ct path_dup(path_const_ct path);
-// reset path to 'current' dir
-void    path_reset(path_ct path);
-// free path
-void    path_free(path_ct path);
+// create new regpath from str
+regpath_ct regpath_new(regpath_base_id base, str_const_ct str);
+// create new regpath from cstr
+regpath_ct regpath_new_c(regpath_base_id base, const char *str);
+// create new regpath from cstr of len
+regpath_ct regpath_new_cn(regpath_base_id base, const char *str, size_t len);
+// duplicate regpath
+regpath_ct regpath_dup(regpath_const_ct path);
+// free regpath
+void       regpath_free(regpath_ct path);
 
-// check whether path is absolute
-bool path_is_absolute(path_const_ct path);
-// check whether path is relative
-bool path_is_relative(path_const_ct path);
-// check whether path is directory (has trailing path separator)
-bool path_is_directory(path_const_ct path);
+// check if regpath1 equals regpath2
+bool regpath_is_equal(regpath_const_ct path1, regpath_const_ct path2);
 
-// check if path1 equals path2
-bool path_is_equal(path_const_ct path1, path_const_ct path2, path_style_id style);
-
-// get path type
-path_type_id path_type(path_const_ct path);
-
+// get regpath base
+regpath_base_id regpath_base(regpath_const_ct path);
+/*
 // get count of path components
 size_t path_depth(path_const_ct path);
 // get length of path
 size_t path_len(path_const_ct path, path_style_id style);
-
-// get 'current' directory in respective style
-const char *path_current(path_style_id style);
-// get 'parent' directory in respective style
-const char *path_parent(path_style_id style);
-// get path separators in respective style
-const char *path_separator(path_style_id style);
 
 // set str as path
 path_ct path_set(path_ct path, str_const_ct str, path_style_id style);
@@ -183,5 +129,5 @@ str_ct path_get_suffix(path_const_ct path);
 str_ct path_dirname(path_const_ct path, path_style_id style);
 // get last path component
 str_ct path_basename(path_const_ct path, path_style_id style);
-
+*/
 #endif

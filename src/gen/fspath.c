@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include <ytil/gen/path.h>
+#include <ytil/gen/fspath.h>
 #include <ytil/con/vec.h>
 #include <ytil/ext/string.h>
 #include <ytil/ext/stdlib.h>
@@ -28,7 +28,7 @@
 #include <ytil/magic.h>
 #include <ytil/def.h>
 
-
+/*
 enum def
 {
       MAGIC          = define_magic('P', 'T', 'H')
@@ -1132,3 +1132,4 @@ str_ct path_basename(path_const_ct path, path_style_id style)
     default:                abort();
     }
 }
+*/

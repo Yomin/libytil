@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,90 +20,31 @@
  * THE SOFTWARE.
  */
 
+#include <ytil/gen/regpath.h>
 #include <ytil/gen/path.h>
-#include <ytil/con/vec.h>
-#include <ytil/ext/string.h>
-#include <ytil/ext/stdlib.h>
-#include <ytil/ext/stdio.h>
 #include <ytil/magic.h>
 #include <ytil/def.h>
 
 
 enum def
 {
-      MAGIC          = define_magic('P', 'T', 'H')
-    , AVG_PATH_COMPS = 5
+      MAGIC = define_magic('R', 'P', 'A')
 };
 
-typedef enum path_comp_type
-{
-      PATH_COMP_CURRENT = 1
-    , PATH_COMP_PARENT  = 2
-} path_comp_type_id;
-
-typedef struct path_comp
-{
-    char *name;
-    size_t len;
-} path_comp_st;
-
-typedef union path_info
-{
-    struct path_info_drive
-    {
-        char letter;
-    } drive;
-    struct path_info_unc
-    {
-        str_const_ct host, share;
-    } unc;
-    struct path_info_device
-    {
-        str_const_ct name;
-        size_t id;
-    } device;
-    struct path_info_registry
-    {
-        path_reg_base_id base;
-    } registry;
-} path_info_un;
-
-typedef struct path
+typedef struct regpath
 {
     DEBUG_MAGIC
     
-    vec_ct comp;
-    bool absolute, trailing;
-    path_type_id type;
-    path_info_un info;
-} path_st;
+    regpath_base_id base;
+    path_ct path;
+} regpath_st;
 
-typedef struct path_prop
+/*static const error_info_st error_infos[] =
 {
-    const char *current, *parent, *sep;
-} path_prop_st;
+      ERROR_INFO(E_REGPATH_INVALID_BASE, "Invalid registry base.")
+};*/
 
-static const path_prop_st path_props[] =
-{
-      [PATH_STYLE_POSIX]     = { ".", "..", "/" }
-    , [PATH_STYLE_WINDOWS]  = { ".", "..", "\\/" }
-};
-
-static const error_info_st error_infos[] =
-{
-      ERROR_INFO(E_PATH_INVALID_DEVICE_NAME, "Invalid device name.")
-    , ERROR_INFO(E_PATH_INVALID_DRIVE_LETTER, "Invalid drive letter.")
-    , ERROR_INFO(E_PATH_INVALID_PATH, "Invalid path.")
-    , ERROR_INFO(E_PATH_INVALID_REGISTRY_BASE, "Invalid registry base key.")
-    , ERROR_INFO(E_PATH_INVALID_SUFFIX, "Invalid file suffix.")
-    , ERROR_INFO(E_PATH_INVALID_TYPE, "Invalid path type.")
-    , ERROR_INFO(E_PATH_INVALID_UNC_HOST, "Invalid UNC host.")
-    , ERROR_INFO(E_PATH_INVALID_UNC_SHARE, "Invalid UNC share.")
-    , ERROR_INFO(E_PATH_MALFORMED, "Malformed path.")
-    , ERROR_INFO(E_PATH_UNSUPPORTED, "Unsupported path.")
-};
-
-
+/*
 path_ct path_new(str_const_ct str, path_style_id style)
 {
     return error_pass_ptr(path_new_cn(str_c(str), str_len(str), style));
@@ -1132,3 +1073,4 @@ str_ct path_basename(path_const_ct path, path_style_id style)
     default:                abort();
     }
 }
+*/
