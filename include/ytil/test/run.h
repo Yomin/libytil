@@ -45,7 +45,10 @@ test_run_ct test_run_new(void);
 test_run_ct test_run_new_with_args(int argc, char *argv[]);
 void        test_run_free(test_run_ct run);
 
+int test_run_enable_clean(test_run_ct run, bool clean);
+int test_run_enable_dump(test_run_ct run, bool dump);
 int test_run_enable_fork(test_run_ct run, bool fork);
+int test_run_enable_skip(test_run_ct run, bool skip);
 
 int test_run_add_filter(test_run_ct run, const char *filter);
 

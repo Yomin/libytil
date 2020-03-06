@@ -149,12 +149,12 @@ static int test_run_get_clock(clockid_t *clock, ...)
 static const struct option test_run_options[] =
 {
       { "help",    no_argument,       NULL, 'h' }
-    , { "fork",    no_argument,       NULL, 'f' }
-    , { "nofork",  no_argument,       NULL, 'F' }
     , { "clean",   no_argument,       NULL, 'c' }
     , { "noclean", no_argument,       NULL, 'C' }
     , { "dump",    no_argument,       NULL, 'd' }
     , { "nodump",  no_argument,       NULL, 'D' }
+    , { "fork",    no_argument,       NULL, 'f' }
+    , { "nofork",  no_argument,       NULL, 'F' }
     , { "skip",    no_argument,       NULL, 's' }
     , { "noskip",  no_argument,       NULL, 'S' }
     , { "loglvl",  required_argument, NULL, 'l' }
@@ -179,24 +179,29 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
         switch(opt)
         {
         case 'h':
-            fprintf(run->fp, "Usage: %s [-v] [--loglvl=<lvl>] [--[no]fork] [--[no]clean] [--[no]dump] [--[no]skip] [path/to1,to2/suite*/case [...]]\n", argv[0]);
+            fprintf(run->fp, "Usage: %s [-v] [--loglvl=<lvl>]"
+                "\n\t[--[no]clean]  cleanup after test case"
+                "\n\t[--[no]dump]   coredump on test case crash"
+                "\n\t[--[no]fork]   fork for test case"
+                "\n\t[--[no]skip]   skip test case expecting exit or signal"
+                "\n\t[path/to1,to2/suite*/case [...]]\n", argv[0]);
             return 1;
+        case 'c':
+        case 'C':
+            test_run_enable_clean(run, opt == 'c');
+            break;
+        case 'd':
+        case 'D':
+            test_run_enable_dump(run, opt == 'd');
+            break;
         case 'f':
         case 'F':
             if(test_run_enable_fork(run, opt == 'f'))
                 return error_pass(), fprintf(run->fp, "fork not available\n"), -1;
             break;
-        case 'c':
-        case 'C':
-            run->clean_exit = opt == 'c';
-            break;
-        case 'd':
-        case 'D':
-            run->core_dump = opt == 'd';
-            break;
         case 's':
         case 'S':
-            run->skip = opt == 's';
+            test_run_enable_skip(run, opt == 's');
             break;
         case 'l':
             if(strspn(optarg, "1234567890") != strlen(optarg))
@@ -253,13 +258,14 @@ test_run_ct test_run_new_with_args(int argc, char *argv[])
         return error_wrap_errno(calloc), perror("failed to init test run"), NULL;
     
     run->fp = stdout;
-    run->skip = true;
     
 #ifdef _WIN32
     run->fork = false;
+    run->skip = true;
     run->check_traced = false;
 #else
     run->fork = true;
+    run->skip = false;
     run->check_traced = true;
 #endif
     
@@ -317,6 +323,24 @@ void test_run_free(test_run_ct run)
     free(run);
 }
 
+int test_run_enable_clean(test_run_ct run, bool clean)
+{
+    return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
+    
+    run->clean_exit = clean;
+    
+    return 0;
+}
+
+int test_run_enable_dump(test_run_ct run, bool dump)
+{
+    return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
+    
+    run->core_dump = dump;
+    
+    return 0;
+}
+
 int test_run_enable_fork(test_run_ct run, bool fork)
 {
     return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
@@ -326,6 +350,16 @@ int test_run_enable_fork(test_run_ct run, bool fork)
 #endif
     
     run->fork = fork;
+    run->check_traced = false;
+    
+    return 0;
+}
+
+int test_run_enable_skip(test_run_ct run, bool skip)
+{
+    return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
+    
+    run->skip = skip;
     run->check_traced = false;
     
     return 0;
@@ -982,14 +1016,14 @@ static int test_run_case(test_run_ct run, test_case_const_ct tcase)
         fflush(run->fp);
     }
     
-    if(!run->fork)
+    if(run->skip && !test_case_expects_nothing(tcase))
     {
-        if(run->skip && !test_case_expects_nothing(tcase))
-            test_state_set_result(run->state, TEST_RESULT_SKIP);
-        else
-            rc = test_run_worker(run, tcase);
-        
-        if(rc >= 0)
+        test_state_set_result(run->state, TEST_RESULT_SKIP);
+        test_run_eval(run, tcase);
+    }
+    else if(!run->fork)
+    {
+        if((rc = test_run_worker(run, tcase)) >= 0)
             test_run_eval_status(run, tcase, false, 0, true, rc);
     }
 #ifndef _WIN32
@@ -1080,15 +1114,16 @@ int test_run_exec(test_run_ct run, test_suite_const_ct suite)
     return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
     return_error_if_fail(suite, E_TEST_RUN_INVALID_SUITE, -1);
     
-    if(run->fork && run->check_traced)
+    if((run->fork || !run->skip) && run->check_traced)
         switch((rc = test_run_check_traced(run)))
         {
         case TEST_PARENT_NOT_TRACED:
             break;
         case TEST_PARENT_TRACED:
-            fprintf(run->fp, COLOR_YELLOW"tracer detected, disabling fork"COLOR_DEFAULT"\n");
+            fprintf(run->fp, COLOR_YELLOW"tracer detected: disabling fork + enabling skip"COLOR_DEFAULT"\n");
             run->traced = true;
             run->fork = false;
+            run->skip = true;
             break;
         default:
             return rc;
