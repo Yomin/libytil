@@ -45,6 +45,16 @@ int isbdigit(int c)
     return c == '0' || c == '1';
 }
 
+int islxdigit(int c)
+{
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f');
+}
+
+int isuxdigit(int c)
+{
+    return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F');
+}
+
 int flatten(int c)
 {
     return isprint(c) ? c : ' ';

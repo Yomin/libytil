@@ -44,6 +44,8 @@ int isword(int c);      // [0-9A-Za-z_]
 int issign(int c);      // [+-]
 int isodigit(int c);    // [0-7]
 int isbdigit(int c);    // [01]
+int islxdigit(int c);   // [0-9a-z]
+int isuxdigit(int c);   // [0-9A-Z]
 
 // convert !isprint char to space
 int flatten(int c);

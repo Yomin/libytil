@@ -379,6 +379,40 @@ void *memrskip(const void *vmem, size_t size, int c)
     return mem < end ? (void*)end : NULL;
 }
 
+size_t strcnt(const char *str, int c)
+{
+    size_t count;
+    
+    for(count=0; str[0]; str++)
+        if(str[0] == c)
+            count++;
+    
+    return count;
+}
+
+size_t strncnt(const char *str, int c, size_t n)
+{
+    size_t count;
+    
+    for(count=0; n && str[0]; n--, str++)
+        if(str[0] == c)
+            count++;
+    
+    return count;
+}
+
+size_t memcnt(const void *vmem, size_t size, int c)
+{
+    const unsigned char *mem = vmem, *end = mem + size;
+    size_t count;
+    
+    for(count=0; mem < end; mem++)
+        if(mem[0] == c)
+            count++;
+    
+    return count;
+}
+
 size_t strnspn(const char *str, const char *accept, size_t n)
 {
     size_t count;

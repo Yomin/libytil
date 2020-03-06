@@ -120,6 +120,13 @@ void *memskip(const void *mem, size_t size, int c);
 // memrwhile(str, size, (==c))
 void *memrskip(const void *mem, size_t size, int c);
 
+// count occurences of c in str
+size_t strcnt(const char *str, int c);
+// count occurences of c in max n chars of str
+size_t strncnt(const char *str, int c, size_t n);
+// count occurences of c in mem
+size_t memcnt(const void *mem, size_t size, int c);
+
 // get length of prefix with chars in accept (system provided)
 // size_t strspn(const char *str, const char *accept);
 // get length of prefix (max n chars) with chars in accept
