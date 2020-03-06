@@ -91,7 +91,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
         test_abort_backtrace("ERROR type test failed: %s == ERROR_TYPE_ERROR", \
             error_strtype(error_type(depth))); \
     else if(error_get(depth) != (error)) \
-        test_abort_backtrace("ERROR test failed: %s == "#error, error_name(depth)); \
+        test_abort_backtrace("ERROR test failed: %s == %s", error_name(depth), #error); \
     \
     test_end(); \
 } while(0)
@@ -103,7 +103,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
         test_abort_backtrace("ERROR type test failed: %s == ERROR_TYPE_ERRNO", \
             error_strtype(error_type(depth))); \
     else if(error_get_errno(depth) != (error)) \
-        test_abort_backtrace("ERRNO test failed: %s == "#error, error_name(depth)); \
+        test_abort_backtrace("ERRNO test failed: %s == %s", error_name(depth), #error); \
     \
     test_end(); \
 } while(0)
@@ -115,7 +115,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
         test_abort_backtrace("ERROR type test failed: %s == ERROR_TYPE_WIN32", \
             error_strtype(error_type(depth))); \
     else if(error_get_win32(depth) != (error)) \
-        test_abort_backtrace("WIN32 ERROR test failed: %s == "#error, error_name(depth)); \
+        test_abort_backtrace("WIN32 ERROR test failed: %s == %s", error_name(depth), #error); \
     \
     test_end(); \
 } while(0)
@@ -127,7 +127,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
         test_abort_backtrace("ERROR type test failed: %s == ERROR_TYPE_HRESULT", \
             error_strtype(error_type(depth))); \
     else if(error_get_hresult(depth) != (result)) \
-        test_abort_backtrace("HRESULT test failed: %s == "#result, error_name(depth)); \
+        test_abort_backtrace("HRESULT test failed: %s == %s", error_name(depth), #result); \
     \
     test_end(); \
 } while(0)
@@ -139,7 +139,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
         test_abort_backtrace("ERROR type test failed: %s == ERROR_TYPE_NTSTATUS", \
             error_strtype(error_type(depth))); \
     else if(error_get_ntstatus(depth) != (status)) \
-        test_abort_backtrace("NTSTATUS test failed: %s == "#status, error_name(depth)); \
+        test_abort_backtrace("NTSTATUS test failed: %s == %s", error_name(depth), #status); \
     \
     test_end(); \
 } while(0)
@@ -153,7 +153,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     intmax_t rc; \
     \
     if((rc = (expr)) < 0) \
-        test_abort_backtrace("INT SUCCESS test failed: "#expr" (%jd)", rc); \
+        test_abort_backtrace("INT SUCCESS test failed: %s (%jd)", #expr, rc); \
     \
     test_end(); \
 } while(0)
@@ -164,7 +164,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     intmax_t rc; \
     \
     if((rc = (expr)) < 0) \
-        test_abort("INT SUCCESS test failed: "expr_s" (%jd, %s)", rc, error_name_##type(value)); \
+        test_abort("INT SUCCESS test failed: %s (%jd, %s)", expr_s, rc, error_name_##type(value)); \
     \
     test_end(); \
 } while(0)
@@ -180,7 +180,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     error_clear(); \
     \
     if((rc = expr) < 0 && !error_check(0, err)) \
-        test_abort_backtrace("INT MAYBE test failed: "expr_s" (%jd, %s == "err_s")", rc, error_name(0)); \
+        test_abort_backtrace("INT MAYBE test failed: %s (%jd, %s == %s)", expr_s, rc, error_name(0), err_s); \
     \
     test_end(); \
 } while(0)
@@ -196,7 +196,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     __auto_type _value = (value); \
     \
     if(rc < 0 && err != _value) \
-        test_abort("INT MAYBE test failed: "expr_s" (%jd, %s == "err_s")", rc, error_name_##type(_value)); \
+        test_abort("INT MAYBE test failed: %s (%jd, %s == %s)", expr_s, rc, error_name_##type(_value), err_s); \
     \
     test_end(); \
 } while(0)
@@ -211,9 +211,9 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     intmax_t rc; \
     \
     if((rc = expr) >= 0) \
-        test_abort("INT ERROR test failed: "expr_s" (%jd)", rc); \
+        test_abort("INT ERROR test failed: %s (%jd)", expr_s, rc); \
     else if(!error_check(0, err)) \
-        test_abort_backtrace("INT ERROR test failed: "expr_s" (%s == "err_s")", error_name(0)); \
+        test_abort_backtrace("INT ERROR test failed: %s (%s == %s)", expr_s, error_name(0), err_s); \
     \
     test_end(); \
 } while(0)
@@ -229,9 +229,9 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     __auto_type _value = (value); \
     \
     if(rc >= 0) \
-        test_abort("INT ERROR test failed: "expr_s" (%jd)", rc); \
+        test_abort("INT ERROR test failed: %s (%jd)", expr_s, rc); \
     else if(err != _value) \
-        test_abort("INT ERROR test failed: "expr_s" (%s == "err_s")", error_name_##type(_value)); \
+        test_abort("INT ERROR test failed: %s (%s == %s)", expr_s, error_name_##type(_value), err_s); \
     \
     test_end(); \
 } while(0)
@@ -248,9 +248,9 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     intmax_t rc, _trc = (trc); \
     \
     if((rc = (expr)) < 0) \
-        test_abort_backtrace("RC SUCCESS test failed: "#expr" (%jd)", rc); \
+        test_abort_backtrace("RC SUCCESS test failed: %s (%jd)", #expr, rc); \
     else if(rc != _trc) \
-        test_abort("RC SUCCESS test failed: "#expr" == "#trc" (%jd == %jd)", rc, _trc); \
+        test_abort("RC SUCCESS test failed: %s == %s (%jd == %jd)", #expr, #trc, rc, _trc); \
     \
     test_end(); \
 } while(0)
@@ -261,9 +261,9 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     intmax_t rc, _trc = (trc); \
     \
     if((rc = (expr)) < 0) \
-        test_abort("RC SUCCESS test failed: "expr_s" (%jd, %s)", rc, error_name_##type(value)); \
+        test_abort("RC SUCCESS test failed: %s (%jd, %s)", expr_s, rc, error_name_##type(value)); \
     else if(rc != _trc) \
-        test_abort("RC SUCCESS test failed: "expr_s" == "trc_s" (%jd == %jd)", rc, _trc); \
+        test_abort("RC SUCCESS test failed: %s == %s (%jd == %jd)", expr_s, trc_s, rc, _trc); \
     \
     test_end(); \
 } while(0)
@@ -278,9 +278,9 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     error_clear(); \
     \
     if((rc = expr) != _trc) \
-        test_abort("RC ERROR test failed: "expr_s" == "trc_s" (%jd == %jd)", rc, _trc); \
+        test_abort("RC ERROR test failed: %s == %s (%jd == %jd)", expr_s, trc_s, rc, _trc); \
     else if(!error_check(0, err)) \
-        test_abort_backtrace("RC ERROR test failed: "expr_s" (%s == "err_s")", error_name(0)); \
+        test_abort_backtrace("RC ERROR test failed: %s (%s == %s)", expr_s, error_name(0), err_s); \
     \
     test_end(); \
 } while(0)
@@ -296,9 +296,9 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     __auto_type _value = (value); \
     \
     if(rc != _trc) \
-        test_abort("RC ERROR test failed: "expr_s" == "trc_s" (%jd == %jd)", rc, _trc); \
+        test_abort("RC ERROR test failed: %s == %s (%jd == %jd)", expr_s, trc_s, rc, _trc); \
     else if(err != _value) \
-        test_abort("RC ERROR test failed: "expr_s" (%s == "err_s")", error_name_##type(_value)); \
+        test_abort("RC ERROR test failed: %s (%s == %s)", expr_s, error_name_##type(_value), err_s); \
     \
     test_end(); \
 } while(0)
@@ -313,7 +313,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     if(!(expr)) \
-        test_abort_backtrace("PTR SUCCESS test failed: "#expr); \
+        test_abort_backtrace("PTR SUCCESS test failed: %s", #expr); \
     \
     test_end(); \
 } while(0)
@@ -322,7 +322,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     if(!(expr)) \
-        test_abort("PTR SUCCESS test failed: "expr_s" (%s)", error_name_##type(value)); \
+        test_abort("PTR SUCCESS test failed: %s (%s)", expr_s, error_name_##type(value)); \
     \
     test_end(); \
 } while(0)
@@ -335,7 +335,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     error_clear(); \
     \
     if(!expr && !error_check(0, err)) \
-        test_abort_backtrace("PTR MAYBE test failed: "expr_s" (%s == "err_s")", error_name(0)); \
+        test_abort_backtrace("PTR MAYBE test failed: %s (%s == %s)", expr_s, error_name(0), err_s); \
     \
     test_end(); \
 } while(0)
@@ -351,7 +351,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     __auto_type _value = (value); \
     \
     if(!ptr && err != _value) \
-        test_abort("PTR MAYBE test failed: "expr_s" (%s == "err_s")", error_name_##type(_value)); \
+        test_abort("PTR MAYBE test failed: %s (%s == %s)", expr_s, error_name_##type(_value), err_s); \
     \
     test_end(); \
 } while(0)
@@ -366,9 +366,9 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     const void *ptr; \
     \
     if((ptr = expr)) \
-        test_abort("PTR ERROR test failed: "expr_s" (%p)", ptr); \
+        test_abort("PTR ERROR test failed: %s (%p)", expr_s, ptr); \
     else if(!error_check(0, err)) \
-        test_abort_backtrace("PTR ERROR test failed: "expr_s" (%s == "err_s")", error_name(0)); \
+        test_abort_backtrace("PTR ERROR test failed: %s (%s == %s)", expr_s, error_name(0), err_s); \
     \
     test_end(); \
 } while(0)
@@ -384,9 +384,9 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     __auto_type _value = (value); \
     \
     if(ptr) \
-        test_abort("PTR ERROR test failed: "expr_s" (%p)", ptr); \
+        test_abort("PTR ERROR test failed: %s (%p)", expr_s, ptr); \
     else if(err != _value) \
-        test_abort("PTR ERROR test failed: "expr_s" (%s == "err_s")", error_name_##type(_value)); \
+        test_abort("PTR ERROR test failed: %s (%s == %s)", expr_s, error_name_##type(_value), err_s); \
     \
     test_end(); \
 } while(0)
@@ -412,7 +412,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     if(!(expr)) \
-        test_abort("TRUE test failed: "#expr); \
+        test_abort("TRUE test failed: %s", #expr); \
     \
     test_end(); \
 } while(0)
@@ -421,7 +421,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     if((expr)) \
-        test_abort("FALSE test failed: "#expr); \
+        test_abort("FALSE test failed: %s", #expr); \
     \
     test_end(); \
 } while(0)
@@ -436,8 +436,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     type _v2 = v2; \
     \
     if(!(_v1 op _v2)) \
-        test_abort(name" test failed: "e1" "#op" "e2 \
-            " (%"spec" "#op" %"spec")", _v1, _v2); \
+        test_abort("%s test failed: %s %s %s (%"spec" %s %"spec")", \
+            name, e1, #op, e2, _v1, #op, _v2); \
     \
     test_end(); \
 } while(0)
@@ -450,8 +450,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     type _v3 = v3; \
     \
     if(!(_v1 op _v2 && _v2 op _v3)) \
-        test_abort(name" range test failed: "e1" "#op" "e2" "#op" "e3 \
-            " (%"spec" "#op" %"spec" "#op" %"spec")", _v1, _v2, _v3); \
+        test_abort("%s range test failed: %s %s %s %s %s (%"spec" %s %"spec" %s %"spec")", \
+            name, e1, #op, e2, #op, e3, _v1, #op, _v2, #op, _v3); \
     \
     test_end(); \
 } while(0)
@@ -467,8 +467,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     \
     for(_i=0; _i < _n; _i++) \
         if((_v1 = _l1[_i]) != (_v2 = _l2[_i])) \
-            test_abort(name" list test failed: "e1"[%zu] == "e2"[%zu]" \
-                " (%"spec" == %"spec")", _i, _i, _v1, _v2); \
+            test_abort("%s list test failed: %s[%zu] == %s[%zu] (%"spec" == %"spec")", \
+                name, e1, _i, e2, _i, _v1, _v2); \
     \
     test_end(); \
 } while(0);
@@ -548,8 +548,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     double _v1 = v1, _v2 = v2; \
     \
     if(!(_v1 op _v2)) \
-        test_abort("FLOAT test failed: "e1" "#op" "e2 \
-            " (%.*g "#op" %.*g)", DBL_DECIMAL_DIG, _v1, DBL_DECIMAL_DIG, _v2); \
+        test_abort("FLOAT test failed: %s %s %s (%.*g %s %.*g)", \
+            e1, #op, e2, DBL_DECIMAL_DIG, _v1, #op, DBL_DECIMAL_DIG, _v2); \
     \
     test_end(); \
 } while(0)
@@ -560,9 +560,9 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     double _v1 = v1, _v2 = v2, _v3 = v3; \
     \
     if(!(_v1 op _v2 && _v2 op _v3)) \
-        test_abort("FLOAT test failed: "e1" "#op" "e2" "#op" "e3 \
-            " (%.*g "#op" %.*g "#op" %.*g)", \
-            DBL_DECIMAL_DIG, _v1, DBL_DECIMAL_DIG, _v2, DBL_DECIMAL_DIG, _v3); \
+        test_abort("FLOAT test failed: %s %s %s %s %s (%.*g %s %.*g %s %.*g)", \
+            e1, #op, e2, #op, e3, \
+            DBL_DECIMAL_DIG, _v1, #op, DBL_DECIMAL_DIG, _v2, #op, DBL_DECIMAL_DIG, _v3); \
     \
     test_end(); \
 } while(0)
@@ -573,7 +573,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     double _v = v; \
     \
     if(!op(_v)) \
-        test_abort("FLOAT test failed: "e" "expl" (%.*g)", DBL_DECIMAL_DIG, _v); \
+        test_abort("FLOAT test failed: %s %s (%.*g)", \
+            e, expl, DBL_DECIMAL_DIG, _v); \
     \
     test_end(); \
 } while(0)
@@ -588,8 +589,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     \
     for(_i=0; _i < _n; _i++) \
         if((_v1 = _l1[_i]) != (_v2 = _l2[_i])) \
-            test_abort("FLOAT list test failed: "#l1"[%zu] == "#l2"[%zu]" \
-                " (%.*g == %.*g)", _i, _i, DBL_DECIMAL_DIG, _v1, DBL_DECIMAL_DIG, _v2); \
+            test_abort("FLOAT list test failed: %s[%zu] == %s[%zu] (%.*g == %.*g)", \
+                #l1, _i, #l2, _i, DBL_DECIMAL_DIG, _v1, DBL_DECIMAL_DIG, _v2); \
     \
     test_end(); \
 } while(0);
@@ -625,8 +626,10 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     const char *_q1 = _s1 ? "\"" : "", *_q2 = _s2 ? "\"" : ""; \
     \
     if(!_s1 || !_s2 || !(f(_s1, _s2) op 0)) \
-        test_abort(name" test failed: "e1" "#op" "e2" (%s%s%s "#op" %s%s%s)", \
-            _q1, _s1 ? _s1 : "null", _q1, _q2, _s2 ? _s2 : "null", _q2); \
+        test_abort("%s test failed: %s %s %s (%s%s%s %s %s%s%s)", \
+            name, e1, #op, e2, \
+            _q1, _s1 ? _s1 : "null", _q1, #op, \
+            _q2, _s2 ? _s2 : "null", _q2); \
     \
     test_end(); \
 } while(0)
@@ -662,9 +665,9 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     int _n = n, _n1 = _s1 ? _n : 4, _n2 = _s2 ? _n : 4; \
     \
     if(!_s1 || !_s2 || !(f(_s1, _s2, n) op 0)) \
-        test_abort(name" test failed: "e1"[:%d] "#op" "e2"[:%d]" \
-            " (%s%.*s%s "#op" %s%.*s%s)", _n, _n, \
-            _q1, _n1, _s1 ? _s1 : "null", _q1, \
+        test_abort("%s test failed: %s[:%d] %s %s[:%d] (%s%.*s%s %s %s%.*s%s)", \
+            name, e1, _n, #op, e2, _n, \
+            _q1, _n1, _s1 ? _s1 : "null", _q1, #op, \
             _q2, _n2, _s2 ? _s2 : "null", _q2); \
     \
     test_end(); \
@@ -700,8 +703,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     const void *_m1 = m1, *_m2 = m2; \
     \
     if(!_m1 || !_m2 || !(memcmp(_m1, _m2, n) op 0)) \
-        test_abort("MEM test failed: "e1" "#op" "e2 \
-            " (0x%s "#op" 0x%s)", _m1 ? "?" : "null", _m2 ? "?" : "null"); \
+        test_abort("MEM test failed: %s %s %s (0x%s %s 0x%s)", \
+            e1, #op, e2, _m1 ? "?" : "null", #op, _m2 ? "?" : "null"); \
     \
     test_end(); \
 } while(0)
@@ -724,7 +727,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     HRESULT result = (expr); \
     \
     if(result != S_OK) \
-        test_abort("HRESULT SUCCESS test failed: "#expr" (%s)", error_name_hresult(result)); \
+        test_abort("HRESULT SUCCESS test failed: %s (%s)", #expr, error_name_hresult(result)); \
     \
     test_end(); \
 } while(0)
@@ -735,7 +738,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     HRESULT result = (expr); \
     \
     if(result != S_OK && result != (eresult)) \
-        test_abort("HRESULT MAYBE test failed: "#expr" (%s == "#eresult")", error_name_hresult(result)); \
+        test_abort("HRESULT MAYBE test failed: %s (%s == %s)", #expr, error_name_hresult(result), #eresult); \
     \
     test_end(); \
 } while(0)
@@ -746,7 +749,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     HRESULT result = (expr); \
     \
     if(result != (eresult)) \
-        test_abort("HRESULT ERROR test failed: "#expr" (%s == "#eresult")", error_name_hresult(result)); \
+        test_abort("HRESULT ERROR test failed: %s (%s == %s)", #expr, error_name_hresult(result), #eresult); \
     \
     test_end(); \
 } while(0)
@@ -760,7 +763,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     NTSTATUS status = (expr); \
     \
     if(status != STATUS_SUCCESS) \
-        test_abort("NTSTATUS SUCCESS test failed: "#expr" (%s)", error_name_ntstatus(status)); \
+        test_abort("NTSTATUS SUCCESS test failed: %s (%s)", #expr, error_name_ntstatus(status)); \
     \
     test_end(); \
 } while(0)
@@ -771,7 +774,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     NTSTATUS status = (expr); \
     \
     if(status != STATUS_SUCCESS && status != (estatus)) \
-        test_abort("NTSTATUS MAYBE test failed: "#expr" (%s == "#estatus")", error_name_ntstatus(status)); \
+        test_abort("NTSTATUS MAYBE test failed: %s (%s == %s)", #expr, error_name_ntstatus(status), #estatus); \
     \
     test_end(); \
 } while(0)
@@ -782,7 +785,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     NTSTATUS status = (expr); \
     \
     if(status != (estatus)) \
-        test_abort("NTSTATUS ERROR test failed: "#expr" (%s == "#estatus")", error_name_ntstatus(status)); \
+        test_abort("NTSTATUS ERROR test failed: %s (%s == %s)", #expr, error_name_ntstatus(status), #estatus); \
     \
     test_end(); \
 } while(0)
