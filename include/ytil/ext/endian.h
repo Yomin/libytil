@@ -24,11 +24,49 @@
 #define __YTIL_EXT_ENDIAN_H__
 
 #if defined(__linux__)
+
 #   include <endian.h>
+
 #elif defined(_WIN32)
+
 #   include <sys/param.h>
+
+#   if __BYTE_ORDER == __LITTLE_ENDIAN
+
+#       define htole16(i) (i)
+#       define htobe16(i) __builtin_bswap16(i)
+#       define le16toh(i) (i)
+#       define be16toh(i) __builtin_bswap16(i)
+#       define htole32(i) (i)
+#       define htobe32(i) __builtin_bswap32(i)
+#       define le32toh(i) (i)
+#       define be32toh(i) __builtin_bswap32(i)
+#       define htole64(i) (i)
+#       define htobe64(i) __builtin_bswap64(i)
+#       define le64toh(i) (i)
+#       define be64toh(i) __builtin_bswap64(i)
+
+#   elif __BYTE_ORDER == __BIG_ENDIAN
+
+#       define htole16(i) __builtin_bswap16(i)
+#       define htobe16(i) (i)
+#       define le16toh(i) __builtin_bswap16(i)
+#       define be16toh(i) (i)
+#       define htole32(i) __builtin_bswap32(i)
+#       define htobe32(i) (i)
+#       define le32toh(i) __builtin_bswap32(i)
+#       define be32toh(i) (i)
+#       define htole64(i) __builtin_bswap64(i)
+#       define htobe64(i) (i)
+#       define le64toh(i) __builtin_bswap64(i)
+#       define be64toh(i) (i)
+
+#   endif
+
 #else
+
 #   error unsupported platform
+
 #endif
 
 #endif
