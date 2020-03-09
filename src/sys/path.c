@@ -32,7 +32,7 @@
 #   include <unistd.h>
 #   include <pwd.h>
 #endif
-
+/*
 static const error_info_st error_infos[] =
 {
       ERROR_INFO(E_PATH_INVALID_APP_AUTHOR, "Invalid app author.")
@@ -303,3 +303,4 @@ path_ct path_get_app_dir(path_app_dir_id id, str_const_ct author, str_const_ct a
     
     return path;
 }
+*/

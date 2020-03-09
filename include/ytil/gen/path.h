@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2018-2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,159 +29,71 @@
 
 typedef enum path_error
 {
-      E_PATH_INVALID_DEVICE_NAME
-    , E_PATH_INVALID_DRIVE_LETTER
-    , E_PATH_INVALID_PATH
-    , E_PATH_INVALID_REGISTRY_BASE
-    , E_PATH_INVALID_SUFFIX
-    , E_PATH_INVALID_TYPE
-    , E_PATH_INVALID_UNC_HOST
-    , E_PATH_INVALID_UNC_SHARE
-    , E_PATH_MALFORMED
+      E_PATH_INVALID_PROPERTIES
     , E_PATH_UNSUPPORTED
 } path_error_id;
 
-typedef enum path_type
+typedef struct path_prop
 {
-      PATH_TYPE_STANDARD
-    , PATH_TYPE_DRIVE
-    , PATH_TYPE_UNC
-    , PATH_TYPE_DEVICE
-    , PATH_TYPE_REGISTRY
-    , PATH_TYPES
-} path_type_id;
-
-typedef enum path_style
-{
-      PATH_STYLE_POSIX
-    , PATH_STYLE_WINDOWS
-    , PATH_STYLES
-} path_style_id;
-
-#ifdef _WIN32
-#   define PATH_STYLE_NATIVE PATH_STYLE_WINDOWS
-#else
-#   define PATH_STYLE_NATIVE PATH_STYLE_POSIX
-#endif
-
-typedef enum path_reg_base
-{
-      PATH_REG_INVALID
-    , PATH_REG_CLASSES_ROOT
-    , PATH_REG_CURRENT_CONFIG
-    , PATH_REG_CURRENT_USER
-    , PATH_REG_LOCAL_MACHINE
-    , PATH_REG_USERS
-    , PATH_REG_TYPES
-} path_reg_base_id;
+    const char *sep;        // path separators
+    const char *current;    // current dir representation
+    const char *parent;     // parent dir representation
+    bool case_sensitive;    // case senitivity for path comparision
+} path_prop_st;
 
 struct path;
 typedef struct path       *path_ct;
 typedef const struct path *path_const_ct;
 
 
-// create new path from str
-path_ct path_new(str_const_ct str, path_style_id style);
-// create new path from cstr
-path_ct path_new_c(const char *str, path_style_id style);
-// create new path from cstr of len
-path_ct path_new_cn(const char *str, size_t len, path_style_id style);
+// create new path from str with path properties prop
+path_ct path_new(str_const_ct str, const path_prop_st *prop);
+// create new path from cstr with path properties prop
+path_ct path_new_c(const char *str, const path_prop_st *prop);
+// create new path from cstr of len with path properties prop
+path_ct path_new_cn(const char *str, size_t len, const path_prop_st *prop);
+// create new empty path
+path_ct path_new_empty(void);
 // create new 'current' path
 path_ct path_new_current(void);
 // create new 'parent' path
 path_ct path_new_parent(void);
 // duplicate path
 path_ct path_dup(path_const_ct path);
-// reset path to 'current' dir
+// reset path to empty dir
 void    path_reset(path_ct path);
 // free path
 void    path_free(path_ct path);
 
-// check whether path is absolute
-bool path_is_absolute(path_const_ct path);
-// check whether path is relative
-bool path_is_relative(path_const_ct path);
-// check whether path is directory (has trailing path separator)
-bool path_is_directory(path_const_ct path);
+// check whether path is empty
+bool path_is_empty(path_const_ct path);
 
 // check if path1 equals path2
-bool path_is_equal(path_const_ct path1, path_const_ct path2, path_style_id style);
-
-// get path type
-path_type_id path_type(path_const_ct path);
+bool path_is_equal(path_const_ct path1, path_const_ct path2, const path_prop_st *prop);
 
 // get count of path components
-size_t path_depth(path_const_ct path);
+size_t  path_depth(path_const_ct path);
 // get length of path
-size_t path_len(path_const_ct path, path_style_id style);
+ssize_t path_len(path_const_ct path, const path_prop_st *prop);
 
-// get 'current' directory in respective style
-const char *path_current(path_style_id style);
-// get 'parent' directory in respective style
-const char *path_parent(path_style_id style);
-// get path separators in respective style
-const char *path_separator(path_style_id style);
+// set str with path properties prop as path
+path_ct path_set(path_ct path, str_const_ct str, const path_prop_st *prop);
+// set cstr with path properties prop as path
+path_ct path_set_c(path_ct path, const char *str, const path_prop_st *prop);
+// set cstr of len with path properties prop as path
+path_ct path_set_cn(path_ct path, const char *str, size_t len, const path_prop_st *prop);
 
-// set str as path
-path_ct path_set(path_ct path, str_const_ct str, path_style_id style);
-// set cstr as path
-path_ct path_set_c(path_ct path, const char *str, path_style_id style);
-// set cstr of len as path
-path_ct path_set_cn(path_ct path, const char *str, size_t len, path_style_id style);
+// append str with path properties prop as new path components
+path_ct path_append(path_ct path, str_const_ct str, const path_prop_st *prop);
+// append cstr with path properties prop as new path components
+path_ct path_append_c(path_ct path, const char *str, const path_prop_st *prop);
+// append cstr of len with path properties prop as new path components
+path_ct path_append_cn(path_ct path, const char *str, size_t len, const path_prop_st *prop);
 
-// set drive letter for drive paths
-path_ct path_set_drive(path_ct path, char letter);
-// set host+share for UNC paths
-path_ct path_set_unc(path_ct path, str_const_ct host, str_const_ct share);
-// set share for UNC paths
-path_ct path_set_unc_share(path_ct path, str_const_ct share);
-// set name+id for device paths
-path_ct path_set_device(path_ct path, str_const_ct name, size_t id);
-// set id for device paths
-path_ct path_set_device_ident(path_ct path, size_t id);
-// set base for registry paths
-path_ct path_set_registry_base(path_ct path, path_reg_base_id base);
-
-// replace suffix of last path component or add if not yet existing
-path_ct path_set_suffix(path_ct path, str_const_ct suffix);
-// add suffix to last path component, if a suffix already exists append suffix
-path_ct path_add_suffix(path_ct path, str_const_ct suffix);
-
-// append str as new path components
-path_ct path_append(path_ct path, str_const_ct str, path_style_id style);
-// append cstr as new path components
-path_ct path_append_c(path_ct path, const char *str, path_style_id style);
-// append cstr of len as new path components
-path_ct path_append_cn(path_ct path, const char *str, size_t len, path_style_id style);
-
-// drop n path components from end
+// drop n path components from tail
 path_ct path_drop(path_ct path, size_t n);
 
-// remove suffix from last path component if existing
-path_ct path_drop_suffix(path_ct path);
-
-// get path as string
-str_ct path_get(path_const_ct path, path_style_id style);
-
-// get drive letter for drive paths
-char path_get_drive_letter(path_const_ct path);
-// get host for UNC paths
-str_const_ct path_get_unc_host(path_const_ct path);
-// get share for UNC paths
-str_const_ct path_get_unc_share(path_const_ct path);
-// get name for device paths
-str_const_ct path_get_device_name(path_const_ct path);
-// get id for device paths
-ssize_t path_get_device_ident(path_const_ct path);
-// get base for registry paths
-path_reg_base_id path_get_registry_base(path_const_ct path);
-
-// get suffix of last path component, empty str if none existing
-str_ct path_get_suffix(path_const_ct path);
-
-// get all path components but last
-str_ct path_dirname(path_const_ct path, path_style_id style);
-// get last path component
-str_ct path_basename(path_const_ct path, path_style_id style);
+// get path as string with path properties prop
+str_ct path_get(path_const_ct path, const path_prop_st *prop);
 
 #endif
