@@ -21,6 +21,7 @@
  */
 
 #include <ytil/ext/string.h>
+#include <ytil/def.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
@@ -481,66 +482,90 @@ size_t memcspn(const void *vmem, size_t msize, const void *vreject, size_t rsize
     return mem - (const unsigned char*)vmem;
 }
 
-size_t strprefix(const char *str1, const char *str2)
+bool strprefix(const char *prefix, const char *str)
 {
-    size_t plen = 0;
-    
-    while(str1[0] && str2[0] && str1[0] == str2[0])
-        plen++, str1++, str2++;
-    
-    return plen;
+    return !strncmp(prefix, str, strlen(prefix));
 }
 
-size_t strcaseprefix(const char *str1, const char *str2)
+bool strcaseprefix(const char *prefix, const char *str)
 {
-    size_t plen = 0;
-    
-    while(str1[0] && str2[0] && toupper(str1[0]) == toupper(str2[0]))
-        plen++, str1++, str2++;
-    
-    return plen;
+    return !strncasecmp(prefix, str, strlen(prefix));
 }
 
-size_t strnprefix(const char *str1, const char *str2, size_t len)
+bool strnprefix(const char *prefix, size_t plen, const char *str, size_t slen)
 {
-    size_t plen = 0;
-    
-    while(len && str1[0] && str2[0] && str1[0] == str2[0])
-        len--, plen++, str1++, str2++;
-    
-    return plen;
+    return plen <= slen && !strncmp(prefix, str, plen);
 }
 
-size_t strncaseprefix(const char *str1, const char *str2, size_t len)
+bool strncaseprefix(const char *prefix, size_t plen, const char *str, size_t slen)
 {
-    size_t plen = 0;
-    
-    while(len && str1[0] && str2[0] && toupper(str1[0]) == toupper(str2[0]))
-        len--, plen++, str1++, str2++;
-    
-    return plen;
+    return plen <= slen && !strncasecmp(prefix, str, plen);
 }
 
-size_t memprefix(const void *vmem1, const void *vmem2, size_t size)
+bool memprefix(const void *prefix, size_t psize, const void *mem, size_t msize)
+{
+    return psize <= msize && !memcmp(prefix, mem, psize);
+}
+
+bool memcaseprefix(const void *prefix, size_t psize, const void *mem, size_t msize)
+{
+    return psize <= msize && !memcasecmp(prefix, mem, psize);
+}
+
+size_t strprefixlen(const char *str1, const char *str2)
+{
+    size_t len;
+    
+    for(len=0; str1[len] && str2[len] && str1[len] == str2[len]; len++);
+    
+    return len;
+}
+
+size_t strcaseprefixlen(const char *str1, const char *str2)
+{
+    size_t len;
+    
+    for(len=0; str1[len] && str2[len] && toupper(str1[len]) == toupper(str2[len]); len++);
+    
+    return len;
+}
+
+size_t strnprefixlen(const char *str1, size_t slen1, const char *str2, size_t slen2)
+{
+    size_t len, slen = MIN(slen1, slen2);
+    
+    for(len=0; len < slen && str1[len] && str2[len] && str1[len] == str2[len]; len++);
+    
+    return len;
+}
+
+size_t strncaseprefixlen(const char *str1, size_t slen1, const char *str2, size_t slen2)
+{
+    size_t len, slen = MIN(slen1, slen2);
+    
+    for(len=0; len < slen && str1[len] && str2[len] && toupper(str1[len]) == toupper(str2[len]); len++);
+    
+    return len;
+}
+
+size_t memprefixlen(const void *vmem1, size_t size1, const void *vmem2, size_t size2)
 {
     const unsigned char *mem1 = vmem1, *mem2 = vmem2;
-    size_t plen = 0;
+    size_t len, size = MIN(size1, size2);
     
-    while(size && mem1[0] == mem2[0])
-        size--, plen++, mem1++, mem2++;
+    for(len=0; len < size && mem1[len] == mem2[len]; len++);
     
-    return plen;
+    return len;
 }
 
-size_t memcaseprefix(const void *vmem1, const void *vmem2, size_t size)
+size_t memcaseprefixlen(const void *vmem1, size_t size1, const void *vmem2, size_t size2)
 {
     const unsigned char *mem1 = vmem1, *mem2 = vmem2;
-    size_t plen = 0;
+    size_t len, size = MIN(size1, size2);
     
-    while(size && toupper(mem1[0]) == toupper(mem2[0]))
-        size--, plen++, mem1++, mem2++;
+    for(len=0; len < size && toupper(mem1[len]) == toupper(mem2[len]); len++);
     
-    return plen;
+    return len;
 }
 
 void *memmem(const void *vhaystack, size_t ssize, const void *vneedle, size_t nsize)

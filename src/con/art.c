@@ -447,7 +447,7 @@ str_ct art_node_get_key(art_node_const_ct node)
 
 static inline size_t art_node_get_common_prefix(art_node_const_ct node, str_const_ct key)
 {
-    return memprefix(art_node_get_path(node), str_bc(key), MIN(node->path_len, str_len(key)));
+    return memprefixlen(art_node_get_path(node), node->path_len, str_bc(key), str_len(key));
 }
 
 static int art_node_find_child(const unsigned char *keys, size_t size, unsigned char key)

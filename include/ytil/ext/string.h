@@ -141,19 +141,33 @@ size_t memspn(const void *mem, size_t msize, const void *accept, size_t asize);
 // get length of prefix with bytes not in reject
 size_t memcspn(const void *mem, size_t msize, const void *reject, size_t rsize);
 
-// get length of common prefix
-size_t strprefix(const char *str1, const char *str2);
-// get length of common prefix ignoring case
-size_t strcaseprefix(const char *str1, const char *str2);
-// get length of common prefix, limited to len
-size_t strnprefix(const char *str1, const char *str2, size_t len);
-// get length of common prefix ignoring case, limited to len
-size_t strncaseprefix(const char *str1, const char *str2, size_t len);
+// check if 'prefix' is prefix of str
+bool strprefix(const char *prefix, const char *str);
+// check if 'prefix' is prefix of str ignoring case
+bool strcaseprefix(const char *prefix, const char *str);
+// check if 'prefix' of length plen is prefix of str of length slen
+bool strnprefix(const char *prefix, size_t plen, const char *str, size_t slen);
+// check if 'prefix' of length plen is prefix of str of length slen ignoring case
+bool strncaseprefix(const char *prefix, size_t plen, const char *str, size_t slen);
+
+// check if 'prefix' is prefix of mem
+bool memprefix(const void *prefix, size_t psize, const void *mem, size_t msize);
+// check if 'prefix' is prefix of mem ignoring case (where applicable)
+bool memcaseprefix(const void *prefix, size_t psize, const void *mem, size_t msize);
 
 // get length of common prefix
-size_t memprefix(const void *mem1, const void *mem2, size_t size);
+size_t strprefixlen(const char *str1, const char *str2);
+// get length of common prefix ignoring case
+size_t strcaseprefixlen(const char *str1, const char *str2);
+// get length of common prefix, limited by MIN(slen1, slen2)
+size_t strnprefixlen(const char *str1, size_t slen1, const char *str2, size_t slen2);
+// get length of common prefix ignoring case, limited by MIN(slen1, slen2)
+size_t strncaseprefixlen(const char *str1, size_t slen1, const char *str2, size_t slen2);
+
+// get length of common prefix
+size_t memprefixlen(const void *mem1, size_t size1, const void *mem2, size_t size2);
 // get length of common prefix ignoring case (where applicable)
-size_t memcaseprefix(const void *mem1, const void *mem2, size_t size);
+size_t memcaseprefixlen(const void *mem1, size_t size1, const void *mem2, size_t size2);
 
 // scan str haystack for first occurence of str needle (system provided)
 // char *strstr(const char *haystack, const char *needle);

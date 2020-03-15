@@ -30,7 +30,6 @@
 typedef enum regpath_error
 {
       E_REGPATH_INVALID_BASE
-    , E_REGPATH_INVALID_PATH
 } regpath_error_id;
 
 typedef enum regpath_base
@@ -89,29 +88,21 @@ regpath_ct regpath_set_with_base(regpath_ct path, regpath_base_id base, str_cons
 regpath_ct regpath_set_with_base_c(regpath_ct path, regpath_base_id base, const char *str);
 // set cstr of len with base as regpath
 regpath_ct regpath_set_with_base_cn(regpath_ct path, regpath_base_id base, const char *str, size_t len);
-/*
-// set base for registry paths
-path_ct path_set_registry_base(path_ct path, path_reg_base_id base);
 
-// append str as new path components
-path_ct path_append(path_ct path, str_const_ct str, path_style_id style);
-// append cstr as new path components
-path_ct path_append_c(path_ct path, const char *str, path_style_id style);
-// append cstr of len as new path components
-path_ct path_append_cn(path_ct path, const char *str, size_t len, path_style_id style);
+// set base for regpath
+regpath_ct regpath_set_base(regpath_ct path, regpath_base_id base);
 
-// drop n path components from end
-path_ct path_drop(path_ct path, size_t n);
+// append str as new regpath components
+regpath_ct regpath_append(regpath_ct path, str_const_ct str);
+// append cstr as new regpath components
+regpath_ct regpath_append_c(regpath_ct path, const char *str);
+// append cstr of len as new regpath components
+regpath_ct regpath_append_cn(regpath_ct path, const char *str, size_t len);
 
-// get path as string
-str_ct path_get(path_const_ct path, path_style_id style);
+// drop n regpath components from end
+regpath_ct regpath_drop(regpath_ct path, size_t n);
 
-// get base for registry paths
-path_reg_base_id path_get_registry_base(path_const_ct path);
+// get regpath as string
+str_ct regpath_get(regpath_const_ct path);
 
-// get all path components but last
-str_ct path_dirname(path_const_ct path, path_style_id style);
-// get last path component
-str_ct path_basename(path_const_ct path, path_style_id style);
-*/
 #endif

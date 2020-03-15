@@ -52,7 +52,6 @@ typedef struct path
     DEBUG_MAGIC
     
     vec_ct comp;
-    bool trailing;
 } path_st;
 
 static const error_info_st error_infos[] =
@@ -176,8 +175,6 @@ void path_reset(path_ct path)
 {
     assert_magic(path);
     
-    path->trailing = false;
-    
     if(path->comp)
         vec_clear_f(path->comp, path_vec_free_comp, NULL);
 }
@@ -243,13 +240,18 @@ size_t path_depth(path_const_ct path)
     return path->comp ? vec_size(path->comp) : 0;
 }
 
+static inline bool path_check_prop(const path_prop_st *prop)
+{
+    return prop && prop->sep && prop->sep[0];
+}
+
 ssize_t path_len(path_const_ct path, const path_prop_st *prop)
 {
     path_comp_st *comp;
     size_t c, len = 0;
     
     assert_magic(path);
-    return_error_if_fail(prop && prop->sep, E_PATH_INVALID_PROPERTIES, -1);
+    return_error_if_fail(path_check_prop(prop), E_PATH_INVALID_PROPERTIES, -1);
     
     return_value_if_pass(!path->comp || vec_is_empty(path->comp), len);
     
@@ -275,9 +277,6 @@ ssize_t path_len(path_const_ct path, const path_prop_st *prop)
             abort();
         }
     }
-    
-    if(path->trailing)
-        len++;
     
     return len;
 }
@@ -320,12 +319,22 @@ static path_comp_st *path_set_comp(path_comp_st *comp, const char *str, size_t l
     return comp;
 }
 
+static inline bool path_comp_is_current(path_comp_st *comp)
+{
+    return !comp->name && comp->len == PATH_COMP_CURRENT;
+}
+
+static inline bool path_comp_is_parent(path_comp_st *comp)
+{
+    return !comp->name && comp->len == PATH_COMP_PARENT;
+}
+
 static path_comp_st *path_add_comp(path_ct path, const char *str, size_t len, const path_prop_st *prop)
 {
     path_comp_st *comp;
     
     // squash 'current' dir if last path component
-    if((comp = vec_last(path->comp)) && !comp->name && comp->len == PATH_COMP_CURRENT)
+    if((comp = vec_last(path->comp)) && path_comp_is_current(comp))
     {
         if(!path_set_comp(comp, str, len, prop))
             return error_pass(), NULL;
@@ -364,17 +373,11 @@ static path_ct path_parse_comp(path_ct path, const char *str, size_t len, const 
     if(len && !path_add_comp(path, str, len, prop))
         return error_pass(), NULL;
     
-    if((comp = vec_last(path->comp)) && !comp->name && comp->len == PATH_COMP_CURRENT)
+    // drop 'current' if previous component is 'parent'
+    if((comp = vec_at(path->comp, -1)) && path_comp_is_current(comp)
+    && (comp = vec_at(path->comp, -2)) && path_comp_is_parent(comp))
     {
-        // drop 'current' if only path component or previous component is 'parent'
-        if(!(comp = vec_at(path->comp, -2))
-        || (!comp->name && comp->len == PATH_COMP_PARENT))
-        {
-            vec_pop(path->comp);
-            
-            if(!comp && path->absolute)
-                path->trailing = false;
-        }
+        vec_pop(path->comp);
     }
     
     return path;
@@ -395,22 +398,12 @@ path_ct path_set_cn(path_ct path, const char *str, size_t len, const path_prop_s
     path_st npath = {0};
     
     assert_magic(path);
-    return_error_if_fail(prop && prop->sep, E_PATH_INVALID_PROPERTIES, NULL);
+    return_error_if_fail(path_check_prop(prop), E_PATH_INVALID_PROPERTIES, NULL);
     
     init_magic(&npath);
     
-    if(str && len)
-    {
-        if(strchr(prop->sep, str[0]))
-        {
-            npath.absolute = true;
-            str++;
-            len--;
-        }
-        
-        if(!path_parse_comp(&npath, str, len, prop))
-            return error_pass(), path_clear(&npath), NULL;
-    }
+    if(str && len && !path_parse_comp(&npath, str, len, prop))
+        return error_pass(), path_clear(&npath), NULL;
     
     path_clear(path);
     memcpy(path, &npath, sizeof(path_st));
@@ -431,7 +424,7 @@ path_ct path_append_c(path_ct path, const char *str, const path_prop_st *prop)
 path_ct path_append_cn(path_ct path, const char *str, size_t len, const path_prop_st *prop)
 {
     assert_magic(path);
-    return_error_if_fail(prop && prop->sep, E_PATH_INVALID_PROPERTIES, NULL);
+    return_error_if_fail(path_check_prop(prop), E_PATH_INVALID_PROPERTIES, NULL);
     
     return error_pass_ptr(path_parse_comp(path, str, len, prop));
 }
@@ -443,8 +436,6 @@ path_ct path_drop(path_ct path, size_t n)
     if(path->comp)
         vec_pop_fn(path->comp, n, path_vec_free_comp, NULL);
     
-    path->trailing = false;
-    
     return path;
 }
 
@@ -455,14 +446,9 @@ str_ct path_get(path_const_ct path, const path_prop_st *prop)
     str_ct str;
     
     assert_magic(path);
-    return_error_if_fail(prop && prop->sep, E_PATH_INVALID_PROPERTIES, NULL);
+    return_error_if_fail(path_check_prop(prop), E_PATH_INVALID_PROPERTIES, NULL);
     
-    if(path->absolute)
-        str = str_prepare_set(1, prop->sep[0]);
-    else
-        str = str_new_l("");
-    
-    if(!str)
+    if(!(str = str_new_l("")))
         return error_wrap(), NULL;
     
     comps = vec_size(path->comp);
@@ -497,9 +483,6 @@ str_ct path_get(path_const_ct path, const path_prop_st *prop)
             abort();
         }
     }
-    
-    if(path->trailing && !str_append_set(str, 1, prop->sep[0]))
-        return error_wrap(), str_unref(str), NULL;
     
     return str;
 }
