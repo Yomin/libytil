@@ -238,6 +238,10 @@ str_ct  tstr_init_s(str_ct str, const char *cstr);
 str_ct  tstr_init_sn(str_ct str, const char *cstr, size_t len);
 #define tstr_new_sn(str, n) tstr_init_sn(alloca(str_headsize()), str, n)
 #define tstr_new_l(lit) tstr_init_sn(alloca(str_headsize()), lit, sizeof(lit)-1)
+// init transient-static data str from parent with offset, without reference
+// do not use if parent may be modified during lifetime of str
+str_ct  tstr_init_o(str_ct str, str_const_ct parent, size_t offset);
+#define tstr_new_o(parent, offset) tstr_init_o(alloca(str_headsize()), parent, offset)
 // init transient-transient data str of len, without reference
 str_ct  tstr_init_tn(str_ct str, char *cstr, size_t len);
 #define tstr_new_tn(str, n) tstr_init_tn(alloca(str_headsize()), str, n)
@@ -255,6 +259,10 @@ str_ct  tstr_init_bhc(str_ct str, void *bin, size_t len, size_t cap);
 str_ct  tstr_init_bs(str_ct str, const void *bin, size_t len);
 #define tstr_new_bs(bin, n) tstr_init_bs(alloca(str_headsize()), bin, n)
 #define tstr_new_bl(bin) tstr_init_bs(alloca(str_headsize()), bin, sizeof(bin)-1)
+// init binary transient-static data str from parent with offset, without reference
+// do not use if parent may be modified during lifetime of str
+str_ct  tstr_init_bo(str_ct str, str_const_ct parent, size_t offset);
+#define tstr_new_bo(parent, offset) tstr_init_bo(alloca(str_headsize()), parent, offset)
 // init binary transient-transient data str of len, without reference
 str_ct  tstr_init_bt(str_ct str, void *bin, size_t len);
 #define tstr_new_bt(bin, n) tstr_init_bt(alloca(str_headsize()), bin, n)
@@ -262,10 +270,12 @@ str_ct  tstr_init_bt(str_ct str, void *bin, size_t len);
 str_ct  tstr_init_btc(str_ct str, void *bin, size_t len, size_t cap);
 #define tstr_new_btc(bin, n, c) tstr_init_btc(alloca(str_headsize()), bin, n, c)
 
-#define STR(str)        tstr_new_s(str)
-#define LIT(lit)        tstr_new_l(lit)
-#define BIN(lit)        tstr_new_bl(lit)
-#define BLOB(bin, size) tstr_new_bs(bin, size)
+#define STR(str)                tstr_new_s(str)
+#define STRN(str, n)            tstr_new_sn(str, n)
+#define LIT(lit)                tstr_new_l(lit)
+#define OFFSTR(parent, offset)  tstr_new_o(parent, offset)
+#define BIN(lit)                tstr_new_bl(lit)
+#define BLOB(bin, size)         tstr_new_bs(bin, size)
 
 
 // create heap duplicate of str, static data is not duplicated
@@ -486,6 +496,20 @@ str_ct str_cut(str_ct str, ssize_t pos, size_t len);
 str_ct str_cut_head(str_ct str, size_t len);
 // drop n chars from end of str like str_cut(str, -len, len)
 str_ct str_cut_tail(str_ct str, size_t len);
+
+
+// check if prefix str is prefix of str
+bool str_is_prefix(str_const_ct str, str_const_ct prefix);
+// check if prefix cstr is prefix of str
+bool str_is_prefix_c(str_const_ct str, const char *prefix);
+// check if prefix cstr of len is prefix of str
+bool str_is_prefix_cn(str_const_ct str, const char *prefix, size_t len);
+// check if prefix str is prefix of str ignoring case
+bool str_is_caseprefix(str_const_ct str, str_const_ct prefix);
+// check if prefix cstr is prefix of str ignoring case
+bool str_is_caseprefix_c(str_const_ct str, const char *prefix);
+// check if prefix cstr of len is prefix of str ignoring case
+bool str_is_caseprefix_cn(str_const_ct str, const char *prefix, size_t len);
 
 
 // remove chars matching pred at front and back of str

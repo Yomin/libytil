@@ -142,18 +142,18 @@ size_t memspn(const void *mem, size_t msize, const void *accept, size_t asize);
 size_t memcspn(const void *mem, size_t msize, const void *reject, size_t rsize);
 
 // check if 'prefix' is prefix of str
-bool strprefix(const char *prefix, const char *str);
+bool strprefix(const char *str, const char *prefix);
 // check if 'prefix' is prefix of str ignoring case
-bool strcaseprefix(const char *prefix, const char *str);
+bool strcaseprefix(const char *str, const char *prefix);
 // check if 'prefix' of length plen is prefix of str of length slen
-bool strnprefix(const char *prefix, size_t plen, const char *str, size_t slen);
+bool strnprefix(const char *str, size_t slen, const char *prefix, size_t plen);
 // check if 'prefix' of length plen is prefix of str of length slen ignoring case
-bool strncaseprefix(const char *prefix, size_t plen, const char *str, size_t slen);
+bool strncaseprefix(const char *str, size_t slen, const char *prefix, size_t plen);
 
 // check if 'prefix' is prefix of mem
-bool memprefix(const void *prefix, size_t psize, const void *mem, size_t msize);
+bool memprefix(const void *mem, size_t msize, const void *prefix, size_t psize);
 // check if 'prefix' is prefix of mem ignoring case (where applicable)
-bool memcaseprefix(const void *prefix, size_t psize, const void *mem, size_t msize);
+bool memcaseprefix(const void *mem, size_t msize, const void *prefix, size_t psize);
 
 // get length of common prefix
 size_t strprefixlen(const char *str1, const char *str2);

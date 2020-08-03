@@ -61,6 +61,7 @@ static const path_prop_st regpath_prop = { .sep = "\\", .case_sensitive = false 
 static const error_info_st error_infos[] =
 {
       ERROR_INFO(E_REGPATH_INVALID_BASE, "Invalid registry base.")
+    , ERROR_INFO(E_REGPATH_MALFORMED, "Malformed registry path.")
 };
 
 
@@ -71,6 +72,9 @@ static regpath_ct regpath_new_empty(void)
     if(!(path = calloc(1, sizeof(regpath_st))))
         return error_wrap_errno(calloc), NULL;
     
+    if(!(path->path = path_new_empty()))
+        return error_wrap(), free(path), NULL;
+    
     init_magic(path);
     
     return path;
@@ -78,45 +82,25 @@ static regpath_ct regpath_new_empty(void)
 
 regpath_ct regpath_new(str_const_ct str)
 {
-    return error_pass_ptr(regpath_new_cn(str_c(str), str_len(str)));
-}
-
-regpath_ct regpath_new_c(const char *str)
-{
-    return error_pass_ptr(regpath_new_cn(str, strlen(str)));
-}
-
-regpath_ct regpath_new_cn(const char *str, size_t len)
-{
     regpath_ct path;
     
     if(!(path = regpath_new_empty()))
         return error_pass(), NULL;
     
-    if(!regpath_set_cn(path, str, len))
+    if(!regpath_set(path, str))
         return error_pass(), regpath_free(path), NULL;
     
     return path;
 }
 
-regpath_ct regpath_new_with_base(regpath_base_id base, str_const_ct str)
-{
-    return error_pass_ptr(regpath_new_with_base_cn(base, str_c(str), str_len(str)));
-}
-
-regpath_ct regpath_new_with_base_c(regpath_base_id base, const char *str)
-{
-    return error_pass_ptr(regpath_new_with_base_cn(base, str, strlen(str)));
-}
-
-regpath_ct regpath_new_with_base_cn(regpath_base_id base, const char *str, size_t len)
+regpath_ct regpath_new_base(regpath_base_id base, str_const_ct str)
 {
     regpath_ct path;
     
     if(!(path = regpath_new_empty()))
         return error_pass(), NULL;
     
-    if(!regpath_set_with_base_cn(path, base, str, len))
+    if(!regpath_set_base(path, base, str))
         return error_pass(), regpath_free(path), NULL;
     
     return path;
@@ -133,17 +117,15 @@ regpath_ct regpath_dup(regpath_const_ct path)
     
     memcpy(npath, path, sizeof(regpath_st));
     
-    if(path->path && !(npath->path = path_dup(path->path)))
-        return error_wrap(), regpath_free(npath), NULL;
+    if(!(npath->path = path_dup(path->path)))
+        return error_wrap(), free(npath), NULL;
     
     return npath;
 }
 
 void regpath_free(regpath_ct path)
 {
-    if(path->path)
-        path_free(path->path);
-    
+    path_free(path->path);
     free(path);
 }
 
@@ -153,9 +135,7 @@ bool regpath_is_equal(regpath_const_ct path1, regpath_const_ct path2)
     assert_magic(path2);
     
     return path1->base == path2->base
-        && ((!path1->path && !path2->path)
-            || (path1->path && path2->path
-                && path_is_equal(path1->path, path2->path, &regpath_prop)));
+        && path_is_equal(path1->path, path2->path, &regpath_prop);
 }
 
 regpath_base_id regpath_base(regpath_const_ct path)
@@ -169,7 +149,7 @@ size_t regpath_depth(regpath_const_ct path)
 {
     assert_magic(path);
     
-    return path->path ? path_depth(path->path) : 0;
+    return path_depth(path->path);
 }
 
 size_t regpath_len(regpath_const_ct path)
@@ -177,88 +157,47 @@ size_t regpath_len(regpath_const_ct path)
     assert_magic(path);
     
     return strlen(regpath_base_infos[path->base].name)
-        + (path->path ? path_len(path->path, &regpath_prop) : 0);
+         + path_len_nonempty(path->path, &regpath_prop);
 }
 
 regpath_ct regpath_set(regpath_ct path, str_const_ct str)
 {
-    return error_pass_ptr(regpath_set_cn(path, str_c(str), str_len(str)));
-}
-
-regpath_ct regpath_set_c(regpath_ct path, const char *str)
-{
-    return error_pass_ptr(regpath_set_cn(path, str, strlen(str)));
-}
-
-regpath_ct regpath_set_cn(regpath_ct path, const char *str, size_t len)
-{
     regpath_base_id base;
     size_t blen;
+    char next;
     
-    return_error_if_fail(str && len, E_REGPATH_INVALID_BASE, NULL);
+    return_error_if_fail(str && !str_is_empty(str), E_REGPATH_MALFORMED, NULL);
     
     for(base=0; base < REGPATH_BASES; base++)
     {
         blen = strlen(regpath_base_infos[base].abbr);
         
-        if(strnprefix(regpath_base_infos[base].abbr, blen, str, len))
+        if(str_is_prefix_cn(str, regpath_base_infos[base].abbr, blen))
             break;
         
         blen = strlen(regpath_base_infos[base].name);
         
-        if(strnprefix(regpath_base_infos[base].name, blen, str, len))
+        if(str_is_prefix_cn(str, regpath_base_infos[base].name, blen))
             break;
     }
     
-    if(base == REGPATH_BASES || (len-blen > 0 && !strchr(regpath_prop.sep, str[blen])))
+    if(base == REGPATH_BASES
+    || ((next = str_at(str, blen)) && !strchr(regpath_prop.sep, next)))
         return error_set(E_REGPATH_INVALID_BASE), NULL;
     
-    return error_pass_ptr(regpath_set_with_base_cn(path, base, str+blen, len-blen));
+    return error_pass_ptr(regpath_set_base(path, base, OFFSTR(str, blen)));
 }
 
-regpath_ct regpath_set_with_base(regpath_ct path, regpath_base_id base, str_const_ct str)
-{
-    return error_pass_ptr(regpath_set_with_base_cn(path, base, str_c(str), str_len(str)));
-}
-
-regpath_ct regpath_set_with_base_c(regpath_ct path, regpath_base_id base, const char *str)
-{
-    return error_pass_ptr(regpath_set_with_base_cn(path, base, str, strlen(str)));
-}
-
-regpath_ct regpath_set_with_base_cn(regpath_ct path, regpath_base_id base, const char *str, size_t len)
+regpath_ct regpath_set_base(regpath_ct path, regpath_base_id base, str_const_ct str)
 {
     assert_magic(path);
     return_error_if_fail(base < REGPATH_BASES, E_REGPATH_INVALID_BASE, NULL);
     
-    if(!str || !len)
-    {
-        if(path->path)
-        {
-            path_free(path->path);
-            path->path = NULL;
-        }
-    }
-    else if(!path->path)
-    {
-        if(!(path->path = path_new_cn(str, len, &regpath_prop)))
-            return error_wrap(), NULL;
-    }
-    else
-    {
-        if(!path_set_cn(path->path, str, len, &regpath_prop))
-            return error_wrap(), NULL;
-    }
+    if(!path_set(path->path, str, &regpath_prop))
+        return error_wrap(), NULL;
     
-    path->base = base;
-    
-    return path;
-}
-
-regpath_ct regpath_set_base(regpath_ct path, regpath_base_id base)
-{
-    assert_magic(path);
-    return_error_if_fail(base < REGPATH_BASES, E_REGPATH_INVALID_BASE, NULL);
+    path_set_absolute(path->path, true);
+    path_set_trailing(path->path, false);
     
     path->base = base;
     
@@ -267,28 +206,10 @@ regpath_ct regpath_set_base(regpath_ct path, regpath_base_id base)
 
 regpath_ct regpath_append(regpath_ct path, str_const_ct str)
 {
-    return error_pass_ptr(regpath_append_cn(path, str_c(str), str_len(str)));
-}
-
-regpath_ct regpath_append_c(regpath_ct path, const char *str)
-{
-    return error_pass_ptr(regpath_append_cn(path, str, strlen(str)));
-}
-
-regpath_ct regpath_append_cn(regpath_ct path, const char *str, size_t len)
-{
     assert_magic(path);
     
-    if(!path->path)
-    {
-        if(!(path->path = path_new_cn(str, len, &regpath_prop)))
-            return error_wrap(), NULL;
-    }
-    else
-    {
-        if(!path_append_cn(path->path, str, len, &regpath_prop))
-            return error_wrap(), NULL;
-    }
+    if(!path_append(path->path, str, &regpath_prop))
+        return error_wrap(), NULL;
     
     return path;
 }
@@ -297,8 +218,7 @@ regpath_ct regpath_drop(regpath_ct path, size_t n)
 {
     assert_magic(path);
     
-    if(path->path)
-        path_drop(path->path, n);
+    path_drop(path->path, n);
     
     return path;
 }
@@ -309,19 +229,11 @@ str_ct regpath_get(regpath_const_ct path)
     
     assert_magic(path);
     
-    if(!path->path)
-    {
-        if(!(str = str_new_s(regpath_base_infos[path->base].name)))
-            return error_wrap(), NULL;
-    }
-    else
-    {
-        if(!(str = path_get(path->path, &regpath_prop)))
-            return error_wrap(), NULL;
-        
-        if(!str_prepend_f(str, "%s%c", regpath_base_infos[path->base].name, regpath_prop.sep[0]))
-            return error_wrap(), str_unref(str), NULL;
-    }
+    if(!(str = path_get_nonempty(path->path, &regpath_prop)))
+        return error_wrap(), NULL;
+    
+    if(!str_prepend_c(str, regpath_base_infos[path->base].name))
+        return error_wrap(), str_unref(str), NULL;
     
     return str;
 }

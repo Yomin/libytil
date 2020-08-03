@@ -30,6 +30,7 @@
 typedef enum regpath_error
 {
       E_REGPATH_INVALID_BASE
+    , E_REGPATH_MALFORMED
 } regpath_error_id;
 
 typedef enum regpath_base
@@ -51,16 +52,8 @@ typedef const struct regpath *regpath_const_ct;
 
 // create new regpath from str
 regpath_ct regpath_new(str_const_ct str);
-// create new regpath from cstr
-regpath_ct regpath_new_c(const char *str);
-// create new regpath from cstr of len
-regpath_ct regpath_new_cn(const char *str, size_t len);
 // create new regpath from base and str
-regpath_ct regpath_new_with_base(regpath_base_id base, str_const_ct str);
-// create new regpath from base and cstr
-regpath_ct regpath_new_with_base_c(regpath_base_id base, const char *str);
-// create new regpath from base and cstr of len
-regpath_ct regpath_new_with_base_cn(regpath_base_id base, const char *str, size_t len);
+regpath_ct regpath_new_base(regpath_base_id base, str_const_ct str);
 // duplicate regpath
 regpath_ct regpath_dup(regpath_const_ct path);
 // free regpath
@@ -78,26 +71,11 @@ size_t          regpath_len(regpath_const_ct path);
 
 // set str as regpath
 regpath_ct regpath_set(regpath_ct path, str_const_ct str);
-// set cstr as regpath
-regpath_ct regpath_set_c(regpath_ct path, const char *str);
-// set cstr of len as regpath
-regpath_ct regpath_set_cn(regpath_ct path, const char *str, size_t len);
 // set str with base as regpath
-regpath_ct regpath_set_with_base(regpath_ct path, regpath_base_id base, str_const_ct str);
-// set cstr with base as regpath
-regpath_ct regpath_set_with_base_c(regpath_ct path, regpath_base_id base, const char *str);
-// set cstr of len with base as regpath
-regpath_ct regpath_set_with_base_cn(regpath_ct path, regpath_base_id base, const char *str, size_t len);
-
-// set base for regpath
-regpath_ct regpath_set_base(regpath_ct path, regpath_base_id base);
+regpath_ct regpath_set_base(regpath_ct path, regpath_base_id base, str_const_ct str);
 
 // append str as new regpath components
 regpath_ct regpath_append(regpath_ct path, str_const_ct str);
-// append cstr as new regpath components
-regpath_ct regpath_append_c(regpath_ct path, const char *str);
-// append cstr of len as new regpath components
-regpath_ct regpath_append_cn(regpath_ct path, const char *str, size_t len);
 
 // drop n regpath components from end
 regpath_ct regpath_drop(regpath_ct path, size_t n);

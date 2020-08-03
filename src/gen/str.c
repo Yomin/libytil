@@ -942,6 +942,16 @@ str_ct tstr_init_sn(str_ct str, const char *cstr, size_t len)
     return _str_init(str, FLAG_TRANSIENT, 0, DATA_STATIC, (unsigned char*)cstr, len, 0);
 }
 
+str_ct tstr_init_offset(str_ct str, str_const_ct parent, size_t offset)
+{
+    assert_str(parent);
+    
+    return_error_if_fail(offset <= str_len(parent), E_STR_INVALID_LENGTH, NULL);
+    
+    return _str_init(str, FLAG_TRANSIENT, 0, DATA_STATIC,
+        (unsigned char*)(str_uc(parent)+offset), str_len(parent)-offset, 0);
+}
+
 str_ct tstr_init_tn(str_ct str, char *cstr, size_t len)
 {
     return_error_if_fail(cstr, E_STR_INVALID_CSTR, NULL);
@@ -2138,6 +2148,36 @@ str_ct str_cut_head(str_ct str, size_t len)
 str_ct str_cut_tail(str_ct str, size_t len)
 {
     return error_pass_ptr(str_cut(str, -len, len));
+}
+
+bool str_is_prefix(str_const_ct str, str_const_ct prefix)
+{
+    return false;
+}
+
+bool str_is_prefix_c(str_const_ct str, const char *prefix)
+{
+    return false;
+}
+
+bool str_is_prefix_cn(str_const_ct str, const char *prefix, size_t len)
+{
+    return false;
+}
+
+bool str_is_caseprefix(str_const_ct str, str_const_ct prefix)
+{
+    return false;
+}
+
+bool str_is_caseprefix_c(str_const_ct str, const char *prefix)
+{
+    return false;
+}
+
+bool str_is_caseprefix_cn(str_const_ct str, const char *prefix, size_t len)
+{
+    return false;
 }
 
 str_ct str_trim_pred(str_ct str, ctype_pred_cb pred)

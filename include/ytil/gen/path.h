@@ -35,10 +35,10 @@ typedef enum path_error
 
 typedef struct path_prop
 {
-    const char *sep;        // path separators
-    const char *current;    // current dir representation
-    const char *parent;     // parent dir representation
-    bool case_sensitive;    // case senitivity for path comparision
+    const char *sep;        // \0 terminated list of path separators
+    const char *current;    // current dir representation, may be NULL
+    const char *parent;     // parent dir representation, may be NULL
+    bool case_sensitive;    // case sensitivity for path comparision
 } path_prop_st;
 
 struct path;
@@ -67,6 +67,10 @@ void    path_free(path_ct path);
 
 // check whether path is empty
 bool path_is_empty(path_const_ct path);
+// check whether path is absolute
+bool path_is_absolute(path_const_ct path);
+// check whether path is has trailing path separator
+bool path_is_trailing(path_const_ct path);
 
 // check if path1 equals path2
 bool path_is_equal(path_const_ct path1, path_const_ct path2, const path_prop_st *prop);
@@ -75,6 +79,8 @@ bool path_is_equal(path_const_ct path1, path_const_ct path2, const path_prop_st 
 size_t  path_depth(path_const_ct path);
 // get length of path
 ssize_t path_len(path_const_ct path, const path_prop_st *prop);
+// get length of path only if not empty else 0
+ssize_t path_len_nonempty(path_const_ct path, const path_prop_st *prop);
 
 // set str with path properties prop as path
 path_ct path_set(path_ct path, str_const_ct str, const path_prop_st *prop);
@@ -90,10 +96,17 @@ path_ct path_append_c(path_ct path, const char *str, const path_prop_st *prop);
 // append cstr of len with path properties prop as new path components
 path_ct path_append_cn(path_ct path, const char *str, size_t len, const path_prop_st *prop);
 
+// set path absolute
+void path_set_absolute(path_ct path, bool absolute);
+// set path trailing
+void path_set_trailing(path_ct path, bool trailing);
+
 // drop n path components from tail
 path_ct path_drop(path_ct path, size_t n);
 
 // get path as string with path properties prop
 str_ct path_get(path_const_ct path, const path_prop_st *prop);
+// get path as string with path properties prop only if not empty else empty string
+str_ct path_get_nonempty(path_const_ct path, const path_prop_st *prop);
 
 #endif

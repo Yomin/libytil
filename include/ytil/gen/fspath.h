@@ -23,19 +23,20 @@
 #ifndef __YTIL_GEN_FSPATH_H__
 #define __YTIL_GEN_FSPATH_H__
 
-#include <ytil/gen/path.h>
+#include <ytil/gen/str.h>
 
 typedef enum fspath_error
 {
       E_FSPATH_INVALID_DEVICE_NAME
-    , E_FSPATH_INVALID_DRIVE_LETTER
+    //, E_FSPATH_INVALID_DRIVE_LETTER
     , E_FSPATH_INVALID_PATH
-    , E_FSPATH_INVALID_SUFFIX
-    , E_FSPATH_INVALID_TYPE
-    , E_FSPATH_INVALID_UNC_HOST
-    , E_FSPATH_INVALID_UNC_SHARE
+    , E_FSPATH_INVALID_STYLE
+    //, E_FSPATH_INVALID_SUFFIX
+    //, E_FSPATH_INVALID_TYPE
+    //, E_FSPATH_INVALID_UNC_HOST
+    //, E_FSPATH_INVALID_UNC_SHARE
     , E_FSPATH_MALFORMED
-    , E_FSPATH_UNSUPPORTED
+    //, E_FSPATH_UNSUPPORTED
 } fspath_error_id;
 
 typedef enum fspath_type
@@ -64,67 +65,56 @@ struct fspath;
 typedef struct fspath       *fspath_ct;
 typedef const struct fspath *fspath_const_ct;
 
-/*
-// create new path from str
+
+// create new fspath from str
 fspath_ct fspath_new(str_const_ct str, fspath_style_id style);
-// create new path from cstr
-fspath_ct fspath_new_c(const char *str, fspath_style_id style);
-// create new path from cstr of len
-fspath_ct fspath_new_cn(const char *str, size_t len, fspath_style_id style);
-// create new 'current' path
+// create new 'current' fspath
 fspath_ct fspath_new_current(void);
-// create new 'parent' path
+// create new 'parent' fspath
 fspath_ct fspath_new_parent(void);
-// duplicate path
+// create new 'root' fspath
+fspath_ct fspath_new_root(void);
+// create new windows drive fspath
+fspath_ct fspath_new_windows_drive(char drive, str_const_ct str);
+// create new windows UNC fspath
+fspath_ct fspath_new_windows_unc(str_const_ct host, str_const_ct share, str_const_ct str);
+// create new windows device fspath
+fspath_ct fspath_new_windows_device(str_const_ct name, size_t id);
+// duplicate fspath
 fspath_ct fspath_dup(fspath_const_ct path);
-// reset path to 'current' dir
-void    fspath_reset(fspath_ct path);
 // free fspath
-void    fspath_free(fspath_ct path);
+void      fspath_free(fspath_ct path);
 
-// check whether path is absolute
-bool path_is_absolute(path_const_ct path);
-// check whether path is relative
-bool path_is_relative(path_const_ct path);
-// check whether path is directory (has trailing path separator)
-bool path_is_directory(path_const_ct path);
+// check whether fspath is absolute
+bool fspath_is_absolute(fspath_const_ct path);
+// check whether fspath is directory (has trailing path separator)
+bool fspath_is_directory(fspath_const_ct path);
+// check if fspath1 equals fspath2
+bool fspath_is_equal(fspath_const_ct path1, fspath_const_ct path2, fspath_style_id style);
 
-// check if path1 equals path2
-bool path_is_equal(path_const_ct path1, path_const_ct path2, path_style_id style);
+// get fspath type
+fspath_type_id fspath_type(fspath_const_ct path);
+// get count of fspath components
+size_t         fspath_depth(fspath_const_ct path);
+// get length of fspath
+size_t         fspath_len(fspath_const_ct path, fspath_style_id style);
 
-// get path type
-path_type_id path_type(path_const_ct path);
-
-// get count of path components
-size_t path_depth(path_const_ct path);
-// get length of path
-size_t path_len(path_const_ct path, path_style_id style);
-
-// get 'current' directory in respective style
-const char *path_current(path_style_id style);
-// get 'parent' directory in respective style
-const char *path_parent(path_style_id style);
+// get 'current' directory representation in respective style
+const char *fspath_current(fspath_style_id style);
+// get 'parent' directory representation in respective style
+const char *fspath_parent(fspath_style_id style);
 // get path separators in respective style
-const char *path_separator(path_style_id style);
+const char *fspath_separators(fspath_style_id style);
 
-// set str as path
-path_ct path_set(path_ct path, str_const_ct str, path_style_id style);
-// set cstr as path
-path_ct path_set_c(path_ct path, const char *str, path_style_id style);
-// set cstr of len as path
-path_ct path_set_cn(path_ct path, const char *str, size_t len, path_style_id style);
-
-// set drive letter for drive paths
-path_ct path_set_drive(path_ct path, char letter);
-// set host+share for UNC paths
-path_ct path_set_unc(path_ct path, str_const_ct host, str_const_ct share);
-// set share for UNC paths
-path_ct path_set_unc_share(path_ct path, str_const_ct share);
-// set name+id for device paths
-path_ct path_set_device(path_ct path, str_const_ct name, size_t id);
-// set id for device paths
-path_ct path_set_device_ident(path_ct path, size_t id);
-
+// set fspath with str
+fspath_ct fspath_set(fspath_ct path, str_const_ct str, fspath_style_id style);
+// set windows drive fspath with drive letter and str
+fspath_ct fspath_set_windows_drive(fspath_ct path, char drive, str_const_ct str);
+// set windows UNC fspath with host, share and str
+fspath_ct fspath_set_windows_unc(fspath_ct path, str_const_ct host, str_const_ct share, str_const_ct str);
+// set windows device fspath with name and id
+fspath_ct fspath_set_windows_device(fspath_ct path, str_const_ct name, size_t id);
+/*
 // replace suffix of last path component or add if not yet existing
 path_ct path_set_suffix(path_ct path, str_const_ct suffix);
 // add suffix to last path component, if a suffix already exists append suffix

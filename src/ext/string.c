@@ -482,32 +482,32 @@ size_t memcspn(const void *vmem, size_t msize, const void *vreject, size_t rsize
     return mem - (const unsigned char*)vmem;
 }
 
-bool strprefix(const char *prefix, const char *str)
+bool strprefix(const char *str, const char *prefix)
 {
     return !strncmp(prefix, str, strlen(prefix));
 }
 
-bool strcaseprefix(const char *prefix, const char *str)
+bool strcaseprefix(const char *str, const char *prefix)
 {
     return !strncasecmp(prefix, str, strlen(prefix));
 }
 
-bool strnprefix(const char *prefix, size_t plen, const char *str, size_t slen)
+bool strnprefix(const char *str, size_t slen, const char *prefix, size_t plen)
 {
     return plen <= slen && !strncmp(prefix, str, plen);
 }
 
-bool strncaseprefix(const char *prefix, size_t plen, const char *str, size_t slen)
+bool strncaseprefix(const char *str, size_t slen, const char *prefix, size_t plen)
 {
     return plen <= slen && !strncasecmp(prefix, str, plen);
 }
 
-bool memprefix(const void *prefix, size_t psize, const void *mem, size_t msize)
+bool memprefix(const void *mem, size_t msize, const void *prefix, size_t psize)
 {
     return psize <= msize && !memcmp(prefix, mem, psize);
 }
 
-bool memcaseprefix(const void *prefix, size_t psize, const void *mem, size_t msize)
+bool memcaseprefix(const void *mem, size_t msize, const void *prefix, size_t psize)
 {
     return psize <= msize && !memcasecmp(prefix, mem, psize);
 }
