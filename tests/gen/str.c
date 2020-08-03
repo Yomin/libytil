@@ -3018,12 +3018,12 @@ TEST_CASE_FIXTURE(str_cat, NULL, str_unref)
 
 TEST_CASE_ABORT(str_cat_n_invalid_magic)
 {
-    str_cat(1, &not_a_str, 2);
+    str_cat(1, &not_a_str, (size_t)2);
 }
 
 TEST_CASE_FIXTURE(str_cat_n, NULL, str_unref)
 {
-    test_ptr_success(str = str_cat_n(3, LIT("123"), 2, BIN("4567"), 2, LIT("890"), 2));
+    test_ptr_success(str = str_cat_n(3, LIT("123"), (size_t)2, BIN("4567"), (size_t)2, LIT("890"), (size_t)2));
     test_uint_eq(str_len(str), 6);
     test_true(str_is_binary(str));
     test_str_eq(str_bc(str), "124589");
@@ -3043,24 +3043,24 @@ TEST_CASE_FIXTURE(str_cat_c, NULL, str_unref)
 
 TEST_CASE(str_cat_cn_invalid_cstr)
 {
-    test_ptr_error(str_cat_cn(1, NULL, 1), E_STR_INVALID_CSTR);
+    test_ptr_error(str_cat_cn(1, NULL, (size_t)1), E_STR_INVALID_CSTR);
 }
 
 TEST_CASE_FIXTURE(str_cat_cn, NULL, str_unref)
 {
-    test_ptr_success(str = str_cat_cn(3, "123", 2, "4567", 2, "890", 2));
+    test_ptr_success(str = str_cat_cn(3, "123", (size_t)2, "4567", (size_t)2, "890", (size_t)2));
     test_uint_eq(str_len(str), 6);
     test_str_eq(str_c(str), "124589");
 }
 
 TEST_CASE(str_cat_b_invalid_data)
 {
-    test_ptr_error(str_cat_b(1, NULL, 1), E_STR_INVALID_DATA);
+    test_ptr_error(str_cat_b(1, NULL, (size_t)1), E_STR_INVALID_DATA);
 }
 
 TEST_CASE_FIXTURE(str_cat_b, NULL, str_unref)
 {
-    test_ptr_success(str = str_cat_b(3, "123", 2, "4567", 2, "890", 2));
+    test_ptr_success(str = str_cat_b(3, "123", (size_t)2, "4567", (size_t)2, "890", (size_t)2));
     test_uint_eq(str_len(str), 6);
     test_true(str_is_binary(str));
     test_str_eq(str_bc(str), "124589");
