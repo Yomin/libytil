@@ -157,6 +157,7 @@ static const struct option test_run_options[] =
     , { "nofork",  no_argument,       NULL, 'F' }
     , { "skip",    no_argument,       NULL, 's' }
     , { "noskip",  no_argument,       NULL, 'S' }
+    , { "debug",   no_argument,       NULL, 'b' }
     , { "loglvl",  required_argument, NULL, 'l' }
     , { NULL,      0,                 NULL,  0  }
 };
@@ -184,6 +185,7 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
                 "\n\t[--[no]dump]   coredump on test case crash"
                 "\n\t[--[no]fork]   fork for test case"
                 "\n\t[--[no]skip]   skip test case expecting exit or signal"
+                "\n\t[--debug]      shorthand for --nofork --skip"
                 "\n\t[path/to1,to2/suite*/case [...]]\n", argv[0]);
             return 1;
         case 'c':
@@ -202,6 +204,10 @@ static int test_run_config(test_run_ct run, int argc, char *argv[])
         case 's':
         case 'S':
             test_run_enable_skip(run, opt == 's');
+            break;
+        case 'b':
+            test_run_enable_fork(run, false);
+            test_run_enable_skip(run, true);
             break;
         case 'l':
             if(strspn(optarg, "1234567890") != strlen(optarg))
