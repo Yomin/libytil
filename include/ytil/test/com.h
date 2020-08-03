@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_TEST_COM_H__
-#define __YTIL_TEST_COM_H__
+#ifndef YTIL_TEST_COM_H_INCLUDED
+#define YTIL_TEST_COM_H_INCLUDED
 
 #include <ytil/test/state.h>
 #include <ytil/ext/time.h>

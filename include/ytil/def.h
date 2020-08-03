@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_DEF_H__
-#define __YTIL_DEF_H__
+#ifndef YTIL_DEF_H_INCLUDED
+#define YTIL_DEF_H_INCLUDED
 
 #include <ytil/gen/error.h>
 #include <stdlib.h>

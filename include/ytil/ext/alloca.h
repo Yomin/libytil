@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_EXT_ALLOCA_H__
-#define __YTIL_EXT_ALLOCA_H__
+#ifndef YTIL_EXT_ALLOCA_H_INCLUDED
+#define YTIL_EXT_ALLOCA_H_INCLUDED
 
 #if defined(__linux__)
 #   include <alloca.h>

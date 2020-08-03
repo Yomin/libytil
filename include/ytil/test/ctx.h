@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_TEST_CTX_H__
-#define __YTIL_TEST_CTX_H__
+#ifndef YTIL_TEST_CTX_H_INCLUDED
+#define YTIL_TEST_CTX_H_INCLUDED
 
 #include "com.h"
 #include <setjmp.h>

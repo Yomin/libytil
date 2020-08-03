@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_SYS_PROC_H__
-#define __YTIL_SYS_PROC_H__
+#ifndef YTIL_SYS_PROC_H_INCLUDED
+#define YTIL_SYS_PROC_H_INCLUDED
 
 #include <stdarg.h>
 

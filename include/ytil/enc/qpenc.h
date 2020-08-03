@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_ENC_QPENC_H__
-#define __YTIL_ENC_QPENC_H__
+#ifndef YTIL_ENC_QPENC_H_INCLUDED
+#define YTIL_ENC_QPENC_H_INCLUDED
 
 #include <stdbool.h>
 #include <ytil/gen/str.h>

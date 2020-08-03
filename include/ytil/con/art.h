@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_CON_ART_H__
-#define __YTIL_CON_ART_H__
+#ifndef YTIL_CON_ART_H_INCLUDED
+#define YTIL_CON_ART_H_INCLUDED
 
 #include <stddef.h>
 #include <stdbool.h>

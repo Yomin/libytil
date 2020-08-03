@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_BITS_H__
-#define __YTIL_BITS_H__
+#ifndef YTIL_BITS_H_INCLUDED
+#define YTIL_BITS_H_INCLUDED
 
 #include <ytil/ext/endian.h>
 #include <assert.h>

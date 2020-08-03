@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_EXT_GETOPT_H__
-#define __YTIL_EXT_GETOPT_H__
+#ifndef YTIL_EXT_GETOPT_H_INCLUDED
+#define YTIL_EXT_GETOPT_H_INCLUDED
 
 #include <getopt.h>
 

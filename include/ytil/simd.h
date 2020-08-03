@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_SIMD_H__
-#define __YTIL_SIMD_H__
+#ifndef YTIL_SIMD_H_INCLUDED
+#define YTIL_SIMD_H_INCLUDED
 
 #if defined(__MMX__) && defined(__SSE__)
 #   include <mmintrin.h>

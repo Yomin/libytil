@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_TEST_CASE_H__
-#define __YTIL_TEST_CASE_H__
+#ifndef YTIL_TEST_CASE_H_INCLUDED
+#define YTIL_TEST_CASE_H_INCLUDED
 
 #include <ytil/ext/time.h>
 #include <stddef.h>

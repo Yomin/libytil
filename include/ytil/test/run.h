@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_TEST_RUN_H__
-#define __YTIL_TEST_RUN_H__
+#ifndef YTIL_TEST_RUN_H_INCLUDED
+#define YTIL_TEST_RUN_H_INCLUDED
 
 #include <ytil/test/suite.h>
 #include <stdbool.h>

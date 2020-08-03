@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_TEST_SUITE_H__
-#define __YTIL_TEST_SUITE_H__
+#ifndef YTIL_TEST_SUITE_H_INCLUDED
+#define YTIL_TEST_SUITE_H_INCLUDED
 
 #include <ytil/test/case.h>
 #include <stddef.h>

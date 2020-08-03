@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_TEST_TEST_H__
-#define __YTIL_TEST_TEST_H__
+#ifndef YTIL_TEST_TEST_H_INCLUDED
+#define YTIL_TEST_TEST_H_INCLUDED
 
 #include <ytil/test/state.h>
 #include <ytil/gen/error.h>

@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_GEN_STR_H__
-#define __YTIL_GEN_STR_H__
+#ifndef YTIL_GEN_STR_H_INCLUDED
+#define YTIL_GEN_STR_H_INCLUDED
 
 #include <ytil/ext/ctype.h>
 #include <ytil/ext/alloca.h>

@@ -20,8 +20,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_MAGIC_H__
-#define __YTIL_MAGIC_H__
+#ifndef YTIL_MAGIC_H_INCLUDED
+#define YTIL_MAGIC_H_INCLUDED
 
 #include <ytil/ext/endian.h>
 #include <stdlib.h>
