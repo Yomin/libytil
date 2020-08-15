@@ -311,9 +311,9 @@ static int test_state_vec_fold_msg(vec_const_ct vec, size_t index, void *elem, v
         fstate->fold(&msg->pos, msg->type, msg->level, msg->text, fstate->ctx));
 }
 
-int test_state_fold_msg(test_state_ct state, test_state_msg_cb fold, void *ctx)
+int test_state_fold_msg(test_state_ct state, test_state_msg_cb fold, const void *ctx)
 {
-    test_fold_state_st fstate = { .fold = fold, .ctx = ctx };
+    test_fold_state_st fstate = { .fold = fold, .ctx = (void *)ctx };
     
     return_error_if_fail(state, E_TEST_STATE_INVALID_OBJECT, -1);
     return_error_if_fail(fold, E_TEST_STATE_INVALID_CALLBACK, -1);

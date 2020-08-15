@@ -253,9 +253,9 @@ static int env_art_fold_value(art_const_ct art, str_const_ct key, void *data, vo
     return error_push_int(E_ENV_CALLBACK, state->fold(key, str, state->ctx));
 }
 
-int env_fold(env_fold_cb fold, void *ctx)
+int env_fold(env_fold_cb fold, const void *ctx)
 {
-    env_fold_state_st state = { .fold = fold, .ctx = ctx };
+    env_fold_state_st state = { .fold = fold, .ctx = (void *)ctx };
     
     assert(fold);
     

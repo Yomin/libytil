@@ -236,7 +236,7 @@ art_ct art_new(art_mode_id mode)
     return art;
 }
 
-static int art_node_remove(art_ct art, art_node_ct node, str_const_ct prefix, art_dtor_cb dtor, void *ctx);
+static int art_node_remove(art_ct art, art_node_ct node, str_const_ct prefix, art_dtor_cb dtor, const void *ctx);
 
 void art_free(art_ct art)
 {
@@ -246,7 +246,7 @@ void art_free(art_ct art)
     free(art);
 }
 
-void art_free_f(art_ct art, art_dtor_cb dtor, void *ctx)
+void art_free_f(art_ct art, art_dtor_cb dtor, const void *ctx)
 {
     assert_magic(art);
     
@@ -273,7 +273,7 @@ void art_clear(art_ct art)
     art_node_remove(art, art->root, NO_PREFIX, NULL, NULL);
 }
 
-void art_clear_f(art_ct art, art_dtor_cb dtor, void *ctx)
+void art_clear_f(art_ct art, art_dtor_cb dtor, const void *ctx)
 {
     assert_magic(art);
     
@@ -334,9 +334,9 @@ size_t art_memsize(art_const_ct art)
     return art_memsize_f(art, NULL, NULL);
 }
 
-size_t art_memsize_f(art_const_ct art, art_size_cb sfun, void *ctx)
+size_t art_memsize_f(art_const_ct art, art_size_cb sfun, const void *ctx)
 {
-    art_memsize_st state = { .sfun = sfun, .ctx = ctx, .size = sizeof(art_st) };
+    art_memsize_st state = { .sfun = sfun, .ctx = (void *)ctx, .size = sizeof(art_st) };
     
     assert_magic(art);
     
@@ -1204,12 +1204,12 @@ static art_node_ct art_node_merge(art_ct art, art_node_ct node)
     return child;
 }
 
-static void art_node_free_f(art_ct art, art_node_ct node, art_dtor_cb dtor, void *ctx)
+static void art_node_free_f(art_ct art, art_node_ct node, art_dtor_cb dtor, const void *ctx)
 {
     if(node->type == LEAF)
     {
         if(dtor)
-            dtor(art, node->v.leaf.data, ctx);
+            dtor(art, node->v.leaf.data, (void *)ctx);
         
         art->size--;
     }
@@ -1229,9 +1229,9 @@ static int art_traverse_remove(art_ct art, art_node_ct node, str_ct path, void *
     return 0;
 }
 
-static int art_node_remove(art_ct art, art_node_ct node, str_const_ct prefix, art_dtor_cb dtor, void *ctx)
+static int art_node_remove(art_ct art, art_node_ct node, str_const_ct prefix, art_dtor_cb dtor, const void *ctx)
 {
-    art_remove_st state = { .dtor = dtor, .ctx = ctx };
+    art_remove_st state = { .dtor = dtor, .ctx = (void *)ctx };
     art_node_ct child, parent;
     unsigned char key;
     
@@ -1293,7 +1293,7 @@ int art_remove_p(art_ct art, str_const_ct prefix)
     return error_pass_int(art_node_remove(art, art->root, prefix, NULL, NULL));
 }
 
-int art_remove_pf(art_ct art, str_const_ct prefix, art_dtor_cb dtor, void *ctx)
+int art_remove_pf(art_ct art, str_const_ct prefix, art_dtor_cb dtor, const void *ctx)
 {
     assert_magic(art);
     
@@ -1486,9 +1486,9 @@ static int art_traverse_find(art_ct art, art_node_ct node, str_ct path, void *ct
     return 1;
 }
 
-static art_node_ct _art_find(art_const_ct art, str_const_ct prefix, bool key, bool reverse, art_pred_cb pred, void *ctx)
+static art_node_ct _art_find(art_const_ct art, str_const_ct prefix, bool key, bool reverse, art_pred_cb pred, const void *ctx)
 {
-    art_find_st state = { .pred = pred, .ctx = ctx };
+    art_find_st state = { .pred = pred, .ctx = (void *)ctx };
     int rc;
     
     assert_magic(art);
@@ -1502,12 +1502,12 @@ static art_node_ct _art_find(art_const_ct art, str_const_ct prefix, bool key, bo
     return state.node;
 }
 
-art_node_ct art_find(art_const_ct art, art_pred_cb pred, void *ctx)
+art_node_ct art_find(art_const_ct art, art_pred_cb pred, const void *ctx)
 {
     return error_pass_ptr(_art_find(art, NO_PREFIX, WITHOUT_KEY, FORWARD, pred, ctx));
 }
 
-void *art_find_data(art_const_ct art, art_pred_cb pred, void *ctx)
+void *art_find_data(art_const_ct art, art_pred_cb pred, const void *ctx)
 {
     art_node_ct node;
     
@@ -1517,12 +1517,12 @@ void *art_find_data(art_const_ct art, art_pred_cb pred, void *ctx)
     return node->v.leaf.data;
 }
 
-art_node_ct art_find_k(art_const_ct art, art_pred_cb pred, void *ctx)
+art_node_ct art_find_k(art_const_ct art, art_pred_cb pred, const void *ctx)
 {
     return error_pass_ptr(_art_find(art, NO_PREFIX, WITH_KEY, FORWARD, pred, ctx));
 }
 
-void *art_find_data_k(art_const_ct art, art_pred_cb pred, void *ctx)
+void *art_find_data_k(art_const_ct art, art_pred_cb pred, const void *ctx)
 {
     art_node_ct node;
     
@@ -1532,12 +1532,12 @@ void *art_find_data_k(art_const_ct art, art_pred_cb pred, void *ctx)
     return node->v.leaf.data;
 }
 
-art_node_ct art_find_r(art_const_ct art, art_pred_cb pred, void *ctx)
+art_node_ct art_find_r(art_const_ct art, art_pred_cb pred, const void *ctx)
 {
     return error_pass_ptr(_art_find(art, NO_PREFIX, WITHOUT_KEY, BACKWARD, pred, ctx));
 }
 
-void *art_find_data_r(art_const_ct art, art_pred_cb pred, void *ctx)
+void *art_find_data_r(art_const_ct art, art_pred_cb pred, const void *ctx)
 {
     art_node_ct node;
     
@@ -1547,12 +1547,12 @@ void *art_find_data_r(art_const_ct art, art_pred_cb pred, void *ctx)
     return node->v.leaf.data;
 }
 
-art_node_ct art_find_rk(art_const_ct art, art_pred_cb pred, void *ctx)
+art_node_ct art_find_rk(art_const_ct art, art_pred_cb pred, const void *ctx)
 {
     return error_pass_ptr(_art_find(art, NO_PREFIX, WITH_KEY, BACKWARD, pred, ctx));
 }
 
-void *art_find_data_rk(art_const_ct art, art_pred_cb pred, void *ctx)
+void *art_find_data_rk(art_const_ct art, art_pred_cb pred, const void *ctx)
 {
     art_node_ct node;
     
@@ -1562,12 +1562,12 @@ void *art_find_data_rk(art_const_ct art, art_pred_cb pred, void *ctx)
     return node->v.leaf.data;
 }
 
-art_node_ct art_find_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
+art_node_ct art_find_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx)
 {
     return error_pass_ptr(_art_find(art, prefix, WITHOUT_KEY, FORWARD, pred, ctx));
 }
 
-void *art_find_data_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
+void *art_find_data_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx)
 {
     art_node_ct node;
     
@@ -1577,12 +1577,12 @@ void *art_find_data_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, v
     return node->v.leaf.data;
 }
 
-art_node_ct art_find_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
+art_node_ct art_find_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx)
 {
     return error_pass_ptr(_art_find(art, prefix, WITH_KEY, FORWARD, pred, ctx));
 }
 
-void *art_find_data_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
+void *art_find_data_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx)
 {
     art_node_ct node;
     
@@ -1592,12 +1592,12 @@ void *art_find_data_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, 
     return node->v.leaf.data;
 }
 
-art_node_ct art_find_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
+art_node_ct art_find_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx)
 {
     return error_pass_ptr(_art_find(art, prefix, WITHOUT_KEY, BACKWARD, pred, ctx));
 }
 
-void *art_find_data_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
+void *art_find_data_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx)
 {
     art_node_ct node;
     
@@ -1607,12 +1607,12 @@ void *art_find_data_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred, 
     return node->v.leaf.data;
 }
 
-art_node_ct art_find_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
+art_node_ct art_find_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx)
 {
     return error_pass_ptr(_art_find(art, prefix, WITH_KEY, BACKWARD, pred, ctx));
 }
 
-void *art_find_data_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx)
+void *art_find_data_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx)
 {
     art_node_ct node;
     
@@ -1630,9 +1630,9 @@ static int art_traverse_fold(art_ct art, art_node_ct node, str_ct path, void *ct
         state->fold(art, path, node->v.leaf.data, state->ctx));
 }
 
-static int _art_fold(art_ct art, str_const_ct prefix, bool key, bool reverse, art_fold_cb fold, void *ctx)
+static int _art_fold(art_ct art, str_const_ct prefix, bool key, bool reverse, art_fold_cb fold, const void *ctx)
 {
-    art_fold_st state = { .fold = fold, .ctx = ctx };
+    art_fold_st state = { .fold = fold, .ctx = (void *)ctx };
     
     assert_magic(art);
     assert(fold);
@@ -1640,42 +1640,42 @@ static int _art_fold(art_ct art, str_const_ct prefix, bool key, bool reverse, ar
     return error_pass_int(art_traverse(art, art->root, prefix, TRAV_LEAF, key, reverse, art_traverse_fold, &state));
 }
 
-int art_fold(art_ct art, art_fold_cb fold, void *ctx)
+int art_fold(art_ct art, art_fold_cb fold, const void *ctx)
 {
     return error_pass_int(_art_fold(art, NO_PREFIX, WITHOUT_KEY, FORWARD, fold, ctx));
 }
 
-int art_fold_k(art_ct art, art_fold_cb fold, void *ctx)
+int art_fold_k(art_ct art, art_fold_cb fold, const void *ctx)
 {
     return error_pass_int(_art_fold(art, NO_PREFIX, WITH_KEY, FORWARD, fold, ctx));
 }
 
-int art_fold_r(art_ct art, art_fold_cb fold, void *ctx)
+int art_fold_r(art_ct art, art_fold_cb fold, const void *ctx)
 {
     return error_pass_int(_art_fold(art, NO_PREFIX, WITHOUT_KEY, BACKWARD, fold, ctx));
 }
 
-int art_fold_rk(art_ct art, art_fold_cb fold, void *ctx)
+int art_fold_rk(art_ct art, art_fold_cb fold, const void *ctx)
 {
     return error_pass_int(_art_fold(art, NULL, WITH_KEY, BACKWARD, fold, ctx));
 }
 
-int art_fold_p(art_ct art, str_const_ct prefix, art_fold_cb fold, void *ctx)
+int art_fold_p(art_ct art, str_const_ct prefix, art_fold_cb fold, const void *ctx)
 {
     return error_pass_int(_art_fold(art, prefix, WITHOUT_KEY, FORWARD, fold, ctx));
 }
 
-int art_fold_pk(art_ct art, str_const_ct prefix, art_fold_cb fold, void *ctx)
+int art_fold_pk(art_ct art, str_const_ct prefix, art_fold_cb fold, const void *ctx)
 {
     return error_pass_int(_art_fold(art, prefix, WITH_KEY, FORWARD, fold, ctx));
 }
 
-int art_fold_pr(art_ct art, str_const_ct prefix, art_fold_cb fold, void *ctx)
+int art_fold_pr(art_ct art, str_const_ct prefix, art_fold_cb fold, const void *ctx)
 {
     return error_pass_int(_art_fold(art, prefix, WITHOUT_KEY, BACKWARD, fold, ctx));
 }
 
-int art_fold_prk(art_ct art, str_const_ct prefix, art_fold_cb fold, void *ctx)
+int art_fold_prk(art_ct art, str_const_ct prefix, art_fold_cb fold, const void *ctx)
 {
     return error_pass_int(_art_fold(art, prefix, WITH_KEY, BACKWARD, fold, ctx));
 }

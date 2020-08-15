@@ -69,14 +69,14 @@ art_ct art_new(art_mode_id mode);
 // free ART
 void   art_free(art_ct art);
 // free ART, apply dtor on each leaf node
-void   art_free_f(art_ct art, art_dtor_cb dtor, void *ctx);
+void   art_free_f(art_ct art, art_dtor_cb dtor, const void *ctx);
 // free ART if empty
 art_ct art_free_if_empty(art_ct art);
 
 // remove all nodes from ART
 void art_clear(art_ct art);
 // remove all nodes from ART, apply dtor on each leaf node
-void art_clear_f(art_ct art, art_dtor_cb dtor, void *ctx);
+void art_clear_f(art_ct art, art_dtor_cb dtor, const void *ctx);
 
 // check if ART is empty
 bool   art_is_empty(art_const_ct art);
@@ -85,7 +85,7 @@ size_t art_size(art_const_ct art);
 // get allocated size of ART
 size_t art_memsize(art_const_ct art);
 // get allocated size of ART, apply sfun on each leaf node to determine size
-size_t art_memsize_f(art_const_ct art, art_size_cb sfun, void *ctx);
+size_t art_memsize_f(art_const_ct art, art_size_cb sfun, const void *ctx);
 
 // get ART leaf node data
 void   *art_node_get_data(art_node_const_ct node);
@@ -111,69 +111,69 @@ void art_remove(art_ct art, art_node_ct node);
 // remove all nodes from ART with matching prefix
 int  art_remove_p(art_ct art, str_const_ct prefix);
 // apply dtor and remove all nodes from ART with matching prefix
-int  art_remove_pf(art_ct art, str_const_ct prefix, art_dtor_cb dtor, void *ctx);
+int  art_remove_pf(art_ct art, str_const_ct prefix, art_dtor_cb dtor, const void *ctx);
 
 // find first ART leaf node matching pred
-art_node_ct art_find(art_const_ct art, art_pred_cb pred, void *ctx);
-void       *art_find_data(art_const_ct art, art_pred_cb pred, void *ctx);
+art_node_ct art_find(art_const_ct art, art_pred_cb pred, const void *ctx);
+void       *art_find_data(art_const_ct art, art_pred_cb pred, const void *ctx);
 #define     art_find_value(art, pred, ctx, type) \
             POINTER_TO_VALUE(art_find_data(art, pred, ctx), type)
 // find first ART leaf node matching pred, reconstruct node key
-art_node_ct art_find_k(art_const_ct art, art_pred_cb pred, void *ctx);
-void       *art_find_data_k(art_const_ct art, art_pred_cb pred, void *ctx);
+art_node_ct art_find_k(art_const_ct art, art_pred_cb pred, const void *ctx);
+void       *art_find_data_k(art_const_ct art, art_pred_cb pred, const void *ctx);
 #define     art_find_value_k(art, pred, ctx, type) \
             POINTER_TO_VALUE(art_find_data_k(art, pred, ctx), type)
 // find last ART leaf node matching pred
-art_node_ct art_find_r(art_const_ct art, art_pred_cb pred, void *ctx);
-void       *art_find_data_r(art_const_ct art, art_pred_cb pred, void *ctx);
+art_node_ct art_find_r(art_const_ct art, art_pred_cb pred, const void *ctx);
+void       *art_find_data_r(art_const_ct art, art_pred_cb pred, const void *ctx);
 #define     art_find_value_r(art, pred, ctx, type) \
             POINTER_TO_VALUE(art_find_data_r(art, pred, ctx), type)
 // find last ART leaf node matching pred, reconstruct node key
-art_node_ct art_find_rk(art_const_ct art, art_pred_cb pred, void *ctx);
-void       *art_find_data_rk(art_const_ct art, art_pred_cb pred, void *ctx);
+art_node_ct art_find_rk(art_const_ct art, art_pred_cb pred, const void *ctx);
+void       *art_find_data_rk(art_const_ct art, art_pred_cb pred, const void *ctx);
 #define     art_find_value_rk(art, pred, ctx, type) \
             POINTER_TO_VALUE(art_find_data_rk(art, pred, ctx), type)
 
 // find first ART leaf node with prefix matching pred
-art_node_ct art_find_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx);
-void       *art_find_data_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx);
+art_node_ct art_find_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx);
+void       *art_find_data_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx);
 #define     art_find_value_p(art, prefix, pred, ctx, type) \
             POINTER_TO_VALUE(art_find_data_p(art, prefix, pred, ctx), type)
 // find first ART leaf node with prefix matching pred, reconstruct node key
-art_node_ct art_find_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx);
-void       *art_find_data_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx);
+art_node_ct art_find_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx);
+void       *art_find_data_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx);
 #define     art_find_value_pk(art, prefix, pred, ctx, type) \
             POINTER_TO_VALUE(art_find_data_pk(art, prefix, pred, ctx), type)
 // find last ART leaf node with prefix matching pred
-art_node_ct art_find_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx);
-void       *art_find_data_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx);
+art_node_ct art_find_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx);
+void       *art_find_data_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx);
 #define     art_find_value_pr(art, prefix, pred, ctx, type) \
             POINTER_TO_VALUE(art_find_data_pr(art, prefix, pred, ctx), type)
 // find last ART leaf node with prefix matching pred, reconstruct node key
-art_node_ct art_find_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx);
-void       *art_find_data_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, void *ctx);
+art_node_ct art_find_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx);
+void       *art_find_data_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx);
 #define     art_find_value_prk(art, prefix, pred, ctx, type) \
             POINTER_TO_VALUE(art_find_data_prk(art, prefix, pred, ctx), type)
 
 // apply fold to each leaf node in ART, begin with smallest key
-int art_fold(art_ct art, art_fold_cb fold, void *ctx);
+int art_fold(art_ct art, art_fold_cb fold, const void *ctx);
 // apply fold to each leaf node in ART, begin with smallest key, reconstruct node key
-int art_fold_k(art_ct art, art_fold_cb fold, void *ctx);
+int art_fold_k(art_ct art, art_fold_cb fold, const void *ctx);
 // apply fold to each leaf node in ART, begin with largest key
-int art_fold_r(art_ct art, art_fold_cb fold, void *ctx);
+int art_fold_r(art_ct art, art_fold_cb fold, const void *ctx);
 // apply fold to each leaf node in ART, begin with largest key, reconstruct node key
-int art_fold_rk(art_ct art, art_fold_cb fold, void *ctx);
+int art_fold_rk(art_ct art, art_fold_cb fold, const void *ctx);
 
 // apply fold to each leaf node with prefix in ART, begin with smallest key
-int art_fold_p(art_ct art, str_const_ct prefix, art_fold_cb fold, void *ctx);
+int art_fold_p(art_ct art, str_const_ct prefix, art_fold_cb fold, const void *ctx);
 // apply fold to each leaf node with prefix in ART, begin with smallest key
 // reconstruct node key
-int art_fold_pk(art_ct art, str_const_ct prefix, art_fold_cb fold, void *ctx);
+int art_fold_pk(art_ct art, str_const_ct prefix, art_fold_cb fold, const void *ctx);
 // apply fold to each leaf node with prefix in ART, begin with largest key
-int art_fold_pr(art_ct art, str_const_ct prefix, art_fold_cb fold, void *ctx);
+int art_fold_pr(art_ct art, str_const_ct prefix, art_fold_cb fold, const void *ctx);
 // apply fold to each leaf node with prefix in ART, begin with largest key
 // reconstruct node key
-int art_fold_prk(art_ct art, str_const_ct prefix, art_fold_cb fold, void *ctx);
+int art_fold_prk(art_ct art, str_const_ct prefix, art_fold_cb fold, const void *ctx);
 
 // get common prefix path of all leaf nodes with prefix
 str_ct art_complete(art_const_ct art, str_const_ct prefix);

@@ -70,7 +70,7 @@ typedef struct test_com *test_com_ct;
 typedef int (*test_com_msg_cb)(test_com_msg_id type, test_com_msg_un *msg, void *ctx);
 
 
-test_com_ct test_com_new(test_com_msg_cb cb, void *ctx);
+test_com_ct test_com_new(test_com_msg_cb cb, const void *ctx);
 void        test_com_free(test_com_ct com);
 void        test_com_reset(test_com_ct com);
 

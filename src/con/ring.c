@@ -75,7 +75,7 @@ void ring_free(ring_ct ring)
     ring_free_f(ring, NULL, NULL);
 }
 
-void ring_free_f(ring_ct ring, ring_dtor_cb dtor, void *ctx)
+void ring_free_f(ring_ct ring, ring_dtor_cb dtor, const void *ctx)
 {
     ring_clear_f(ring, dtor, ctx);
     
@@ -102,7 +102,7 @@ void ring_clear(ring_ct ring)
     ring_clear_f(ring, NULL, NULL);
 }
 
-void ring_clear_f(ring_ct ring, ring_dtor_cb dtor, void *ctx)
+void ring_clear_f(ring_ct ring, ring_dtor_cb dtor, const void *ctx)
 {
     size_t tail, size;
     
@@ -111,7 +111,7 @@ void ring_clear_f(ring_ct ring, ring_dtor_cb dtor, void *ctx)
     
     if(dtor)
         for(tail=ring->tail, size=ring->size; size; tail=INC(tail), size--)
-            dtor(ring, ELEM(tail), ctx);
+            dtor(ring, ELEM(tail), (void *)ctx);
     
     ring->size = 0;
 }
@@ -140,12 +140,12 @@ void *ring_put_e(ring_ct ring, const void *elem)
     return error_pass_ptr(ring_put_ef(ring, elem, NULL, NULL));
 }
 
-void *ring_put_f(ring_ct ring, ring_overflow_cb overflow, void *ctx)
+void *ring_put_f(ring_ct ring, ring_overflow_cb overflow, const void *ctx)
 {
     return error_pass_ptr(ring_put_ef(ring, NULL, overflow, ctx));
 }
 
-void *ring_put_ef(ring_ct ring, const void *elem, ring_overflow_cb overflow, void *ctx)
+void *ring_put_ef(ring_ct ring, const void *elem, ring_overflow_cb overflow, const void *ctx)
 {
     void *head;
     
@@ -156,7 +156,7 @@ void *ring_put_ef(ring_ct ring, const void *elem, ring_overflow_cb overflow, voi
     
     if(ring->size == ring->cap)
     {
-        if(!overflow || overflow(ring, elem, TAIL(), ctx) == RING_REJECT)
+        if(!overflow || overflow(ring, elem, TAIL(), (void *)ctx) == RING_REJECT)
             return error_set(E_RING_NO_SPACE), NULL;
         else
         {
@@ -189,13 +189,13 @@ int ring_drop(ring_ct ring)
     return error_pass_int(ring_drop_f(ring, NULL, NULL));
 }
 
-int ring_drop_f(ring_ct ring, ring_dtor_cb dtor, void *ctx)
+int ring_drop_f(ring_ct ring, ring_dtor_cb dtor, const void *ctx)
 {
     assert_magic(ring);
     return_error_if_fail(ring->size, E_RING_EMPTY, -1);
     
     if(dtor)
-        dtor(ring, TAIL(), ctx);
+        dtor(ring, TAIL(), (void *)ctx);
     
     ring->tail = INC(ring->tail);
     ring->size--;
@@ -230,13 +230,13 @@ int ring_drop_head(ring_ct ring)
     return error_pass_int(ring_drop_head_f(ring, NULL, NULL));
 }
 
-int ring_drop_head_f(ring_ct ring, ring_dtor_cb dtor, void *ctx)
+int ring_drop_head_f(ring_ct ring, ring_dtor_cb dtor, const void *ctx)
 {
     assert_magic(ring);
     return_error_if_fail(ring->size, E_RING_EMPTY, -1);
     
     if(dtor)
-        dtor(ring, HEAD(), ctx);
+        dtor(ring, HEAD(), (void *)ctx);
     
     ring->size--;
     
@@ -256,7 +256,7 @@ int ring_get_head(ring_ct ring, void *elem)
     return 0;
 }
 
-int ring_fold(ring_ct ring, ring_fold_cb fold, void *ctx)
+int ring_fold(ring_ct ring, ring_fold_cb fold, const void *ctx)
 {
     size_t tail, size;
     int rc;
@@ -265,13 +265,13 @@ int ring_fold(ring_ct ring, ring_fold_cb fold, void *ctx)
     assert(fold);
     
     for(tail=ring->tail, size=ring->size; size; tail=INC(tail), size--)
-        if((rc = fold(ring, ELEM(tail), ctx)))
+        if((rc = fold(ring, ELEM(tail), (void *)ctx)))
             return error_push_int(E_RING_CALLBACK, rc);
     
     return 0;
 }
 
-int ring_fold_r(ring_ct ring, ring_fold_cb fold, void *ctx)
+int ring_fold_r(ring_ct ring, ring_fold_cb fold, const void *ctx)
 {
     size_t head, size;
     int rc;
@@ -280,7 +280,7 @@ int ring_fold_r(ring_ct ring, ring_fold_cb fold, void *ctx)
     assert(fold);
     
     for(head=POS(ring->tail+ring->size-1), size=ring->size; size; head=DEC(head), size--)
-        if((rc = fold(ring, ELEM(head), ctx)))
+        if((rc = fold(ring, ELEM(head), (void *)ctx)))
             return error_push_int(E_RING_CALLBACK, rc);
     
     return 0;

@@ -63,20 +63,20 @@ list_ct list_new(void);
 // free list
 void    list_free(list_ct list);
 // free list, apply dtor on each list node data
-void    list_free_f(list_ct list, list_dtor_cb dtor, void *ctx);
+void    list_free_f(list_ct list, list_dtor_cb dtor, const void *ctx);
 // free list if empty
 list_ct list_free_if_empty(list_ct list);
 
 // remove all list nodes
 void list_clear(list_ct list);
 // remove all list nodes, apply dtor on each list node data
-void list_clear_f(list_ct list, list_dtor_cb dtor, void *ctx);
+void list_clear_f(list_ct list, list_dtor_cb dtor, const void *ctx);
 
 // duplicate list
 list_ct list_clone(list_const_ct list);
 // duplicate list, duplicate list node data with clone function
 // in case the clone fails, already duplicated nodes are freed with dtor
-list_ct list_clone_f(list_const_ct list, list_clone_cb clone, list_dtor_cb dtor, void *ctx);
+list_ct list_clone_f(list_const_ct list, list_clone_cb clone, list_dtor_cb dtor, const void *ctx);
 
 // check if list is empty
 bool   list_is_empty(list_const_ct list);
@@ -85,7 +85,7 @@ size_t list_size(list_const_ct list);
 // get allocated size of list
 size_t list_memsize(list_const_ct list);
 // get allocated size of list, apply sfun on each node data to determine size
-size_t list_memsize_f(list_const_ct list, list_size_cb sfun, void *ctx);
+size_t list_memsize_f(list_const_ct list, list_size_cb sfun, const void *ctx);
 
 // get list node data
 void   *list_node_get_data(list_node_const_ct node);
@@ -139,31 +139,31 @@ void list_remove(list_ct list, list_node_ct node);
 // remove node at pos from list, negative pos counts from last node
 int  list_remove_at(list_ct list, ssize_t pos);
 // apply dtor to node at pos and remove it from list, negative pos counts from last node
-int  list_remove_at_f(list_ct list, ssize_t pos, list_dtor_cb dtor, void *ctx);
+int  list_remove_at_f(list_ct list, ssize_t pos, list_dtor_cb dtor, const void *ctx);
 
 // find first node in list matching pred
-list_node_ct list_find(list_const_ct list, list_pred_cb pred, void *ctx);
+list_node_ct list_find(list_const_ct list, list_pred_cb pred, const void *ctx);
 // find last node in list matching pred
-list_node_ct list_find_r(list_const_ct list, list_pred_cb pred, void *ctx);
+list_node_ct list_find_r(list_const_ct list, list_pred_cb pred, const void *ctx);
 // find first node in list matching pred and remove it
-int          list_find_remove(list_ct list, list_pred_cb pred, void *ctx);
+int          list_find_remove(list_ct list, list_pred_cb pred, const void *ctx);
 // find first node in list matching pred, apply dtor and remove it
-int          list_find_remove_f(list_ct list, list_pred_cb pred, void *pred_ctx, list_dtor_cb dtor, void *dtor_ctx);
+int          list_find_remove_f(list_ct list, list_pred_cb pred, const void *pred_ctx, list_dtor_cb dtor, const void *dtor_ctx);
 // find last node in list matching pred and remove it
-int          list_find_remove_r(list_ct list, list_pred_cb pred, void *ctx);
+int          list_find_remove_r(list_ct list, list_pred_cb pred, const void *ctx);
 // find last node in list matching pred, apply dtor and remove it
-int          list_find_remove_rf(list_ct list, list_pred_cb pred, void *pred_ctx, list_dtor_cb dtor, void *dtor_ctx);
+int          list_find_remove_rf(list_ct list, list_pred_cb pred, const void *pred_ctx, list_dtor_cb dtor, const void *dtor_ctx);
 // find all nodes in list matching pred and remove them
-size_t       list_find_remove_all(list_ct list, list_pred_cb pred, void *ctx);
+size_t       list_find_remove_all(list_ct list, list_pred_cb pred, const void *ctx);
 // find all nodes in list matching pred, apply dtor and remove them
-size_t       list_find_remove_all_f(list_ct list, list_pred_cb pred, void *pred_ctx, list_dtor_cb dtor, void *dtor_ctx);
+size_t       list_find_remove_all_f(list_ct list, list_pred_cb pred, const void *pred_ctx, list_dtor_cb dtor, const void *dtor_ctx);
 
 // swap two nodes in list
 void list_swap(list_node_const_ct node1, list_node_const_ct node2);
 
 // apply fold to every list node, begin with first node
-int list_fold(list_const_ct list, list_fold_cb fold, void *ctx);
+int list_fold(list_const_ct list, list_fold_cb fold, const void *ctx);
 // apply fold to every list node, begin with last node
-int list_fold_r(list_const_ct list, list_fold_cb fold, void *ctx);
+int list_fold_r(list_const_ct list, list_fold_cb fold, const void *ctx);
 
 #endif

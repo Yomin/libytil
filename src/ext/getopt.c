@@ -39,7 +39,7 @@ typedef union sieve_state
 } sieve_un;
 
 
-static int sieve(bool mode, int *argc, char *argv[], sieve_un *state, void *ctx)
+static int sieve(bool mode, int *argc, char *argv[], sieve_un *state, const void *ctx)
 {
     int opt, ind, count, orig_optind, orig_opterr, rc = 0;
     
@@ -54,8 +54,8 @@ static int sieve(bool mode, int *argc, char *argv[], sieve_un *state, void *ctx)
         if(opt == '?' || opt == 1)
             continue;
         
-        if((!mode && (rc = state->s.cb(opt, optarg, ctx)))
-        || ( mode && (rc = state->l.cb(ind, opt, optarg, ctx))))
+        if((!mode && (rc = state->s.cb(opt, optarg, (void *)ctx)))
+        || ( mode && (rc = state->l.cb(ind, opt, optarg, (void *)ctx))))
             break;
         
         count = optarg ? 2 : 1;
@@ -77,14 +77,14 @@ static int sieve(bool mode, int *argc, char *argv[], sieve_un *state, void *ctx)
     return rc;
 }
 
-int getopt_sieve(int *argc, char *argv[], const char *opts, getopt_short_cb cb, void *ctx)
+int getopt_sieve(int *argc, char *argv[], const char *opts, getopt_short_cb cb, const void *ctx)
 {
     sieve_un state = { .s.opts = FMT("-%s", opts), .s.cb = cb };
     
     return sieve(false, argc, argv, &state, ctx);
 }
 
-int getopt_long_sieve(int *argc, char *argv[], const getopt_option_st *opts, getopt_long_cb cb, void *ctx)
+int getopt_long_sieve(int *argc, char *argv[], const getopt_option_st *opts, getopt_long_cb cb, const void *ctx)
 {
     sieve_un state = { .l.opts = opts, .l.cb = cb };
     

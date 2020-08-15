@@ -84,7 +84,7 @@ void list_free(list_ct list)
     list_free_f(list, NULL, NULL);
 }
 
-void list_free_f(list_ct list, list_dtor_cb dtor, void *ctx)
+void list_free_f(list_ct list, list_dtor_cb dtor, const void *ctx)
 {
     list_clear_f(list, dtor, ctx);
     
@@ -108,7 +108,7 @@ void list_clear(list_ct list)
     list_clear_f(list, NULL, NULL);
 }
 
-void list_clear_f(list_ct list, list_dtor_cb dtor, void *ctx)
+void list_clear_f(list_ct list, list_dtor_cb dtor, const void *ctx)
 {
     list_node_ct node, next;
     
@@ -117,7 +117,7 @@ void list_clear_f(list_ct list, list_dtor_cb dtor, void *ctx)
     LIST_FOREACH_SAFE(list, next, node, next)
     {
         if(dtor)
-            dtor(list, node->data, ctx);
+            dtor(list, node->data, (void *)ctx);
         
         free(node);
     }
@@ -145,7 +145,7 @@ list_ct list_clone(list_const_ct list)
     return error_pass_ptr(list_clone_f(list, NULL, NULL, NULL));
 }
 
-list_ct list_clone_f(list_const_ct list1, list_clone_cb clone, list_dtor_cb dtor, void *ctx)
+list_ct list_clone_f(list_const_ct list1, list_clone_cb clone, list_dtor_cb dtor, const void *ctx)
 {
     list_ct list2;
     list_node_ct node1, node2;
@@ -162,7 +162,7 @@ list_ct list_clone_f(list_const_ct list1, list_clone_cb clone, list_dtor_cb dtor
     {
         data = node1->data;
         
-        if(clone && clone(list1, &data, node1->data, ctx))
+        if(clone && clone(list1, &data, node1->data, (void *)ctx))
         {
             node2->next = &list2->head;
             list_free_f(list2, dtor, ctx);
@@ -173,7 +173,7 @@ list_ct list_clone_f(list_const_ct list1, list_clone_cb clone, list_dtor_cb dtor
         if(!(node2->next = list_node_new(list2, data)))
         {
             if(dtor)
-                dtor(list2, data, ctx);
+                dtor(list2, data, (void *)ctx);
             
             node2->next = &list2->head;
             list_free_f(list2, dtor, ctx);
@@ -211,7 +211,7 @@ size_t list_memsize(list_const_ct list)
     return list_memsize_f(list, NULL, NULL);
 }
 
-size_t list_memsize_f(list_const_ct list, list_size_cb sfun, void *ctx)
+size_t list_memsize_f(list_const_ct list, list_size_cb sfun, const void *ctx)
 {
     list_node_ct node;
     size_t size;
@@ -222,7 +222,7 @@ size_t list_memsize_f(list_const_ct list, list_size_cb sfun, void *ctx)
     
     if(sfun)
         LIST_FOREACH(list, next, node)
-            size += sfun(list, node->data, ctx);
+            size += sfun(list, node->data, (void *)ctx);
     
     return size;
 }
@@ -408,10 +408,10 @@ list_node_ct list_insert_after(list_ct list, list_node_const_ct pre, void *data)
     return error_pass_ptr(_list_insert_after(list, pre, data));
 }
 
-static void _list_remove(list_ct list, list_node_ct node, list_dtor_cb dtor, void *ctx)
+static void _list_remove(list_ct list, list_node_ct node, list_dtor_cb dtor, const void *ctx)
 {
     if(dtor)
-        dtor(list, node->data, ctx);
+        dtor(list, node->data, (void *)ctx);
     
     node->next->prev = node->prev;
     node->prev->next = node->next;
@@ -435,7 +435,7 @@ int list_remove_at(list_ct list, ssize_t pos)
     return error_pass_int(list_remove_at_f(list, pos, NULL, NULL));
 }
 
-int list_remove_at_f(list_ct list, ssize_t pos, list_dtor_cb dtor, void *ctx)
+int list_remove_at_f(list_ct list, ssize_t pos, list_dtor_cb dtor, const void *ctx)
 {
     list_node_ct node;
     
@@ -449,7 +449,7 @@ int list_remove_at_f(list_ct list, ssize_t pos, list_dtor_cb dtor, void *ctx)
     return 0;
 }
 
-list_node_ct list_find(list_const_ct list, list_pred_cb pred, void *ctx)
+list_node_ct list_find(list_const_ct list, list_pred_cb pred, const void *ctx)
 {
     list_node_ct node;
     
@@ -457,13 +457,13 @@ list_node_ct list_find(list_const_ct list, list_pred_cb pred, void *ctx)
     assert(pred);
     
     LIST_FOREACH(list, next, node)
-        if(pred(list, node->data, ctx))
+        if(pred(list, node->data, (void *)ctx))
             return node;
     
     return_error_if_reached(E_LIST_NOT_FOUND, NULL);
 }
 
-list_node_ct list_find_r(list_const_ct list, list_pred_cb pred, void *ctx)
+list_node_ct list_find_r(list_const_ct list, list_pred_cb pred, const void *ctx)
 {
     list_node_ct node;
     
@@ -471,18 +471,18 @@ list_node_ct list_find_r(list_const_ct list, list_pred_cb pred, void *ctx)
     assert(pred);
     
     LIST_FOREACH(list, prev, node)
-        if(pred(list, node->data, ctx))
+        if(pred(list, node->data, (void *)ctx))
             return node;
     
     return_error_if_reached(E_LIST_NOT_FOUND, NULL);
 }
 
-int list_find_remove(list_ct list, list_pred_cb pred, void *ctx)
+int list_find_remove(list_ct list, list_pred_cb pred, const void *ctx)
 {
     return error_pass_int(list_find_remove_f(list, pred, ctx, NULL, NULL));
 }
 
-int list_find_remove_f(list_ct list, list_pred_cb pred, void *pred_ctx, list_dtor_cb dtor, void *dtor_ctx)
+int list_find_remove_f(list_ct list, list_pred_cb pred, const void *pred_ctx, list_dtor_cb dtor, const void *dtor_ctx)
 {
     list_node_ct node, next;
     
@@ -490,18 +490,18 @@ int list_find_remove_f(list_ct list, list_pred_cb pred, void *pred_ctx, list_dto
     assert(pred);
     
     LIST_FOREACH_SAFE(list, next, node, next)
-        if(pred(list, node->data, pred_ctx))
+        if(pred(list, node->data, (void *)pred_ctx))
             return _list_remove(list, node, dtor, dtor_ctx), 0;
     
     return_error_if_reached(E_LIST_NOT_FOUND, -1);
 }
 
-int list_find_remove_r(list_ct list, list_pred_cb pred, void *ctx)
+int list_find_remove_r(list_ct list, list_pred_cb pred, const void *ctx)
 {
     return error_pass_int(list_find_remove_rf(list, pred, ctx, NULL, NULL));
 }
 
-int list_find_remove_rf(list_ct list, list_pred_cb pred, void *pred_ctx, list_dtor_cb dtor, void *dtor_ctx)
+int list_find_remove_rf(list_ct list, list_pred_cb pred, const void *pred_ctx, list_dtor_cb dtor, const void *dtor_ctx)
 {
     list_node_ct node, prev;
     
@@ -509,18 +509,18 @@ int list_find_remove_rf(list_ct list, list_pred_cb pred, void *pred_ctx, list_dt
     assert(pred);
     
     LIST_FOREACH_SAFE(list, prev, node, prev)
-        if(pred(list, node->data, pred_ctx))
+        if(pred(list, node->data, (void *)pred_ctx))
             return _list_remove(list, node, dtor, dtor_ctx), 0;
     
     return_error_if_reached(E_LIST_NOT_FOUND, -1);
 }
 
-size_t list_find_remove_all(list_ct list, list_pred_cb pred, void *ctx)
+size_t list_find_remove_all(list_ct list, list_pred_cb pred, const void *ctx)
 {
     return list_find_remove_all_f(list, pred, ctx, NULL, NULL);
 }
 
-size_t list_find_remove_all_f(list_ct list, list_pred_cb pred, void *pred_ctx, list_dtor_cb dtor, void *dtor_ctx)
+size_t list_find_remove_all_f(list_ct list, list_pred_cb pred, const void *pred_ctx, list_dtor_cb dtor, const void *dtor_ctx)
 {
     list_node_ct node, next;
     size_t count = 0;
@@ -529,7 +529,7 @@ size_t list_find_remove_all_f(list_ct list, list_pred_cb pred, void *pred_ctx, l
     assert(pred);
     
     LIST_FOREACH_SAFE(list, next, node, next)
-        if(pred(list, node->data, pred_ctx))
+        if(pred(list, node->data, (void *)pred_ctx))
         {
             _list_remove(list, node, dtor, dtor_ctx);
             count++;
@@ -560,7 +560,7 @@ void list_swap(list_node_const_ct cnode1, list_node_const_ct cnode2)
     node2->next = tmp;
 }
 
-int list_fold(list_const_ct list, list_fold_cb fold, void *ctx)
+int list_fold(list_const_ct list, list_fold_cb fold, const void *ctx)
 {
     list_node_ct node, next;
     int rc;
@@ -569,13 +569,13 @@ int list_fold(list_const_ct list, list_fold_cb fold, void *ctx)
     assert(fold);
     
     LIST_FOREACH_SAFE(list, next, node, next)
-        if((rc = fold(list, node->data, ctx)))
+        if((rc = fold(list, node->data, (void *)ctx)))
             return error_push_int(E_LIST_CALLBACK, rc);
     
     return 0;
 }
 
-int list_fold_r(list_const_ct list, list_fold_cb fold, void *ctx)
+int list_fold_r(list_const_ct list, list_fold_cb fold, const void *ctx)
 {
     list_node_ct node, prev;
     int rc;
@@ -584,7 +584,7 @@ int list_fold_r(list_const_ct list, list_fold_cb fold, void *ctx)
     assert(fold);
     
     LIST_FOREACH_SAFE(list, prev, node, prev)
-        if((rc = fold(list, node->data, ctx)))
+        if((rc = fold(list, node->data, (void *)ctx)))
             return error_push_int(E_LIST_CALLBACK, rc);
     
     return 0;

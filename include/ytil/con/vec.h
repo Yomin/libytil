@@ -64,19 +64,19 @@ vec_ct vec_new(size_t capacity, size_t elemsize);
 // free vector
 void   vec_free(vec_ct vec);
 // free vector, apply dtor on each elem
-void   vec_free_f(vec_ct vec, vec_dtor_cb dtor, void *ctx);
+void   vec_free_f(vec_ct vec, vec_dtor_cb dtor, const void *ctx);
 // free vector if empty
 vec_ct vec_free_if_empty(vec_ct vec);
 
 // remove all elems from vector
 void vec_clear(vec_ct vec);
 // remove all elems from vector, apply dtor on each elem
-void vec_clear_f(vec_ct vec, vec_dtor_cb dtor, void *ctx);
+void vec_clear_f(vec_ct vec, vec_dtor_cb dtor, const void *ctx);
 
 // duplicate vector
 vec_ct vec_clone(vec_const_ct vec);
 // duplicate vector, duplicate elem with clone function
-vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, void *ctx);
+vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, const void *ctx);
 
 // check if vector is empty
 bool   vec_is_empty(vec_const_ct vec);
@@ -91,7 +91,7 @@ size_t vec_min_capacity(vec_const_ct vec);
 // get allocated size of vector
 size_t vec_memsize(vec_const_ct vec);
 // get allocated size of vector, apply sfun on each elem to determine size
-size_t vec_memsize_f(vec_const_ct vec, vec_size_cb sfun, void *ctx);
+size_t vec_memsize_f(vec_const_ct vec, vec_size_cb sfun, const void *ctx);
 
 // return pointer to vector elem at pos, negative pos counts from last elem
 void *vec_at(vec_const_ct vec, ssize_t pos);
@@ -182,9 +182,9 @@ void   *vec_pop_p(vec_ct vec);
 // copy last n elems from vector into dst and remove them from vector
 ssize_t vec_pop_en(vec_ct vec, void *dst, size_t n);
 // apply dtor to last elem from vector and remove it from vector
-int     vec_pop_f(vec_ct vec, vec_dtor_cb dtor, void *ctx);
+int     vec_pop_f(vec_ct vec, vec_dtor_cb dtor, const void *ctx);
 // apply dtor to last n elems from vector and remove them from vector
-ssize_t vec_pop_fn(vec_ct vec, size_t n, vec_dtor_cb dtor, void *ctx);
+ssize_t vec_pop_fn(vec_ct vec, size_t n, vec_dtor_cb dtor, const void *ctx);
 
 // remove elem from vector
 int     vec_remove(vec_ct vec, void *elem);
@@ -206,43 +206,43 @@ void   *vec_remove_at_p(vec_ct vec, ssize_t pos);
 ssize_t vec_remove_at_en(vec_ct vec, void *dst, ssize_t pos, size_t n);
 // apply dtor to elem at pos from vector and remove it from vector
 // negative pos counts from last elem
-int     vec_remove_at_f(vec_ct vec, ssize_t pos, vec_dtor_cb dtor, void *ctx);
+int     vec_remove_at_f(vec_ct vec, ssize_t pos, vec_dtor_cb dtor, const void *ctx);
 // apply dtor to elems from pos till pos+n-1 from vector and remove them from vector
 // negative pos counts from last elem, return count of elems removed
-ssize_t vec_remove_at_fn(vec_ct vec, ssize_t pos, size_t n, vec_dtor_cb dtor, void *ctx);
+ssize_t vec_remove_at_fn(vec_ct vec, ssize_t pos, size_t n, vec_dtor_cb dtor, const void *ctx);
 
 // find first elem in vector by pred
-void   *vec_find(vec_const_ct vec, vec_pred_cb pred, void *ctx);
+void   *vec_find(vec_const_ct vec, vec_pred_cb pred, const void *ctx);
 // find first elem in vector by pred, return as pointer
-void   *vec_find_p(vec_const_ct vec, vec_pred_cb pred, void *ctx);
+void   *vec_find_p(vec_const_ct vec, vec_pred_cb pred, const void *ctx);
 // find last elem in vector by pred
-void   *vec_find_r(vec_const_ct vec, vec_pred_cb pred, void *ctx);
+void   *vec_find_r(vec_const_ct vec, vec_pred_cb pred, const void *ctx);
 // find last elem in vector by pred, return as pointer
-void   *vec_find_rp(vec_const_ct vec, vec_pred_cb pred, void *ctx);
+void   *vec_find_rp(vec_const_ct vec, vec_pred_cb pred, const void *ctx);
 // find first elem pos in vector by pred
-ssize_t vec_find_pos(vec_const_ct vec, vec_pred_cb pred, void *ctx);
+ssize_t vec_find_pos(vec_const_ct vec, vec_pred_cb pred, const void *ctx);
 // find last elem pos in vector by pred
-ssize_t vec_find_pos_r(vec_const_ct vec, vec_pred_cb pred, void *ctx);
+ssize_t vec_find_pos_r(vec_const_ct vec, vec_pred_cb pred, const void *ctx);
 // find first elem in vector by pred and copy it to dst
-int     vec_find_get(vec_const_ct vec, void *dst, vec_pred_cb pred, void *ctx);
+int     vec_find_get(vec_const_ct vec, void *dst, vec_pred_cb pred, const void *ctx);
 // find last elem in vector by pred and copy it to dst
-int     vec_find_get_r(vec_const_ct vec, void *dst, vec_pred_cb pred, void *ctx);
+int     vec_find_get_r(vec_const_ct vec, void *dst, vec_pred_cb pred, const void *ctx);
 // find first elem in vector by pred and remove it
-int     vec_find_remove(vec_ct vec, vec_pred_cb pred, void *ctx);
+int     vec_find_remove(vec_ct vec, vec_pred_cb pred, const void *ctx);
 // find first elem in vector by pred, remove it and return as pointer
-void   *vec_find_remove_p(vec_ct vec, vec_pred_cb pred, void *ctx);
+void   *vec_find_remove_p(vec_ct vec, vec_pred_cb pred, const void *ctx);
 // find first elem in vector by pred, apply dtor and remove it
-int     vec_find_remove_f(vec_ct vec, vec_pred_cb pred, void *pred_ctx, vec_dtor_cb dtor, void *dtor_ctx);
+int     vec_find_remove_f(vec_ct vec, vec_pred_cb pred, const void *pred_ctx, vec_dtor_cb dtor, const void *dtor_ctx);
 // find last elem in vector by pred and remove it
-int     vec_find_remove_r(vec_ct vec, vec_pred_cb pred, void *ctx);
+int     vec_find_remove_r(vec_ct vec, vec_pred_cb pred, const void *ctx);
 // find last elem in vector by pred, remove it and return as pointer
-void   *vec_find_remove_rp(vec_ct vec, vec_pred_cb pred, void *ctx);
+void   *vec_find_remove_rp(vec_ct vec, vec_pred_cb pred, const void *ctx);
 // find last elem in vector by pred, apply dtor and remove it
-int     vec_find_remove_rf(vec_ct vec, vec_pred_cb pred, void *pred_ctx, vec_dtor_cb dtor, void *dtor_ctx);
+int     vec_find_remove_rf(vec_ct vec, vec_pred_cb pred, const void *pred_ctx, vec_dtor_cb dtor, const void *dtor_ctx);
 // find all elems in vector by pred and remove them
-size_t  vec_find_remove_all(vec_ct vec, vec_pred_cb pred, void *ctx);
+size_t  vec_find_remove_all(vec_ct vec, vec_pred_cb pred, const void *ctx);
 // find all elems in vector by pred, apply dtor and remove them
-size_t  vec_find_remove_all_f(vec_ct vec, vec_pred_cb pred, void *pred_ctx, vec_dtor_cb dtor, void *dtor_ctx);
+size_t  vec_find_remove_all_f(vec_ct vec, vec_pred_cb pred, const void *pred_ctx, vec_dtor_cb dtor, const void *dtor_ctx);
 
 // swap elem at pos1 and pos2 in vector, negative pos counts from last elem
 int vec_swap(vec_ct vec, ssize_t pos1, ssize_t pos2);
@@ -253,16 +253,16 @@ int vec_get_buffer(vec_ct vec, void **buf, size_t *size, size_t *capacity);
 // truncate vector to n elems
 size_t vec_truncate(vec_ct vec, size_t size);
 // truncate vector to n elems, apply dtor to removed elems
-size_t vec_truncate_f(vec_ct vec, size_t size, vec_dtor_cb dtor, void *ctx);
+size_t vec_truncate_f(vec_ct vec, size_t size, vec_dtor_cb dtor, const void *ctx);
 
 // set vector capacity to shrink/grow vector buffer
 int vec_set_capacity(vec_ct vec, size_t capacity);
 // set vector capacity to shrink/grow vector buffer, apply dtor to removed elems
-int vec_set_capacity_f(vec_ct vec, size_t capacity, vec_dtor_cb dtor, void *ctx);
+int vec_set_capacity_f(vec_ct vec, size_t capacity, vec_dtor_cb dtor, const void *ctx);
 
 // apply fold to every vector elem, begin with first elem
-int vec_fold(vec_const_ct vec, vec_fold_cb fold, void *ctx);
+int vec_fold(vec_const_ct vec, vec_fold_cb fold, const void *ctx);
 // apply fold to every vector elem, begin with last elem
-int vec_fold_r(vec_const_ct vec, vec_fold_cb fold, void *ctx);
+int vec_fold_r(vec_const_ct vec, vec_fold_cb fold, const void *ctx);
 
 #endif

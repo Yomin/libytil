@@ -59,7 +59,7 @@ static const error_info_st error_infos[] =
 };
 
 
-test_com_ct test_com_new(test_com_msg_cb cb, void *ctx)
+test_com_ct test_com_new(test_com_msg_cb cb, const void *ctx)
 {
     test_com_ct com;
     
@@ -67,7 +67,7 @@ test_com_ct test_com_new(test_com_msg_cb cb, void *ctx)
         return error_wrap_errno(calloc), NULL;
     
     com->cb = cb;
-    com->ctx = ctx;
+    com->ctx = (void *)ctx;
     
 #ifdef _WIN32
     com->shortcut = true;

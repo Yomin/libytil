@@ -350,9 +350,9 @@ static int test_suite_vec_fold_entry(vec_const_ct vec, size_t index, void *elem,
         state->fold(state->suite, entry, state->ctx));
 }
 
-int test_suite_fold(test_suite_const_ct suite, test_suite_fold_cb fold, void *ctx)
+int test_suite_fold(test_suite_const_ct suite, test_suite_fold_cb fold, const void *ctx)
 {
-    test_suite_fold_st state = { .suite = suite, .fold = fold, .ctx = ctx };
+    test_suite_fold_st state = { .suite = suite, .fold = fold, .ctx = (void *)ctx };
     
     return_error_if_fail(suite, E_TEST_SUITE_INVALID_OBJECT, -1);
     return_error_if_fail(fold, E_TEST_SUITE_INVALID_CALLBACK, -1);

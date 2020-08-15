@@ -58,7 +58,7 @@ int env_reset(str_const_ct name);
 int env_unset(str_const_ct name);
 
 // apply fold to each environment variable
-int  env_fold(env_fold_cb fold, void *ctx);
+int  env_fold(env_fold_cb fold, const void *ctx);
 // dump all environment variables to stdout
 void env_dump(void);
 

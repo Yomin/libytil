@@ -31,8 +31,8 @@ typedef int (*getopt_short_cb)(int opt, char *arg, void *ctx);
 typedef int (*getopt_long_cb)(int idx, int opt, char *arg, void *ctx);
 
 // remove matching short options from argc/argv and call callback on them
-int getopt_sieve(int *argc, char *argv[], const char *opts, getopt_short_cb cb, void *ctx);
+int getopt_sieve(int *argc, char *argv[], const char *opts, getopt_short_cb cb, const void *ctx);
 // remove matching long options from argc/argv and call callback on them
-int getopt_long_sieve(int *argc, char *argv[], const getopt_option_st *opts, getopt_long_cb cb, void *ctx);
+int getopt_long_sieve(int *argc, char *argv[], const getopt_option_st *opts, getopt_long_cb cb, const void *ctx);
 
 #endif

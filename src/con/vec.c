@@ -150,7 +150,7 @@ void vec_free(vec_ct vec)
     vec_free_f(vec, NULL, NULL);
 }
 
-void vec_free_f(vec_ct vec, vec_dtor_cb dtor, void *ctx)
+void vec_free_f(vec_ct vec, vec_dtor_cb dtor, const void *ctx)
 {
     size_t i;
     
@@ -160,7 +160,7 @@ void vec_free_f(vec_ct vec, vec_dtor_cb dtor, void *ctx)
     {
         if(dtor)
             for(i=0; i < vec->size; i++)
-                dtor(vec, ELEM(i), ctx);
+                dtor(vec, ELEM(i), (void *)ctx);
         
         free(vec->mem - OFFSET);
     }
@@ -185,7 +185,7 @@ void vec_clear(vec_ct vec)
     vec_clear_f(NULL, NULL, vec);
 }
 
-void vec_clear_f(vec_ct vec, vec_dtor_cb dtor, void *ctx)
+void vec_clear_f(vec_ct vec, vec_dtor_cb dtor, const void *ctx)
 {
     size_t i;
     
@@ -194,7 +194,7 @@ void vec_clear_f(vec_ct vec, vec_dtor_cb dtor, void *ctx)
     
     if(dtor)
         for(i=0; i < vec->size; i++)
-            dtor(vec, ELEM(i), ctx);
+            dtor(vec, ELEM(i), (void *)ctx);
     
     vec->size = 0;
     vec_resize(vec, vec->min_cap);
@@ -205,7 +205,7 @@ vec_ct vec_clone(vec_const_ct vec)
     return error_pass_ptr(vec_clone_f(vec, NULL, NULL, NULL));
 }
 
-vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, void *ctx)
+vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, const void *ctx)
 {
     vec_ct nvec;
     size_t i;
@@ -233,7 +233,7 @@ vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, void 
         return error_pass(), free(nvec), NULL;
     
     for(i=0; i < vec->size; i++)
-        if(clone(vec, nvec->mem + i*nvec->esize, ELEM(i), ctx))
+        if(clone(vec, nvec->mem + i*nvec->esize, ELEM(i), (void *)ctx))
             return error_wrap(), vec_free_f(nvec, dtor, ctx), NULL;
     
     return nvec;
@@ -279,7 +279,7 @@ size_t vec_memsize(vec_const_ct vec)
     return vec_memsize_f(vec, NULL, NULL);
 }
 
-size_t vec_memsize_f(vec_const_ct vec, vec_size_cb sfun, void *ctx)
+size_t vec_memsize_f(vec_const_ct vec, vec_size_cb sfun, const void *ctx)
 {
     size_t size, i;
     
@@ -289,7 +289,7 @@ size_t vec_memsize_f(vec_const_ct vec, vec_size_cb sfun, void *ctx)
     
     if(vec->mem && sfun)
         for(i=0; i<vec->size; i++)
-            size += sfun(vec, ELEM(i), ctx);
+            size += sfun(vec, ELEM(i), (void *)ctx);
     
     return size;
 }
@@ -679,7 +679,7 @@ void *vec_insert_after_en(vec_ct vec, const void *dst, size_t n, const void *ele
     return error_pass_ptr(_vec_insert(vec, POS(dst)+1, n, elems));
 }
 
-static ssize_t _vec_pop(vec_ct vec, void *dst, size_t n, vec_dtor_cb dtor, void *ctx)
+static ssize_t _vec_pop(vec_ct vec, void *dst, size_t n, vec_dtor_cb dtor, const void *ctx)
 {
     size_t e;
     
@@ -695,7 +695,7 @@ static ssize_t _vec_pop(vec_ct vec, void *dst, size_t n, vec_dtor_cb dtor, void 
     
     if(dtor)
         for(e=0; e < n; e++)
-            dtor(vec, ELEM(vec->size+e), ctx);
+            dtor(vec, ELEM(vec->size+e), (void *)ctx);
     
     vec_shrink(vec);
     
@@ -743,21 +743,21 @@ ssize_t vec_pop_en(vec_ct vec, void *dst, size_t n)
     return error_pass_int(_vec_pop(vec, dst, n, NULL, NULL));
 }
 
-int vec_pop_f(vec_ct vec, vec_dtor_cb dtor, void *ctx)
+int vec_pop_f(vec_ct vec, vec_dtor_cb dtor, const void *ctx)
 {
     assert_magic(vec);
     
     return error_pass_int(_vec_pop(vec, NULL, 1, dtor, ctx)) == 1 ? 0 : -1;
 }
 
-ssize_t vec_pop_fn(vec_ct vec, size_t n, vec_dtor_cb dtor, void *ctx)
+ssize_t vec_pop_fn(vec_ct vec, size_t n, vec_dtor_cb dtor, const void *ctx)
 {
     assert_magic(vec);
     
     return error_pass_int(_vec_pop(vec, NULL, n, dtor, ctx));
 }
 
-static ssize_t vec_rem(vec_ct vec, void *dst, ssize_t pos, size_t n, vec_dtor_cb dtor, void *ctx)
+static ssize_t vec_rem(vec_ct vec, void *dst, ssize_t pos, size_t n, vec_dtor_cb dtor, const void *ctx)
 {
     size_t e;
     
@@ -774,7 +774,7 @@ static ssize_t vec_rem(vec_ct vec, void *dst, ssize_t pos, size_t n, vec_dtor_cb
     
     if(dtor)
         for(e=0; e < n; e++)
-            dtor(vec, ELEM(pos+e), ctx);
+            dtor(vec, ELEM(pos+e), (void *)ctx);
     
     memmove(ELEM(pos), ELEM(pos+n), (vec->size-pos-n) * vec->esize);
     
@@ -849,21 +849,21 @@ ssize_t vec_remove_at_en(vec_ct vec, void *dst, ssize_t pos, size_t n)
     return error_pass_int(vec_rem(vec, dst, pos, n, NULL, NULL));
 }
 
-int vec_remove_at_f(vec_ct vec, ssize_t pos, vec_dtor_cb dtor, void *ctx)
+int vec_remove_at_f(vec_ct vec, ssize_t pos, vec_dtor_cb dtor, const void *ctx)
 {
     assert_magic(vec);
     
     return error_pass_int(vec_rem(vec, NULL, pos, 1, dtor, ctx)) == 1 ? 0 : -1;
 }
 
-ssize_t vec_remove_at_fn(vec_ct vec, ssize_t pos, size_t n, vec_dtor_cb dtor, void *ctx)
+ssize_t vec_remove_at_fn(vec_ct vec, ssize_t pos, size_t n, vec_dtor_cb dtor, const void *ctx)
 {
     assert_magic(vec);
     
     return error_pass_int(vec_rem(vec, NULL, pos, n, dtor, ctx));
 }
 
-void *vec_find(vec_const_ct vec, vec_pred_cb pred, void *ctx)
+void *vec_find(vec_const_ct vec, vec_pred_cb pred, const void *ctx)
 {
     ssize_t pos;
     
@@ -873,7 +873,7 @@ void *vec_find(vec_const_ct vec, vec_pred_cb pred, void *ctx)
     return ELEM(pos);
 }
 
-void *vec_find_p(vec_const_ct vec, vec_pred_cb pred, void *ctx)
+void *vec_find_p(vec_const_ct vec, vec_pred_cb pred, const void *ctx)
 {
     ssize_t pos;
     
@@ -886,7 +886,7 @@ void *vec_find_p(vec_const_ct vec, vec_pred_cb pred, void *ctx)
     return *(void**)ELEM(pos);
 }
 
-void *vec_find_r(vec_const_ct vec, vec_pred_cb pred, void *ctx)
+void *vec_find_r(vec_const_ct vec, vec_pred_cb pred, const void *ctx)
 {
     ssize_t pos;
     
@@ -896,7 +896,7 @@ void *vec_find_r(vec_const_ct vec, vec_pred_cb pred, void *ctx)
     return ELEM(pos);
 }
 
-void *vec_find_rp(vec_const_ct vec, vec_pred_cb pred, void *ctx)
+void *vec_find_rp(vec_const_ct vec, vec_pred_cb pred, const void *ctx)
 {
     ssize_t pos;
     
@@ -909,7 +909,7 @@ void *vec_find_rp(vec_const_ct vec, vec_pred_cb pred, void *ctx)
     return *(void**)ELEM(pos);
 }
 
-ssize_t vec_find_pos(vec_const_ct vec, vec_pred_cb pred, void *ctx)
+ssize_t vec_find_pos(vec_const_ct vec, vec_pred_cb pred, const void *ctx)
 {
     size_t i;
     
@@ -917,13 +917,13 @@ ssize_t vec_find_pos(vec_const_ct vec, vec_pred_cb pred, void *ctx)
     assert(pred);
     
     for(i=0; i < vec->size; i++)
-        if(pred(vec, ELEM(i), ctx))
+        if(pred(vec, ELEM(i), (void *)ctx))
             return i;
     
     return_error_if_reached(E_VEC_NOT_FOUND, -1);
 }
 
-ssize_t vec_find_pos_r(vec_const_ct vec, vec_pred_cb pred, void *ctx)
+ssize_t vec_find_pos_r(vec_const_ct vec, vec_pred_cb pred, const void *ctx)
 {
     size_t i;
     
@@ -931,13 +931,13 @@ ssize_t vec_find_pos_r(vec_const_ct vec, vec_pred_cb pred, void *ctx)
     assert(pred);
     
     for(i=vec->size; i > 0; i--)
-        if(pred(vec, ELEM(i-1), ctx))
+        if(pred(vec, ELEM(i-1), (void *)ctx))
             return i-1;
     
     return_error_if_reached(E_VEC_NOT_FOUND, -1);
 }
 
-int vec_find_get(vec_const_ct vec, void *dst, vec_pred_cb pred, void *ctx)
+int vec_find_get(vec_const_ct vec, void *dst, vec_pred_cb pred, const void *ctx)
 {
     ssize_t pos;
     
@@ -950,7 +950,7 @@ int vec_find_get(vec_const_ct vec, void *dst, vec_pred_cb pred, void *ctx)
     return 0;
 }
 
-int vec_find_get_r(vec_const_ct vec, void *dst, vec_pred_cb pred, void *ctx)
+int vec_find_get_r(vec_const_ct vec, void *dst, vec_pred_cb pred, const void *ctx)
 {
     ssize_t pos;
     
@@ -963,7 +963,7 @@ int vec_find_get_r(vec_const_ct vec, void *dst, vec_pred_cb pred, void *ctx)
     return 0;
 }
 
-int vec_find_remove(vec_ct vec, vec_pred_cb pred, void *ctx)
+int vec_find_remove(vec_ct vec, vec_pred_cb pred, const void *ctx)
 {
     ssize_t pos;
     
@@ -975,7 +975,7 @@ int vec_find_remove(vec_ct vec, vec_pred_cb pred, void *ctx)
     return 0;
 }
 
-void *vec_find_remove_p(vec_ct vec, vec_pred_cb pred, void *ctx)
+void *vec_find_remove_p(vec_ct vec, vec_pred_cb pred, const void *ctx)
 {
     ssize_t pos;
     void *p;
@@ -991,7 +991,7 @@ void *vec_find_remove_p(vec_ct vec, vec_pred_cb pred, void *ctx)
     return p;
 }
 
-int vec_find_remove_f(vec_ct vec, vec_pred_cb pred, void *pred_ctx, vec_dtor_cb dtor, void *dtor_ctx)
+int vec_find_remove_f(vec_ct vec, vec_pred_cb pred, const void *pred_ctx, vec_dtor_cb dtor, const void *dtor_ctx)
 {
     ssize_t pos;
     
@@ -1003,7 +1003,7 @@ int vec_find_remove_f(vec_ct vec, vec_pred_cb pred, void *pred_ctx, vec_dtor_cb 
     return 0;
 }
 
-int vec_find_remove_r(vec_ct vec, vec_pred_cb pred, void *ctx)
+int vec_find_remove_r(vec_ct vec, vec_pred_cb pred, const void *ctx)
 {
     ssize_t pos;
     
@@ -1015,7 +1015,7 @@ int vec_find_remove_r(vec_ct vec, vec_pred_cb pred, void *ctx)
     return 0;
 }
 
-void *vec_find_remove_rp(vec_ct vec, vec_pred_cb pred, void *ctx)
+void *vec_find_remove_rp(vec_ct vec, vec_pred_cb pred, const void *ctx)
 {
     ssize_t pos;
     void *p;
@@ -1031,7 +1031,7 @@ void *vec_find_remove_rp(vec_ct vec, vec_pred_cb pred, void *ctx)
     return p;
 }
 
-int vec_find_remove_rf(vec_ct vec, vec_pred_cb pred, void *pred_ctx, vec_dtor_cb dtor, void *dtor_ctx)
+int vec_find_remove_rf(vec_ct vec, vec_pred_cb pred, const void *pred_ctx, vec_dtor_cb dtor, const void *dtor_ctx)
 {
     ssize_t pos;
     
@@ -1043,12 +1043,12 @@ int vec_find_remove_rf(vec_ct vec, vec_pred_cb pred, void *pred_ctx, vec_dtor_cb
     return 0;
 }
 
-size_t vec_find_remove_all(vec_ct vec, vec_pred_cb pred, void *ctx)
+size_t vec_find_remove_all(vec_ct vec, vec_pred_cb pred, const void *ctx)
 {
     return vec_find_remove_all_f(vec, pred, ctx, NULL, NULL);
 }
 
-size_t vec_find_remove_all_f(vec_ct vec, vec_pred_cb pred, void *pred_ctx, vec_dtor_cb dtor, void *dtor_ctx)
+size_t vec_find_remove_all_f(vec_ct vec, vec_pred_cb pred, const void *pred_ctx, vec_dtor_cb dtor, const void *dtor_ctx)
 {
     size_t i, keep, size;
     
@@ -1056,10 +1056,10 @@ size_t vec_find_remove_all_f(vec_ct vec, vec_pred_cb pred, void *pred_ctx, vec_d
     assert(pred);
     
     for(i=0,keep=0,size=0; i < vec->size; i++)
-        if(pred(vec, ELEM(i), pred_ctx))
+        if(pred(vec, ELEM(i), (void *)pred_ctx))
         {
             if(dtor)
-                dtor(vec, ELEM(i), dtor_ctx);
+                dtor(vec, ELEM(i), (void *)dtor_ctx);
             
             if(keep && i > keep)
                 memmove(ELEM(size), ELEM(i - keep), keep);
@@ -1137,7 +1137,7 @@ size_t vec_truncate(vec_ct vec, size_t size)
     return vec_truncate_f(vec, size, NULL, NULL);
 }
 
-size_t vec_truncate_f(vec_ct vec, size_t size, vec_dtor_cb dtor, void *ctx)
+size_t vec_truncate_f(vec_ct vec, size_t size, vec_dtor_cb dtor, const void *ctx)
 {
     size_t n;
     
@@ -1148,7 +1148,7 @@ size_t vec_truncate_f(vec_ct vec, size_t size, vec_dtor_cb dtor, void *ctx)
     
     if(dtor)
         for(n=size; n < vec->size; n++)
-            dtor(vec, ELEM(n), ctx);
+            dtor(vec, ELEM(n), (void *)ctx);
     
     n = vec->size - size;
     vec->size = size;
@@ -1162,7 +1162,7 @@ int vec_set_capacity(vec_ct vec, size_t capacity)
     return error_pass_int(vec_set_capacity_f(vec, capacity, NULL, NULL));
 }
 
-int vec_set_capacity_f(vec_ct vec, size_t capacity, vec_dtor_cb dtor, void *ctx)
+int vec_set_capacity_f(vec_ct vec, size_t capacity, vec_dtor_cb dtor, const void *ctx)
 {
     size_t i;
     
@@ -1174,7 +1174,7 @@ int vec_set_capacity_f(vec_ct vec, size_t capacity, vec_dtor_cb dtor, void *ctx)
     {
         if(dtor)
             for(i=capacity; i < vec->size; i++)
-                dtor(vec, ELEM(i), ctx);
+                dtor(vec, ELEM(i), (void *)ctx);
         
         vec->size = capacity;
     }
@@ -1185,7 +1185,7 @@ int vec_set_capacity_f(vec_ct vec, size_t capacity, vec_dtor_cb dtor, void *ctx)
     return 0;
 }
 
-int vec_fold(vec_const_ct vec, vec_fold_cb fold, void *ctx)
+int vec_fold(vec_const_ct vec, vec_fold_cb fold, const void *ctx)
 {
     size_t i;
     int rc;
@@ -1194,13 +1194,13 @@ int vec_fold(vec_const_ct vec, vec_fold_cb fold, void *ctx)
     assert(fold);
     
     for(i=0; i < vec->size; i++)
-        if((rc = fold(vec, i, ELEM(i), ctx)))
+        if((rc = fold(vec, i, ELEM(i), (void *)ctx)))
             return error_push_int(E_VEC_CALLBACK, rc);
     
     return 0;
 }
 
-int vec_fold_r(vec_const_ct vec, vec_fold_cb fold, void *ctx)
+int vec_fold_r(vec_const_ct vec, vec_fold_cb fold, const void *ctx)
 {
     size_t i;
     int rc;
@@ -1209,7 +1209,7 @@ int vec_fold_r(vec_const_ct vec, vec_fold_cb fold, void *ctx)
     assert(fold);
     
     for(i=0; i < vec->size; i++)
-        if((rc = fold(vec, i, ELEM(vec->size-i-1), ctx)))
+        if((rc = fold(vec, i, ELEM(vec->size-i-1), (void *)ctx)))
             return error_push_int(E_VEC_CALLBACK, rc);
     
     return 0;

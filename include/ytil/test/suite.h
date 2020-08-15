@@ -96,6 +96,6 @@ test_suite_ct  test_suite_add_case(test_suite_ct suite, test_case_ct tcase);
 test_suite_ct _test_suite_add_cases(test_suite_ct suite, ...);
 test_suite_ct  test_suite_add_cases_v(test_suite_ct suite, va_list ap);
 
-int test_suite_fold(test_suite_const_ct suite, test_suite_fold_cb fold, void *ctx);
+int test_suite_fold(test_suite_const_ct suite, test_suite_fold_cb fold, const void *ctx);
 
 #endif

@@ -62,20 +62,20 @@ ring_ct ring_new(size_t capacity, size_t elemsize);
 // free ring
 void    ring_free(ring_ct ring);
 // free ring, apply dtor on each elem
-void    ring_free_f(ring_ct ring, ring_dtor_cb dtor, void *ctx);
+void    ring_free_f(ring_ct ring, ring_dtor_cb dtor, const void *ctx);
 // free ring if empty
 ring_ct ring_free_if_empty(ring_ct ring);
 
 // remove all elems from ring
 void ring_clear(ring_ct ring);
 // remove all elems from ring, apply dtor on each elem
-void ring_clear_f(ring_ct ring, ring_dtor_cb dtor, void *ctx);
+void ring_clear_f(ring_ct ring, ring_dtor_cb dtor, const void *ctx);
 
 // duplicate ring
 ring_ct ring_clone(ring_const_ct ring);
 // duplicate ring, duplicate elem with clone function
 // in case the clone fails, already duplicated elems are freed with dtor
-ring_ct ring_clone_f(ring_const_ct ring, ring_clone_cb clone, ring_dtor_cb dtor, void *ctx);
+ring_ct ring_clone_f(ring_const_ct ring, ring_clone_cb clone, ring_dtor_cb dtor, const void *ctx);
 
 // check if ring is empty
 bool   ring_is_empty(ring_const_ct ring);
@@ -87,16 +87,16 @@ void *ring_put(ring_ct ring);
 // put elem into ring
 void *ring_put_e(ring_ct ring, const void *elem);
 // put empty elem into ring, handle overflow
-void *ring_put_f(ring_ct ring, ring_overflow_cb overflow, void *ctx);
+void *ring_put_f(ring_ct ring, ring_overflow_cb overflow, const void *ctx);
 // put elem into ring, handle overflow
-void *ring_put_ef(ring_ct ring, const void *elem, ring_overflow_cb overflow, void *ctx);
+void *ring_put_ef(ring_ct ring, const void *elem, ring_overflow_cb overflow, const void *ctx);
 
 // return pointer to current tail elem
 void *ring_peek(ring_const_ct ring);
 // remove current tail elem from ring
 int   ring_drop(ring_ct ring);
 // apply dtor to current tail elem and remove it from ring
-int   ring_drop_f(ring_ct ring, ring_dtor_cb dtor, void *ctx);
+int   ring_drop_f(ring_ct ring, ring_dtor_cb dtor, const void *ctx);
 // copy current tail elem into dst and remove it from ring
 int   ring_get(ring_ct ring, void *dst);
 
@@ -105,13 +105,13 @@ void *ring_peek_head(ring_const_ct ring);
 // remove current head elem from ring
 int   ring_drop_head(ring_ct ring);
 // apply dtor to current head elem and remove it from ring
-int   ring_drop_head_f(ring_ct ring, ring_dtor_cb dtor, void *ctx);
+int   ring_drop_head_f(ring_ct ring, ring_dtor_cb dtor, const void *ctx);
 // copy current head elem into dst and remove it from ring
 int   ring_get_head(ring_ct ring, void *dst);
 
 // apply fold to every ring elem, begin with tail elem
-int ring_fold(ring_ct ring, ring_fold_cb fold, void *ctx);
+int ring_fold(ring_ct ring, ring_fold_cb fold, const void *ctx);
 // apply fold to every ring elem, begin with head elem
-int ring_fold_r(ring_ct ring, ring_fold_cb fold, void *ctx);
+int ring_fold_r(ring_ct ring, ring_fold_cb fold, const void *ctx);
 
 #endif
