@@ -81,9 +81,9 @@ TEST_TEARDOWN(vec)
     vec_free(vec);
 }
 
-TEST_CASE(vec_new_invalid_capacity)
+TEST_CASE_ABORT(vec_new_invalid_elemsize)
 {
-    test_ptr_error(vec_new(0, 0), E_VEC_INVALID_ELEMSIZE);
+    vec_new(1, 0);
 }
 
 TEST_CASE_ABORT(vec_elemsize_invalid_magic)
@@ -217,11 +217,11 @@ TEST_CASE_FIXTURE(vec_pos_no_member_after, vec_int10, vec)
     test_int_error(vec_pos(vec, i+1), E_VEC_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIXTURE(vec_pos_member_invalid_alignment, vec_int10, vec)
+TEST_CASE_ABORT_FIXTURE(vec_pos_member_invalid_alignment, vec_int10, vec)
 {
     int *i = vec_first(vec);
     
-    test_int_error(vec_pos(vec, ((char*)i)+1), E_VEC_UNALIGNED);
+    vec_pos(vec, ((char*)i)+1);
 }
 
 TEST_CASE_ABORT(vec_first_invalid_magic)
@@ -425,23 +425,27 @@ TEST_CASE_FIXTURE(vec_get_n_empty_vector_negative_index, vec_int, vec)
 
 TEST_CASE_FIXTURE(vec_get_n_nothing_positive_index, vec_int1, vec)
 {
-    test_int_error(vec_get_n(vec, j, 0, 0), E_VEC_NULL_REQUEST);
+    j[0] = 123;
+    test_int_success(vec_get_n(vec, j, 0, 0));
+    test_int_eq(j[0], 123);
 }
 
 TEST_CASE_FIXTURE(vec_get_n_nothing_negative_index, vec_int1, vec)
 {
-    test_int_error(vec_get_n(vec, j, -1, 0), E_VEC_NULL_REQUEST);
+    j[0] = 123;
+    test_int_success(vec_get_n(vec, j, -1, 0));
+    test_int_eq(j[0], 123);
 }
 
 TEST_CASE_FIXTURE(vec_get_n_positive_index, vec_int10, vec)
 {
-    test_rc_success(vec_get_n(vec, j, 4, 2), 2);
+    test_int_success(vec_get_n(vec, j, 4, 2));
     test_int_list(j, i+4, 2);
 }
 
 TEST_CASE_FIXTURE(vec_get_n_negative_index, vec_int10, vec)
 {
-    test_rc_success(vec_get_n(vec, j, -4, 2), 2);
+    test_int_success(vec_get_n(vec, j, -4, 2));
     test_int_list(j, i+6, 2);
 }
 
@@ -492,7 +496,8 @@ TEST_CASE_ABORT(vec_push_n_invalid_magic)
 
 TEST_CASE_FIXTURE(vec_push_n_nothing, vec_int1, vec)
 {
-    test_ptr_error(vec_push_n(vec, 0), E_VEC_NULL_REQUEST);
+    test_ptr_success(vec_push_n(vec, 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_push_n, vec_int, vec)
@@ -508,7 +513,8 @@ TEST_CASE_ABORT(vec_push_en_invalid_magic)
 
 TEST_CASE_FIXTURE(vec_push_en_nothing, vec_int1, vec)
 {
-    test_ptr_error(vec_push_en(vec, 0, NULL), E_VEC_NULL_REQUEST);
+    test_ptr_success(vec_push_en(vec, 0, NULL));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_push_en, vec_int, vec)
@@ -525,7 +531,8 @@ TEST_CASE_ABORT(vec_push_args_invalid_magic)
 
 TEST_CASE_FIXTURE(vec_push_args_nothing, vec_int1, vec)
 {
-    test_ptr_error(vec_push_args(vec, 0), E_VEC_NULL_REQUEST);
+    test_ptr_success(vec_push_args(vec, 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_push_args, vec_int, vec)
@@ -547,7 +554,8 @@ TEST_CASE_ABORT_FIXTURE(vec_push_args_p_invalid_type, vec_int, vec)
 
 TEST_CASE_FIXTURE(vec_push_args_p_nothing, vec_ptr1, vec)
 {
-    test_ptr_error(vec_push_args_p(vec, 0), E_VEC_NULL_REQUEST);
+    test_ptr_success(vec_push_args_p(vec, 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_push_args_p, vec_ptr, vec)
@@ -708,12 +716,14 @@ TEST_CASE_FIXTURE(vec_insert_n_oob_positive_index, vec_int, vec)
 
 TEST_CASE_FIXTURE(vec_insert_n_nothing_positive_index, vec_int1, vec)
 {
-    test_ptr_error(vec_insert_n(vec, 0, 0), E_VEC_NULL_REQUEST);
+    test_ptr_success(vec_insert_n(vec, 0, 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_insert_n_nothing_negative_index, vec_int1, vec)
 {
-    test_ptr_error(vec_insert_n(vec, -1, 0), E_VEC_NULL_REQUEST);
+    test_ptr_success(vec_insert_n(vec, -1, 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_insert_n_oob_negative_index, vec_int, vec)
@@ -769,12 +779,14 @@ TEST_CASE_FIXTURE(vec_insert_en_oob_negative_index, vec_int, vec)
 
 TEST_CASE_FIXTURE(vec_insert_en_nothing_positive_index, vec_int1, vec)
 {
-    test_ptr_error(vec_insert_en(vec, 0, 0, NULL), E_VEC_NULL_REQUEST);
+    test_ptr_success(vec_insert_en(vec, 0, 0, NULL));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_insert_en_nothing_negative_index, vec_int1, vec)
 {
-    test_ptr_error(vec_insert_en(vec, -1, 0, NULL), E_VEC_NULL_REQUEST);
+    test_ptr_success(vec_insert_en(vec, -1, 0, NULL));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_insert_en_front_positive_index, vec_int10, vec)
@@ -828,10 +840,10 @@ TEST_CASE_FIXTURE(vec_insert_before_no_member, vec_int10, vec)
     test_ptr_error(vec_insert_before(vec, k-1), E_VEC_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIXTURE(vec_insert_before_member_invalid_alignment, vec_int10, vec)
+TEST_CASE_ABORT_FIXTURE(vec_insert_before_member_invalid_alignment, vec_int10, vec)
 {
     k = vec_at(vec, 0);
-    test_ptr_error(vec_insert_before(vec, ((char*)k)+1), E_VEC_UNALIGNED);
+    vec_insert_before(vec, ((char*)k)+1);
 }
 
 TEST_CASE_FIXTURE(vec_insert_before, vec_int10, vec)
@@ -858,10 +870,10 @@ TEST_CASE_FIXTURE(vec_insert_before_e_no_member, vec_int10, vec)
     test_ptr_error(vec_insert_before_e(vec, k-1, NULL), E_VEC_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIXTURE(vec_insert_before_e_member_invalid_alignment, vec_int10, vec)
+TEST_CASE_ABORT_FIXTURE(vec_insert_before_e_member_invalid_alignment, vec_int10, vec)
 {
     k = vec_at(vec, 0);
-    test_ptr_error(vec_insert_before_e(vec, ((char*)k)+1, NULL), E_VEC_UNALIGNED);
+    vec_insert_before_e(vec, ((char*)k)+1, NULL);
 }
 
 TEST_CASE_FIXTURE(vec_insert_before_e, vec_int10, vec)
@@ -894,10 +906,10 @@ TEST_CASE_FIXTURE(vec_insert_before_p_no_member, vec_ptr10, vec)
     test_ptr_error(vec_insert_before_p(vec, pk-1, NULL), E_VEC_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIXTURE(vec_insert_before_p_member_invalid_alignment, vec_ptr10, vec)
+TEST_CASE_ABORT_FIXTURE(vec_insert_before_p_member_invalid_alignment, vec_ptr10, vec)
 {
     pk = vec_at(vec, 0);
-    test_ptr_error(vec_insert_before_p(vec, ((char*)pk)+1, NULL), E_VEC_UNALIGNED);
+    vec_insert_before_p(vec, ((char*)pk)+1, NULL);
 }
 
 TEST_CASE_FIXTURE(vec_insert_before_p, vec_ptr10, vec)
@@ -925,15 +937,16 @@ TEST_CASE_FIXTURE(vec_insert_before_n_no_member, vec_int10, vec)
     test_ptr_error(vec_insert_before_n(vec, k-1, 1), E_VEC_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIXTURE(vec_insert_before_n_member_invalid_alignment, vec_int10, vec)
+TEST_CASE_ABORT_FIXTURE(vec_insert_before_n_member_invalid_alignment, vec_int10, vec)
 {
     k = vec_at(vec, 0);
-    test_ptr_error(vec_insert_before_n(vec, ((char*)k)+1, 1), E_VEC_UNALIGNED);
+    vec_insert_before_n(vec, ((char*)k)+1, 1);
 }
 
 TEST_CASE_FIXTURE(vec_insert_before_n_nothing, vec_int1, vec)
 {
-    test_ptr_error(vec_insert_before_n(vec, vec_first(vec), 0), E_VEC_NULL_REQUEST);
+    test_ptr_success(vec_insert_before_n(vec, vec_first(vec), 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_insert_before_n, vec_int10, vec)
@@ -960,15 +973,16 @@ TEST_CASE_FIXTURE(vec_insert_before_en_no_member, vec_int10, vec)
     test_ptr_error(vec_insert_before_en(vec, k-1, 1, NULL), E_VEC_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIXTURE(vec_insert_before_en_member_invalid_alignment, vec_int10, vec)
+TEST_CASE_ABORT_FIXTURE(vec_insert_before_en_member_invalid_alignment, vec_int10, vec)
 {
     k = vec_at(vec, 0);
-    test_ptr_error(vec_insert_before_en(vec, ((char*)k)+1, 1, NULL), E_VEC_UNALIGNED);
+    vec_insert_before_en(vec, ((char*)k)+1, 1, NULL);
 }
 
 TEST_CASE_FIXTURE(vec_insert_before_en_nothing, vec_int1, vec)
 {
-    test_ptr_error(vec_insert_before_en(vec, vec_first(vec), 0, NULL), E_VEC_NULL_REQUEST);
+    test_ptr_success(vec_insert_before_en(vec, vec_first(vec), 0, NULL));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_insert_before_en, vec_int10, vec)
@@ -996,10 +1010,10 @@ TEST_CASE_FIXTURE(vec_insert_after_no_member, vec_int10, vec)
     test_ptr_error(vec_insert_after(vec, k-1), E_VEC_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIXTURE(vec_insert_after_member_invalid_alignment, vec_int10, vec)
+TEST_CASE_ABORT_FIXTURE(vec_insert_after_member_invalid_alignment, vec_int10, vec)
 {
     k = vec_at(vec, 0);
-    test_ptr_error(vec_insert_after(vec, ((char*)k)+1), E_VEC_UNALIGNED);
+    vec_insert_after(vec, ((char*)k)+1);
 }
 
 TEST_CASE_FIXTURE(vec_insert_after, vec_int10, vec)
@@ -1026,10 +1040,10 @@ TEST_CASE_FIXTURE(vec_insert_after_e_no_member, vec_int10, vec)
     test_ptr_error(vec_insert_after_e(vec, k-1, NULL), E_VEC_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIXTURE(vec_insert_after_e_member_invalid_alignment, vec_int10, vec)
+TEST_CASE_ABORT_FIXTURE(vec_insert_after_e_member_invalid_alignment, vec_int10, vec)
 {
     k = vec_at(vec, 0);
-    test_ptr_error(vec_insert_after_e(vec, ((char*)k)+1, NULL), E_VEC_UNALIGNED);
+    vec_insert_after_e(vec, ((char*)k)+1, NULL);
 }
 
 TEST_CASE_FIXTURE(vec_insert_after_e, vec_int10, vec)
@@ -1062,10 +1076,10 @@ TEST_CASE_FIXTURE(vec_insert_after_p_no_member, vec_ptr10, vec)
     test_ptr_error(vec_insert_after_p(vec, pk-1, NULL), E_VEC_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIXTURE(vec_insert_after_p_member_invalid_alignment, vec_ptr10, vec)
+TEST_CASE_ABORT_FIXTURE(vec_insert_after_p_member_invalid_alignment, vec_ptr10, vec)
 {
     pk = vec_at(vec, 0);
-    test_ptr_error(vec_insert_after_p(vec, ((char*)pk)+1, NULL), E_VEC_UNALIGNED);
+    vec_insert_after_p(vec, ((char*)pk)+1, NULL);
 }
 
 TEST_CASE_FIXTURE(vec_insert_after_p, vec_ptr10, vec)
@@ -1093,15 +1107,16 @@ TEST_CASE_FIXTURE(vec_insert_after_n_no_member, vec_int10, vec)
     test_ptr_error(vec_insert_after_n(vec, k-1, 1), E_VEC_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIXTURE(vec_insert_after_n_member_invalid_alignment, vec_int10, vec)
+TEST_CASE_ABORT_FIXTURE(vec_insert_after_n_member_invalid_alignment, vec_int10, vec)
 {
     k = vec_at(vec, 0);
-    test_ptr_error(vec_insert_after_n(vec, ((char*)k)+1, 1), E_VEC_UNALIGNED);
+    vec_insert_after_n(vec, ((char*)k)+1, 1);
 }
 
 TEST_CASE_FIXTURE(vec_insert_after_n_nothing, vec_int1, vec)
 {
-    test_ptr_error(vec_insert_after_n(vec, vec_first(vec), 0), E_VEC_NULL_REQUEST);
+    test_ptr_success(vec_insert_after_n(vec, vec_first(vec), 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_insert_after_n, vec_int10, vec)
@@ -1128,15 +1143,16 @@ TEST_CASE_FIXTURE(vec_insert_after_en_no_member, vec_int10, vec)
     test_ptr_error(vec_insert_after_en(vec, k-1, 1, NULL), E_VEC_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIXTURE(vec_insert_after_en_member_invalid_alignment, vec_int10, vec)
+TEST_CASE_ABORT_FIXTURE(vec_insert_after_en_member_invalid_alignment, vec_int10, vec)
 {
     k = vec_at(vec, 0);
-    test_ptr_error(vec_insert_after_en(vec, ((char*)k)+1, 1, NULL), E_VEC_UNALIGNED);
+    vec_insert_after_en(vec, ((char*)k)+1, 1, NULL);
 }
 
 TEST_CASE_FIXTURE(vec_insert_after_en_nothing, vec_int1, vec)
 {
-    test_ptr_error(vec_insert_after_en(vec, vec_first(vec), 0, NULL), E_VEC_NULL_REQUEST);
+    test_ptr_success(vec_insert_after_en(vec, vec_first(vec), 0, NULL));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_insert_after_en, vec_int10, vec)
@@ -1146,6 +1162,103 @@ TEST_CASE_FIXTURE(vec_insert_after_en, vec_int10, vec)
     test_uint_eq(vec_size(vec), 12);
     test_int_eq(*(int*)vec_at(vec, 4), i[2]);
     test_int_list(k, &i[5], 2);
+}
+
+TEST_CASE_ABORT(vec_set_invalid_magic)
+{
+    vec_set((vec_ct)&not_a_vector, 0, NULL);
+}
+
+TEST_CASE_FIXTURE(vec_set_oob_positive_index, vec_int, vec)
+{
+    test_int_error(vec_set(vec, 1, NULL), E_VEC_OUT_OF_BOUNDS);
+}
+
+TEST_CASE_FIXTURE(vec_set_oob_negative_index, vec_int, vec)
+{
+    test_int_error(vec_set(vec, -1, NULL), E_VEC_OUT_OF_BOUNDS);
+}
+
+TEST_CASE_FIXTURE(vec_set_front_positive_index, vec_int10, vec)
+{
+    test_int_success(vec_set(vec, 0, &i[2]));
+    test_uint_eq(vec_size(vec), 10);
+    test_int_eq(*(int*)vec_at(vec, 0), i[2]);
+}
+
+TEST_CASE_FIXTURE(vec_set_back_positive_index, vec_int10, vec)
+{
+    test_int_success(vec_set(vec, 9, &i[2]));
+    test_uint_eq(vec_size(vec), 10);
+    test_int_eq(*(int*)vec_at(vec, 9), i[2]);
+}
+
+TEST_CASE_FIXTURE(vec_set_front_negative_index, vec_int10, vec)
+{
+    test_int_success(vec_set(vec, -10, &i[2]));
+    test_uint_eq(vec_size(vec), 10);
+    test_int_eq(*(int*)vec_at(vec, 0), i[2]);
+}
+
+TEST_CASE_FIXTURE(vec_set_back_negative_index, vec_int10, vec)
+{
+    test_int_success(vec_set(vec, -1, &i[2]));
+    test_uint_eq(vec_size(vec), 10);
+    test_int_eq(*(int*)vec_at(vec, 9), i[2]);
+}
+
+static void _test_vec_set_dtor(vec_const_ct v, void *elem, void *ctx)
+{
+    int *last = ctx, *i = elem;
+    
+    *last = *i;
+}
+
+TEST_CASE_ABORT(vec_set_f_invalid_magic)
+{
+    vec_set_f((vec_ct)&not_a_vector, 0, NULL, NULL, NULL);
+}
+
+TEST_CASE_FIXTURE(vec_set_f_oob_positive_index, vec_int, vec)
+{
+    test_int_error(vec_set_f(vec, 1, NULL, NULL, NULL), E_VEC_OUT_OF_BOUNDS);
+}
+
+TEST_CASE_FIXTURE(vec_set_f_oob_negative_index, vec_int, vec)
+{
+    test_int_error(vec_set_f(vec, -1, NULL, NULL, NULL), E_VEC_OUT_OF_BOUNDS);
+}
+
+TEST_CASE_FIXTURE(vec_set_f_front_positive_index, vec_int10, vec)
+{
+    test_int_success(vec_set_f(vec, 0, &i[2], _test_vec_set_dtor, j));
+    test_uint_eq(vec_size(vec), 10);
+    test_int_eq(*(int*)vec_at(vec, 0), i[2]);
+    test_int_eq(j[0], i[0]);
+}
+
+TEST_CASE_FIXTURE(vec_set_f_back_positive_index, vec_int10, vec)
+{
+    test_int_success(vec_set_f(vec, 9, &i[2], _test_vec_set_dtor, j));
+    test_uint_eq(vec_size(vec), 10);
+    test_int_eq(*(int*)vec_at(vec, 9), i[2]);
+    test_int_eq(j[0], i[9]);
+}
+
+TEST_CASE_FIXTURE(vec_set_f_front_negative_index, vec_int10, vec)
+{
+    test_int_success(vec_set_f(vec, -10, &i[2], _test_vec_set_dtor, j));
+    test_uint_eq(vec_size(vec), 10);
+    test_int_eq(*(int*)vec_at(vec, 0), i[2]);
+    test_int_eq(j[0], i[0]);
+}
+
+TEST_CASE_FIXTURE(vec_set_f_back_negative_index, vec_int10, vec)
+{
+    test_int_success(vec_set_f(vec, -1, &i[2], _test_vec_set_dtor, j));
+    test_uint_eq(vec_size(vec), 10);
+    test_int_eq(*(int*)vec_at(vec, 9), i[2]);
+    test_int_eq(j[0], i[9]);
 }
 
 TEST_CASE_ABORT(vec_pop_invalid_magic)
@@ -1238,25 +1351,25 @@ TEST_CASE_ABORT(vec_pop_n_invalid_magic)
 
 TEST_CASE_FIXTURE(vec_pop_n_empty_vector, vec_int, vec)
 {
-    test_int_error(vec_pop_n(vec, 2), E_VEC_EMPTY);
+    test_int_error(vec_pop_n(vec, 2), E_VEC_OUT_OF_BOUNDS);
 }
 
 TEST_CASE_FIXTURE(vec_pop_n_nothing, vec_int1, vec)
 {
-    test_int_error(vec_pop_n(vec, 0), E_VEC_NULL_REQUEST);
+    test_int_success(vec_pop_n(vec, 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_pop_n, vec_int10, vec)
 {
-    test_rc_success(vec_pop_n(vec, 2), 2);
+    test_int_success(vec_pop_n(vec, 2));
     test_uint_eq(vec_size(vec), 8);
     test_int_eq(*(int*)vec_last(vec), i[7]);
 }
 
 TEST_CASE_FIXTURE(vec_pop_n_fewer_members, vec_int1, vec)
 {
-    test_rc_success(vec_pop_n(vec, 2), 1);
-    test_uint_eq(vec_size(vec), 0);
+    test_int_error(vec_pop_n(vec, 2), E_VEC_OUT_OF_BOUNDS);
 }
 
 TEST_CASE_ABORT(vec_pop_en_invalid_magic)
@@ -1266,17 +1379,18 @@ TEST_CASE_ABORT(vec_pop_en_invalid_magic)
 
 TEST_CASE_FIXTURE(vec_pop_en_empty_vector, vec_int, vec)
 {
-    test_int_error(vec_pop_en(vec, NULL, 2), E_VEC_EMPTY);
+    test_int_error(vec_pop_en(vec, NULL, 2), E_VEC_OUT_OF_BOUNDS);
 }
 
 TEST_CASE_FIXTURE(vec_pop_en_nothing, vec_int1, vec)
 {
-    test_int_error(vec_pop_en(vec, NULL, 0), E_VEC_NULL_REQUEST);
+    test_int_success(vec_pop_en(vec, NULL, 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_pop_en, vec_int10, vec)
 {
-    test_rc_success(vec_pop_en(vec, j, 2), 2);
+    test_int_success(vec_pop_en(vec, j, 2));
     test_uint_eq(vec_size(vec), 8);
     test_int_eq(*(int*)vec_last(vec), i[7]);
     test_int_list(j, &i[8], 2);
@@ -1284,9 +1398,7 @@ TEST_CASE_FIXTURE(vec_pop_en, vec_int10, vec)
 
 TEST_CASE_FIXTURE(vec_pop_en_fewer_members, vec_int1, vec)
 {
-    test_rc_success(vec_pop_en(vec, j, 2), 1);
-    test_uint_eq(vec_size(vec), 0);
-    test_int_eq(j[0], i[0]);
+    test_int_error(vec_pop_en(vec, j, 2), E_VEC_OUT_OF_BOUNDS);
 }
 
 TEST_CASE_ABORT(vec_pop_fn_invalid_magic)
@@ -1296,17 +1408,18 @@ TEST_CASE_ABORT(vec_pop_fn_invalid_magic)
 
 TEST_CASE_FIXTURE(vec_pop_fn_empty_vector, vec_int, vec)
 {
-    test_int_error(vec_pop_fn(vec, 2, _test_vec_dtor, &count), E_VEC_EMPTY);
+    test_int_error(vec_pop_fn(vec, 2, _test_vec_dtor, &count), E_VEC_OUT_OF_BOUNDS);
 }
 
 TEST_CASE_FIXTURE(vec_pop_fn_nothing, vec_int1, vec)
 {
-    test_int_error(vec_pop_fn(vec, 0, _test_vec_dtor, &count), E_VEC_NULL_REQUEST);
+    test_int_success(vec_pop_fn(vec, 0, _test_vec_dtor, &count));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_pop_fn, vec_int10, vec)
 {
-    test_rc_success(vec_pop_fn(vec, 2, _test_vec_dtor, &count), 2);
+    test_int_success(vec_pop_fn(vec, 2, _test_vec_dtor, &count));
     test_uint_eq(vec_size(vec), 8);
     test_int_eq(*(int*)vec_last(vec), i[7]);
     test_int_eq(count, 2);
@@ -1314,9 +1427,7 @@ TEST_CASE_FIXTURE(vec_pop_fn, vec_int10, vec)
 
 TEST_CASE_FIXTURE(vec_pop_fn_fewer_members, vec_int1, vec)
 {
-    test_rc_success(vec_pop_fn(vec, 2, _test_vec_dtor, &count), 1);
-    test_uint_eq(vec_size(vec), 0);
-    test_int_eq(count, 1);
+    test_int_error(vec_pop_fn(vec, 2, _test_vec_dtor, &count), E_VEC_OUT_OF_BOUNDS);
 }
 
 TEST_CASE_ABORT(vec_remove_invalid_magic)
@@ -1335,10 +1446,10 @@ TEST_CASE_FIXTURE(vec_remove_no_member, vec_int10, vec)
     test_int_error(vec_remove(vec, k-1), E_VEC_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIXTURE(vec_remove_member_invalid_alignment, vec_int10, vec)
+TEST_CASE_ABORT_FIXTURE(vec_remove_member_invalid_alignment, vec_int10, vec)
 {
     k = vec_first(vec);
-    test_int_error(vec_remove(vec, ((char*)k)+1), E_VEC_UNALIGNED);
+    vec_remove(vec, ((char*)k)+1);
 }
 
 TEST_CASE_FIXTURE(vec_remove, vec_int10, vec)
@@ -1346,6 +1457,36 @@ TEST_CASE_FIXTURE(vec_remove, vec_int10, vec)
     test_int_success(vec_remove(vec, vec_first(vec)));
     test_uint_eq(vec_size(vec), 9);
     test_int_eq(*(int*)vec_first(vec), i[1]);
+}
+
+TEST_CASE_ABORT(vec_remove_f_invalid_magic)
+{
+    vec_remove_f((vec_ct)&not_a_vector, NULL, _test_vec_dtor, &count);
+}
+
+TEST_CASE_ABORT_FIXTURE(vec_remove_f_invalid_elem, vec_int, vec)
+{
+    vec_remove_f(vec, NULL, _test_vec_dtor, &count);
+}
+
+TEST_CASE_FIXTURE(vec_remove_f_no_member, vec_int10, vec)
+{
+    k = vec_first(vec);
+    test_int_error(vec_remove_f(vec, k-1, _test_vec_dtor, &count), E_VEC_OUT_OF_BOUNDS);
+}
+
+TEST_CASE_ABORT_FIXTURE(vec_remove_f_member_invalid_alignment, vec_int10, vec)
+{
+    k = vec_first(vec);
+    vec_remove_f(vec, ((char*)k)+1, _test_vec_dtor, &count);
+}
+
+TEST_CASE_FIXTURE(vec_remove_f, vec_int10, vec)
+{
+    test_int_success(vec_remove_f(vec, vec_first(vec), _test_vec_dtor, &count));
+    test_uint_eq(vec_size(vec), 9);
+    test_int_eq(*(int*)vec_first(vec), i[1]);
+    test_int_eq(count, 1);
 }
 
 TEST_CASE_ABORT(vec_remove_n_invalid_magic)
@@ -1364,28 +1505,69 @@ TEST_CASE_FIXTURE(vec_remove_n_no_member, vec_int10, vec)
     test_int_error(vec_remove_n(vec, k-1, 2), E_VEC_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIXTURE(vec_remove_n_member_invalid_alignment, vec_int10, vec)
+TEST_CASE_ABORT_FIXTURE(vec_remove_n_member_invalid_alignment, vec_int10, vec)
 {
     k = vec_first(vec);
-    test_int_error(vec_remove_n(vec, ((char*)k)+1, 2), E_VEC_UNALIGNED);
+    vec_remove_n(vec, ((char*)k)+1, 2);
 }
 
 TEST_CASE_FIXTURE(vec_remove_n_nothing, vec_int1, vec)
 {
-    test_int_error(vec_remove_n(vec, vec_first(vec), 0), E_VEC_NULL_REQUEST);
+    test_int_success(vec_remove_n(vec, vec_first(vec), 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_remove_n, vec_int10, vec)
 {
-    test_rc_success(vec_remove_n(vec, vec_first(vec), 2), 2);
+    test_int_success(vec_remove_n(vec, vec_first(vec), 2));
     test_uint_eq(vec_size(vec), 8);
     test_int_eq(*(int*)vec_first(vec), i[2]);
 }
 
 TEST_CASE_FIXTURE(vec_remove_n_fewer_members, vec_int1, vec)
 {
-    test_rc_success(vec_remove_n(vec, vec_first(vec), 2), 1);
-    test_uint_eq(vec_size(vec), 0);
+    test_int_error(vec_remove_n(vec, vec_first(vec), 2), E_VEC_OUT_OF_BOUNDS);
+}
+
+TEST_CASE_ABORT(vec_remove_fn_invalid_magic)
+{
+    vec_remove_fn((vec_ct)&not_a_vector, NULL, 2, _test_vec_dtor, &count);
+}
+
+TEST_CASE_ABORT_FIXTURE(vec_remove_fn_invalid_elem, vec_int, vec)
+{
+    vec_remove_fn(vec, NULL, 2, _test_vec_dtor, &count);
+}
+
+TEST_CASE_FIXTURE(vec_remove_fn_no_member, vec_int10, vec)
+{
+    k = vec_first(vec);
+    test_int_error(vec_remove_fn(vec, k-1, 2, _test_vec_dtor, &count), E_VEC_OUT_OF_BOUNDS);
+}
+
+TEST_CASE_ABORT_FIXTURE(vec_remove_fn_member_invalid_alignment, vec_int10, vec)
+{
+    k = vec_first(vec);
+    vec_remove_fn(vec, ((char*)k)+1, 2, _test_vec_dtor, &count);
+}
+
+TEST_CASE_FIXTURE(vec_remove_fn_nothing, vec_int1, vec)
+{
+    test_int_success(vec_remove_fn(vec, vec_first(vec), 0, _test_vec_dtor, &count));
+    test_uint_eq(vec_size(vec), 1);
+}
+
+TEST_CASE_FIXTURE(vec_remove_fn, vec_int10, vec)
+{
+    test_int_success(vec_remove_fn(vec, vec_first(vec), 2, _test_vec_dtor, &count));
+    test_uint_eq(vec_size(vec), 8);
+    test_int_eq(*(int*)vec_first(vec), i[2]);
+    test_int_eq(count, 2);
+}
+
+TEST_CASE_FIXTURE(vec_remove_fn_fewer_members, vec_int1, vec)
+{
+    test_int_error(vec_remove_fn(vec, vec_first(vec), 2, _test_vec_dtor, &count), E_VEC_OUT_OF_BOUNDS);
 }
 
 TEST_CASE_ABORT(vec_remove_at_invalid_magic)
@@ -1532,40 +1714,38 @@ TEST_CASE_FIXTURE(vec_remove_at_n_oob_negative_index, vec_int, vec)
 
 TEST_CASE_FIXTURE(vec_remove_at_n_nothing_positive_index, vec_int1, vec)
 {
-    test_int_error(vec_remove_at_n(vec, 0, 0), E_VEC_NULL_REQUEST);
+    test_int_success(vec_remove_at_n(vec, 0, 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_remove_at_n_nothing_negative_index, vec_int1, vec)
 {
-    test_int_error(vec_remove_at_n(vec, -1, 0), E_VEC_NULL_REQUEST);
+    test_int_success(vec_remove_at_n(vec, -1, 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_remove_at_n_positive_index, vec_int10, vec)
 {
-    test_rc_success(vec_remove_at_n(vec, 0, 2), 2);
+    test_int_success(vec_remove_at_n(vec, 0, 2));
     test_uint_eq(vec_size(vec), 8);
     test_int_eq(*(int*)vec_first(vec), i[2]);
 }
 
 TEST_CASE_FIXTURE(vec_remove_at_n_fewer_members_positive_index, vec_int10, vec)
 {
-    test_rc_success(vec_remove_at_n(vec, 9, 2), 1);
-    test_uint_eq(vec_size(vec), 9);
-    test_int_eq(*(int*)vec_last(vec), i[8]);
+    test_int_error(vec_remove_at_n(vec, 9, 2), E_VEC_OUT_OF_BOUNDS);
 }
 
 TEST_CASE_FIXTURE(vec_remove_at_n_negative_index, vec_int10, vec)
 {
-    test_rc_success(vec_remove_at_n(vec, -2, 2), 2);
+    test_int_success(vec_remove_at_n(vec, -2, 2));
     test_uint_eq(vec_size(vec), 8);
     test_int_eq(*(int*)vec_last(vec), i[7]);
 }
 
 TEST_CASE_FIXTURE(vec_remove_at_n_fewer_members_negative_index, vec_int10, vec)
 {
-    test_rc_success(vec_remove_at_n(vec, -1, 2), 1);
-    test_uint_eq(vec_size(vec), 9);
-    test_int_eq(*(int*)vec_last(vec), i[8]);
+    test_int_error(vec_remove_at_n(vec, -1, 2), E_VEC_OUT_OF_BOUNDS);
 }
 
 TEST_CASE_ABORT(vec_remove_at_en_invalid_magic)
@@ -1585,17 +1765,19 @@ TEST_CASE_FIXTURE(vec_remove_at_en_oob_negative_index, vec_int, vec)
 
 TEST_CASE_FIXTURE(vec_remove_at_en_nothing_positive_index, vec_int1, vec)
 {
-    test_int_error(vec_remove_at_en(vec, j, 0, 0), E_VEC_NULL_REQUEST);
+    test_int_success(vec_remove_at_en(vec, j, 0, 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_remove_at_en_nothing_negative_index, vec_int1, vec)
 {
-    test_int_error(vec_remove_at_en(vec, j, -1, 0), E_VEC_NULL_REQUEST);
+    test_int_success(vec_remove_at_en(vec, j, -1, 0));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_remove_at_en_positive_index, vec_int10, vec)
 {
-    test_rc_success(vec_remove_at_en(vec, j, 0, 2), 2);
+    test_int_success(vec_remove_at_en(vec, j, 0, 2));
     test_uint_eq(vec_size(vec), 8);
     test_int_eq(*(int*)vec_first(vec), i[2]);
     test_int_list(j, i, 2);
@@ -1603,15 +1785,12 @@ TEST_CASE_FIXTURE(vec_remove_at_en_positive_index, vec_int10, vec)
 
 TEST_CASE_FIXTURE(vec_remove_at_en_fewer_members_positive_index, vec_int10, vec)
 {
-    test_rc_success(vec_remove_at_en(vec, j, 9, 2), 1);
-    test_uint_eq(vec_size(vec), 9);
-    test_int_eq(*(int*)vec_last(vec), i[8]);
-    test_int_eq(j[0], i[9]);
+    test_int_error(vec_remove_at_en(vec, j, 9, 2), E_VEC_OUT_OF_BOUNDS);
 }
 
 TEST_CASE_FIXTURE(vec_remove_at_en_negative_index, vec_int10, vec)
 {
-    test_rc_success(vec_remove_at_en(vec, j, -2, 2), 2);
+    test_int_success(vec_remove_at_en(vec, j, -2, 2));
     test_uint_eq(vec_size(vec), 8);
     test_int_eq(*(int*)vec_last(vec), i[7]);
     test_int_list(j, &i[8], 2);
@@ -1619,10 +1798,7 @@ TEST_CASE_FIXTURE(vec_remove_at_en_negative_index, vec_int10, vec)
 
 TEST_CASE_FIXTURE(vec_remove_at_en_fewer_members_negative_index, vec_int10, vec)
 {
-    test_rc_success(vec_remove_at_en(vec, j, -1, 2), 1);
-    test_uint_eq(vec_size(vec), 9);
-    test_int_eq(*(int*)vec_last(vec), i[8]);
-    test_int_eq(j[0], i[9]);
+    test_int_error(vec_remove_at_en(vec, j, -1, 2), E_VEC_OUT_OF_BOUNDS);
 }
 
 TEST_CASE_ABORT(vec_remove_at_fn_invalid_magic)
@@ -1642,17 +1818,19 @@ TEST_CASE_FIXTURE(vec_remove_at_fn_oob_negative_index, vec_int, vec)
 
 TEST_CASE_FIXTURE(vec_remove_at_fn_nothing_positive_index, vec_int1, vec)
 {
-    test_int_error(vec_remove_at_fn(vec, 0, 0, _test_vec_dtor, &count), E_VEC_NULL_REQUEST);
+    test_int_success(vec_remove_at_fn(vec, 0, 0, _test_vec_dtor, &count));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_remove_at_fn_nothing_negative_index, vec_int1, vec)
 {
-    test_int_error(vec_remove_at_fn(vec, -1, 0, _test_vec_dtor, &count), E_VEC_NULL_REQUEST);
+    test_int_success(vec_remove_at_fn(vec, -1, 0, _test_vec_dtor, &count));
+    test_uint_eq(vec_size(vec), 1);
 }
 
 TEST_CASE_FIXTURE(vec_remove_at_fn_positive_index, vec_int10, vec)
 {
-    test_rc_success(vec_remove_at_fn(vec, 0, 2, _test_vec_dtor, &count), 2);
+    test_int_success(vec_remove_at_fn(vec, 0, 2, _test_vec_dtor, &count));
     test_uint_eq(vec_size(vec), 8);
     test_int_eq(*(int*)vec_first(vec), i[2]);
     test_int_eq(count, 2);
@@ -1660,15 +1838,12 @@ TEST_CASE_FIXTURE(vec_remove_at_fn_positive_index, vec_int10, vec)
 
 TEST_CASE_FIXTURE(vec_remove_at_fn_fewer_members_positive_index, vec_int10, vec)
 {
-    test_rc_success(vec_remove_at_fn(vec, 9, 2, _test_vec_dtor, &count), 1);
-    test_uint_eq(vec_size(vec), 9);
-    test_int_eq(*(int*)vec_last(vec), i[8]);
-    test_int_eq(count, 1);
+    test_int_error(vec_remove_at_fn(vec, 9, 2, _test_vec_dtor, &count), E_VEC_OUT_OF_BOUNDS);
 }
 
 TEST_CASE_FIXTURE(vec_remove_at_fn_negative_index, vec_int10, vec)
 {
-    test_rc_success(vec_remove_at_fn(vec, -2, 2, _test_vec_dtor, &count), 2);
+    test_int_success(vec_remove_at_fn(vec, -2, 2, _test_vec_dtor, &count));
     test_uint_eq(vec_size(vec), 8);
     test_int_eq(*(int*)vec_last(vec), i[7]);
     test_int_eq(count, 2);
@@ -1676,10 +1851,7 @@ TEST_CASE_FIXTURE(vec_remove_at_fn_negative_index, vec_int10, vec)
 
 TEST_CASE_FIXTURE(vec_remove_at_fn_fewer_members_negative_index, vec_int10, vec)
 {
-    test_rc_success(vec_remove_at_fn(vec, -1, 2, _test_vec_dtor, &count), 1);
-    test_uint_eq(vec_size(vec), 9);
-    test_int_eq(*(int*)vec_last(vec), i[8]);
-    test_int_eq(count, 1);
+    test_int_error(vec_remove_at_fn(vec, -1, 2, _test_vec_dtor, &count), E_VEC_OUT_OF_BOUNDS);
 }
 
 static bool _test_vec_pred_int(vec_const_ct v, const void *elem, void *ctx)
@@ -1715,6 +1887,27 @@ TEST_CASE_FIXTURE(vec_find, vec_int10, vec)
 {
     test_ptr_success(k = vec_find(vec, _test_vec_pred_int, (void*)&i[2]));
     test_int_eq(vec_pos(vec, k), 2);
+}
+
+TEST_CASE_ABORT(vec_find_e_invalid_magic)
+{
+    vec_find_e((vec_ct)&not_a_vector, j, _test_vec_pred_int, (void*)&i[2]);
+}
+
+TEST_CASE_ABORT_FIXTURE(vec_find_e_invalid_pred, vec_int, vec)
+{
+    vec_find_e(vec, NULL, NULL, NULL);
+}
+
+TEST_CASE_FIXTURE(vec_find_e_fail, vec_int, vec)
+{
+    test_int_error(vec_find_e(vec, j, _test_vec_pred_int, (void*)&i[2]), E_VEC_NOT_FOUND);
+}
+
+TEST_CASE_FIXTURE(vec_find_e, vec_int10, vec)
+{
+    test_int_success(vec_find_e(vec, j, _test_vec_pred_int, (void*)&i[2]));
+    test_int_eq(j[0], i[2]);
 }
 
 TEST_CASE_ABORT(vec_find_p_invalid_magic)
@@ -1762,6 +1955,27 @@ TEST_CASE_FIXTURE(vec_find_r, vec_int10, vec)
 {
     test_ptr_success(k = vec_find_r(vec, _test_vec_pred_int, (void*)&i[2]));
     test_int_eq(vec_pos(vec, k), 7);
+}
+
+TEST_CASE_ABORT(vec_find_re_invalid_magic)
+{
+    vec_find_re((vec_ct)&not_a_vector, j, _test_vec_pred_int, (void*)&i[2]);
+}
+
+TEST_CASE_ABORT_FIXTURE(vec_find_re_invalid_pred, vec_int, vec)
+{
+    vec_find_re(vec, NULL, NULL, NULL);
+}
+
+TEST_CASE_FIXTURE(vec_find_re_fail, vec_int, vec)
+{
+    test_int_error(vec_find_re(vec, j, _test_vec_pred_int, (void*)&i[2]), E_VEC_NOT_FOUND);
+}
+
+TEST_CASE_FIXTURE(vec_find_re, vec_int10, vec)
+{
+    test_int_success(vec_find_re(vec, j, _test_vec_pred_int, (void*)&i[2]));
+    test_int_eq(j[0], i[7]);
 }
 
 TEST_CASE_ABORT(vec_find_rp_invalid_magic)
@@ -1830,48 +2044,6 @@ TEST_CASE_FIXTURE(vec_find_pos_r, vec_int10, vec)
     test_rc_success(vec_find_pos_r(vec, _test_vec_pred_int, (void*)&i[2]), 7);
 }
 
-TEST_CASE_ABORT(vec_find_get_invalid_magic)
-{
-    vec_find_get((vec_ct)&not_a_vector, j, _test_vec_pred_int, (void*)&i[2]);
-}
-
-TEST_CASE_ABORT_FIXTURE(vec_find_get_invalid_pred, vec_int, vec)
-{
-    vec_find_get(vec, NULL, NULL, NULL);
-}
-
-TEST_CASE_FIXTURE(vec_find_get_fail, vec_int, vec)
-{
-    test_int_error(vec_find_get(vec, j, _test_vec_pred_int, (void*)&i[2]), E_VEC_NOT_FOUND);
-}
-
-TEST_CASE_FIXTURE(vec_find_get, vec_int10, vec)
-{
-    test_int_success(vec_find_get(vec, j, _test_vec_pred_int, (void*)&i[2]));
-    test_int_eq(j[0], i[2]);
-}
-
-TEST_CASE_ABORT(vec_find_get_r_invalid_magic)
-{
-    vec_find_get_r((vec_ct)&not_a_vector, j, _test_vec_pred_int, (void*)&i[2]);
-}
-
-TEST_CASE_ABORT_FIXTURE(vec_find_get_r_invalid_pred, vec_int, vec)
-{
-    vec_find_get_r(vec, NULL, NULL, NULL);
-}
-
-TEST_CASE_FIXTURE(vec_find_get_r_fail, vec_int, vec)
-{
-    test_int_error(vec_find_get_r(vec, j, _test_vec_pred_int, (void*)&i[2]), E_VEC_NOT_FOUND);
-}
-
-TEST_CASE_FIXTURE(vec_find_get_r, vec_int10, vec)
-{
-    test_int_success(vec_find_get_r(vec, j, _test_vec_pred_int, (void*)&i[2]));
-    test_int_eq(j[0], i[7]);
-}
-
 TEST_CASE_ABORT(vec_find_remove_invalid_magic)
 {
     vec_find_remove((vec_ct)&not_a_vector, _test_vec_pred_int, (void*)&i[2]);
@@ -1892,6 +2064,29 @@ TEST_CASE_FIXTURE(vec_find_remove, vec_int10, vec)
     test_int_success(vec_find_remove(vec, _test_vec_pred_int, (void*)&i[2]));
     test_uint_eq(vec_size(vec), 9);
     test_int_eq(*(int*)vec_at(vec, 2), i[3]);
+}
+
+TEST_CASE_ABORT(vec_find_remove_e_invalid_magic)
+{
+    vec_find_remove_e((vec_ct)&not_a_vector, NULL, _test_vec_pred_int, (void*)&i[2]);
+}
+
+TEST_CASE_ABORT_FIXTURE(vec_find_remove_e_invalid_pred, vec_int, vec)
+{
+    vec_find_remove_e(vec, NULL, NULL, NULL);
+}
+
+TEST_CASE_FIXTURE(vec_find_remove_e_fail, vec_int, vec)
+{
+    test_int_error(vec_find_remove_e(vec, NULL, _test_vec_pred_int, (void*)&i[2]), E_VEC_NOT_FOUND);
+}
+
+TEST_CASE_FIXTURE(vec_find_remove_e, vec_int10, vec)
+{
+    test_int_success(vec_find_remove_e(vec, j, _test_vec_pred_int, (void*)&i[2]));
+    test_uint_eq(vec_size(vec), 9);
+    test_int_eq(*(int*)vec_at(vec, 2), i[3]);
+    test_int_eq(j[0], i[2]);
 }
 
 TEST_CASE_ABORT(vec_find_remove_p_invalid_magic)
@@ -1965,6 +2160,29 @@ TEST_CASE_FIXTURE(vec_find_remove_r, vec_int10, vec)
     test_int_success(vec_find_remove_r(vec, _test_vec_pred_int, (void*)&i[2]));
     test_uint_eq(vec_size(vec), 9);
     test_int_eq(*(int*)vec_at(vec, 7), i[8]);
+}
+
+TEST_CASE_ABORT(vec_find_remove_re_invalid_magic)
+{
+    vec_find_remove_re((vec_ct)&not_a_vector, NULL, _test_vec_pred_int, (void*)&i[2]);
+}
+
+TEST_CASE_ABORT_FIXTURE(vec_find_remove_re_invalid_pred, vec_int, vec)
+{
+    vec_find_remove_re(vec, NULL, NULL, NULL);
+}
+
+TEST_CASE_FIXTURE(vec_find_remove_re_fail, vec_int, vec)
+{
+    test_int_error(vec_find_remove_re(vec, NULL, _test_vec_pred_int, (void*)&i[2]), E_VEC_NOT_FOUND);
+}
+
+TEST_CASE_FIXTURE(vec_find_remove_re, vec_int10, vec)
+{
+    test_int_success(vec_find_remove_e(vec, j, _test_vec_pred_int, (void*)&i[2]));
+    test_uint_eq(vec_size(vec), 9);
+    test_int_eq(*(int*)vec_at(vec, 7), i[8]);
+    test_int_eq(j[0], i[7]);
 }
 
 TEST_CASE_ABORT(vec_find_remove_rp_invalid_magic)
@@ -2236,11 +2454,43 @@ TEST_CASE_FIXTURE(vec_fold_r, vec_int, vec)
     test_int_eq(count, 321);
 }
 
+static int _test_vec_sort(const void *elem1, const void *elem2, void *ctx)
+{
+    const int *i1 = elem1, *i2 = elem2;
+    int *count = ctx;
+
+    count[0]++;
+
+    return *i1 < *i2 ? -1 : *i1 > *i2 ? 1 : 0;
+}
+
+TEST_CASE_ABORT(vec_sort_invalid_magic)
+{
+    vec_sort((vec_ct)&not_a_vector, NULL, NULL);
+}
+
+TEST_CASE_ABORT_FIXTURE(vec_sort_invalid_sort, vec_int, vec)
+{
+    vec_sort(vec, NULL, NULL);
+}
+
+TEST_CASE_FIXTURE(vec_sort, vec_int, vec)
+{
+    int i[] = { 2, 1, 3 };
+    
+    vec_push_en(vec, 3, i);
+    test_void(vec_sort(vec, _test_vec_sort, &count));
+    test_int_eq(count, 3);
+    test_int_eq(*(int*)vec_at(vec, 0), 1);
+    test_int_eq(*(int*)vec_at(vec, 1), 2);
+    test_int_eq(*(int*)vec_at(vec, 2), 3);
+}
+
 
 test_suite_ct test_suite_con_vec(void)
 {
     return test_suite_new_with_cases("vec"
-        , test_case_new(vec_new_invalid_capacity)
+        , test_case_new(vec_new_invalid_elemsize)
         
         , test_case_new(vec_elemsize_invalid_magic)
         , test_case_new(vec_elemsize)
@@ -2439,6 +2689,21 @@ test_suite_ct test_suite_con_vec(void)
         , test_case_new(vec_insert_after_en_nothing)
         , test_case_new(vec_insert_after_en)
         
+        , test_case_new(vec_set_invalid_magic)
+        , test_case_new(vec_set_oob_positive_index)
+        , test_case_new(vec_set_oob_negative_index)
+        , test_case_new(vec_set_front_positive_index)
+        , test_case_new(vec_set_front_negative_index)
+        , test_case_new(vec_set_back_positive_index)
+        , test_case_new(vec_set_back_negative_index)
+        , test_case_new(vec_set_f_invalid_magic)
+        , test_case_new(vec_set_f_oob_positive_index)
+        , test_case_new(vec_set_f_oob_negative_index)
+        , test_case_new(vec_set_f_front_positive_index)
+        , test_case_new(vec_set_f_front_negative_index)
+        , test_case_new(vec_set_f_back_positive_index)
+        , test_case_new(vec_set_f_back_negative_index)
+        
         , test_case_new(vec_pop_invalid_magic)
         , test_case_new(vec_pop_empty_vector)
         , test_case_new(vec_pop)
@@ -2473,6 +2738,12 @@ test_suite_ct test_suite_con_vec(void)
         , test_case_new(vec_remove_no_member)
         , test_case_new(vec_remove_member_invalid_alignment)
         , test_case_new(vec_remove)
+        , test_case_new(vec_remove_f_invalid_magic)
+        , test_case_new(vec_remove_f_invalid_elem)
+        , test_case_new(vec_remove_f_no_member)
+        , test_case_new(vec_remove_f_member_invalid_alignment)
+        , test_case_new(vec_remove_f)
+        
         , test_case_new(vec_remove_n_invalid_magic)
         , test_case_new(vec_remove_n_invalid_elem)
         , test_case_new(vec_remove_n_no_member)
@@ -2480,6 +2751,13 @@ test_suite_ct test_suite_con_vec(void)
         , test_case_new(vec_remove_n_nothing)
         , test_case_new(vec_remove_n)
         , test_case_new(vec_remove_n_fewer_members)
+        , test_case_new(vec_remove_fn_invalid_magic)
+        , test_case_new(vec_remove_fn_invalid_elem)
+        , test_case_new(vec_remove_fn_no_member)
+        , test_case_new(vec_remove_fn_member_invalid_alignment)
+        , test_case_new(vec_remove_fn_nothing)
+        , test_case_new(vec_remove_fn)
+        , test_case_new(vec_remove_fn_fewer_members)
         
         , test_case_new(vec_remove_at_invalid_magic)
         , test_case_new(vec_remove_at_oob_positive_index)
@@ -2540,6 +2818,10 @@ test_suite_ct test_suite_con_vec(void)
         , test_case_new(vec_find_invalid_pred)
         , test_case_new(vec_find_fail)
         , test_case_new(vec_find)
+        , test_case_new(vec_find_e_invalid_magic)
+        , test_case_new(vec_find_e_invalid_pred)
+        , test_case_new(vec_find_e_fail)
+        , test_case_new(vec_find_e)
         , test_case_new(vec_find_p_invalid_magic)
         , test_case_new(vec_find_p_invalid_pred)
         , test_case_new(vec_find_p_invalid_type)
@@ -2549,6 +2831,10 @@ test_suite_ct test_suite_con_vec(void)
         , test_case_new(vec_find_r_invalid_pred)
         , test_case_new(vec_find_r_fail)
         , test_case_new(vec_find_r)
+        , test_case_new(vec_find_re_invalid_magic)
+        , test_case_new(vec_find_re_invalid_pred)
+        , test_case_new(vec_find_re_fail)
+        , test_case_new(vec_find_re)
         , test_case_new(vec_find_rp_invalid_magic)
         , test_case_new(vec_find_rp_invalid_pred)
         , test_case_new(vec_find_rp_invalid_type)
@@ -2564,19 +2850,14 @@ test_suite_ct test_suite_con_vec(void)
         , test_case_new(vec_find_pos_r_fail)
         , test_case_new(vec_find_pos_r)
         
-        , test_case_new(vec_find_get_invalid_magic)
-        , test_case_new(vec_find_get_invalid_pred)
-        , test_case_new(vec_find_get_fail)
-        , test_case_new(vec_find_get)
-        , test_case_new(vec_find_get_r_invalid_magic)
-        , test_case_new(vec_find_get_r_invalid_pred)
-        , test_case_new(vec_find_get_r_fail)
-        , test_case_new(vec_find_get_r)
-        
         , test_case_new(vec_find_remove_invalid_magic)
         , test_case_new(vec_find_remove_invalid_pred)
         , test_case_new(vec_find_remove_fail)
         , test_case_new(vec_find_remove)
+        , test_case_new(vec_find_remove_e_invalid_magic)
+        , test_case_new(vec_find_remove_e_invalid_pred)
+        , test_case_new(vec_find_remove_e_fail)
+        , test_case_new(vec_find_remove_e)
         , test_case_new(vec_find_remove_p_invalid_magic)
         , test_case_new(vec_find_remove_p_invalid_pred)
         , test_case_new(vec_find_remove_p_invalid_type)
@@ -2586,11 +2867,14 @@ test_suite_ct test_suite_con_vec(void)
         , test_case_new(vec_find_remove_f_invalid_pred)
         , test_case_new(vec_find_remove_f_fail)
         , test_case_new(vec_find_remove_f)
-        , test_case_new(vec_find_remove_p)
         , test_case_new(vec_find_remove_r_invalid_magic)
         , test_case_new(vec_find_remove_r_invalid_pred)
         , test_case_new(vec_find_remove_r_fail)
         , test_case_new(vec_find_remove_r)
+        , test_case_new(vec_find_remove_re_invalid_magic)
+        , test_case_new(vec_find_remove_re_invalid_pred)
+        , test_case_new(vec_find_remove_re_fail)
+        , test_case_new(vec_find_remove_re)
         , test_case_new(vec_find_remove_rp_invalid_magic)
         , test_case_new(vec_find_remove_rp_invalid_pred)
         , test_case_new(vec_find_remove_rp_invalid_type)
@@ -2638,5 +2922,9 @@ test_suite_ct test_suite_con_vec(void)
         , test_case_new(vec_fold_r_invalid_magic)
         , test_case_new(vec_fold_r_invalid_fold)
         , test_case_new(vec_fold_r)
+        
+        , test_case_new(vec_sort_invalid_magic)
+        , test_case_new(vec_sort_invalid_sort)
+        , test_case_new(vec_sort)
     );
 }
