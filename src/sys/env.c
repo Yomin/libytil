@@ -250,7 +250,7 @@ static int env_art_fold_value(art_const_ct art, str_const_ct key, void *data, vo
     if(str == ENV_UNSET)
         return 0;
     
-    return error_push_int(E_ENV_CALLBACK, state->fold(key, str, state->ctx));
+    return error_pack_int(E_ENV_CALLBACK, state->fold(key, str, state->ctx));
 }
 
 int env_fold(env_fold_cb fold, const void *ctx)

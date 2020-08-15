@@ -87,6 +87,8 @@ static const error_info_st error_infos[] =
     , [-E_ERROR_WRAP]   = { .name = "E_ERROR_WRAP",     .desc = "WRAP Error" }
     , [-E_ERROR_PASS]   = { .name = "E_ERROR_PASS",     .desc = "PASS Error" }
     , [-E_ERROR_SKIP]   = { .name = "E_ERROR_SKIP",     .desc = "SKIP Error" }
+    , [-E_SYSTEM]       = { .name = "E_SYSTEM",         .desc = "System Error" }
+    , [-E_SYSTEM_OOM]   = { .name = "E_SYSTEM_OOM",     .desc = "Out of memory." }
 };
 
 
@@ -131,13 +133,20 @@ void _error_push(const char *func, const error_info_st *infos, size_t error)
 
 void _error_wrap(const char *func)
 {
-    _error_push(func, error_infos, E_ERROR_WRAP);
+    assert(errors.size);
+    
+    if(error_type(0) == ERROR_TYPE_ERROR && error_get(0) <= E_SYSTEM)
+        _error_pass(func);
+    else
+        _error_push(func, error_infos, E_ERROR_WRAP);
 }
 
 void _error_pack(const char *func, const error_info_st *infos, size_t error)
 {
-    if(error_type(0) == ERROR_TYPE_ERROR && error_get(0) == E_ERROR_WRAP)
-        _error_wrap(func);
+    assert(errors.size);
+    
+    if(error_type(0) == ERROR_TYPE_ERROR && error_get(0) <= E_SYSTEM)
+        _error_pass(func);
     else
         _error_push(func, infos, error);
 }
@@ -213,16 +222,20 @@ void _errno_push(const char *func, int error)
         entry->value._errno.code = error;
 }
 
-void _error_push_errno(const char *func, const error_info_st *infos, size_t error, const char *sub)
-{
-    _errno_set(sub, errno);
-    _error_push(func, infos, error);
-}
-
 void _error_wrap_errno(const char *func, const char *sub)
 {
     _errno_set(sub, errno);
-    _error_wrap(func);
+    
+    if(errno == ENOMEM)
+        _error_push(func, error_infos, E_SYSTEM_OOM);
+    else
+        _error_wrap(func);
+}
+
+void _error_pack_errno(const char *func, const error_info_st *infos, size_t error, const char *sub)
+{
+    _errno_set(sub, errno);
+    _error_push(func, infos, error);
 }
 
 void _error_pass_errno(const char *func, const char *sub)
@@ -245,26 +258,30 @@ static void error_set_win32(const char *sub, DWORD error)
     }
 }
 
-void _error_push_win32(const char *func, const error_info_st *infos, size_t error, const char *sub, DWORD error32)
-{
-    error_set_win32(sub, error32);
-    _error_push(func, infos, error);
-}
-
-void _error_push_last_win32(const char *func, const error_info_st *infos, size_t error, const char *sub)
-{
-    _error_push_win32(func, infos, error, sub, GetLastError());
-}
-
 void _error_wrap_win32(const char *func, const char *sub, DWORD error)
 {
     error_set_win32(sub, error);
-    _error_wrap(func);
+    
+    if(error == ERROR_NOT_ENOUGH_MEMORY || error == ERROR_OUTOFMEMORY)
+        _error_push(func, infos, E_SYSTEM_OOM);
+    else
+        _error_wrap(func);
 }
 
 void _error_wrap_last_win32(const char *func, const char *sub)
 {
     _error_wrap_win32(func, sub, GetLastError());
+}
+
+void _error_pack_win32(const char *func, const error_info_st *infos, size_t error, const char *sub, DWORD error32)
+{
+    error_set_win32(sub, error32);
+    _error_push(func, infos, error);
+}
+
+void _error_pack_last_win32(const char *func, const error_info_st *infos, size_t error, const char *sub)
+{
+    _error_pack_win32(func, infos, error, sub, GetLastError());
 }
 
 void _error_pass_win32(const char *func, const char *sub, DWORD error)
@@ -290,16 +307,16 @@ static void error_set_hresult(const char *sub, HRESULT result)
     }
 }
 
-void _error_push_hresult(const char *func, const error_info_st *infos, size_t error, const char *sub, HRESULT result)
-{
-    error_set_hresult(sub, result);
-    _error_push(func, infos, error);
-}
-
 void _error_wrap_hresult(const char *func, const char *sub, HRESULT result)
 {
     error_set_hresult(sub, result);
     _error_wrap(func);
+}
+
+void _error_pack_hresult(const char *func, const error_info_st *infos, size_t error, const char *sub, HRESULT result)
+{
+    error_set_hresult(sub, result);
+    _error_push(func, infos, error);
 }
 
 void _error_pass_hresult(const char *func, const char *sub, HRESULT result)
@@ -320,16 +337,16 @@ static void error_set_ntstatus(const char *sub, NTSTATUS status)
     }
 }
 
-void _error_push_ntstatus(const char *func, const error_info_st *infos, size_t error, const char *sub, NTSTATUS status)
-{
-    error_set_ntstatus(sub, status);
-    _error_push(func, infos, error);
-}
-
 void _error_wrap_ntstatus(const char *func, const char *sub, NTSTATUS status)
 {
     error_set_ntstatus(sub, status);
     _error_wrap(func);
+}
+
+void _error_pack_ntstatus(const char *func, const error_info_st *infos, size_t error, const char *sub, NTSTATUS status)
+{
+    error_set_ntstatus(sub, status);
+    _error_push(func, infos, error);
 }
 
 void _error_pass_ntstatus(const char *func, const char *sub, NTSTATUS status)

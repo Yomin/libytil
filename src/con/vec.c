@@ -234,7 +234,7 @@ vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, const
     
     for(i=0; i < vec->size; i++)
         if(clone(vec, nvec->mem + i*nvec->esize, ELEM(i), (void *)ctx))
-            return error_wrap(), vec_free_f(nvec, dtor, ctx), NULL;
+            return error_pack(E_VEC_CALLBACK), vec_free_f(nvec, dtor, ctx), NULL;
     
     return nvec;
 }
@@ -1195,7 +1195,7 @@ int vec_fold(vec_const_ct vec, vec_fold_cb fold, const void *ctx)
     
     for(i=0; i < vec->size; i++)
         if((rc = fold(vec, i, ELEM(i), (void *)ctx)))
-            return error_push_int(E_VEC_CALLBACK, rc);
+            return error_pack_int(E_VEC_CALLBACK, rc);
     
     return 0;
 }
@@ -1210,7 +1210,7 @@ int vec_fold_r(vec_const_ct vec, vec_fold_cb fold, const void *ctx)
     
     for(i=0; i < vec->size; i++)
         if((rc = fold(vec, i, ELEM(vec->size-i-1), (void *)ctx)))
-            return error_push_int(E_VEC_CALLBACK, rc);
+            return error_pack_int(E_VEC_CALLBACK, rc);
     
     return 0;
 }

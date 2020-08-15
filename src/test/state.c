@@ -307,7 +307,7 @@ static int test_state_vec_fold_msg(vec_const_ct vec, size_t index, void *elem, v
     test_fold_state_st *fstate = ctx;
     test_msg_st *msg = elem;
     
-    return error_push_int(E_TEST_STATE_CALLBACK,
+    return error_pack_int(E_TEST_STATE_CALLBACK,
         fstate->fold(&msg->pos, msg->type, msg->level, msg->text, fstate->ctx));
 }
 

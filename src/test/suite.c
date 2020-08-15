@@ -346,7 +346,7 @@ static int test_suite_vec_fold_entry(vec_const_ct vec, size_t index, void *elem,
     test_suite_fold_st *state = ctx;
     test_entry_st *entry = elem;
     
-    return error_push_int(E_TEST_SUITE_CALLBACK,
+    return error_pack_int(E_TEST_SUITE_CALLBACK,
         state->fold(state->suite, entry, state->ctx));
 }
 

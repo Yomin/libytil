@@ -266,7 +266,7 @@ int ring_fold(ring_ct ring, ring_fold_cb fold, const void *ctx)
     
     for(tail=ring->tail, size=ring->size; size; tail=INC(tail), size--)
         if((rc = fold(ring, ELEM(tail), (void *)ctx)))
-            return error_push_int(E_RING_CALLBACK, rc);
+            return error_pack_int(E_RING_CALLBACK, rc);
     
     return 0;
 }
@@ -281,7 +281,7 @@ int ring_fold_r(ring_ct ring, ring_fold_cb fold, const void *ctx)
     
     for(head=POS(ring->tail+ring->size-1), size=ring->size; size; head=DEC(head), size--)
         if((rc = fold(ring, ELEM(head), (void *)ctx)))
-            return error_push_int(E_RING_CALLBACK, rc);
+            return error_pack_int(E_RING_CALLBACK, rc);
     
     return 0;
 }

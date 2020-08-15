@@ -102,19 +102,17 @@ TEST_CASE(error_wrap)
     test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
 }
 
-TEST_CASE(error_pack_wrap)
+TEST_CASE(error_wrap_system)
 {
-    test_void(error_set(E_TEST_ERROR_1));
+    test_void(error_set(E_SYSTEM));
     test_void(error_wrap());
-    test_void(error_pack(E_TEST_ERROR_2));
     
-    test_uint_eq(error_depth(), 3);
+    test_uint_eq(error_depth(), 2);
     
-    test_error(0, E_ERROR_WRAP);
-    test_error(1, E_ERROR_WRAP);
+    test_error(0, E_SYSTEM);
 }
 
-TEST_CASE(error_pack_error)
+TEST_CASE(error_pack)
 {
     test_void(error_set(E_TEST_ERROR_1));
     test_void(error_pack(E_TEST_ERROR_2));
@@ -123,6 +121,28 @@ TEST_CASE(error_pack_error)
     
     test_error(0, E_TEST_ERROR_2);
     test_error(1, E_TEST_ERROR_1);
+}
+
+TEST_CASE(error_pack_wrap)
+{
+    test_void(error_set(E_TEST_ERROR_1));
+    test_void(error_wrap());
+    test_void(error_pack(E_TEST_ERROR_2));
+    
+    test_uint_eq(error_depth(), 3);
+    
+    test_error(0, E_TEST_ERROR_2);
+    test_error(1, E_ERROR_WRAP);
+}
+
+TEST_CASE(error_pack_system)
+{
+    test_void(error_set(E_SYSTEM));
+    test_void(error_pack(E_TEST_ERROR_1));
+    
+    test_uint_eq(error_depth(), 2);
+    
+    test_error(0, E_SYSTEM);
 }
 
 TEST_CASE(error_map_not_found)
@@ -358,24 +378,6 @@ TEST_CASE(errno_push)
     test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
 }
 
-TEST_CASE(error_push_errno)
-{
-    errno = EFAULT;
-    test_void(error_push_errno(E_TEST_ERROR_1, foo));
-    
-    test_uint_eq(error_depth(), 2);
-    
-    test_uint_eq(error_stack_get_type(0), ERROR_TYPE_ERRNO);
-    test_int_eq(error_stack_get_errno(0), EFAULT);
-    test_uint_eq(error_stack_get_type(1), ERROR_TYPE_ERROR);
-    test_int_eq(error_stack_get_error(1), E_TEST_ERROR_1);
-    
-    test_error(0, E_TEST_ERROR_1);
-    test_errno(1, EFAULT);
-    
-    test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
-}
-
 TEST_CASE(error_wrap_errno)
 {
     errno = EFAULT;
@@ -389,6 +391,42 @@ TEST_CASE(error_wrap_errno)
     test_int_eq(error_stack_get_error(1), E_ERROR_WRAP);
     
     test_error(0, E_ERROR_WRAP);
+    test_errno(1, EFAULT);
+    
+    test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
+}
+
+TEST_CASE(error_wrap_errno_ENOMEM)
+{
+    errno = ENOMEM;
+    test_void(error_wrap_errno(foo));
+    
+    test_uint_eq(error_depth(), 2);
+    
+    test_uint_eq(error_stack_get_type(0), ERROR_TYPE_ERRNO);
+    test_int_eq(error_stack_get_errno(0), ENOMEM);
+    test_uint_eq(error_stack_get_type(1), ERROR_TYPE_ERROR);
+    test_int_eq(error_stack_get_error(1), E_SYSTEM_OOM);
+    
+    test_error(0, E_SYSTEM_OOM);
+    test_errno(1, ENOMEM);
+    
+    test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
+}
+
+TEST_CASE(error_pack_errno)
+{
+    errno = EFAULT;
+    test_void(error_pack_errno(E_TEST_ERROR_1, foo));
+    
+    test_uint_eq(error_depth(), 2);
+    
+    test_uint_eq(error_stack_get_type(0), ERROR_TYPE_ERRNO);
+    test_int_eq(error_stack_get_errno(0), EFAULT);
+    test_uint_eq(error_stack_get_type(1), ERROR_TYPE_ERROR);
+    test_int_eq(error_stack_get_error(1), E_TEST_ERROR_1);
+    
+    test_error(0, E_TEST_ERROR_1);
     test_errno(1, EFAULT);
     
     test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
@@ -434,9 +472,78 @@ static char *_test_error_format(DWORD error)
     return tmp;
 }
 
-TEST_CASE(error_push_win32)
+TEST_CASE(error_wrap_win32)
 {
-    test_void(error_push_win32(E_TEST_ERROR_1, foo, ERROR_FILE_NOT_FOUND));
+    test_void(error_wrap_win32(foo, ERROR_FILE_NOT_FOUND));
+    
+    test_uint_eq(error_depth(), 2);
+    
+    test_uint_eq(error_stack_get_type(0), ERROR_TYPE_WIN32);
+    test_int_eq(error_stack_get_win32(0), ERROR_FILE_NOT_FOUND);
+    test_uint_eq(error_stack_get_type(1), ERROR_TYPE_ERROR);
+    test_int_eq(error_stack_get_error(1), E_ERROR_WRAP);
+    
+    test_error(0, E_ERROR_WRAP);
+    test_win32(1, ERROR_FILE_NOT_FOUND);
+    
+    test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
+}
+
+TEST_CASE(error_wrap_win32_ERROR_NOT_ENOUGH_MEMORY)
+{
+    test_void(error_wrap_win32(foo, ERROR_NOT_ENOUGH_MEMORY));
+    
+    test_uint_eq(error_depth(), 2);
+    
+    test_uint_eq(error_stack_get_type(0), ERROR_TYPE_WIN32);
+    test_int_eq(error_stack_get_win32(0), ERROR_NOT_ENOUGH_MEMORY);
+    test_uint_eq(error_stack_get_type(1), ERROR_TYPE_ERROR);
+    test_int_eq(error_stack_get_error(1), E_SYSTEM_OOM);
+    
+    test_error(0, E_SYSTEM_OOM);
+    test_win32(1, ERROR_NOT_ENOUGH_MEMORY);
+    
+    test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
+}
+
+TEST_CASE(error_wrap_win32_ERROR_OUTOFMEMORY)
+{
+    test_void(error_wrap_win32(foo, ERROR_OUTOFMEMORY));
+    
+    test_uint_eq(error_depth(), 2);
+    
+    test_uint_eq(error_stack_get_type(0), ERROR_TYPE_WIN32);
+    test_int_eq(error_stack_get_win32(0), ERROR_OUTOFMEMORY);
+    test_uint_eq(error_stack_get_type(1), ERROR_TYPE_ERROR);
+    test_int_eq(error_stack_get_error(1), E_SYSTEM_OOM);
+    
+    test_error(0, E_SYSTEM_OOM);
+    test_win32(1, ERROR_OUTOFMEMORY);
+    
+    test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
+}
+
+TEST_CASE(error_wrap_last_win32)
+{
+    SetLastError(ERROR_FILE_NOT_FOUND);
+    test_void(error_wrap_last_win32(foo));
+    
+    test_uint_eq(error_depth(), 2);
+    
+    test_uint_eq(error_stack_get_type(0), ERROR_TYPE_WIN32);
+    test_int_eq(error_stack_get_win32(0), ERROR_FILE_NOT_FOUND);
+    test_uint_eq(error_stack_get_type(1), ERROR_TYPE_ERROR);
+    test_int_eq(error_stack_get_error(1), E_ERROR_WRAP);
+    
+    test_error(0, E_ERROR_WRAP);
+    test_win32(1, ERROR_FILE_NOT_FOUND);
+    
+    test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
+}
+
+TEST_CASE(error_pack_win32)
+{
+    test_void(error_pack_win32(E_TEST_ERROR_1, foo, ERROR_FILE_NOT_FOUND));
     
     test_uint_eq(error_depth(), 2);
     
@@ -456,10 +563,10 @@ TEST_CASE(error_push_win32)
     test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
 }
 
-TEST_CASE(error_push_last_win32)
+TEST_CASE(error_pack_last_win32)
 {
     SetLastError(ERROR_FILE_NOT_FOUND);
-    test_void(error_push_last_win32(E_TEST_ERROR_1, foo));
+    test_void(error_pack_last_win32(E_TEST_ERROR_1, foo));
     
     test_uint_eq(error_depth(), 2);
     
@@ -469,41 +576,6 @@ TEST_CASE(error_push_last_win32)
     test_int_eq(error_stack_get_error(1), E_TEST_ERROR_1);
     
     test_error(0, E_TEST_ERROR_1);
-    test_win32(1, ERROR_FILE_NOT_FOUND);
-    
-    test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
-}
-
-TEST_CASE(error_wrap_win32)
-{
-    test_void(error_wrap_win32(foo, ERROR_FILE_NOT_FOUND));
-    
-    test_uint_eq(error_depth(), 2);
-    
-    test_uint_eq(error_stack_get_type(0), ERROR_TYPE_WIN32);
-    test_int_eq(error_stack_get_win32(0), ERROR_FILE_NOT_FOUND);
-    test_uint_eq(error_stack_get_type(1), ERROR_TYPE_ERROR);
-    test_int_eq(error_stack_get_error(1), E_ERROR_WRAP);
-    
-    test_error(0, E_ERROR_WRAP);
-    test_win32(1, ERROR_FILE_NOT_FOUND);
-    
-    test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
-}
-
-TEST_CASE(error_wrap_last_win32)
-{
-    SetLastError(ERROR_FILE_NOT_FOUND);
-    test_void(error_wrap_last_win32(foo));
-    
-    test_uint_eq(error_depth(), 2);
-    
-    test_uint_eq(error_stack_get_type(0), ERROR_TYPE_WIN32);
-    test_int_eq(error_stack_get_win32(0), ERROR_FILE_NOT_FOUND);
-    test_uint_eq(error_stack_get_type(1), ERROR_TYPE_ERROR);
-    test_int_eq(error_stack_get_error(1), E_ERROR_WRAP);
-    
-    test_error(0, E_ERROR_WRAP);
     test_win32(1, ERROR_FILE_NOT_FOUND);
     
     test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
@@ -542,9 +614,26 @@ TEST_CASE(error_pass_last_win32)
     test_uint_eq(error_type(1), ERROR_TYPE_INVALID);
 }
 
-TEST_CASE(error_push_hresult)
+TEST_CASE(error_wrap_hresult)
 {
-    test_void(error_push_hresult(E_TEST_ERROR_1, foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
+    test_void(error_wrap_hresult(foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
+    
+    test_uint_eq(error_depth(), 2);
+    
+    test_uint_eq(error_stack_get_type(0), ERROR_TYPE_HRESULT);
+    test_int_eq(error_stack_get_hresult(0), HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
+    test_uint_eq(error_stack_get_type(1), ERROR_TYPE_ERROR);
+    test_int_eq(error_stack_get_error(1), E_ERROR_WRAP);
+    
+    test_error(0, E_ERROR_WRAP);
+    test_hresult(1, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
+    
+    test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
+}
+
+TEST_CASE(error_pack_hresult)
+{
+    test_void(error_pack_hresult(E_TEST_ERROR_1, foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
     
     test_uint_eq(error_depth(), 2);
     
@@ -559,23 +648,6 @@ TEST_CASE(error_push_hresult)
     test_str_eq(error_func(1), "foo");
     test_str_eq(error_name(1), "HRESULT_80070002");
     test_str_eq(error_desc(1), "<HRESULT_MESSAGE>");
-    
-    test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
-}
-
-TEST_CASE(error_wrap_hresult)
-{
-    test_void(error_wrap_hresult(foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
-    
-    test_uint_eq(error_depth(), 2);
-    
-    test_uint_eq(error_stack_get_type(0), ERROR_TYPE_HRESULT);
-    test_int_eq(error_stack_get_hresult(0), HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
-    test_uint_eq(error_stack_get_type(1), ERROR_TYPE_ERROR);
-    test_int_eq(error_stack_get_error(1), E_ERROR_WRAP);
-    
-    test_error(0, E_ERROR_WRAP);
-    test_hresult(1, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
     
     test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
 }
@@ -596,9 +668,26 @@ TEST_CASE(error_pass_hresult)
     test_uint_eq(error_type(1), ERROR_TYPE_INVALID);
 }
 
-TEST_CASE(error_push_ntstatus)
+TEST_CASE(error_wrap_ntstatus)
 {
-    test_void(error_push_ntstatus(E_TEST_ERROR_1, foo, STATUS_TIMEOUT));
+    test_void(error_wrap_ntstatus(foo, STATUS_TIMEOUT));
+    
+    test_uint_eq(error_depth(), 2);
+    
+    test_uint_eq(error_stack_get_type(0), ERROR_TYPE_NTSTATUS);
+    test_int_eq(error_stack_get_ntstatus(0), STATUS_TIMEOUT);
+    test_uint_eq(error_stack_get_type(1), ERROR_TYPE_ERROR);
+    test_int_eq(error_stack_get_error(1), E_ERROR_WRAP);
+    
+    test_error(0, E_ERROR_WRAP);
+    test_ntstatus(1, STATUS_TIMEOUT);
+    
+    test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
+}
+
+TEST_CASE(error_pack_ntstatus)
+{
+    test_void(error_pack_ntstatus(E_TEST_ERROR_1, foo, STATUS_TIMEOUT));
     
     test_uint_eq(error_depth(), 2);
     
@@ -613,23 +702,6 @@ TEST_CASE(error_push_ntstatus)
     test_str_eq(error_func(1), "foo");
     test_str_eq(error_name(1), "NTSTATUS_00000102");
     test_str_eq(error_desc(1), "<NTSTATUS_MESSAGE>");
-    
-    test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
-}
-
-TEST_CASE(error_wrap_ntstatus)
-{
-    test_void(error_wrap_ntstatus(foo, STATUS_TIMEOUT));
-    
-    test_uint_eq(error_depth(), 2);
-    
-    test_uint_eq(error_stack_get_type(0), ERROR_TYPE_NTSTATUS);
-    test_int_eq(error_stack_get_ntstatus(0), STATUS_TIMEOUT);
-    test_uint_eq(error_stack_get_type(1), ERROR_TYPE_ERROR);
-    test_int_eq(error_stack_get_error(1), E_ERROR_WRAP);
-    
-    test_error(0, E_ERROR_WRAP);
-    test_ntstatus(1, STATUS_TIMEOUT);
     
     test_uint_eq(error_type(2), ERROR_TYPE_INVALID);
 }
@@ -955,8 +1027,10 @@ test_suite_ct test_suite_gen_error(void)
         , test_case_new(error_push)
         , test_case_new(error_reset)
         , test_case_new(error_wrap)
+        , test_case_new(error_wrap_system)
+        , test_case_new(error_pack)
         , test_case_new(error_pack_wrap)
-        , test_case_new(error_pack_error)
+        , test_case_new(error_pack_system)
         , test_case_new(error_map_not_found)
         , test_case_new(error_map_single)
         , test_case_new(error_map_double)
@@ -974,23 +1048,26 @@ test_suite_ct test_suite_gen_error(void)
         , test_case_new(errno_set)
         , test_case_new(errno_push)
         
-        , test_case_new(error_push_errno)
         , test_case_new(error_wrap_errno)
+        , test_case_new(error_wrap_errno_ENOMEM)
+        , test_case_new(error_pack_errno)
         , test_case_new(error_pass_errno)
         
-        , test_case_new_windows(error_push_win32)
-        , test_case_new_windows(error_push_last_win32)
         , test_case_new_windows(error_wrap_win32)
+        , test_case_new_windows(error_wrap_win32_ERROR_NOT_ENOUGH_MEMORY)
+        , test_case_new_windows(error_wrap_win32_ERROR_OUTOFMEMORY)
         , test_case_new_windows(error_wrap_last_win32)
+        , test_case_new_windows(error_pack_win32)
+        , test_case_new_windows(error_pack_last_win32)
         , test_case_new_windows(error_pass_win32)
         , test_case_new_windows(error_pass_last_win32)
         
-        , test_case_new_windows(error_push_hresult)
         , test_case_new_windows(error_wrap_hresult)
+        , test_case_new_windows(error_pack_hresult)
         , test_case_new_windows(error_pass_hresult)
         
-        , test_case_new_windows(error_push_ntstatus)
         , test_case_new_windows(error_wrap_ntstatus)
+        , test_case_new_windows(error_pack_ntstatus)
         , test_case_new_windows(error_pass_ntstatus)
         
         , test_case_new(error_get_oob)

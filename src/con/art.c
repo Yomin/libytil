@@ -1626,7 +1626,7 @@ static int art_traverse_fold(art_ct art, art_node_ct node, str_ct path, void *ct
 {
     art_fold_st *state = ctx;
     
-    return error_push_int(E_ART_CALLBACK,
+    return error_pack_int(E_ART_CALLBACK,
         state->fold(art, path, node->v.leaf.data, state->ctx));
 }
 

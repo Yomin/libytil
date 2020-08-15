@@ -93,6 +93,9 @@ typedef enum error_error
     , E_ERROR_WRAP  = -2
     , E_ERROR_PASS  = -3
     , E_ERROR_SKIP  = -4
+
+    , E_SYSTEM      = -5
+    , E_SYSTEM_OOM  = -6
 } error_error_id;
 
 typedef enum error_type
@@ -125,11 +128,11 @@ void    _error_set(const char *func, const error_info_st *infos, size_t error);
 void    _error_push(const char *func, const error_info_st *infos, size_t error);
 #define  error_push(error) _error_push(__func__, error_infos, (error))
 
-// push generic wrapper error
+// push generic wrapper error if last error not system error, else push transparent pass error
 void    _error_wrap(const char *func);
 #define  error_wrap() _error_wrap(__func__)
 
-// push module error if last error not wrapper, else push generic wrapper error
+// push module error if last error not system error, else push transparent pass error
 void    _error_pack(const char *func, const error_info_st *infos, size_t error);
 #define  error_pack(error) _error_pack(__func__, error_infos, (error))
 
@@ -166,13 +169,14 @@ void    _errno_push(const char *func, int error);
 #define  errno_push(error) _errno_push(__func__, (error))
 
 
-// clear stack, push errno error from sub, push module error
-void    _error_push_errno(const char *func, const error_info_st *infos, size_t error, const char *sub);
-#define  error_push_errno(error, sub) _error_push_errno(__func__, error_infos, (error), #sub)
-
-// clear stack, push errno error from sub, push generic wrapper error
+// clear stack, push errno error from sub
+// if errno == ENOMEM push E_SYSTEM_OOM, else push generic wrapper error
 void    _error_wrap_errno(const char *func, const char *sub);
 #define  error_wrap_errno(sub) _error_wrap_errno(__func__, #sub)
+
+// clear stack, push errno error from sub, push module error
+void    _error_pack_errno(const char *func, const error_info_st *infos, size_t error, const char *sub);
+#define  error_pack_errno(error, sub) _error_pack_errno(__func__, error_infos, (error), #sub)
 
 // clear stack, push errno error from sub, push transparent pass error
 void    _error_pass_errno(const char *func, const char *sub);
@@ -181,21 +185,25 @@ void    _error_pass_errno(const char *func, const char *sub);
 
 #ifdef _WIN32
 
-// clear stack, push WIN32 error from sub, push module error
-void    _error_push_win32(const char *func, const error_info_st *infos, size_t error, const char *sub, DWORD error32);
-#define  error_push_win32(error, sub, error32) _error_push_win32(__func__, error_infos, (error), #sub, (error32))
-
-// clear stack, push last WIN32 error from sub, push module error
-void    _error_push_last_win32(const char *func, const error_info_st *infos, size_t error, const char *sub);
-#define  error_push_last_win32(error, sub) _error_push_last_win32(__func__, error_infos, (error), #sub)
-
-// clear stack, push WIN32 error from sub, push generic wrapper error
+// clear stack, push WIN32 error from sub
+// if error == ERROR_NOT_ENOUGH_MEMORY || ERROR_OUTOFMEMORY, push E_SYSTEM_OOM
+// else push generic wrapper error
 void    _error_wrap_win32(const char *func, const char *sub, DWORD error);
 #define  error_wrap_win32(sub, error) _error_wrap_win32(__func__, #sub, (error))
 
-// clear stack, push last WIN32 error from sub, push generic wrapper error
+// clear stack, push last WIN32 error from sub
+// if last error == ERROR_NOT_ENOUGH_MEMORY || ERROR_OUTOFMEMORY, push E_SYSTEM_OOM
+// else push generic wrapper error
 void    _error_wrap_last_win32(const char *func, const char *sub);
 #define  error_wrap_last_win32(sub) _error_wrap_last_win32(__func__, #sub)
+
+// clear stack, push WIN32 error from sub, push module error
+void    _error_pack_win32(const char *func, const error_info_st *infos, size_t error, const char *sub, DWORD error32);
+#define  error_pack_win32(error, sub, error32) _error_pack_win32(__func__, error_infos, (error), #sub, (error32))
+
+// clear stack, push last WIN32 error from sub, push module error
+void    _error_pack_last_win32(const char *func, const error_info_st *infos, size_t error, const char *sub);
+#define  error_pack_last_win32(error, sub) _error_pack_last_win32(__func__, error_infos, (error), #sub)
 
 // clear stack, push WIN32 error from sub, push transparent pass error
 void    _error_pass_win32(const char *func, const char *sub, DWORD error);
@@ -206,26 +214,26 @@ void    _error_pass_last_win32(const char *func, const char *sub);
 #define  error_pass_last_win32(sub) _error_pass_last_win32(__func__, #sub)
 
 
-// clear stack, push HRESULT error from sub, push module error
-void    _error_push_hresult(const char *func, const error_info_st *infos, size_t error, const char *sub, HRESULT result);
-#define  error_push_hresult(error, sub, result) _error_push_hresult(__func__, error_infos, (error), #sub, (result))
-
 // clear stack, push HRESULT error from sub, push generic wrapper error
 void    _error_wrap_hresult(const char *func, const char *sub, HRESULT result);
 #define  error_wrap_hresult(sub, result) _error_wrap_hresult(__func__, #sub, (result))
+
+// clear stack, push HRESULT error from sub, push module error
+void    _error_pack_hresult(const char *func, const error_info_st *infos, size_t error, const char *sub, HRESULT result);
+#define  error_pack_hresult(error, sub, result) _error_pack_hresult(__func__, error_infos, (error), #sub, (result))
 
 // clear stack, push HRESULT error from sub, push transparent pass error
 void    _error_pass_hresult(const char *func, const char *sub, HRESULT result);
 #define  error_pass_hresult(sub, result) _error_pass_hresult(__func__, #sub, (result))
 
 
-// clear stack, push NTSTATUS error from sub, push module error
-void    _error_push_ntstatus(const char *func, const error_info_st *infos, size_t error, const char *sub, NTSTATUS status);
-#define  error_push_ntstatus(error, sub, status) _error_push_ntstatus(__func__, error_infos, (error), #sub, (status))
-
 // clear stack, push NTSTATUS error from sub, push generic wrapper error
 void    _error_wrap_ntstatus(const char *func, const char *sub, NTSTATUS status);
 #define  error_wrap_ntstatus(sub, status) _error_wrap_ntstatus(__func__, #sub, (status))
+
+// clear stack, push NTSTATUS error from sub, push module error
+void    _error_pack_ntstatus(const char *func, const error_info_st *infos, size_t error, const char *sub, NTSTATUS status);
+#define  error_pack_ntstatus(error, sub, status) _error_pack_ntstatus(__func__, error_infos, (error), #sub, (status))
 
 // clear stack, push NTSTATUS error from sub, push transparent pass error
 void    _error_pass_ntstatus(const char *func, const char *sub, NTSTATUS status);

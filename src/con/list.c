@@ -167,7 +167,7 @@ list_ct list_clone_f(list_const_ct list1, list_clone_cb clone, list_dtor_cb dtor
             node2->next = &list2->head;
             list_free_f(list2, dtor, ctx);
             
-            return error_wrap(), NULL;
+            return error_pack(E_LIST_CALLBACK), NULL;
         }
         
         if(!(node2->next = list_node_new(list2, data)))
@@ -570,7 +570,7 @@ int list_fold(list_const_ct list, list_fold_cb fold, const void *ctx)
     
     LIST_FOREACH_SAFE(list, next, node, next)
         if((rc = fold(list, node->data, (void *)ctx)))
-            return error_push_int(E_LIST_CALLBACK, rc);
+            return error_pack_int(E_LIST_CALLBACK, rc);
     
     return 0;
 }
@@ -585,7 +585,7 @@ int list_fold_r(list_const_ct list, list_fold_cb fold, const void *ctx)
     
     LIST_FOREACH_SAFE(list, prev, node, prev)
         if((rc = fold(list, node->data, (void *)ctx)))
-            return error_push_int(E_LIST_CALLBACK, rc);
+            return error_pack_int(E_LIST_CALLBACK, rc);
     
     return 0;
 }
