@@ -73,11 +73,17 @@
 #endif
 
 
-// define magic value with 3 chars
+// define magic value with string of 3 chars
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-    #define define_magic(a, b, c)   ((c << 24)|(b << 16)|(a << 8)|'*')
+    #define define_magic(s) __extension__({ \
+        static_assert(sizeof(s) == 4, "invalid magic string"); \
+        (unsigned int)((s[2] << 24)|(s[1] << 16)|(s[0] << 8)|'*'); \
+    })
 #elif __BYTE_ORDER == __BIG_ENDIAN
-    #define define_magic(a, b, c)   (('*' << 24)|(a << 16)|(b << 8)|c)
+    #define define_magic(s) __extension__({ \
+        static_assert(sizeof(s) == 4, "invalid magic string"); \
+        (unsigned int)(('*' << 24)|(s[0] << 16)|(s[1] << 8)|s[2]); \
+    })
 #endif
 
 

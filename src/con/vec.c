@@ -31,12 +31,10 @@
 #define POS(e)  (((char*)e - vec->mem) / vec->esize)
 #define ELEM(i) (vec->mem + (i)*vec->esize)
 
-enum def
-{
-      MAGIC         = define_magic('V', 'E', 'C')
-    , DEFAULT_CAP   = 10
-    , RESIZE_FACTOR = 2
-};
+#define MAGIC           define_magic("VEC")
+#define DEFAULT_CAP     10
+#define RESIZE_FACTOR   2
+
 
 typedef struct vector
 {

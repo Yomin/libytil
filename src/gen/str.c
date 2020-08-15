@@ -30,10 +30,8 @@
 #include <stdio.h>
 
 
-enum str_def
-{
-      MAGIC = define_magic('S', 'T', 'R')
-};
+#define MAGIC define_magic("STR")
+
 
 typedef enum str_flags
 {

@@ -29,11 +29,9 @@
 #include <ytil/def.h>
 
 
-enum def
-{
-      MAGIC          = define_magic('P', 'T', 'H')
-    , AVG_PATH_COMPS = 5
-};
+#define MAGIC           define_magic("PTH")
+#define AVG_PATH_COMPS  5
+
 
 typedef enum path_comp_type
 {

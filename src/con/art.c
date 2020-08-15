@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+
 #ifdef SIMD64
 #   define NODE8_SIMD
 #ifdef SIMD128
@@ -43,6 +44,9 @@
 #define FORWARD     false
 #define BACKWARD    true
 #define NO_PREFIX   NULL
+
+#define MAGIC       define_magic("ART")
+#define NODE_MAGIC  define_magic("ARN")
 
 /*
  * 2000000 iterations of each method to find key in x bytes
@@ -77,11 +81,6 @@
  *
  */
 
-enum def
-{
-      MAGIC      = define_magic('A', 'R', 'T')
-    , NODE_MAGIC = define_magic('A', 'R', 'N')
-};
 
 typedef enum art_node_type
 {

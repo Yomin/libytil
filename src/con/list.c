@@ -35,12 +35,9 @@
         node != &list->head; \
         node = next, next = node->field)
 
+#define MAGIC       define_magic("LST")
+#define NODE_MAGIC  define_magic("LNO")
 
-enum def
-{
-      MAGIC      = define_magic('L', 'S', 'T')
-    , NODE_MAGIC = define_magic('L', 'N', 'O')
-};
 
 typedef struct list_node
 {

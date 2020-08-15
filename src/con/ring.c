@@ -34,11 +34,8 @@
 #define DEC(p)  POS((p) + ring->cap -1)
 #define INC(p)  POS((p) +1)
 
-enum def
-{
-      MAGIC       = define_magic('R', 'I', 'N')
-    , DEFAULT_CAP = 10
-};
+#define MAGIC       define_magic("RIN")
+#define DEFAULT_CAP 10
 
 typedef struct ring
 {
