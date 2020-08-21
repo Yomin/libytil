@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,8 +31,8 @@ static const struct not_a_list
 
 static const int i[] = { 1, 2, 3, 4 };
 static int count;
-list_ct list, list2;
-list_node_ct node;
+static list_ct list, list2;
+static list_node_ct node;
 
 
 TEST_SETUP(list_new)
@@ -71,7 +71,7 @@ TEST_TEARDOWN(list_free2)
 static void _test_list_dtor(list_const_ct list, void *data, void *ctx)
 {
     int *count = ctx;
-    
+
     count[0]++;
 }
 
@@ -134,8 +134,8 @@ TEST_CASE_FIXTURE(list_clone, list_new, list_free)
 
 static int _test_list_clone(list_const_ct list, void **dst, const void *src, void *ctx)
 {
-    *dst = VALUE_TO_POINTER(POINTER_TO_VALUE(src, int)+1);
-    
+    *dst = VALUE_TO_POINTER(POINTER_TO_VALUE(src, int) + 1);
+
     return 0;
 }
 
@@ -148,10 +148,10 @@ TEST_CASE_FIXTURE(list_clone_f, list_new, list_free)
 {
     test_ptr_success(list2 = list_clone_f(list, _test_list_clone, NULL, NULL));
     test_uint_eq(list_size(list), list_size(list2));
-    test_int_eq(list_value_at(list2, 0, int), i[0]+1);
-    test_int_eq(list_value_at(list2, 1, int), i[1]+1);
-    test_int_eq(list_value_at(list2, 2, int), i[2]+1);
-    test_int_eq(list_value_at(list2, 3, int), i[3]+1);
+    test_int_eq(list_value_at(list2, 0, int), i[0] + 1);
+    test_int_eq(list_value_at(list2, 1, int), i[1] + 1);
+    test_int_eq(list_value_at(list2, 2, int), i[2] + 1);
+    test_int_eq(list_value_at(list2, 3, int), i[3] + 1);
     list_free(list2);
 }
 
@@ -200,7 +200,7 @@ TEST_CASE_ABORT(list_memsize_f_invalid_magic)
 
 TEST_CASE_FIXTURE(list_memsize, list_new, list_free)
 {
-    test_uint_eq(list_memsize(list)+400, list_memsize_f(list, _test_list_memsize, NULL));
+    test_uint_eq(list_memsize(list) + 400, list_memsize_f(list, _test_list_memsize, NULL));
 }
 
 TEST_CASE_ABORT(list_at_invalid_magic)
@@ -221,13 +221,13 @@ TEST_CASE_FIXTURE(list_at_oob_negative_index, list_new_empty, list_free)
 TEST_CASE_FIXTURE(list_at_positive_index, list_new, list_free)
 {
     test_ptr_success(node = list_at(list, 3));
-    test_int_eq(list_node_get_value(node, int), i[3]);
+    test_int_eq(list_node_value(node, int), i[3]);
 }
 
 TEST_CASE_FIXTURE(list_at_negative_index, list_new, list_free)
 {
     test_ptr_success(node = list_at(list, -4));
-    test_int_eq(list_node_get_value(node, int), i[0]);
+    test_int_eq(list_node_value(node, int), i[0]);
 }
 
 TEST_CASE_ABORT(list_first_invalid_magic)
@@ -243,7 +243,7 @@ TEST_CASE_FIXTURE(list_first_empty_list, list_new_empty, list_free)
 TEST_CASE_FIXTURE(list_first, list_new, list_free)
 {
     test_ptr_success(node = list_first(list));
-    test_int_eq(list_node_get_value(node, int), i[0]);
+    test_int_eq(list_node_value(node, int), i[0]);
 }
 
 TEST_CASE_ABORT(list_last_invalid_magic)
@@ -259,7 +259,7 @@ TEST_CASE_FIXTURE(list_last_empty_list, list_new_empty, list_free)
 TEST_CASE_FIXTURE(list_last, list_new, list_free)
 {
     test_ptr_success(node = list_last(list));
-    test_int_eq(list_node_get_value(node, int), i[3]);
+    test_int_eq(list_node_value(node, int), i[3]);
 }
 
 TEST_CASE_ABORT_FIXTURE(list_next_invalid_list_magic, list_new, list_free)
@@ -280,7 +280,7 @@ TEST_CASE_ABORT_FIXTURE(list_next_node_not_member, list_new2, list_free2)
 TEST_CASE_FIXTURE(list_next, list_new, list_free)
 {
     test_ptr_success(node = list_next(list, list_first(list)));
-    test_int_eq(list_node_get_value(node, int), i[1]);
+    test_int_eq(list_node_value(node, int), i[1]);
 }
 
 TEST_CASE_FIXTURE(list_next_end, list_new, list_free)
@@ -306,7 +306,7 @@ TEST_CASE_ABORT_FIXTURE(list_prev_node_not_member, list_new2, list_free2)
 TEST_CASE_FIXTURE(list_prev, list_new, list_free)
 {
     test_ptr_success(node = list_prev(list, list_last(list)));
-    test_int_eq(list_node_get_value(node, int), i[2]);
+    test_int_eq(list_node_value(node, int), i[2]);
 }
 
 TEST_CASE_FIXTURE(list_prev_end, list_new, list_free)
@@ -399,7 +399,7 @@ TEST_CASE_FIXTURE(list_prepend, list_new, list_free)
     test_ptr_success(node = list_prepend_value(list, 42));
     test_uint_eq(list_pos(list, node), 0);
     test_uint_eq(list_size(list), 5);
-    test_int_eq(list_node_get_value(node, int), 42);
+    test_int_eq(list_node_value(node, int), 42);
 }
 
 TEST_CASE_ABORT(list_append_invalid_magic)
@@ -412,7 +412,7 @@ TEST_CASE_FIXTURE(list_append, list_new, list_free)
     test_ptr_success(node = list_append_value(list, 42));
     test_uint_eq(list_pos(list, node), 4);
     test_uint_eq(list_size(list), 5);
-    test_int_eq(list_node_get_value(node, int), 42);
+    test_int_eq(list_node_value(node, int), 42);
 }
 
 TEST_CASE_ABORT(list_insert_invalid_magic)
@@ -430,7 +430,7 @@ TEST_CASE_FIXTURE(list_insert_head_positive_index, list_new, list_free)
     test_ptr_success(node = list_insert_value(list, 0, 42));
     test_uint_eq(list_pos(list, node), 0);
     test_uint_eq(list_size(list), 5);
-    test_int_eq(list_node_get_value(node, int), 42);
+    test_int_eq(list_node_value(node, int), 42);
 }
 
 TEST_CASE_FIXTURE(list_insert_tail_positive_index, list_new, list_free)
@@ -438,7 +438,7 @@ TEST_CASE_FIXTURE(list_insert_tail_positive_index, list_new, list_free)
     test_ptr_success(node = list_insert_value(list, 4, 42));
     test_uint_eq(list_pos(list, node), 4);
     test_uint_eq(list_size(list), 5);
-    test_int_eq(list_node_get_value(node, int), 42);
+    test_int_eq(list_node_value(node, int), 42);
 }
 
 TEST_CASE_FIXTURE(list_insert_oob_negative_index, list_new, list_free)
@@ -451,7 +451,7 @@ TEST_CASE_FIXTURE(list_insert_head_negative_index, list_new, list_free)
     test_ptr_success(node = list_insert_value(list, -4, 42));
     test_uint_eq(list_pos(list, node), 0);
     test_uint_eq(list_size(list), 5);
-    test_int_eq(list_node_get_value(node, int), 42);
+    test_int_eq(list_node_value(node, int), 42);
 }
 
 TEST_CASE_FIXTURE(list_insert_tail_negative_index, list_new, list_free)
@@ -459,7 +459,7 @@ TEST_CASE_FIXTURE(list_insert_tail_negative_index, list_new, list_free)
     test_ptr_success(node = list_insert_value(list, -1, 42));
     test_uint_eq(list_pos(list, node), 3);
     test_uint_eq(list_size(list), 5);
-    test_int_eq(list_node_get_value(node, int), 42);
+    test_int_eq(list_node_value(node, int), 42);
 }
 
 TEST_CASE_ABORT_FIXTURE(list_insert_before_invalid_list_magic, list_new2, list_free2)
@@ -482,7 +482,7 @@ TEST_CASE_FIXTURE(list_insert_before, list_new, list_free)
     test_ptr_success(node = list_insert_value_before(list, list_first(list), 42));
     test_uint_eq(list_pos(list, node), 0);
     test_uint_eq(list_size(list), 5);
-    test_int_eq(list_node_get_value(node, int), 42);
+    test_int_eq(list_node_value(node, int), 42);
 }
 
 TEST_CASE_ABORT_FIXTURE(list_insert_after_invalid_list_magic, list_new2, list_free2)
@@ -505,7 +505,7 @@ TEST_CASE_FIXTURE(list_insert_after, list_new, list_free)
     test_ptr_success(node = list_insert_value_after(list, list_last(list), 42));
     test_uint_eq(list_pos(list, node), 4);
     test_uint_eq(list_size(list), 5);
-    test_int_eq(list_node_get_value(node, int), 42);
+    test_int_eq(list_node_value(node, int), 42);
 }
 
 TEST_CASE_ABORT_FIXTURE(list_remove_invalid_list_magic, list_new2, list_free2)
@@ -845,9 +845,9 @@ TEST_CASE_FIXTURE(list_swap, list_new, list_free)
 static int _test_list_fold(list_const_ct list, void *data, void *ctx)
 {
     int *sum = ctx;
-    
-    *sum = *sum*10 + POINTER_TO_VALUE(data, int);
-    
+
+    *sum = *sum * 10 + POINTER_TO_VALUE(data, int);
+
     return 0;
 }
 
@@ -887,161 +887,161 @@ TEST_CASE_FIXTURE(list_fold_r, list_new, list_free)
 
 test_suite_ct test_suite_con_list(void)
 {
-    return test_suite_new_with_cases("list"
-        , test_case_new(list_free_invalid_magic)
-        , test_case_new(list_free_f_invalid_magic)
-        , test_case_new(list_free_f)
-        
-        , test_case_new(list_clear_invalid_magic)
-        , test_case_new(list_clear)
-        , test_case_new(list_clear_f_invalid_magic)
-        , test_case_new(list_clear_f)
-        
-        , test_case_new(list_clone_invalid_magic)
-        , test_case_new(list_clone)
-        , test_case_new(list_clone_f_invalid_magic)
-        , test_case_new(list_clone_f)
-        
-        , test_case_new(list_is_empty_invalid_magic)
-        , test_case_new(list_is_empty)
-        , test_case_new(list_size_invalid_magic)
-        , test_case_new(list_size)
-        , test_case_new(list_memsize_invalid_magic)
-        , test_case_new(list_memsize_f_invalid_magic)
-        , test_case_new(list_memsize)
-        
-        , test_case_new(list_at_invalid_magic)
-        , test_case_new(list_at_oob_positive_index)
-        , test_case_new(list_at_oob_negative_index)
-        , test_case_new(list_at_positive_index)
-        , test_case_new(list_at_negative_index)
-        
-        , test_case_new(list_first_invalid_magic)
-        , test_case_new(list_first_empty_list)
-        , test_case_new(list_first)
-        , test_case_new(list_last_invalid_magic)
-        , test_case_new(list_last_empty_list)
-        , test_case_new(list_last)
-        
-        , test_case_new(list_next_invalid_list_magic)
-        , test_case_new(list_next_invalid_node_magic)
-        , test_case_new(list_next_node_not_member)
-        , test_case_new(list_next)
-        , test_case_new(list_next_end)
-        , test_case_new(list_prev_invalid_list_magic)
-        , test_case_new(list_prev_invalid_node_magic)
-        , test_case_new(list_prev_node_not_member)
-        , test_case_new(list_prev)
-        , test_case_new(list_prev_end)
-        
-        , test_case_new(list_data_at_invalid_magic)
-        , test_case_new(list_data_at_oob_positive_index)
-        , test_case_new(list_data_at_oob_negative_index)
-        , test_case_new(list_data_at_positive_index)
-        , test_case_new(list_data_at_negative_index)
-        
-        , test_case_new(list_data_first_invalid_magic)
-        , test_case_new(list_data_first_empty_list)
-        , test_case_new(list_data_first)
-        , test_case_new(list_data_last_invalid_magic)
-        , test_case_new(list_data_last_empty_list)
-        , test_case_new(list_data_last)
-        
-        , test_case_new(list_pos_invalid_list_magic)
-        , test_case_new(list_pos_invalid_node_magic)
-        , test_case_new(list_pos_node_not_member)
-        , test_case_new(list_pos)
-        
-        , test_case_new(list_prepend_invalid_magic)
-        , test_case_new(list_prepend)
-        , test_case_new(list_append_invalid_magic)
-        , test_case_new(list_append)
-        
-        , test_case_new(list_insert_invalid_magic)
-        , test_case_new(list_insert_oob_positive_index)
-        , test_case_new(list_insert_head_positive_index)
-        , test_case_new(list_insert_tail_positive_index)
-        , test_case_new(list_insert_oob_negative_index)
-        , test_case_new(list_insert_head_negative_index)
-        , test_case_new(list_insert_tail_negative_index)
-        
-        , test_case_new(list_insert_before_invalid_list_magic)
-        , test_case_new(list_insert_before_invalid_node_magic)
-        , test_case_new(list_insert_before_node_not_member)
-        , test_case_new(list_insert_before)
-        , test_case_new(list_insert_after_invalid_list_magic)
-        , test_case_new(list_insert_after_invalid_node_magic)
-        , test_case_new(list_insert_after_node_not_member)
-        , test_case_new(list_insert_after)
-        
-        , test_case_new(list_remove_invalid_list_magic)
-        , test_case_new(list_remove_invalid_node_magic)
-        , test_case_new(list_remove_node_not_member)
-        , test_case_new(list_remove_head)
-        , test_case_new(list_remove_tail)
-        
-        , test_case_new(list_remove_at_invalid_magic)
-        , test_case_new(list_remove_at_oob_positive_index)
-        , test_case_new(list_remove_at_head_positive_index)
-        , test_case_new(list_remove_at_tail_positive_index)
-        , test_case_new(list_remove_at_oob_negative_index)
-        , test_case_new(list_remove_at_head_negative_index)
-        , test_case_new(list_remove_at_tail_negative_index)
-        
-        , test_case_new(list_remove_at_f_invalid_magic)
-        , test_case_new(list_remove_at_f_oob_positive_index)
-        , test_case_new(list_remove_at_f_head_positive_index)
-        , test_case_new(list_remove_at_f_tail_positive_index)
-        , test_case_new(list_remove_at_f_oob_negative_index)
-        , test_case_new(list_remove_at_f_head_negative_index)
-        , test_case_new(list_remove_at_f_tail_negative_index)
-        
-        , test_case_new(list_find_invalid_magic)
-        , test_case_new(list_find_invalid_pred)
-        , test_case_new(list_find_not_found)
-        , test_case_new(list_find)
-        , test_case_new(list_find_r_invalid_magic)
-        , test_case_new(list_find_r_invalid_pred)
-        , test_case_new(list_find_r_not_found)
-        , test_case_new(list_find_r)
-        
-        , test_case_new(list_find_remove_invalid_magic)
-        , test_case_new(list_find_remove_invalid_pred)
-        , test_case_new(list_find_remove_not_found)
-        , test_case_new(list_find_remove)
-        , test_case_new(list_find_remove_f_invalid_magic)
-        , test_case_new(list_find_remove_f_invalid_pred)
-        , test_case_new(list_find_remove_f_not_found)
-        , test_case_new(list_find_remove_f)
-        
-        , test_case_new(list_find_remove_r_invalid_magic)
-        , test_case_new(list_find_remove_r_invalid_pred)
-        , test_case_new(list_find_remove_r_not_found)
-        , test_case_new(list_find_remove_r)
-        , test_case_new(list_find_remove_rf_invalid_magic)
-        , test_case_new(list_find_remove_rf_invalid_pred)
-        , test_case_new(list_find_remove_rf_not_found)
-        , test_case_new(list_find_remove_rf)
-        
-        , test_case_new(list_find_remove_all_invalid_magic)
-        , test_case_new(list_find_remove_all_invalid_pred)
-        , test_case_new(list_find_remove_all_not_found)
-        , test_case_new(list_find_remove_all)
-        , test_case_new(list_find_remove_all_f_invalid_magic)
-        , test_case_new(list_find_remove_all_f_invalid_pred)
-        , test_case_new(list_find_remove_all_f_not_found)
-        , test_case_new(list_find_remove_all_f)
-        
-        , test_case_new(list_swap_invalid_node1_magic)
-        , test_case_new(list_swap_invalid_node2_magic)
-        , test_case_new(list_swap_nodes_in_different_lists)
-        , test_case_new(list_swap)
-        
-        , test_case_new(list_fold_invalid_magic)
-        , test_case_new(list_fold_invalid_callback)
-        , test_case_new(list_fold)
-        , test_case_new(list_fold_r_invalid_magic)
-        , test_case_new(list_fold_r_invalid_callback)
-        , test_case_new(list_fold_r)
+    return test_suite_new_with_cases("list",
+        test_case_new(list_free_invalid_magic),
+        test_case_new(list_free_f_invalid_magic),
+        test_case_new(list_free_f),
+
+        test_case_new(list_clear_invalid_magic),
+        test_case_new(list_clear),
+        test_case_new(list_clear_f_invalid_magic),
+        test_case_new(list_clear_f),
+
+        test_case_new(list_clone_invalid_magic),
+        test_case_new(list_clone),
+        test_case_new(list_clone_f_invalid_magic),
+        test_case_new(list_clone_f),
+
+        test_case_new(list_is_empty_invalid_magic),
+        test_case_new(list_is_empty),
+        test_case_new(list_size_invalid_magic),
+        test_case_new(list_size),
+        test_case_new(list_memsize_invalid_magic),
+        test_case_new(list_memsize_f_invalid_magic),
+        test_case_new(list_memsize),
+
+        test_case_new(list_at_invalid_magic),
+        test_case_new(list_at_oob_positive_index),
+        test_case_new(list_at_oob_negative_index),
+        test_case_new(list_at_positive_index),
+        test_case_new(list_at_negative_index),
+
+        test_case_new(list_first_invalid_magic),
+        test_case_new(list_first_empty_list),
+        test_case_new(list_first),
+        test_case_new(list_last_invalid_magic),
+        test_case_new(list_last_empty_list),
+        test_case_new(list_last),
+
+        test_case_new(list_next_invalid_list_magic),
+        test_case_new(list_next_invalid_node_magic),
+        test_case_new(list_next_node_not_member),
+        test_case_new(list_next),
+        test_case_new(list_next_end),
+        test_case_new(list_prev_invalid_list_magic),
+        test_case_new(list_prev_invalid_node_magic),
+        test_case_new(list_prev_node_not_member),
+        test_case_new(list_prev),
+        test_case_new(list_prev_end),
+
+        test_case_new(list_data_at_invalid_magic),
+        test_case_new(list_data_at_oob_positive_index),
+        test_case_new(list_data_at_oob_negative_index),
+        test_case_new(list_data_at_positive_index),
+        test_case_new(list_data_at_negative_index),
+
+        test_case_new(list_data_first_invalid_magic),
+        test_case_new(list_data_first_empty_list),
+        test_case_new(list_data_first),
+        test_case_new(list_data_last_invalid_magic),
+        test_case_new(list_data_last_empty_list),
+        test_case_new(list_data_last),
+
+        test_case_new(list_pos_invalid_list_magic),
+        test_case_new(list_pos_invalid_node_magic),
+        test_case_new(list_pos_node_not_member),
+        test_case_new(list_pos),
+
+        test_case_new(list_prepend_invalid_magic),
+        test_case_new(list_prepend),
+        test_case_new(list_append_invalid_magic),
+        test_case_new(list_append),
+
+        test_case_new(list_insert_invalid_magic),
+        test_case_new(list_insert_oob_positive_index),
+        test_case_new(list_insert_head_positive_index),
+        test_case_new(list_insert_tail_positive_index),
+        test_case_new(list_insert_oob_negative_index),
+        test_case_new(list_insert_head_negative_index),
+        test_case_new(list_insert_tail_negative_index),
+
+        test_case_new(list_insert_before_invalid_list_magic),
+        test_case_new(list_insert_before_invalid_node_magic),
+        test_case_new(list_insert_before_node_not_member),
+        test_case_new(list_insert_before),
+        test_case_new(list_insert_after_invalid_list_magic),
+        test_case_new(list_insert_after_invalid_node_magic),
+        test_case_new(list_insert_after_node_not_member),
+        test_case_new(list_insert_after),
+
+        test_case_new(list_remove_invalid_list_magic),
+        test_case_new(list_remove_invalid_node_magic),
+        test_case_new(list_remove_node_not_member),
+        test_case_new(list_remove_head),
+        test_case_new(list_remove_tail),
+
+        test_case_new(list_remove_at_invalid_magic),
+        test_case_new(list_remove_at_oob_positive_index),
+        test_case_new(list_remove_at_head_positive_index),
+        test_case_new(list_remove_at_tail_positive_index),
+        test_case_new(list_remove_at_oob_negative_index),
+        test_case_new(list_remove_at_head_negative_index),
+        test_case_new(list_remove_at_tail_negative_index),
+
+        test_case_new(list_remove_at_f_invalid_magic),
+        test_case_new(list_remove_at_f_oob_positive_index),
+        test_case_new(list_remove_at_f_head_positive_index),
+        test_case_new(list_remove_at_f_tail_positive_index),
+        test_case_new(list_remove_at_f_oob_negative_index),
+        test_case_new(list_remove_at_f_head_negative_index),
+        test_case_new(list_remove_at_f_tail_negative_index),
+
+        test_case_new(list_find_invalid_magic),
+        test_case_new(list_find_invalid_pred),
+        test_case_new(list_find_not_found),
+        test_case_new(list_find),
+        test_case_new(list_find_r_invalid_magic),
+        test_case_new(list_find_r_invalid_pred),
+        test_case_new(list_find_r_not_found),
+        test_case_new(list_find_r),
+
+        test_case_new(list_find_remove_invalid_magic),
+        test_case_new(list_find_remove_invalid_pred),
+        test_case_new(list_find_remove_not_found),
+        test_case_new(list_find_remove),
+        test_case_new(list_find_remove_f_invalid_magic),
+        test_case_new(list_find_remove_f_invalid_pred),
+        test_case_new(list_find_remove_f_not_found),
+        test_case_new(list_find_remove_f),
+
+        test_case_new(list_find_remove_r_invalid_magic),
+        test_case_new(list_find_remove_r_invalid_pred),
+        test_case_new(list_find_remove_r_not_found),
+        test_case_new(list_find_remove_r),
+        test_case_new(list_find_remove_rf_invalid_magic),
+        test_case_new(list_find_remove_rf_invalid_pred),
+        test_case_new(list_find_remove_rf_not_found),
+        test_case_new(list_find_remove_rf),
+
+        test_case_new(list_find_remove_all_invalid_magic),
+        test_case_new(list_find_remove_all_invalid_pred),
+        test_case_new(list_find_remove_all_not_found),
+        test_case_new(list_find_remove_all),
+        test_case_new(list_find_remove_all_f_invalid_magic),
+        test_case_new(list_find_remove_all_f_invalid_pred),
+        test_case_new(list_find_remove_all_f_not_found),
+        test_case_new(list_find_remove_all_f),
+
+        test_case_new(list_swap_invalid_node1_magic),
+        test_case_new(list_swap_invalid_node2_magic),
+        test_case_new(list_swap_nodes_in_different_lists),
+        test_case_new(list_swap),
+
+        test_case_new(list_fold_invalid_magic),
+        test_case_new(list_fold_invalid_callback),
+        test_case_new(list_fold),
+        test_case_new(list_fold_r_invalid_magic),
+        test_case_new(list_fold_r_invalid_callback),
+        test_case_new(list_fold_r)
     );
 }
