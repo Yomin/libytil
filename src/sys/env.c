@@ -184,7 +184,7 @@ int env_reset(str_const_ct name)
     if(!env || !(node = art_get(env, name)))
         return 0;
     
-    value = art_node_get_data(node);
+    value = art_node_data(node);
     
     if(!value->set)
         return 0;
@@ -220,7 +220,7 @@ int env_unset(str_const_ct name)
     if(!(node = art_get(env, name)))
         return 0;
     
-    value = art_node_get_data(node);
+    value = art_node_data(node);
     
     if(value->def)
     {

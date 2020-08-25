@@ -29,10 +29,9 @@ static const struct not_an_art
     int foo;
 } not_an_art = { 123 };
 
-art_ct art;
-art_node_ct node;
-str_ct key;
-size_t count;
+static art_ct art;
+static art_node_ct node;
+static str_ct key;
 
 
 TEST_SETUP(art_new_empty)
@@ -93,7 +92,7 @@ TEST_CASE_ABORT(art_memsize_invalid_magic)
     art_memsize((art_ct)&not_an_art);
 }
 
-static size_t _test_art_size(art_const_ct art, void *data, void *ctx)
+static size_t _test_art_size(art_const_ct art, const void *data, void *ctx)
 {
     return 1;
 }
@@ -101,26 +100,26 @@ static size_t _test_art_size(art_const_ct art, void *data, void *ctx)
 TEST_CASE_FIXTURE(art_memsize, art_new_empty, art_free)
 {
     size_t size;
-    
+
     test_ptr_success(art_insert(art, LIT("foo"), NULL));
     test_void(size = art_memsize(art));
-    test_uint_eq(art_memsize_f(art, _test_art_size, NULL), size+1);
+    test_uint_eq(art_memsize_f(art, _test_art_size, NULL), size + 1);
 }
 
 static art_ct _test_art_insert(art_ct art, int size)
 {
     int k;
-    
+
     key = tstr_dup_bl("x");
-    
-    for(k=0; k < size; k++)
+
+    for(k = 0; k < size; k++)
     {
         str_overwrite_f(key, 0, "%c", k);
-        
+
         if(!art_insert_value(art, key, k))
             return NULL;
     }
-    
+
     return art;
 }
 
@@ -189,8 +188,8 @@ TEST_CASE_FIXTURE(art_insert256, art_new_empty, art_free)
 
 TEST_CASE_FIXTURE(art_insert_str_key_empty, art_new_empty, art_free)
 {
-    test_ptr_success(node = art_insert(art, LIT("foo"), NULL));
-    test_ptr_success(key = art_node_get_key(node));
+    test_ptr_success(node   = art_insert(art, LIT("foo"), NULL));
+    test_ptr_success(key    = art_node_key(node));
     test_uint_eq(str_len(key), 4);
     test_mem_eq(str_bc(key), "foo", 4);
     str_unref(key);
@@ -198,8 +197,8 @@ TEST_CASE_FIXTURE(art_insert_str_key_empty, art_new_empty, art_free)
 
 TEST_CASE_FIXTURE(art_insert_bin_key_empty, art_new_empty, art_free)
 {
-    test_ptr_success(node = art_insert(art, BIN("foo"), NULL));
-    test_ptr_success(key = art_node_get_key(node));
+    test_ptr_success(node   = art_insert(art, BIN("foo"), NULL));
+    test_ptr_success(key    = art_node_key(node));
     test_uint_eq(str_len(key), 3);
     test_mem_eq(str_bc(key), "foo", 3);
     str_unref(key);
@@ -207,8 +206,8 @@ TEST_CASE_FIXTURE(art_insert_bin_key_empty, art_new_empty, art_free)
 
 TEST_CASE_FIXTURE(art_insert_str_key_split, art_new1, art_free)
 {
-    test_ptr_success(node = art_insert(art, LIT("foobaz"), NULL));
-    test_ptr_success(key = art_node_get_key(node));
+    test_ptr_success(node   = art_insert(art, LIT("foobaz"), NULL));
+    test_ptr_success(key    = art_node_key(node));
     test_uint_eq(str_len(key), 7);
     test_mem_eq(str_bc(key), "foobaz", 7);
     str_unref(key);
@@ -216,8 +215,8 @@ TEST_CASE_FIXTURE(art_insert_str_key_split, art_new1, art_free)
 
 TEST_CASE_FIXTURE(art_insert_bin_key_split, art_new1, art_free)
 {
-    test_ptr_success(node = art_insert(art, BIN("foobaz"), NULL));
-    test_ptr_success(key = art_node_get_key(node));
+    test_ptr_success(node   = art_insert(art, BIN("foobaz"), NULL));
+    test_ptr_success(key    = art_node_key(node));
     test_uint_eq(str_len(key), 6);
     test_mem_eq(str_bc(key), "foobaz", 6);
     str_unref(key);
@@ -286,18 +285,18 @@ TEST_CASE_FIXTURE(art_insert_large_key_split_back, art_new_empty, art_free)
 static art_ct _test_art_get(art_ct art, int size)
 {
     int k;
-    
+
     key = tstr_dup_bl("x");
-    
-    for(k=0; k < size; k++)
+
+    for(k = 0; k < size; k++)
     {
         str_overwrite_f(key, 0, "%c", k);
-        
-        if(!(node = art_get(art, key))
-        || art_node_get_value(node, int) != k)
+
+        if(  !(node = art_get(art, key))
+          || art_node_value(node, int) != k)
             return NULL;
     }
-    
+
     return art;
 }
 
@@ -367,24 +366,24 @@ TEST_CASE_FIXTURE(art_get256, art_new_empty, art_free)
 static void _test_art_dtor(art_const_ct art, void *data, void *ctx)
 {
     int *count = ctx;
-    
+
     *count += 1;
 }
 
 static int _test_art_remove(art_ct art, int size)
 {
     int k, count = 0;
-    
+
     key = tstr_dup_bl("x");
-    
-    for(k=0; k < size; k++)
+
+    for(k = 0; k < size; k++)
     {
         str_overwrite_f(key, 0, "%c", k);
-        
+
         if(art_remove_pf(art, key, _test_art_dtor, &count))
             return -1;
     }
-    
+
     return count;
 }
 
@@ -474,7 +473,7 @@ TEST_CASE_FIXTURE(art_remove_merge, art_new4, art_free)
     test_ptr_success(node = art_get(art, LIT("fooduh")));
     test_int_success(art_remove_p(art, LIT("foobar")));
     test_int_success(art_remove_p(art, LIT("foobaz")));
-    test_ptr_success(key = art_node_get_key(node));
+    test_ptr_success(key = art_node_key(node));
     test_str_eq(str_bc(key), "fooduh");
     str_unref(key);
 }
@@ -482,14 +481,14 @@ TEST_CASE_FIXTURE(art_remove_merge, art_new4, art_free)
 static bool _test_art_pred_value(art_const_ct art, str_const_ct key, const void *data, void *ctx)
 {
     int value1 = POINTER_TO_VALUE(data, int), value2 = POINTER_TO_VALUE(ctx, int);
-    
+
     return value1 == value2;
 }
 
 static bool _test_art_pred_key(art_const_ct art, str_const_ct key1, const void *data, void *ctx)
 {
     char *key2 = ctx;
-    
+
     return !strcmp(str_bc(key1), key2);
 }
 
@@ -510,8 +509,8 @@ TEST_CASE_FIXTURE(art_find_not_found, art_new4, art_free)
 
 TEST_CASE_FIXTURE(art_find, art_new4, art_free)
 {
-    test_ptr_success(node = art_find(art, _test_art_pred_value, VALUE_TO_POINTER(3)));
-    test_ptr_success(key = art_node_get_key(node));
+    test_ptr_success(node   = art_find(art, _test_art_pred_value, VALUE_TO_POINTER(3)));
+    test_ptr_success(key    = art_node_key(node));
     test_str_eq(str_bc(key), "fooduh");
     str_unref(key);
 }
@@ -534,7 +533,7 @@ TEST_CASE_FIXTURE(art_find_k_not_found, art_new4, art_free)
 TEST_CASE_FIXTURE(art_find_k, art_new4, art_free)
 {
     test_ptr_success(node = art_find_k(art, _test_art_pred_key, "fooduh"));
-    test_int_eq(art_node_get_value(node, int), 3);
+    test_int_eq(art_node_value(node, int), 3);
 }
 
 TEST_CASE_ABORT(art_find_r_invalid_magic)
@@ -554,8 +553,8 @@ TEST_CASE_FIXTURE(art_find_r_not_found, art_new4, art_free)
 
 TEST_CASE_FIXTURE(art_find_r, art_new4, art_free)
 {
-    test_ptr_success(node = art_find_r(art, _test_art_pred_value, VALUE_TO_POINTER(1)));
-    test_ptr_success(key = art_node_get_key(node));
+    test_ptr_success(node   = art_find_r(art, _test_art_pred_value, VALUE_TO_POINTER(1)));
+    test_ptr_success(key    = art_node_key(node));
     test_str_eq(str_bc(key), "foobar");
     str_unref(key);
 }
@@ -578,7 +577,7 @@ TEST_CASE_FIXTURE(art_find_rk_not_found, art_new4, art_free)
 TEST_CASE_FIXTURE(art_find_rk, art_new4, art_free)
 {
     test_ptr_success(node = art_find_rk(art, _test_art_pred_key, "foobar"));
-    test_int_eq(art_node_get_value(node, int), 1);
+    test_int_eq(art_node_value(node, int), 1);
 }
 
 TEST_CASE_ABORT(art_find_p_invalid_magic)
@@ -603,8 +602,8 @@ TEST_CASE_FIXTURE(art_find_p_value_not_found, art_new4, art_free)
 
 TEST_CASE_FIXTURE(art_find_p, art_new4, art_free)
 {
-    test_ptr_success(node = art_find_p(art, BIN("foo"), _test_art_pred_value, VALUE_TO_POINTER(3)));
-    test_ptr_success(key = art_node_get_key(node));
+    test_ptr_success(node   = art_find_p(art, BIN("foo"), _test_art_pred_value, VALUE_TO_POINTER(3)));
+    test_ptr_success(key    = art_node_key(node));
     test_str_eq(str_bc(key), "fooduh");
     str_unref(key);
 }
@@ -632,7 +631,7 @@ TEST_CASE_FIXTURE(art_find_pk_key_not_found, art_new4, art_free)
 TEST_CASE_FIXTURE(art_find_pk, art_new4, art_free)
 {
     test_ptr_success(node = art_find_pk(art, BIN("foo"), _test_art_pred_key, "fooduh"));
-    test_int_eq(art_node_get_value(node, int), 3);
+    test_int_eq(art_node_value(node, int), 3);
 }
 
 TEST_CASE_ABORT(art_find_pr_invalid_magic)
@@ -657,8 +656,8 @@ TEST_CASE_FIXTURE(art_find_pr_value_not_found, art_new4, art_free)
 
 TEST_CASE_FIXTURE(art_find_pr, art_new4, art_free)
 {
-    test_ptr_success(node = art_find_pr(art, BIN("foo"), _test_art_pred_value, VALUE_TO_POINTER(1)));
-    test_ptr_success(key = art_node_get_key(node));
+    test_ptr_success(node   = art_find_pr(art, BIN("foo"), _test_art_pred_value, VALUE_TO_POINTER(1)));
+    test_ptr_success(key    = art_node_key(node));
     test_str_eq(str_bc(key), "foobar");
     str_unref(key);
 }
@@ -686,23 +685,23 @@ TEST_CASE_FIXTURE(art_find_prk_key_not_found, art_new4, art_free)
 TEST_CASE_FIXTURE(art_find_prk, art_new4, art_free)
 {
     test_ptr_success(node = art_find_prk(art, BIN("foo"), _test_art_pred_key, "foobar"));
-    test_int_eq(art_node_get_value(node, int), 1);
+    test_int_eq(art_node_value(node, int), 1);
 }
 
 static int _test_art_fold_value(art_const_ct art, str_const_ct key, void *data, void *ctx)
 {
     int *sum = ctx;
-    
-    *sum = *sum*10 + POINTER_TO_VALUE(data, int);
-    
+
+    *sum = *sum * 10 + POINTER_TO_VALUE(data, int);
+
     return 0;
 }
 
 static int _test_art_fold_key(art_const_ct art, str_const_ct key, void *data, void *ctx)
 {
     str_ct sum = ctx;
-    
-    return str_append_n(sum, key, str_len(key)-1) ? 0 : -1;
+
+    return str_append_n(sum, key, str_len(key) - 1) ? 0 : -1;
 }
 
 TEST_CASE_ABORT(art_fold_invalid_magic)
@@ -903,136 +902,136 @@ TEST_CASE_FIXTURE(art_complete_end, art_new4, art_free)
 
 test_suite_ct test_suite_con_art(void)
 {
-    return test_suite_new_with_cases("art"
-        , test_case_new(art_is_empty_invalid_magic)
-        , test_case_new(art_is_empty)
-        , test_case_new(art_size_invalid_magic)
-        , test_case_new(art_size)
-        , test_case_new(art_memsize_invalid_magic)
-        , test_case_new(art_memsize)
-        
-        , test_case_new(art_insert_invalid_magic)
-        , test_case_new(art_insert_invalid_key)
-        , test_case_new(art_insert_existing_key)
-        , test_case_new(art_insert1)
-        , test_case_new(art_insert4)
-        , test_case_new(art_insert8)
-        , test_case_new(art_insert16)
-        , test_case_new(art_insert32)
-        , test_case_new(art_insert64)
-        , test_case_new(art_insert128)
-        , test_case_new(art_insert256)
-        , test_case_new(art_insert_str_key_empty)
-        , test_case_new(art_insert_bin_key_empty)
-        , test_case_new(art_insert_str_key_split)
-        , test_case_new(art_insert_bin_key_split)
-        , test_case_new(art_insert_small_key_split_front)
-        , test_case_new(art_insert_small_key_split_center)
-        , test_case_new(art_insert_small_key_split_back)
-        , test_case_new(art_insert_large_key_split_front)
-        , test_case_new(art_insert_large_key_split_center)
-        , test_case_new(art_insert_large_key_split_back)
-        
-        , test_case_new(art_get_invalid_magic)
-        , test_case_new(art_get0_not_found)
-        , test_case_new(art_get1_not_found)
-        , test_case_new(art_get1)
-        , test_case_new(art_get4)
-        , test_case_new(art_get8)
-        , test_case_new(art_get16)
-        , test_case_new(art_get32)
-        , test_case_new(art_get64)
-        , test_case_new(art_get128)
-        , test_case_new(art_get256)
-        
-        , test_case_new(art_remove_invalid_magic)
-        , test_case_new(art_remove_p_invalid_magic)
-        , test_case_new(art_remove_pf_invalid_magic)
-        , test_case_new(art_remove0_not_found)
-        , test_case_new(art_remove1_not_found)
-        , test_case_new(art_remove1)
-        , test_case_new(art_remove4)
-        , test_case_new(art_remove8)
-        , test_case_new(art_remove16)
-        , test_case_new(art_remove32)
-        , test_case_new(art_remove64)
-        , test_case_new(art_remove128)
-        , test_case_new(art_remove256)
-        , test_case_new(art_remove_merge)
-        
-        , test_case_new(art_find_invalid_magic)
-        , test_case_new(art_find_invalid_pred)
-        , test_case_new(art_find_not_found)
-        , test_case_new(art_find)
-        , test_case_new(art_find_k_invalid_magic)
-        , test_case_new(art_find_k_invalid_pred)
-        , test_case_new(art_find_k_not_found)
-        , test_case_new(art_find_k)
-        , test_case_new(art_find_r_invalid_magic)
-        , test_case_new(art_find_r_invalid_pred)
-        , test_case_new(art_find_r_not_found)
-        , test_case_new(art_find_r)
-        , test_case_new(art_find_rk_invalid_magic)
-        , test_case_new(art_find_rk_invalid_pred)
-        , test_case_new(art_find_rk_not_found)
-        , test_case_new(art_find_rk)
-        
-        , test_case_new(art_find_p_invalid_magic)
-        , test_case_new(art_find_p_invalid_pred)
-        , test_case_new(art_find_p_prefix_not_found)
-        , test_case_new(art_find_p_value_not_found)
-        , test_case_new(art_find_p)
-        , test_case_new(art_find_pk_invalid_magic)
-        , test_case_new(art_find_pk_invalid_pred)
-        , test_case_new(art_find_pk_prefix_not_found)
-        , test_case_new(art_find_pk_key_not_found)
-        , test_case_new(art_find_pk)
-        , test_case_new(art_find_pr_invalid_magic)
-        , test_case_new(art_find_pr_invalid_pred)
-        , test_case_new(art_find_pr_prefix_not_found)
-        , test_case_new(art_find_pr_value_not_found)
-        , test_case_new(art_find_pr)
-        , test_case_new(art_find_prk_invalid_magic)
-        , test_case_new(art_find_prk_invalid_pred)
-        , test_case_new(art_find_prk_prefix_not_found)
-        , test_case_new(art_find_prk_key_not_found)
-        , test_case_new(art_find_prk)
-        
-        , test_case_new(art_fold_invalid_magic)
-        , test_case_new(art_fold_invalid_callback)
-        , test_case_new(art_fold)
-        , test_case_new(art_fold_k_invalid_magic)
-        , test_case_new(art_fold_k_invalid_callback)
-        , test_case_new(art_fold_k)
-        , test_case_new(art_fold_r_invalid_magic)
-        , test_case_new(art_fold_r_invalid_callback)
-        , test_case_new(art_fold_r)
-        , test_case_new(art_fold_rk_invalid_magic)
-        , test_case_new(art_fold_rk_invalid_callback)
-        , test_case_new(art_fold_rk)
-        
-        , test_case_new(art_fold_p_invalid_magic)
-        , test_case_new(art_fold_p_invalid_callback)
-        , test_case_new(art_fold_p_not_found)
-        , test_case_new(art_fold_p)
-        , test_case_new(art_fold_pk_invalid_magic)
-        , test_case_new(art_fold_pk_invalid_callback)
-        , test_case_new(art_fold_pk_not_found)
-        , test_case_new(art_fold_pk)
-        , test_case_new(art_fold_pr_invalid_magic)
-        , test_case_new(art_fold_pr_invalid_callback)
-        , test_case_new(art_fold_pr_not_found)
-        , test_case_new(art_fold_pr)
-        , test_case_new(art_fold_prk_invalid_magic)
-        , test_case_new(art_fold_prk_invalid_callback)
-        , test_case_new(art_fold_prk_not_found)
-        , test_case_new(art_fold_prk)
-        
-        , test_case_new(art_complete_invalid_magic)
-        , test_case_new(art_complete_empty)
-        , test_case_new(art_complete_not_found)
-        , test_case_new(art_complete)
-        , test_case_new(art_complete_begin)
-        , test_case_new(art_complete_end)
+    return test_suite_new_with_cases("art",
+        test_case_new(art_is_empty_invalid_magic),
+        test_case_new(art_is_empty),
+        test_case_new(art_size_invalid_magic),
+        test_case_new(art_size),
+        test_case_new(art_memsize_invalid_magic),
+        test_case_new(art_memsize),
+
+        test_case_new(art_insert_invalid_magic),
+        test_case_new(art_insert_invalid_key),
+        test_case_new(art_insert_existing_key),
+        test_case_new(art_insert1),
+        test_case_new(art_insert4),
+        test_case_new(art_insert8),
+        test_case_new(art_insert16),
+        test_case_new(art_insert32),
+        test_case_new(art_insert64),
+        test_case_new(art_insert128),
+        test_case_new(art_insert256),
+        test_case_new(art_insert_str_key_empty),
+        test_case_new(art_insert_bin_key_empty),
+        test_case_new(art_insert_str_key_split),
+        test_case_new(art_insert_bin_key_split),
+        test_case_new(art_insert_small_key_split_front),
+        test_case_new(art_insert_small_key_split_center),
+        test_case_new(art_insert_small_key_split_back),
+        test_case_new(art_insert_large_key_split_front),
+        test_case_new(art_insert_large_key_split_center),
+        test_case_new(art_insert_large_key_split_back),
+
+        test_case_new(art_get_invalid_magic),
+        test_case_new(art_get0_not_found),
+        test_case_new(art_get1_not_found),
+        test_case_new(art_get1),
+        test_case_new(art_get4),
+        test_case_new(art_get8),
+        test_case_new(art_get16),
+        test_case_new(art_get32),
+        test_case_new(art_get64),
+        test_case_new(art_get128),
+        test_case_new(art_get256),
+
+        test_case_new(art_remove_invalid_magic),
+        test_case_new(art_remove_p_invalid_magic),
+        test_case_new(art_remove_pf_invalid_magic),
+        test_case_new(art_remove0_not_found),
+        test_case_new(art_remove1_not_found),
+        test_case_new(art_remove1),
+        test_case_new(art_remove4),
+        test_case_new(art_remove8),
+        test_case_new(art_remove16),
+        test_case_new(art_remove32),
+        test_case_new(art_remove64),
+        test_case_new(art_remove128),
+        test_case_new(art_remove256),
+        test_case_new(art_remove_merge),
+
+        test_case_new(art_find_invalid_magic),
+        test_case_new(art_find_invalid_pred),
+        test_case_new(art_find_not_found),
+        test_case_new(art_find),
+        test_case_new(art_find_k_invalid_magic),
+        test_case_new(art_find_k_invalid_pred),
+        test_case_new(art_find_k_not_found),
+        test_case_new(art_find_k),
+        test_case_new(art_find_r_invalid_magic),
+        test_case_new(art_find_r_invalid_pred),
+        test_case_new(art_find_r_not_found),
+        test_case_new(art_find_r),
+        test_case_new(art_find_rk_invalid_magic),
+        test_case_new(art_find_rk_invalid_pred),
+        test_case_new(art_find_rk_not_found),
+        test_case_new(art_find_rk),
+
+        test_case_new(art_find_p_invalid_magic),
+        test_case_new(art_find_p_invalid_pred),
+        test_case_new(art_find_p_prefix_not_found),
+        test_case_new(art_find_p_value_not_found),
+        test_case_new(art_find_p),
+        test_case_new(art_find_pk_invalid_magic),
+        test_case_new(art_find_pk_invalid_pred),
+        test_case_new(art_find_pk_prefix_not_found),
+        test_case_new(art_find_pk_key_not_found),
+        test_case_new(art_find_pk),
+        test_case_new(art_find_pr_invalid_magic),
+        test_case_new(art_find_pr_invalid_pred),
+        test_case_new(art_find_pr_prefix_not_found),
+        test_case_new(art_find_pr_value_not_found),
+        test_case_new(art_find_pr),
+        test_case_new(art_find_prk_invalid_magic),
+        test_case_new(art_find_prk_invalid_pred),
+        test_case_new(art_find_prk_prefix_not_found),
+        test_case_new(art_find_prk_key_not_found),
+        test_case_new(art_find_prk),
+
+        test_case_new(art_fold_invalid_magic),
+        test_case_new(art_fold_invalid_callback),
+        test_case_new(art_fold),
+        test_case_new(art_fold_k_invalid_magic),
+        test_case_new(art_fold_k_invalid_callback),
+        test_case_new(art_fold_k),
+        test_case_new(art_fold_r_invalid_magic),
+        test_case_new(art_fold_r_invalid_callback),
+        test_case_new(art_fold_r),
+        test_case_new(art_fold_rk_invalid_magic),
+        test_case_new(art_fold_rk_invalid_callback),
+        test_case_new(art_fold_rk),
+
+        test_case_new(art_fold_p_invalid_magic),
+        test_case_new(art_fold_p_invalid_callback),
+        test_case_new(art_fold_p_not_found),
+        test_case_new(art_fold_p),
+        test_case_new(art_fold_pk_invalid_magic),
+        test_case_new(art_fold_pk_invalid_callback),
+        test_case_new(art_fold_pk_not_found),
+        test_case_new(art_fold_pk),
+        test_case_new(art_fold_pr_invalid_magic),
+        test_case_new(art_fold_pr_invalid_callback),
+        test_case_new(art_fold_pr_not_found),
+        test_case_new(art_fold_pr),
+        test_case_new(art_fold_prk_invalid_magic),
+        test_case_new(art_fold_prk_invalid_callback),
+        test_case_new(art_fold_prk_not_found),
+        test_case_new(art_fold_prk),
+
+        test_case_new(art_complete_invalid_magic),
+        test_case_new(art_complete_empty),
+        test_case_new(art_complete_not_found),
+        test_case_new(art_complete),
+        test_case_new(art_complete_begin),
+        test_case_new(art_complete_end)
     );
 }
