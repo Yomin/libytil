@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include "qpenc.h"
+#include "enc.h"
 #include <ytil/test/test.h>
 #include <ytil/enc/qpenc.h>
 #include <stdio.h>

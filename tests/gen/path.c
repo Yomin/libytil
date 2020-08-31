@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include "path.h"
+#include "gen.h"
 #include <ytil/test/test.h>
 #include <ytil/gen/path.h>
 
@@ -29,9 +29,10 @@ static struct not_a_path
     int foo;
 } not_a_path = { 123 };
 
-path_ct path;
-str_ct str;
-str_const_ct cstr;
+static path_ct path;
+static str_ct str;
+static str_const_ct cstr;
+
 
 TEST_TEARDOWN(path_free)
 {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,18 +21,14 @@
  */
 
 #include "cont.h"
-#include "art.h"
-#include "list.h"
-#include "ring.h"
-#include "vec.h"
 
 
 test_suite_ct test_suite_con(void)
 {
-    return test_suite_new_with_suites("con"
-        , test_suite_con_art()
-        , test_suite_con_list()
-        , test_suite_con_ring()
-        , test_suite_con_vec()
+    return test_suite_new_with_suites("con",
+        test_suite_con_art(),
+        test_suite_con_list(),
+        test_suite_con_ring(),
+        test_suite_con_vec()
     );
 }

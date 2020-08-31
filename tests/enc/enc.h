@@ -25,6 +25,11 @@
 
 #include <ytil/test/suite.h>
 
-test_suite_ct test_suite_enc(void);
+test_suite_ct   test_suite_enc(void);
+test_suite_ct   test_suite_enc_base64(void);
+test_suite_ct   test_suite_enc_base85(void);
+test_suite_ct   test_suite_enc_pctenc(void);
+test_suite_ct   test_suite_enc_qpenc(void);
+
 
 #endif

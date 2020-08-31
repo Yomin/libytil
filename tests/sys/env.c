@@ -20,11 +20,11 @@
  * THE SOFTWARE.
  */
 
-#include "env.h"
+#include "sys.h"
 #include <ytil/test/test.h>
 #include <ytil/sys/env.h>
 
-str_const_ct value, str;
+static str_const_ct value;
 
 
 TEST_SETUP(env_init)

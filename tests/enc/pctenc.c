@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include "pctenc.h"
+#include "enc.h"
 #include <ytil/test/test.h>
 #include <ytil/enc/pctenc.h>
 #include <stdio.h>

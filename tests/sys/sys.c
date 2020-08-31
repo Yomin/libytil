@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,14 +21,12 @@
  */
 
 #include "sys.h"
-#include "env.h"
-#include "path.h"
 
 
 test_suite_ct test_suite_sys(void)
 {
-    return test_suite_new_with_suites("sys"
-        , test_suite_sys_env()
-        , test_suite_sys_path()
+    return test_suite_new_with_suites("sys",
+        test_suite_sys_env(),
+        test_suite_sys_path()
     );
 }

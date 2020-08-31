@@ -21,18 +21,14 @@
  */
 
 #include "enc.h"
-#include "base64.h"
-#include "base85.h"
-#include "pctenc.h"
-#include "qpenc.h"
 
 
 test_suite_ct test_suite_enc(void)
 {
-    return test_suite_new_with_suites("enc"
-        , test_suite_enc_base64()
-        , test_suite_enc_base85()
-        , test_suite_enc_pctenc()
-        , test_suite_enc_qpenc()
+    return test_suite_new_with_suites("enc",
+        test_suite_enc_base64(),
+        test_suite_enc_base85(),
+        test_suite_enc_pctenc(),
+        test_suite_enc_qpenc()
     );
 }

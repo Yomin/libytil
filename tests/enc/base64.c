@@ -20,7 +20,7 @@
  * THE SOFTWARE.
  */
 
-#include "base64.h"
+#include "enc.h"
 #include <ytil/test/test.h>
 #include <ytil/enc/base64.h>
 
