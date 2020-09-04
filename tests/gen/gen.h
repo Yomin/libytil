@@ -27,6 +27,7 @@
 
 test_suite_ct   test_suite_gen(void);
 test_suite_ct   test_suite_gen_error(void);
+test_suite_ct   test_suite_gen_log(void);
 test_suite_ct   test_suite_gen_path(void);
 test_suite_ct   test_suite_gen_str(void);
 
