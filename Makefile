@@ -36,7 +36,7 @@ WARNINGS := -Wall -Wpedantic -Wextra -Wno-unused-parameter -Wimplicit-fallthroug
 WARNINGS += -Werror -Wfatal-errors
 INCLUDES := -Iinclude -Iconfig -Isrc
 LIBFLAGS :=
-LIBS     := -l$(NAME)
+LIBS     := -l$(NAME) -lsqlite3 -lmariadb -lsybdb
 
 ifeq ($(OS),Windows_NT)
     PPFLAGS += -D__USE_MINGW_ANSI_STDIO=1
