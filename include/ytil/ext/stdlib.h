@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -75,5 +75,29 @@ ssize_t str2ld(long double *dst, const char *str);
 ssize_t strn2ld(long double *dst, const char *str, size_t n);
 // convert n char str prefix to long double, decimal point is assumed at str[n-scale]
 ssize_t strs2ld(long double *dst, const char *str, size_t n, ssize_t scale);
+
+/// qsort compare callback
+///
+/// \param elem1    first element to compare
+/// \param elem2    second element to compare
+/// \param ctx      context
+///
+/// \retval <0      elem1 is less than elem2
+/// \retval 0       elem1 matches elem2
+/// \retval >0      elem1 is greater than elem2
+typedef int (*qsort_comp_cb)(const void *elem1, const void *elem2, void *ctx);
+
+#ifdef _WIN32
+
+/// Quick sort an array.
+///
+/// \param base     array
+/// \param n        number of elements in array
+/// \param size     size of array element
+/// \param comp     compare callback
+/// \param ctx      \p comp context
+void qsort_r(void *base, size_t n, size_t size, qsort_comp_cb comp, void *ctx);
+
+#endif
 
 #endif

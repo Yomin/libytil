@@ -31,7 +31,7 @@
 
 
 #ifdef _WIN32
-    #include <winerror.h>
+    #include <windows.h>
     #include <ntstatus.h>
 #endif
 
@@ -77,20 +77,20 @@ const char *error_type_get_name(const error_type_st *type, int code)
 
     error_name_buf[0] = '\0';
 
-    switch(type->interface_type)
+    switch(type->iface_type)
     {
     case ERROR_INTERFACE_CALLBACK:
 
-        if(type->interface.callback.error_name)
+        if(type->iface.callback.error_name)
         {
-            name = type->interface.callback.error_name(
+            name = type->iface.callback.error_name(
                 type, code, error_name_buf, sizeof(error_name_buf));
         }
 
         break;
 
     case ERROR_INTERFACE_LIST:
-        name = type->interface.list.infos[ABS(code)].name;
+        name = type->iface.list.infos[ABS(code)].name;
 
         break;
 
@@ -115,20 +115,20 @@ const char *error_type_get_desc(const error_type_st *type, int code)
 
     error_desc_buf[0] = '\0';
 
-    switch(type->interface_type)
+    switch(type->iface_type)
     {
     case ERROR_INTERFACE_CALLBACK:
 
-        if(type->interface.callback.error_desc)
+        if(type->iface.callback.error_desc)
         {
-            desc = type->interface.callback.error_desc(
+            desc = type->iface.callback.error_desc(
                 type, code, error_desc_buf, sizeof(error_desc_buf));
         }
 
         break;
 
     case ERROR_INTERFACE_LIST:
-        desc = type->interface.list.infos[ABS(code)].desc;
+        desc = type->iface.list.infos[ABS(code)].desc;
 
         break;
 
@@ -570,7 +570,7 @@ static const char *error_win32_desc(const error_type_st *type, int code, char *b
 
     if((rc = GetLastError()) != ERROR_INSUFFICIENT_BUFFER)
     {
-        snprintf(buf, size, "<WIN32_FormatMessage_Error_%08X>", rc);
+        snprintf(buf, size, "<WIN32_FormatMessage_Error_%08lX>", rc);
 
         return buf;
     }
@@ -582,7 +582,7 @@ static const char *error_win32_desc(const error_type_st *type, int code, char *b
     if(!rc)
     {
         rc = GetLastError();
-        snprintf(buf, size, "<WIN32_FormatMessage_Error_%08X>", rc);
+        snprintf(buf, size, "<WIN32_FormatMessage_Error_%08lX>", rc);
 
         return buf;
     }

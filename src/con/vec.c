@@ -27,8 +27,7 @@
 #include <ytil/con/vec.h>
 #include <ytil/def.h>
 #include <ytil/magic.h>
-
-#include <stdlib.h>
+#include <ytil/ext/stdlib.h>
 #include <string.h>
 
 /// offset of first vector element

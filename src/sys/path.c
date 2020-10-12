@@ -23,6 +23,7 @@
 #include <ytil/sys/path.h>
 #include <ytil/sys/env.h>
 #include <ytil/def.h>
+#include <errno.h>
 
 #ifdef _WIN32
 #   include <initguid.h>
@@ -197,7 +198,7 @@ static path_ct path_get_win_dir(const path_win_dir_info_st *info, bool def)
     if(info->env && (value = env_get(STR(info->env))))
         return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
     
-    if(info->env && error_get(0) != E_ENV_NOT_FOUND)
+    if(info->env && error_code(0) != E_ENV_NOT_FOUND)
         return error_wrap(), NULL;
     
     if(!def || !info->id)

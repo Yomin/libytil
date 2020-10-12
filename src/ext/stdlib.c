@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -302,3 +302,32 @@ ssize_t strs2ld(long double *dst, const char *str, size_t n, ssize_t scale)
 {
     return str2ld(dst, scalecopy(alloca(n+2), str, n, scale));
 }
+
+
+#ifdef _WIN32
+
+/// qsort compare state for windows
+typedef struct qsort_comp_state
+{
+    qsort_comp_cb   comp;   ///< compare callback
+    void            *ctx;   ///< compare context
+} qsort_comp_st;
+
+/// qsort compare callback for windows
+///
+/// \implements qsort_comp_cb
+static int qsort_comp_win(void *ctx, const void *elem1, const void *elem2)
+{
+    qsort_comp_st *state = ctx;
+
+    return state->comp(elem1, elem2, state->ctx);
+}
+
+void qsort_r(void *base, size_t n, size_t size, qsort_comp_cb comp, void *ctx)
+{
+    qsort_comp_st state = { .comp = comp, .ctx = ctx };
+
+    qsort_s(base, n, size, qsort_comp_win, &state);
+}
+
+#endif

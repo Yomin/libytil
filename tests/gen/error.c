@@ -26,7 +26,7 @@
 #include <ytil/ext/errno.h>
 
 #ifdef _WIN32
-    #include <winerror.h>
+    #include <windows.h>
     #include <ntstatus.h>
 #endif
 
@@ -893,7 +893,8 @@ TEST_CASE(error_info_win32)
 
 TEST_CASE(error_pass_win32)
 {
-    test_void(error_pass_win32(foo, ERROR_FILE_NOT_FOUND));
+    SetLastError(ERROR_FILE_NOT_FOUND);
+    test_void(error_pass_win32(foo));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
@@ -902,7 +903,8 @@ TEST_CASE(error_pass_win32)
 
 TEST_CASE(error_wrap_win32)
 {
-    test_void(error_wrap_win32(foo, ERROR_FILE_NOT_FOUND));
+    SetLastError(ERROR_FILE_NOT_FOUND);
+    test_void(error_wrap_win32(foo));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
@@ -911,7 +913,8 @@ TEST_CASE(error_wrap_win32)
 
 TEST_CASE(error_wrap_win32_ERROR_NOT_ENOUGH_MEMORY)
 {
-    test_void(error_wrap_win32(foo, ERROR_NOT_ENOUGH_MEMORY));
+    SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+    test_void(error_wrap_win32(foo));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_NOT_ENOUGH_MEMORY);
@@ -920,7 +923,8 @@ TEST_CASE(error_wrap_win32_ERROR_NOT_ENOUGH_MEMORY)
 
 TEST_CASE(error_wrap_win32_ERROR_OUTOFMEMORY)
 {
-    test_void(error_wrap_win32(foo, ERROR_OUTOFMEMORY));
+    SetLastError(ERROR_OUTOFMEMORY);
+    test_void(error_wrap_win32(foo));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_OUTOFMEMORY);
@@ -929,7 +933,8 @@ TEST_CASE(error_wrap_win32_ERROR_OUTOFMEMORY)
 
 TEST_CASE(error_pack_win32)
 {
-    test_void(error_pack_win32(E_TEST_ERROR_1, foo, ERROR_FILE_NOT_FOUND));
+    SetLastError(ERROR_FILE_NOT_FOUND);
+    test_void(error_pack_win32(E_TEST_ERROR_1, foo));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
@@ -938,7 +943,8 @@ TEST_CASE(error_pack_win32)
 
 TEST_CASE(error_pack_win32_ERROR_NOT_ENOUGH_MEMORY)
 {
-    test_void(error_pack_win32(E_TEST_ERROR_1, foo, ERROR_NOT_ENOUGH_MEMORY));
+    SetLastError(ERROR_NOT_ENOUGH_MEMORY);
+    test_void(error_pack_win32(E_TEST_ERROR_1, foo));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_NOT_ENOUGH_MEMORY);
@@ -947,7 +953,8 @@ TEST_CASE(error_pack_win32_ERROR_NOT_ENOUGH_MEMORY)
 
 TEST_CASE(error_pack_win32_ERROR_OUTOFMEMORY)
 {
-    test_void(error_pack_win32(E_TEST_ERROR_1, foo, ERROR_OUTOFMEMORY));
+    SetLastError(ERROR_OUTOFMEMORY);
+    test_void(error_pack_win32(E_TEST_ERROR_1, foo));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_OUTOFMEMORY);
@@ -994,7 +1001,7 @@ TEST_CASE(error_pack_hresult)
 
 TEST_CASE(error_info_ntstatus)
 {
-    test_void(error_set_s(HRESULT, STATUS_TIMEOUT));
+    test_void(error_set_s(NTSTATUS, STATUS_TIMEOUT));
 
     test_uint_eq(error_depth(), 1);
     test_ptr_eq(error_stack_get_type(0), &ERROR_TYPE_NTSTATUS);

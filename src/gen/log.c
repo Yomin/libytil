@@ -284,7 +284,7 @@ ssize_t log_target_add_file(str_const_ct name, str_const_ct file, bool append, l
 
     assert(file);
 
-    if(!(stream = fopen(str_c(file), append ? "a" : "w")))
+    if(!(stream = fopen(str_c(file), append ? "ab" : "wb")))
         return error_pack_errno(E_LOG_FOPEN, fopen), -1;
 
     if((target = log_target_add_stream(name ? name : file, stream, true, color)) < 0)

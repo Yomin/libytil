@@ -108,8 +108,8 @@ typedef union error_interface
 typedef struct error_type
 {
     const char          *name;          ///< type name
-    error_interface_id  interface_type; ///< interface type
-    error_interface_un  interface;      ///< interface
+    error_interface_id  iface_type;     ///< interface type
+    error_interface_un  iface;          ///< interface
     error_oom_cb        error_is_oom;   ///< callback to identify out-of-memory errors
     error_last_cb       error_last;     ///< callback to retrieve last error
 } error_type_st;
@@ -124,9 +124,9 @@ typedef struct error_type
 #define ERROR_DEFINE_CALLBACK(_name, _error_name, _error_desc, _error_is_oom, _error_last) \
     const error_type_st ERROR_TYPE_ ## _name =                                             \
     {                                                                                      \
-        .name               = #_name,                                                      \
-        .interface_type     = ERROR_INTERFACE_CALLBACK,                                    \
-        .interface.callback =                                                              \
+        .name           = #_name,                                                          \
+        .iface_type     = ERROR_INTERFACE_CALLBACK,                                        \
+        .iface.callback =                                                                  \
         {                                                                                  \
             .error_name = _error_name,                                                     \
             .error_desc = _error_desc                                                      \
@@ -148,12 +148,12 @@ typedef struct error_type
 ///
 /// \param _name    type name
 /// \param ...      list of \a ERROR_INFO tuples
-#define ERROR_DEFINE_LIST(_name, ...)                                    \
-    const error_type_st ERROR_TYPE_ ## _name =                           \
-    {                                                                    \
-        .name                   = #_name,                                \
-        .interface_type         = ERROR_INTERFACE_LIST,                  \
-        .interface.list.infos   = (const error_info_st[]){ __VA_ARGS__ } \
+#define ERROR_DEFINE_LIST(_name, ...)                                \
+    const error_type_st ERROR_TYPE_ ## _name =                       \
+    {                                                                \
+        .name               = #_name,                                \
+        .iface_type         = ERROR_INTERFACE_LIST,                  \
+        .iface.list.infos   = (const error_info_st[]){ __VA_ARGS__ } \
     }
 
 /// Declare error type.
