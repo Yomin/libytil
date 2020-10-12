@@ -39,14 +39,17 @@ typedef struct test_suite_fold_state
     void *ctx;
 } test_suite_fold_st;
 
-static const error_info_st error_infos[] =
-{
+/// test_suite error type definition
+ERROR_DEFINE_LIST(TEST_SUITE,
      ERROR_INFO(E_TEST_SUITE_CALLBACK, "Callback error.")
    , ERROR_INFO(E_TEST_SUITE_INVALID_CALLBACK, "Invalid callback.")
    , ERROR_INFO(E_TEST_SUITE_INVALID_NAME, "Invalid name.")
    , ERROR_INFO(E_TEST_SUITE_INVALID_OBJECT, "Invalid test suite object.")
    , ERROR_INFO(E_TEST_SUITE_NOT_FOUND, "Test suite/case not found.")
-};
+);
+
+/// default error type for test_suite module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_TEST_SUITE
 
 
 test_suite_ct test_suite_new(const char *name)

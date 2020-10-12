@@ -25,6 +25,7 @@
 
 #include <ytil/ext/ctype.h>
 #include <ytil/ext/alloca.h>
+#include <ytil/gen/error.h>
 #include <stddef.h>
 #include <stdbool.h>
 #include <stdarg.h>
@@ -46,6 +47,9 @@ typedef enum str_error
     , E_STR_UNREFERENCED
     , E_STR_VOLATILE
 } str_eror_id;
+
+/// str error type declaration
+ERROR_DECLARE(STR);
 
 
 typedef struct str       *str_ct;

@@ -33,13 +33,16 @@
 #   include <pwd.h>
 #endif
 
-static const error_info_st error_infos[] =
-{
+/// syspath error type definition
+ERROR_DEFINE_LIST(SYSPATH,
       ERROR_INFO(E_PATH_INVALID_APP_AUTHOR, "Invalid app author.")
     , ERROR_INFO(E_PATH_INVALID_APP_NAME, "Invalid app name.")
     , ERROR_INFO(E_PATH_INVALID_APP_VERSION, "Invalid app version.")
     , ERROR_INFO(E_PATH_NOT_AVAILABLE, "Path not available.")
-};
+);
+
+/// default error type for syspath module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_SYSPATH
 
 
 #ifdef _WIN32
@@ -71,14 +74,14 @@ static path_ct path_get_home(void)
     if((value = env_get(LIT("HOME"))))
         return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
     
-    if(!error_check(0, E_ENV_NOT_FOUND))
+    if(error_code(0) != E_ENV_NOT_FOUND)
         return error_wrap(), NULL;
     
 #ifdef _WIN32
     if((value = env_get(LIT("USERPROFILE"))))
         return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
     
-    if(!error_check(0, E_ENV_NOT_FOUND))
+    if(error_code(0) != E_ENV_NOT_FOUND)
         return error_wrap(), NULL;
     
     return error_pass_ptr(path_get_win_folder(&FOLDERID_Profile));
@@ -101,7 +104,7 @@ static path_ct path_get_tmp(void)
     || (value = env_get(LIT("TMPDIR"))))
         return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
     
-    if(!error_check(0, E_ENV_NOT_FOUND))
+    if(error_code(0) != E_ENV_NOT_FOUND)
         return error_wrap(), NULL;
     
 #ifdef _WIN32
@@ -144,7 +147,7 @@ static path_ct path_get_xdg_dir(const path_xdg_dir_info_st *info, bool def)
     if((value = env_get(STR(info->env))))
         return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
     
-    if(!error_check(0, E_ENV_NOT_FOUND))
+    if(error_code(0) != E_ENV_NOT_FOUND)
         return error_wrap(), NULL;
     
     if(!def || !info->def)
@@ -194,7 +197,7 @@ static path_ct path_get_win_dir(const path_win_dir_info_st *info, bool def)
     if(info->env && (value = env_get(STR(info->env))))
         return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
     
-    if(info->env && !error_check(0, E_ENV_NOT_FOUND))
+    if(info->env && error_get(0) != E_ENV_NOT_FOUND)
         return error_wrap(), NULL;
     
     if(!def || !info->id)
@@ -211,14 +214,14 @@ static path_ct path_get_xdg_win_dir(const path_xdg_dir_info_st *xdg, const path_
     if(env_get(LIT("HOME")))
         return error_pass_ptr(path_get_xdg_dir(xdg, true));
     
-    if(!error_check(0, E_ENV_NOT_FOUND))
+    if(error_code(0) != E_ENV_NOT_FOUND)
         return error_wrap(), NULL;
     
     // recognize XDG directories if available
     if((path = path_get_xdg_dir(xdg, false)))
         return path;
     
-    if(!error_check(0, E_PATH_NOT_AVAILABLE))
+    if(error_code(0) != E_PATH_NOT_AVAILABLE)
         return error_wrap(), NULL;
     
     // use standard windows directories

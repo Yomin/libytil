@@ -25,12 +25,17 @@
 
 #include <stdbool.h>
 #include <ytil/gen/str.h>
+#include <ytil/gen/error.h>
+
 
 typedef enum pctenc_error
 {
       E_PCTENC_EMPTY
     , E_PCTENC_INVALID_DATA
 } pctenc_error_id;
+
+/// pctenc error type declaration
+ERROR_DECLARE(PCTENC);
 
 
 // percent encode arbitrary data

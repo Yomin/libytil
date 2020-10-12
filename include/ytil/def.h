@@ -114,7 +114,7 @@
 #define return_error_if_pass(condition, error, value) do { \
     if((condition)) \
     { \
-        error_set(error); \
+        error_set((error)); \
         return (value); \
     } \
 } while(0)
@@ -123,40 +123,17 @@
 #define return_error_if_fail(condition, error, value) do { \
     if(!(condition)) \
     { \
-        error_set(error); \
+        error_set((error)); \
         return (value); \
     } \
 } while(0)
 
 // set error and return value if reached
 #define return_error_if_reached(error, value) do { \
-    error_set(error); \
+    error_set((error)); \
     return (value); \
 } while(0)
 
-// set errno and return value if condition true
-#define return_errno_if_pass(condition, error, value) do { \
-    if((condition)) \
-    { \
-        error_set_errno(error); \
-        return (value); \
-    } \
-} while(0)
-
-// set errno and return value if condition false
-#define return_errno_if_fail(condition, error, value) do { \
-    if(!(condition)) \
-    { \
-        error_set_errno(error); \
-        return (value); \
-    } \
-} while(0)
-
-// set errno and return value if reached
-#define return_errno_if_reached(error, value) do { \
-    error_set_errno(error); \
-    return (value); \
-} while(0)
 
 #ifdef NDEBUG
     

@@ -25,6 +25,8 @@
 
 #include <stdbool.h>
 #include <ytil/gen/str.h>
+#include <ytil/gen/error.h>
+
 
 typedef enum base85_error
 {
@@ -33,6 +35,9 @@ typedef enum base85_error
     , E_BASE85_INVALID_DATA
     , E_BASE85_INVALID_COMPRESSION
 } base85_error_id;
+
+/// base85 error type declaration
+ERROR_DECLARE(BASE85);
 
 extern const char base85_alphabet_a85[], *base85_compression_a85;
 extern const char base85_alphabet_z85[];

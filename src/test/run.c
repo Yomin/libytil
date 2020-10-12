@@ -109,8 +109,8 @@ typedef struct test_match_state
     test_entry_id type;
 } test_match_st;
 
-static const error_info_st error_infos[] =
-{
+/// test_run error type definition
+ERROR_DEFINE_LIST(TEST_RUN,
       ERROR_INFO(E_TEST_RUN_INVALID_OBJECT, "Invalid test run object.")
     , ERROR_INFO(E_TEST_RUN_INVALID_SUITE, "Invalid suite.")
     , ERROR_INFO(E_TEST_RUN_INVALID_FILTER, "Invalid filter.")
@@ -119,7 +119,10 @@ static const error_info_st error_infos[] =
     , ERROR_INFO(E_TEST_RUN_MALFORMED_ARG, "Malformed argument.")
     , ERROR_INFO(E_TEST_RUN_NOT_AVAILABLE, "Function not available.")
     , ERROR_INFO(E_TEST_RUN_TRACE_CHECK, "Trace check failed.")
-};
+);
+
+/// default error type for test_run module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_TEST_RUN
 
 
 static void fperror(FILE *fp, const char *msg)

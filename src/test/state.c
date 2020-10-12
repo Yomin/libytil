@@ -42,8 +42,8 @@ typedef struct test_fold_state
     void *ctx;
 } test_fold_state_st;
 
-static const error_info_st error_infos[] =
-{
+/// test_state error type definition
+ERROR_DEFINE_LIST(TEST_STATE,
       ERROR_INFO(E_TEST_STATE_CALLBACK, "Callback error.")
     , ERROR_INFO(E_TEST_STATE_INVALID_OBJECT, "Invalid test state object.")
     , ERROR_INFO(E_TEST_STATE_INVALID_STATUS_TYPE, "Invalid status type.")
@@ -52,7 +52,10 @@ static const error_info_st error_infos[] =
     , ERROR_INFO(E_TEST_STATE_INVALID_MSG, "Invalid message.")
     , ERROR_INFO(E_TEST_STATE_INVALID_MSG_TYPE, "Invalid message type.")
     , ERROR_INFO(E_TEST_STATE_INVALID_CALLBACK, "Invalid callback.")
-};
+);
+
+/// default error type for test_state module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_TEST_STATE
 
 
 test_state_ct test_state_new(void)

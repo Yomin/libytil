@@ -44,8 +44,8 @@ typedef struct test_com
     void *ctx;
 } test_com_st;
 
-static const error_info_st error_infos[] =
-{
+/// test_com error type definition
+ERROR_DEFINE_LIST(TEST_COM,
       ERROR_INFO(E_TEST_COM_CALLBACK, "Callback error.")
     , ERROR_INFO(E_TEST_COM_INVALID_MSG_TYPE, "Invalid message type.")
     , ERROR_INFO(E_TEST_COM_INVALID_STATUS_TYPE, "Invalid status type.")
@@ -56,7 +56,10 @@ static const error_info_st error_infos[] =
     , ERROR_INFO(E_TEST_COM_NOT_AVAILABLE, "Function not available.")
     , ERROR_INFO(E_TEST_COM_SHUTDOWN, "Test case peer shutdown.")
     , ERROR_INFO(E_TEST_COM_WOULD_BLOCK, "Socket would block.")
-};
+);
+
+/// default error type for test_com module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_TEST_COM
 
 
 test_com_ct test_com_new(test_com_msg_cb cb, const void *ctx)
@@ -474,7 +477,7 @@ int test_com_recv(test_com_ct com)
             continue;
         else if(rc > 0)
             return rc;
-        else if(error_check(0, E_TEST_COM_WOULD_BLOCK) || error_check(0, E_TEST_COM_SHUTDOWN))
+        else if(error_check(0, 2, E_TEST_COM_WOULD_BLOCK, E_TEST_COM_SHUTDOWN))
             return 0;
         else
             return error_pass(), -1;

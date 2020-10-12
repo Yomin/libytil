@@ -27,11 +27,14 @@
 #include <stdio.h>
 
 
-static const error_info_st error_infos[] =
-{
+/// qpenc error type definition
+ERROR_DEFINE_LIST(QPENC,
       ERROR_INFO(E_QPENC_EMPTY, "No input data available.")
     , ERROR_INFO(E_QPENC_INVALID_DATA, "Invalid quoted printable data.")
-};
+);
+
+/// default error type for qpenc module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_QPENC
 
 
 static ssize_t qpenc_translate_encode(unsigned char *dst, size_t *written, const unsigned char *src, size_t *read, ssize_t len, bool null_stop)

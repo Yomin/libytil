@@ -24,6 +24,7 @@
 #define YTIL_TEST_RUN_H_INCLUDED
 
 #include <ytil/test/suite.h>
+#include <ytil/gen/error.h>
 #include <stdbool.h>
 
 typedef enum test_run_error
@@ -37,6 +38,9 @@ typedef enum test_run_error
     , E_TEST_RUN_NOT_AVAILABLE
     , E_TEST_RUN_TRACE_CHECK
 } test_run_error_id;
+
+/// test_run error type declaration
+ERROR_DECLARE(TEST_RUN);
 
 struct test_run;
 typedef struct test_run *test_run_ct;

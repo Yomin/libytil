@@ -78,8 +78,8 @@ typedef struct str_cat
 } str_cat_st;
 
 
-static const error_info_st error_infos[] =
-{
+/// str error type definition
+ERROR_DEFINE_LIST(STR,
       ERROR_INFO(E_STR_BINARY, "Operation not supported on binary data str.")
     , ERROR_INFO(E_STR_CONST, "Operation not supported on constant str.")
     , ERROR_INFO(E_STR_EMPTY, "Operation not supported on empty str.")
@@ -91,7 +91,10 @@ static const error_info_st error_infos[] =
     , ERROR_INFO(E_STR_OUT_OF_BOUNDS, "Out of bounds access.")
     , ERROR_INFO(E_STR_UNREFERENCED, "Operation not supported on unreferenced str.")
     , ERROR_INFO(E_STR_VOLATILE, "Operation not supported on volatile str.")
-};
+);
+
+/// default error type for str module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_STR
 
 
 

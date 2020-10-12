@@ -35,13 +35,16 @@ typedef struct proc_title
     size_t size, orig_len, ref;
 } proc_title_st;
 
-static const error_info_st error_infos[] =
-{
+/// proc error type definition
+ERROR_DEFINE_LIST(PROC,
       ERROR_INFO(E_PROC_INVALID_TITLE, "Invalid proc title.")
     , ERROR_INFO(E_PROC_NO_SPACE, "Not enough space scavenged.")
     , ERROR_INFO(E_PROC_NOT_AVAILABLE, "Function not available.")
     , ERROR_INFO(E_PROC_NOT_INITIALIZED, "proc title is not initalized.")
-};
+);
+
+/// default error type for proc module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_PROC
 
 #ifndef _WIN32
 static proc_title_st   *proc_title;

@@ -76,15 +76,17 @@ typedef struct list
     list_node_st    head;   ///< head node of circular list
 } list_st;
 
-/// list errors
-static const error_info_st error_infos[] =
-{
+/// list error type definition
+ERROR_DEFINE_LIST(LIST,
     ERROR_INFO(E_LIST_CALLBACK,      "Callback error."),
     ERROR_INFO(E_LIST_EMPTY,         "List is empty."),
     ERROR_INFO(E_LIST_END,           "List end."),
     ERROR_INFO(E_LIST_NOT_FOUND,     "Node not found."),
     ERROR_INFO(E_LIST_OUT_OF_BOUNDS, "Out of bounds access.")
-};
+);
+
+/// default error type for list module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_LIST
 
 
 list_ct list_new(void)
@@ -158,7 +160,7 @@ void list_clear_f(list_ct list, list_dtor_cb dtor, const void *ctx)
 /// \param data     data to set node with
 ///
 /// \returns                    list node
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 static list_node_ct list_node_new(list_ct list, const void *data)
 {
     list_node_ct node;
@@ -402,7 +404,7 @@ size_t list_pos(list_const_ct list, list_node_const_ct node)
 /// \param data     data to set new node with
 ///
 /// \returns                    list node
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 static list_node_ct list_insert_node(list_ct list, list_node_const_ct node, const void *data)
 {
     list_node_ct suc, pre = (list_node_ct)node;

@@ -29,6 +29,7 @@
 #include <stdbool.h>
 #include <sys/types.h>
 #include <ytil/cast.h>
+#include <ytil/gen/error.h>
 
 
 /// list error
@@ -40,6 +41,9 @@ typedef enum list_error
     E_LIST_NOT_FOUND,       ///< node not found
     E_LIST_OUT_OF_BOUNDS,   ///< out of bounds node access
 } list_error_id;
+
+/// list error type declaration
+ERROR_DECLARE(LIST);
 
 struct list;
 struct list_node;
@@ -102,7 +106,7 @@ typedef int (*list_clone_cb)(list_const_ct src_list, void **dst, const void *src
 /// Create new list.
 ///
 /// \returns                    new list
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 list_ct list_new(void);
 
 /// Free list.
@@ -152,7 +156,7 @@ void list_clear_f(list_ct list, list_dtor_cb dtor, const void *ctx);
 /// \param list     list
 ///
 /// \returns                        new list
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 list_ct list_clone(list_const_ct list);
 
 /// Clone list and node data.
@@ -168,7 +172,7 @@ list_ct list_clone(list_const_ct list);
 /// \param ctx      \p clone and \p dtor context
 ///
 /// \returns                        new list
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 /// \retval NULL/E_LIST_CALLBACK    \p clone callback error
 list_ct list_clone_f(list_const_ct list, list_clone_cb clone, list_dtor_cb dtor, const void *ctx);
 
@@ -369,7 +373,7 @@ size_t list_pos(list_const_ct list, list_node_const_ct node);
 /// \param data     data to set node with
 ///
 /// \returns                    list node
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 list_node_ct list_prepend(list_ct list, const void *data);
 
 /// Prepend value to list.
@@ -378,7 +382,7 @@ list_node_ct list_prepend(list_ct list, const void *data);
 /// \param value    value to set node with
 ///
 /// \returns                    list node
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 #define list_prepend_value(list, value) \
     list_prepend(list, VALUE_TO_POINTER(value))
 
@@ -388,7 +392,7 @@ list_node_ct list_prepend(list_ct list, const void *data);
 /// \param data     data to set node with
 ///
 /// \returns                    list node
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 list_node_ct list_append(list_ct list, const void *data);
 
 /// Append value to list.
@@ -397,7 +401,7 @@ list_node_ct list_append(list_ct list, const void *data);
 /// \param value    value to set node with
 ///
 /// \returns                    list node
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 #define list_append_value(list, value) \
     list_append(list, VALUE_TO_POINTER(value))
 
@@ -409,7 +413,7 @@ list_node_ct list_append(list_ct list, const void *data);
 ///
 /// \returns                            list node
 /// \retval NULL/E_LIST_OUT_OF_BOUNDS   \p pos is out of bounds
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 list_node_ct list_insert(list_ct list, ssize_t pos, const void *data);
 
 /// Insert value into list at position.
@@ -420,7 +424,7 @@ list_node_ct list_insert(list_ct list, ssize_t pos, const void *data);
 ///
 /// \returns                            list node
 /// \retval NULL/E_LIST_OUT_OF_BOUNDS   \p pos is out of bounds
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 #define list_insert_value(list, pos, value) \
     list_insert(list, pos, VALUE_TO_POINTER(value))
 
@@ -431,7 +435,7 @@ list_node_ct list_insert(list_ct list, ssize_t pos, const void *data);
 /// \param data     data to set node with
 ///
 /// \returns                            list node
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 list_node_ct list_insert_before(list_ct list, list_node_const_ct suc, const void *data);
 
 /// Insert value before node into list.
@@ -441,7 +445,7 @@ list_node_ct list_insert_before(list_ct list, list_node_const_ct suc, const void
 /// \param value    value to set node with
 ///
 /// \returns                            list node
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 #define list_insert_value_before(list, suc, value) \
     list_insert_before(list, suc, VALUE_TO_POINTER(value))
 
@@ -452,7 +456,7 @@ list_node_ct list_insert_before(list_ct list, list_node_const_ct suc, const void
 /// \param data     data to set node with
 ///
 /// \returns                            list node
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 list_node_ct list_insert_after(list_ct list, list_node_const_ct pre, const void *data);
 
 /// Insert value after node into list.
@@ -462,7 +466,7 @@ list_node_ct list_insert_after(list_ct list, list_node_const_ct pre, const void 
 /// \param value    value to set node with
 ///
 /// \returns                            list node
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 #define list_insert_value_after(list, pre, value) \
     list_insert_after(list, pre, VALUE_TO_POINTER(value))
 

@@ -24,6 +24,7 @@
 #define YTIL_TEST_SUITE_H_INCLUDED
 
 #include <ytil/test/case.h>
+#include <ytil/gen/error.h>
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -37,6 +38,9 @@ typedef enum test_suite_error
    , E_TEST_SUITE_INVALID_OBJECT
    , E_TEST_SUITE_NOT_FOUND
 } test_suite_error_id;
+
+/// test_suite error type declaration
+ERROR_DECLARE(TEST_SUITE);
 
 
 struct test_suite;

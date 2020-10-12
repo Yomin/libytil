@@ -25,13 +25,16 @@
 #include <ytil/bits.h>
 
 
-static const error_info_st error_infos[] =
-{
+/// base64 error type definition
+ERROR_DEFINE_LIST(BASE64,
       ERROR_INFO(E_BASE64_EMPTY, "No input data available.")
     , ERROR_INFO(E_BASE64_INVALID_ALPHABET, "Invalid base64 alphabet.")
     , ERROR_INFO(E_BASE64_INVALID_DATA, "Invalid base64 data.")
     , ERROR_INFO(E_BASE64_INVALID_PAD, "Invalid base64 pad character.")
-};
+);
+
+/// default error type for base64 module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_BASE64
 
 const char base64_alphabet_std[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

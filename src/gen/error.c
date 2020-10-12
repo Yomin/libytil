@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2019-2020 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,342 +20,139 @@
  * THE SOFTWARE.
  */
 
+/// \file
+
 #include <ytil/gen/error.h>
 #include <ytil/ext/errno.h>
 #include <ytil/def.h>
 #include <string.h>
-#include <assert.h>
-#include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
 
+
 #ifdef _WIN32
-#   include <winerror.h>
-#   include <ntstatus.h>
+    #include <winerror.h>
+    #include <ntstatus.h>
 #endif
 
 #ifndef ERROR_STACK_SIZE
-#   define ERROR_STACK_SIZE 20
+    #define ERROR_STACK_SIZE 20 ///< number of maximum error entries
 #endif
 
-typedef union error_value
-{
-    struct error_value_error
-    {
-        ssize_t code;
-        const error_info_st *infos;
-    } error;
-    struct error_value_errno
-    {
-        int code;
-    } _errno;
-#ifdef _WIN32
-    struct error_value_win32
-    {
-        DWORD code;
-    } win32;
-    struct error_value_hresult
-    {
-        HRESULT result;
-    } hresult;
-    struct error_value_ntstatus
-    {
-        NTSTATUS status;
-    } ntstatus;
-#endif
-} error_value_un;
 
+/// error stack entry
 typedef struct error_entry
 {
-    error_type_id type;
-    const char *func;
-    error_value_un value;
+    const char          *func;      ///< error function
+    const error_type_st *type;      ///< error type
+    int                 code;       ///< error code
 } error_entry_st;
 
-typedef struct error_state
+/// error stack
+typedef struct error_stack
 {
-    error_entry_st stack[ERROR_STACK_SIZE];
-    size_t size;
-    bool frozen;
-} error_state_st;
+    error_entry_st  stack[ERROR_STACK_SIZE];    ///< error entry list
+    size_t          size;                       ///< number of error entries
+} error_stack_st;
 
-static error_state_st errors;
+/// error state
+static error_stack_st errors;
 
-static const error_info_st error_infos[] =
+static char error_name_buf[50];     ///< error name buffer
+static char error_desc_buf[200];    ///< error description buffer
+
+
+const char *error_type_name(const error_type_st *type)
 {
-      [-E_ERROR_UNSET]  = { .name = "E_ERROR_UNSET",    .desc = "Error unset." }
-    , [-E_ERROR_WRAP]   = { .name = "E_ERROR_WRAP",     .desc = "WRAP Error" }
-    , [-E_ERROR_PASS]   = { .name = "E_ERROR_PASS",     .desc = "PASS Error" }
-    , [-E_ERROR_SKIP]   = { .name = "E_ERROR_SKIP",     .desc = "SKIP Error" }
-    , [-E_SYSTEM]       = { .name = "E_SYSTEM",         .desc = "System Error" }
-    , [-E_SYSTEM_OOM]   = { .name = "E_SYSTEM_OOM",     .desc = "Out of memory." }
-};
+    assert(type);
 
-
-static error_entry_st *error_add(error_type_id type, const char *func)
-{
-    size_t id;
-    error_entry_st *entry;
-    
-    if(errors.frozen)
-        return NULL;
-    
-    id = errors.size < ERROR_STACK_SIZE ? errors.size : ERROR_STACK_SIZE-1;
-    entry = &errors.stack[id];
-    
-    entry->type = type;
-    entry->func = func;
-    
-    errors.size = id+1;
-    
-    return entry;
+    return type->name;
 }
 
-void _error_set(const char *func, const error_info_st *infos, size_t error)
+const char *error_type_get_name(const error_type_st *type, int code)
 {
-    if(!errors.frozen)
+    const char *name = NULL;
+
+    assert(type);
+
+    error_name_buf[0] = '\0';
+
+    switch(type->interface_type)
     {
-        errors.size = 0;
-        _error_push(func, infos, error);
-    }
-}
+    case ERROR_INTERFACE_CALLBACK:
 
-void _error_push(const char *func, const error_info_st *infos, size_t error)
-{
-    error_entry_st *entry;
-    
-    if((entry = error_add(ERROR_TYPE_ERROR, func)))
-    {
-        entry->value.error.code = error;
-        entry->value.error.infos = infos;
-    }
-}
-
-void _error_wrap(const char *func)
-{
-    assert(errors.size);
-    
-    if(error_type(0) == ERROR_TYPE_ERROR && error_get(0) <= E_SYSTEM)
-        _error_pass(func);
-    else
-        _error_push(func, error_infos, E_ERROR_WRAP);
-}
-
-void _error_pack(const char *func, const error_info_st *infos, size_t error)
-{
-    assert(errors.size);
-    
-    if(error_type(0) == ERROR_TYPE_ERROR && error_get(0) <= E_SYSTEM)
-        _error_pass(func);
-    else
-        _error_push(func, infos, error);
-}
-
-void _error_map(const char *func, size_t depth, const error_info_st *infos, ...)
-{
-    ssize_t error = error_get(depth), match;
-    va_list ap;
-    
-    va_start(ap, infos);
-    
-    while(1)
-    {
-        if((match = va_arg(ap, int)) == E_ERROR_UNSET)
+        if(type->interface.callback.error_name)
         {
-            _error_wrap(func);
-            break;
+            name = type->interface.callback.error_name(
+                type, code, error_name_buf, sizeof(error_name_buf));
         }
-        else if(match == error)
+
+        break;
+
+    case ERROR_INTERFACE_LIST:
+        name = type->interface.list.infos[ABS(code)].name;
+
+        break;
+
+    default:
+        abort();
+    }
+
+    if(name)
+        return name;
+
+    snprintf(error_name_buf, sizeof(error_name_buf), "%s_%d",
+        IFNULL(type->name, "UNKNOWN"), code);
+
+    return error_name_buf;
+}
+
+const char *error_type_get_desc(const error_type_st *type, int code)
+{
+    const char *desc = NULL;
+
+    assert(type);
+
+    error_desc_buf[0] = '\0';
+
+    switch(type->interface_type)
+    {
+    case ERROR_INTERFACE_CALLBACK:
+
+        if(type->interface.callback.error_desc)
         {
-            _error_push(func, infos, va_arg(ap, int));
-            break;
+            desc = type->interface.callback.error_desc(
+                type, code, error_desc_buf, sizeof(error_desc_buf));
         }
-        else
-        {
-            va_arg(ap, int);
-        }
+
+        break;
+
+    case ERROR_INTERFACE_LIST:
+        desc = type->interface.list.infos[ABS(code)].desc;
+
+        break;
+
+    default:
+        abort();
     }
-    
-    va_end(ap);
+
+    return desc ? desc : "<no_description_available>";
 }
 
-void _error_pass(const char *func)
+bool error_type_is_oom(const error_type_st *type, int code)
 {
-    _error_push(func, error_infos, E_ERROR_PASS);
+    assert(type);
+
+    return type->error_is_oom && type->error_is_oom(type, code);
 }
 
-void _error_skip(const char *func)
+int error_type_get_last(const error_type_st *type, const void *ctx)
 {
-    _error_push(func, error_infos, E_ERROR_SKIP);
+    assert(type);
+    assert(type->error_last);
+
+    return type->error_last(type, (void *)ctx);
 }
-
-void _error_pick(const char *func, size_t error)
-{
-    if(error_check(0, error))
-        _error_skip(func);
-    else
-        _error_wrap(func);
-}
-
-void _error_lift(const char *func, size_t error)
-{
-    if(error_check(0, error))
-        _error_skip(func);
-    else
-        _error_pass(func);
-}
-
-void _errno_set(const char *func, int error)
-{
-    if(!errors.frozen)
-    {
-        errors.size = 0;
-        _errno_push(func, error);
-    }
-}
-
-void _errno_push(const char *func, int error)
-{
-    error_entry_st *entry;
-    
-    if((entry = error_add(ERROR_TYPE_ERRNO, func)))
-        entry->value._errno.code = error;
-}
-
-void _error_wrap_errno(const char *func, const char *sub)
-{
-    _errno_set(sub, errno);
-    
-    if(errno == ENOMEM)
-        _error_push(func, error_infos, E_SYSTEM_OOM);
-    else
-        _error_wrap(func);
-}
-
-void _error_pack_errno(const char *func, const error_info_st *infos, size_t error, const char *sub)
-{
-    _errno_set(sub, errno);
-    _error_push(func, infos, error);
-}
-
-void _error_pass_errno(const char *func, const char *sub)
-{
-    _errno_set(sub, errno);
-    _error_pass(func);
-}
-
-#ifdef _WIN32
-
-static void error_set_win32(const char *sub, DWORD error)
-{
-    error_entry_st *entry;
-    
-    if(!errors.frozen)
-    {
-        errors.size = 0;
-        entry = error_add(ERROR_TYPE_WIN32, sub);
-        entry->value.win32.code = error;
-    }
-}
-
-void _error_wrap_win32(const char *func, const char *sub, DWORD error)
-{
-    error_set_win32(sub, error);
-    
-    if(error == ERROR_NOT_ENOUGH_MEMORY || error == ERROR_OUTOFMEMORY)
-        _error_push(func, infos, E_SYSTEM_OOM);
-    else
-        _error_wrap(func);
-}
-
-void _error_wrap_last_win32(const char *func, const char *sub)
-{
-    _error_wrap_win32(func, sub, GetLastError());
-}
-
-void _error_pack_win32(const char *func, const error_info_st *infos, size_t error, const char *sub, DWORD error32)
-{
-    error_set_win32(sub, error32);
-    _error_push(func, infos, error);
-}
-
-void _error_pack_last_win32(const char *func, const error_info_st *infos, size_t error, const char *sub)
-{
-    _error_pack_win32(func, infos, error, sub, GetLastError());
-}
-
-void _error_pass_win32(const char *func, const char *sub, DWORD error)
-{
-    error_set_win32(sub, error);
-    _error_pass(func);
-}
-
-void _error_pass_last_win32(const char *func, const char *sub)
-{
-    _error_pass_win32(func, sub, GetLastError());
-}
-
-static void error_set_hresult(const char *sub, HRESULT result)
-{
-    error_entry_st *entry;
-    
-    if(!errors.frozen)
-    {
-        errors.size = 0;
-        entry = error_add(ERROR_TYPE_HRESULT, sub);
-        entry->value.hresult.result = result;
-    }
-}
-
-void _error_wrap_hresult(const char *func, const char *sub, HRESULT result)
-{
-    error_set_hresult(sub, result);
-    _error_wrap(func);
-}
-
-void _error_pack_hresult(const char *func, const error_info_st *infos, size_t error, const char *sub, HRESULT result)
-{
-    error_set_hresult(sub, result);
-    _error_push(func, infos, error);
-}
-
-void _error_pass_hresult(const char *func, const char *sub, HRESULT result)
-{
-    error_set_hresult(sub, result);
-    _error_pass(func);
-}
-
-static void error_set_ntstatus(const char *sub, NTSTATUS status)
-{
-    error_entry_st *entry;
-    
-    if(!errors.frozen)
-    {
-        errors.size = 0;
-        entry = error_add(ERROR_TYPE_NTSTATUS, sub);
-        entry->value.ntstatus.status = status;
-    }
-}
-
-void _error_wrap_ntstatus(const char *func, const char *sub, NTSTATUS status)
-{
-    error_set_ntstatus(sub, status);
-    _error_wrap(func);
-}
-
-void _error_pack_ntstatus(const char *func, const error_info_st *infos, size_t error, const char *sub, NTSTATUS status)
-{
-    error_set_ntstatus(sub, status);
-    _error_push(func, infos, error);
-}
-
-void _error_pass_ntstatus(const char *func, const char *sub, NTSTATUS status)
-{
-    error_set_ntstatus(sub, status);
-    _error_pass(func);
-}
-
-#endif // _WIN32
 
 void error_clear(void)
 {
@@ -367,500 +164,478 @@ size_t error_depth(void)
     return errors.size;
 }
 
-void error_freeze(void)
-{
-    errors.frozen = true;
-}
-
-void error_unfreeze(void)
-{
-    errors.frozen = false;
-}
-
-const char *error_strtype(error_type_id type)
-{
-    switch(type)
-    {
-    case ERROR_TYPE_INVALID:  return "ERROR_TYPE_INVALID";
-    case ERROR_TYPE_ERROR:    return "ERROR_TYPE_ERROR";
-    case ERROR_TYPE_ERRNO:    return "ERROR_TYPE_ERRNO";
-#ifdef _WIN32
-    case ERROR_TYPE_WIN32:    return "ERROR_TYPE_WIN32";
-    case ERROR_TYPE_HRESULT:  return "ERROR_TYPE_HRESULT";
-    case ERROR_TYPE_NTSTATUS: return "ERROR_TYPE_NTSTATUS";
-#endif
-    default:                  abort();
-    }
-}
-
+/// Find next deeper level containing non transparent error.
+///
+/// \param level    error level to start from
+///
+/// \returns        error level
 static ssize_t error_next_level(ssize_t level)
 {
     error_entry_st *entry;
-    
+
     for(level--; level >= 0; level--)
     {
         entry = &errors.stack[level];
-        
-        if(entry->type != ERROR_TYPE_ERROR)
+
+        if(entry->type != &ERROR_TYPE_GENERIC)
             return level;
-        
-        switch(entry->value.error.code)
+
+        switch(entry->code)
         {
-        case E_ERROR_PASS:  break;
-        case E_ERROR_SKIP:  level = error_next_level(level); break;
-        default:            return level;
+        case E_GENERIC_PASS:
+            break;
+
+        case E_GENERIC_SKIP:
+            level = error_next_level(level);
+            break;
+
+        default:
+            return level;
         }
     }
-    
+
     return -1;
 }
 
+/// Get error entry from stack.
+///
+/// \param depth    error depth, 0 is top level error
+///
+/// \returns        error entry
 static error_entry_st *error_get_entry(size_t depth)
 {
     ssize_t level;
-    
-    return_value_if_fail(errors.size, NULL);
-    
+
+    assert(errors.size);
+
     for(level = errors.size, depth++; level >= 0 && depth; depth--)
         level = error_next_level(level);
-    
-    return level < 0 || depth ? NULL : &errors.stack[level];
+
+    assert(level >= 0 && !depth);
+
+    return &errors.stack[level];
 }
 
-const char *error_name_error(const error_info_st *infos, size_t error)
+/// Get error name from entry.
+///
+/// \param entry    error entry
+///
+/// \returns        error name
+static const char *error_entry_get_name(const error_entry_st *entry)
 {
-    return infos[error].name;
+    return error_type_get_name(entry->type, entry->code);
 }
 
-const char *error_name_errno(int error)
+/// Get error description from entry.
+///
+/// \param entry    error entry
+///
+/// \returns        error description
+static const char *error_entry_get_desc(const error_entry_st *entry)
 {
-    return IFNULL(strerrno(error), "<unknown_errno>");
+    return error_type_get_desc(entry->type, entry->code);
 }
 
-#ifdef _WIN32
-
-static char error_name_buf[20];
-
-const char *error_name_win32(DWORD error)
+/// Check if error from entry is out-of-memory error.
+///
+/// \param entry    error entry
+///
+/// \returns        error name
+static bool error_entry_is_oom(const error_entry_st *entry)
 {
-    snprintf(error_name_buf, sizeof(error_name_buf), "WIN32_%08lX", error);
-    
-    return error_name_buf;
-}
-
-const char *error_name_hresult(HRESULT result)
-{
-    snprintf(error_name_buf, sizeof(error_name_buf), "HRESULT_%08lX", result);
-    
-    return error_name_buf;
-}
-
-const char *error_name_ntstatus(NTSTATUS status)
-{
-    snprintf(error_name_buf, sizeof(error_name_buf), "NTSTATUS_%08lX", status);
-    
-    return error_name_buf;
-}
-
-#endif
-
-static const char *error_entry_get_name(error_entry_st *entry)
-{
-    switch(entry->type)
-    {
-    case ERROR_TYPE_ERROR:
-        return error_name_error(entry->value.error.infos, ABS(entry->value.error.code));
-    case ERROR_TYPE_ERRNO:
-        return error_name_errno(entry->value._errno.code);
-#ifdef _WIN32
-    case ERROR_TYPE_WIN32:
-        return error_name_win32(entry->value.win32.code);
-    case ERROR_TYPE_HRESULT:
-        return error_name_hresult(entry->value.hresult.result);
-    case ERROR_TYPE_NTSTATUS:
-        return error_name_ntstatus(entry->value.ntstatus.status);
-#endif
-    default:
-        abort();
-    }
-}
-
-const char *error_desc_error(const error_info_st *infos, size_t error)
-{
-    return infos[error].desc;
-}
-
-const char *error_desc_errno(int error)
-{
-    return IFNULL(strerror(error), "<unknown_errno>");
-}
-
-#ifdef _WIN32
-
-static char error_desc_buf[200];
-
-const char *error_desc_win32(DWORD error)
-{
-    DWORD rc;
-    char *tmp;
-    
-    rc = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        error_desc_buf, sizeof(error_desc_buf), NULL);
-    
-    if(rc)
-    {
-        for(; rc && (error_desc_buf[rc-1] == '\n' || error_desc_buf[rc-1] == '\r'); rc--)
-            error_desc_buf[rc-1] = '\0';
-        
-        return error_desc_buf;
-    }
-    
-    if((rc = GetLastError()) != ERROR_INSUFFICIENT_BUFFER)
-    {
-        snprintf(error_desc_buf, sizeof(error_desc_buf), "<WIN32_FormatMessage_Error_%08lX>", rc);
-        
-        return error_desc_buf;
-    }
-    
-    rc = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS|FORMAT_MESSAGE_ALLOCATE_BUFFER,
-        NULL, error, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (char*)&tmp, 0, NULL);
-    
-    if(!rc)
-    {
-        rc = GetLastError();
-        snprintf(error_desc_buf, sizeof(error_desc_buf), "<WIN32_FormatMessage_Error_%08lX>", rc);
-        
-        return error_desc_buf;
-    }
-    
-    strncpy(error_desc_buf, tmp, sizeof(error_desc_buf));
-    strncpy(&error_desc_buf[sizeof(error_desc_buf)-4], "...", 4);
-    LocalFree(tmp);
-    
-    return error_desc_buf;
-}
-
-const char *error_desc_hresult(HRESULT result)
-{
-    return "<HRESULT_MESSAGE>"; // todo
-}
-
-const char *error_desc_ntstatus(NTSTATUS status)
-{
-    return "<NTSTATUS_MESSAGE>"; // todo
-}
-
-#endif
-
-static const char *error_entry_get_desc(error_entry_st *entry)
-{
-    switch(entry->type)
-    {
-    case ERROR_TYPE_ERROR:
-        return error_desc_error(entry->value.error.infos, ABS(entry->value.error.code));
-    case ERROR_TYPE_ERRNO:
-        return error_desc_errno(entry->value._errno.code);
-#ifdef _WIN32
-    case ERROR_TYPE_WIN32:
-        return error_desc_win32(entry->value.win32.code);
-    case ERROR_TYPE_HRESULT:
-        return error_desc_hresult(entry->value.hresult.result);
-    case ERROR_TYPE_NTSTATUS:
-        return error_desc_ntstatus(entry->value.ntstatus.status);
-#endif
-    default:
-        abort();
-    }
-}
-
-ssize_t error_get(size_t depth)
-{
-    error_entry_st *entry = error_get_entry(depth);
-    assert(!entry || entry->type == ERROR_TYPE_ERROR);
-    
-    return entry ? entry->value.error.code : E_ERROR_UNSET;
-}
-
-bool error_check(size_t depth, ssize_t error)
-{
-    error_entry_st *entry = error_get_entry(depth);
-    assert(!entry || entry->type == ERROR_TYPE_ERROR);
-    
-    return entry && entry->value.error.code == error;
-}
-
-int error_get_errno(size_t depth)
-{
-    error_entry_st *entry = error_get_entry(depth);
-    assert(!entry || entry->type == ERROR_TYPE_ERRNO);
-    
-    return entry ? entry->value._errno.code : 0;
-}
-
-bool error_check_errno(size_t depth, int error)
-{
-    error_entry_st *entry = error_get_entry(depth);
-    assert(!entry || entry->type == ERROR_TYPE_ERRNO);
-    
-    return entry && entry->value._errno.code == error;
-}
-
-#ifdef _WIN32
-
-DWORD error_get_win32(size_t depth)
-{
-    error_entry_st *entry = error_get_entry(depth);
-    assert(!entry || entry->type == ERROR_TYPE_WIN32);
-    
-    return entry ? entry->value.win32.code : ERROR_SUCCESS;
-}
-
-bool error_check_win32(size_t depth, DWORD error)
-{
-    error_entry_st *entry = error_get_entry(depth);
-    assert(!entry || entry->type == ERROR_TYPE_WIN32);
-    
-    return entry && entry->value.win32.code == error;
-}
-
-HRESULT error_get_hresult(size_t depth)
-{
-    error_entry_st *entry = error_get_entry(depth);
-    assert(!entry || entry->type == ERROR_TYPE_HRESULT);
-    
-    return entry ? entry->value.hresult.result : S_OK;
-}
-
-bool error_check_hresult(size_t depth, HRESULT result)
-{
-    error_entry_st *entry = error_get_entry(depth);
-    assert(!entry || entry->type == ERROR_TYPE_HRESULT);
-    
-    return entry && entry->value.hresult.result == result;
-}
-
-NTSTATUS error_get_ntstatus(size_t depth)
-{
-    error_entry_st *entry = error_get_entry(depth);
-    assert(!entry || entry->type == ERROR_TYPE_NTSTATUS);
-    
-    return entry ? entry->value.ntstatus.status : STATUS_SUCCESS;
-}
-
-bool error_check_ntstatus(size_t depth, NTSTATUS status)
-{
-    error_entry_st *entry = error_get_entry(depth);
-    assert(!entry || entry->type == ERROR_TYPE_NTSTATUS);
-    
-    return entry && entry->value.ntstatus.status == status;
-}
-
-#endif // _WIN32
-
-error_type_id error_type(size_t depth)
-{
-    error_entry_st *entry = error_get_entry(depth);
-    
-    return entry ? entry->type : ERROR_TYPE_INVALID;
+    return error_type_is_oom(entry->type, entry->code);
 }
 
 const char *error_func(size_t depth)
 {
-    error_entry_st *entry = error_get_entry(depth);
-    
-    return entry ? entry->func : NULL;
+    return error_get_entry(depth)->func;
+}
+
+const error_type_st *error_type(size_t depth)
+{
+    return error_get_entry(depth)->type;
+}
+
+int error_code(size_t depth)
+{
+    return error_get_entry(depth)->code;
 }
 
 const char *error_name(size_t depth)
 {
-    error_entry_st *entry = error_get_entry(depth);
-    
-    return entry ? error_entry_get_name(entry) : NULL;
+    return error_entry_get_name(error_get_entry(depth));
 }
 
 const char *error_desc(size_t depth)
 {
+    return error_entry_get_desc(error_get_entry(depth));
+}
+
+bool error_is_oom(size_t depth)
+{
+    return error_entry_is_oom(error_get_entry(depth));
+}
+
+bool error_check(size_t depth, size_t n, ...)
+{
     error_entry_st *entry = error_get_entry(depth);
-    
-    return entry ? error_entry_get_desc(entry) : NULL;
-}
+    va_list ap;
+    int code;
 
-ssize_t error_origin_get(void)
-{
-    return error_stack_get_error(0);
-}
+    va_start(ap, n);
 
-bool error_origin_check(ssize_t error)
-{
-    return error_stack_check_error(0, error);
-}
+    for(; n; n--)
+    {
+        code = va_arg(ap, int);
 
-int error_origin_get_errno(void)
-{
-    return error_stack_get_errno(0);
-}
+        if(code == entry->code)
+            return va_end(ap), true;
+    }
 
-bool error_origin_check_errno(int error)
-{
-    return error_stack_check_errno(0, error);
-}
+    va_end(ap);
 
-#ifdef _WIN32
-
-DWORD error_origin_get_win32(void)
-{
-    return error_stack_get_win32(0);
-}
-
-bool error_origin_check_win32(DWORD error)
-{
-    return error_stack_check_win32(0, error);
-}
-
-HRESULT error_origin_get_hresult(void)
-{
-    return error_stack_get_hresult(0);
-}
-
-bool error_origin_check_hresult(HRESULT result)
-{
-    return error_stack_check_hresult(0, result);
-}
-
-NTSTATUS error_origin_get_ntstatus(void)
-{
-    return error_stack_get_ntstatus(0);
-}
-
-bool error_origin_check_ntstatus(NTSTATUS status)
-{
-    return error_stack_check_ntstatus(0, status);
-}
-
-#endif // _WIN32
-
-error_type_id error_origin_type(void)
-{
-    return error_stack_get_type(0);
-}
-
-const char *error_origin_func(void)
-{
-    return error_stack_get_func(0);
-}
-
-const char *error_origin_name(void)
-{
-    return error_stack_get_name(0);
-}
-
-const char *error_origin_desc(void)
-{
-    return error_stack_get_desc(0);
-}
-
-ssize_t error_stack_get_error(size_t level)
-{
-    return_value_if_fail(level < errors.size, E_ERROR_UNSET);
-    assert(errors.stack[level].type == ERROR_TYPE_ERROR);
-    
-    return errors.stack[level].value.error.code;
-}
-
-bool error_stack_check_error(size_t level, ssize_t error)
-{
-    return_value_if_fail(level < errors.size, false);
-    assert(errors.stack[level].type == ERROR_TYPE_ERROR);
-    
-    return errors.stack[level].value.error.code == error;
-}
-
-int error_stack_get_errno(size_t level)
-{
-    return_value_if_fail(level < errors.size, 0);
-    assert(errors.stack[level].type == ERROR_TYPE_ERRNO);
-    
-    return errors.stack[level].value._errno.code;
-}
-
-bool error_stack_check_errno(size_t level, int error)
-{
-    return_value_if_fail(level < errors.size, false);
-    assert(errors.stack[level].type == ERROR_TYPE_ERRNO);
-    
-    return errors.stack[level].value._errno.code == error;
-}
-
-#ifdef _WIN32
-
-DWORD error_stack_get_win32(size_t level)
-{
-    return_value_if_fail(level < errors.size, ERROR_SUCCESS);
-    assert(errors.stack[level].type == ERROR_TYPE_WIN32);
-    
-    return errors.stack[level].value.win32.code;
-}
-
-bool error_stack_check_win32(size_t level, DWORD error)
-{
-    return_value_if_fail(level < errors.size, false);
-    assert(errors.stack[level].type == ERROR_TYPE_WIN32);
-    
-    return errors.stack[level].value.win32.code == error;
-}
-
-HRESULT error_stack_get_hresult(size_t level)
-{
-    return_value_if_fail(level < errors.size, S_OK);
-    assert(errors.stack[level].type == ERROR_TYPE_HRESULT);
-    
-    return errors.stack[level].value.hresult.result;
-}
-
-bool error_stack_check_hresult(size_t level, HRESULT result)
-{
-    return_value_if_fail(level < errors.size, false);
-    assert(errors.stack[level].type == ERROR_TYPE_HRESULT);
-    
-    return errors.stack[level].value.hresult.result == result;
-}
-
-NTSTATUS error_stack_get_ntstatus(size_t level)
-{
-    return_value_if_fail(level < errors.size, STATUS_SUCCESS);
-    assert(errors.stack[level].type == ERROR_TYPE_NTSTATUS);
-    
-    return errors.stack[level].value.ntstatus.status;
-}
-
-bool error_stack_check_ntstatus(size_t level, NTSTATUS status)
-{
-    return_value_if_fail(level < errors.size, false);
-    assert(errors.stack[level].type == ERROR_TYPE_NTSTATUS);
-    
-    return errors.stack[level].value.ntstatus.status == status;
-}
-
-#endif // _WIN32
-
-error_type_id error_stack_get_type(size_t level)
-{
-    return level >= errors.size ? ERROR_TYPE_INVALID : errors.stack[level].type;
+    return false;
 }
 
 const char *error_stack_get_func(size_t level)
 {
-    return level >= errors.size ? NULL : errors.stack[level].func;
+    assert(level < errors.size);
+
+    return errors.stack[level].func;
+}
+
+const error_type_st *error_stack_get_type(size_t level)
+{
+    assert(level < errors.size);
+
+    return errors.stack[level].type;
+}
+
+int error_stack_get_code(size_t level)
+{
+    assert(level < errors.size);
+
+    return errors.stack[level].code;
 }
 
 const char *error_stack_get_name(size_t level)
 {
-    return level >= errors.size ? NULL : error_entry_get_name(&errors.stack[level]);
+    assert(level < errors.size);
+
+    return error_entry_get_name(&errors.stack[level]);
 }
 
 const char *error_stack_get_desc(size_t level)
 {
-    return level >= errors.size ? NULL : error_entry_get_desc(&errors.stack[level]);
+    assert(level < errors.size);
+
+    return error_entry_get_desc(&errors.stack[level]);
 }
+
+bool error_stack_is_oom(size_t level)
+{
+    assert(level < errors.size);
+
+    return error_entry_is_oom(&errors.stack[level]);
+}
+
+void error_push_f(const char *func, const error_type_st *type, int code)
+{
+    error_entry_st *entry;
+    size_t id;
+
+    assert(type);
+    assert(errors.size < ERROR_STACK_SIZE);
+
+    id      = errors.size++;
+    entry   = &errors.stack[id];
+
+    entry->func = func;
+    entry->type = type;
+    entry->code = code;
+}
+
+void error_push_last_f(const char *func, const error_type_st *type, const void *ctx)
+{
+    assert(type);
+    assert(type->error_last);
+
+    error_push_f(func, type, type->error_last(type, (void *)ctx));
+}
+
+void error_set_f(const char *func, const error_type_st *type, int code)
+{
+    errors.size = 0;
+    error_push_f(func, type, code);
+}
+
+void error_set_last_f(const char *func, const error_type_st *type, const void *ctx)
+{
+    assert(type);
+    assert(type->error_last);
+
+    error_set_f(func, type, type->error_last(type, (void *)ctx));
+}
+
+void error_pass_f(const char *func)
+{
+    assert(errors.size);
+
+    error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_PASS);
+}
+
+void error_skip_f(const char *func)
+{
+    assert(errors.size);
+
+    error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_SKIP);
+}
+
+void error_wrap_f(const char *func)
+{
+    if(error_type(0) == &ERROR_TYPE_GENERIC && error_code(0) <= E_GENERIC_SYSTEM)
+        error_pass_f(func);
+    else if(error_is_oom(0))
+        error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_OOM);
+    else
+        error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_WRAP);
+}
+
+void error_pack_f(const char *func, const error_type_st *type, int code)
+{
+    if(error_type(0) == &ERROR_TYPE_GENERIC && error_code(0) <= E_GENERIC_SYSTEM)
+        error_pass_f(func);
+    else if(error_is_oom(0))
+        error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_OOM);
+    else
+        error_push_f(func, type, code);
+}
+
+void error_pack_last_f(const char *func, const error_type_st *type, const void *ctx)
+{
+    assert(type);
+    assert(type->error_last);
+
+    error_pack_f(func, type, type->error_last(type, (void *)ctx));
+}
+
+void error_pick_f(const char *func, int code)
+{
+    if(error_code(0) == code)
+        error_skip_f(func);
+    else
+        error_wrap_f(func);
+}
+
+void error_lift_f(const char *func, int code)
+{
+    if(error_code(0) == code)
+        error_skip_f(func);
+    else
+        error_pass_f(func);
+}
+
+void error_pass_sub_f(const char *func, const char *sub, const error_type_st *sub_type, int sub_code)
+{
+    error_set_f(sub, sub_type, sub_code);
+    error_pass_f(func);
+}
+
+void error_pass_last_sub_f(const char *func, const char *sub, const error_type_st *sub_type, const void *sub_ctx)
+{
+    assert(sub_type);
+    assert(sub_type->error_last);
+
+    error_pass_sub_f(func, sub, sub_type, sub_type->error_last(sub_type, (void *)sub_ctx));
+}
+
+void error_wrap_sub_f(const char *func, const char *sub, const error_type_st *sub_type, int sub_code)
+{
+    error_set_f(sub, sub_type, sub_code);
+    error_wrap_f(func);
+}
+
+void error_wrap_last_sub_f(const char *func, const char *sub, const error_type_st *sub_type, const void *sub_ctx)
+{
+    assert(sub_type);
+    assert(sub_type->error_last);
+
+    error_wrap_sub_f(func, sub, sub_type, sub_type->error_last(sub_type, (void *)sub_ctx));
+}
+
+void error_pack_sub_f(const char *func, const error_type_st *type, int code, const char *sub, const error_type_st *sub_type, int sub_code)
+{
+    error_set_f(sub, sub_type, sub_code);
+    error_pack_f(func, type, code);
+}
+
+void error_pack_last_sub_f(const char *func, const error_type_st *type, int code, const char *sub, const error_type_st *sub_type, const void *sub_ctx)
+{
+    assert(sub_type);
+    assert(sub_type->error_last);
+
+    error_pack_sub_f(func, type, code,
+        sub, sub_type, sub_type->error_last(sub_type, (void *)sub_ctx));
+}
+
+
+/// Define generic error info tuple.
+///
+/// \param _error   error ID
+/// \param _desc    error description
+///
+/// \returns        error info tuple to be used in \a ERROR_DEFINE_LIST
+#define ERROR_GENINFO(_error, _desc) \
+    [-_error] = { .name = #_error, .desc = _desc }
+
+/// generic error type definition
+ERROR_DEFINE_LIST(GENERIC,
+    ERROR_GENINFO(E_GENERIC_INVALID, "Invalid error."),
+    ERROR_GENINFO(E_GENERIC_WRAP,    "WRAP error."),
+    ERROR_GENINFO(E_GENERIC_PASS,    "PASS error."),
+    ERROR_GENINFO(E_GENERIC_SKIP,    "SKIP error."),
+    ERROR_GENINFO(E_GENERIC_SYSTEM,  "System error."),
+    ERROR_GENINFO(E_GENERIC_OOM,     "Out of memory.")
+);
+
+
+/// Error name callback to retrieve ERRNO name.
+///
+/// \implements error_name_cb
+static const char *error_errno_name(const error_type_st *type, int code, char *buf, size_t size)
+{
+    return strerrno(code);
+}
+
+/// Error description callback to retrieve ERRNO description.
+///
+/// \implements error_desc_cb
+static const char *error_errno_desc(const error_type_st *type, int code, char *buf, size_t size)
+{
+    return strerror(code);
+}
+
+/// Error out-of-memory check callback to check ERRNO codes.
+///
+/// \implements error_oom_cb
+static bool error_errno_is_oom(const error_type_st *type, int code)
+{
+    return code == ENOMEM;
+}
+
+/// Error retrieval callback to retrieve last ERRNO code.
+///
+/// \implements error_last_cb
+static int error_errno_last(const error_type_st *type, void *ctx)
+{
+    return errno;
+}
+
+/// ERRNO error type definition
+ERROR_DEFINE_CALLBACK(ERRNO,
+    error_errno_name, error_errno_desc, error_errno_is_oom, error_errno_last);
+
+
+#ifdef _WIN32
+
+/// Error name callback to retrieve WIN32/HRESULT/NTSTATUS error name.
+///
+/// \implements error_name_cb
+static const char *error_win_name(const error_type_st *type, int code, char *buf, size_t size)
+{
+    snprintf(buf, size, "%s_%08X", error_type_name(type), code);
+
+    return buf;
+}
+
+/// Error description callback to retrieve WIN32 error description.
+///
+/// \implements error_desc_cb
+static const char *error_win32_desc(const error_type_st *type, int code, char *buf, size_t size)
+{
+    DWORD rc;
+    char *tmp;
+
+    rc = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        buf, size, NULL);
+
+    if(rc)
+    {
+        for(; rc && (buf[rc - 1] == '\n' || buf[rc - 1] == '\r'); rc--)
+            buf[rc - 1] = '\0';
+
+        return buf;
+    }
+
+    if((rc = GetLastError()) != ERROR_INSUFFICIENT_BUFFER)
+    {
+        snprintf(buf, size, "<WIN32_FormatMessage_Error_%08X>", rc);
+
+        return buf;
+    }
+
+    rc = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+        NULL, code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (char *)&tmp, 0, NULL);
+
+    if(!rc)
+    {
+        rc = GetLastError();
+        snprintf(buf, size, "<WIN32_FormatMessage_Error_%08X>", rc);
+
+        return buf;
+    }
+
+    strncpy(buf, tmp, size);
+    strncpy(&buf[size - 4], "...", 4);
+    LocalFree(tmp);
+
+    return buf;
+}
+
+/// Error out-of-memory check callback to check WIN32 codes.
+///
+/// \implements error_oom_cb
+static bool error_win32_is_oom(const error_type_st *type, int code)
+{
+    return code == ERROR_NOT_ENOUGH_MEMORY || code == ERROR_OUTOFMEMORY;
+}
+
+/// Error retrieval callback to retrieve last WIN32 code.
+///
+/// \implements error_last_cb
+static int error_win32_last(const error_type_st *type, void *ctx)
+{
+    return GetLastError();
+}
+
+/// WIN32 error type definition
+ERROR_DEFINE_CALLBACK(WIN32,
+    error_win_name, error_win32_desc, error_win32_is_oom, error_win32_last);
+
+
+/// Error description callback to retrieve HRESULT error description.
+///
+/// \implements error_desc_cb
+static const char *error_hresult_desc(const error_type_st *type, int code, char *buf, size_t size)
+{
+    return "<HRESULT_MESSAGE>"; /// \todo get HRESULT message
+}
+
+/// HRESULT error type definition
+ERROR_DEFINE_CALLBACK(HRESULT, error_win_name, error_hresult_desc, NULL, NULL);
+
+
+/// Error description callback to retrieve NTSTATUS error description.
+///
+/// \implements error_desc_cb
+static const char *error_ntstatus_desc(const error_type_st *type, int code, char *buf, size_t size)
+{
+    return "<NTSTATUS_MESSAGE>"; /// \todo get NTSTATUS message
+}
+
+/// NTSTATUS error type definition
+ERROR_DEFINE_CALLBACK(NTSTATUS, error_win_name, error_ntstatus_desc, NULL, NULL);
+
+#endif /* ifdef _WIN32 */

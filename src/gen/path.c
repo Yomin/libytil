@@ -83,8 +83,8 @@ static const path_prop_st path_props[] =
     , [PATH_STYLE_WINDOWS]  = { ".", "..", "\\/" }
 };
 
-static const error_info_st error_infos[] =
-{
+/// path error type definition
+ERROR_DEFINE_LIST(PATH,
       ERROR_INFO(E_PATH_INVALID_DEVICE_NAME, "Invalid device name.")
     , ERROR_INFO(E_PATH_INVALID_DRIVE_LETTER, "Invalid drive letter.")
     , ERROR_INFO(E_PATH_INVALID_PATH, "Invalid path.")
@@ -94,7 +94,10 @@ static const error_info_st error_infos[] =
     , ERROR_INFO(E_PATH_INVALID_UNC_SHARE, "Invalid UNC share.")
     , ERROR_INFO(E_PATH_MALFORMED, "Malformed path.")
     , ERROR_INFO(E_PATH_UNSUPPORTED, "Unsupported path.")
-};
+);
+
+/// default error type for vector module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_VEC
 
 
 path_ct path_new(str_const_ct str, path_style_id style)

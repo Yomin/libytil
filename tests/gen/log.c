@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <errno.h>
 
 
 #define TESTFILE "/tmp/ytil_test.log"
@@ -104,13 +105,13 @@ TEST_CASE_FIXTURE(log_unit_get_name, log_unit_add, log_free)
 TEST_CASE_FIXTURE(log_unit_get_max_level_not_found1, log_unit_add, log_free)
 {
     test_uint_eq(log_unit_get_max_level(0), LOG_INVALID);
-    test_error(0, E_LOG_NOT_FOUND);
+    test_error(0, LOG, E_LOG_NOT_FOUND);
 }
 
 TEST_CASE_FIXTURE(log_unit_get_max_level_not_found2, log_unit_add, log_free)
 {
     test_uint_eq(log_unit_get_max_level(123), LOG_INVALID);
-    test_error(0, E_LOG_NOT_FOUND);
+    test_error(0, LOG, E_LOG_NOT_FOUND);
 }
 
 TEST_CASE_ABORT(log_unit_fold_invalid_callback)
@@ -610,25 +611,25 @@ TEST_CASE_FIXTURE(log_sink_set_level_off_all, log_unit_target_add, log_free)
 TEST_CASE_FIXTURE(log_sink_get_level_not_found1, log_unit_target_add, log_free)
 {
     test_uint_eq(log_sink_get_level(0, target1), LOG_INVALID);
-    test_error(0, E_LOG_NOT_FOUND);
+    test_error(0, LOG, E_LOG_NOT_FOUND);
 }
 
 TEST_CASE_FIXTURE(log_sink_get_level_not_found2, log_unit_target_add, log_free)
 {
     test_uint_eq(log_sink_get_level(123, target1), LOG_INVALID);
-    test_error(0, E_LOG_NOT_FOUND);
+    test_error(0, LOG, E_LOG_NOT_FOUND);
 }
 
 TEST_CASE_FIXTURE(log_sink_get_level_not_found3, log_unit_target_add, log_free)
 {
     test_uint_eq(log_sink_get_level(unit1, 0), LOG_INVALID);
-    test_error(0, E_LOG_NOT_FOUND);
+    test_error(0, LOG, E_LOG_NOT_FOUND);
 }
 
 TEST_CASE_FIXTURE(log_sink_get_level_not_found4, log_unit_target_add, log_free)
 {
     test_uint_eq(log_sink_get_level(unit1, 123), LOG_INVALID);
-    test_error(0, E_LOG_NOT_FOUND);
+    test_error(0, LOG, E_LOG_NOT_FOUND);
 }
 
 TEST_CASE_ABORT(log_sink_fold_invalid_callback)
@@ -679,7 +680,7 @@ TEST_CASE_FIXTURE(log_sinks_not_found2, log_unit_target_add, log_free)
 TEST_CASE(log_level_get_not_found)
 {
     test_uint_eq(log_level_get(LIT("i"), true), LOG_INVALID);
-    test_error(0, E_LOG_NOT_FOUND);
+    test_error(0, LOG, E_LOG_NOT_FOUND);
 }
 
 TEST_CASE(log_level_get)
@@ -832,7 +833,7 @@ TEST_CASE_FIXTURE(log_msg_e_level_lt, log_init, log_free_unlink)
 {
     char test_msg[200];
 
-    errno_set(E2BIG);
+    error_set_s(ERRNO, E2BIG);
     snprintf(test_msg, sizeof(test_msg), "foo: %s\n", error_desc(0));
 
     test_int_success(log_msg_e(unit1, LOG_CRIT, "foo"));
@@ -844,7 +845,7 @@ TEST_CASE_FIXTURE(log_msg_e_level_eq, log_init, log_free_unlink)
 {
     char test_msg[200];
 
-    errno_set(E2BIG);
+    error_set_s(ERRNO, E2BIG);
     snprintf(test_msg, sizeof(test_msg), "foo: %s\n", error_desc(0));
 
     test_int_success(log_msg_e(unit1, LOG_INFO, "foo"));
@@ -854,7 +855,7 @@ TEST_CASE_FIXTURE(log_msg_e_level_eq, log_init, log_free_unlink)
 
 TEST_CASE_FIXTURE(log_msg_e_level_gt, log_init, log_free_unlink)
 {
-    errno_set(E2BIG);
+    error_set_s(ERRNO, E2BIG);
     test_int_success(log_msg_e(unit1, LOG_DEBUG, "foo"));
     test_ptr_success_errno(msg = _test_log_read_file());
     test_str_eq(msg, "");

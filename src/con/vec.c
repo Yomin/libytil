@@ -66,15 +66,17 @@ typedef struct vector
     size_t  min_cap;    ///< minimum number of allocated elements
 } vec_st;
 
-/// vector errors
-static const error_info_st error_infos[] =
-{
+/// vector error type definition
+ERROR_DEFINE_LIST(VEC,
     ERROR_INFO(E_VEC_CALLBACK,      "Callback error."),
     ERROR_INFO(E_VEC_EMPTY,         "Vector is empty."),
     ERROR_INFO(E_VEC_NO_BUFFER,     "No buffer available."),
     ERROR_INFO(E_VEC_NOT_FOUND,     "Element not found."),
-    ERROR_INFO(E_VEC_OUT_OF_BOUNDS, "Out of bounds access."),
-};
+    ERROR_INFO(E_VEC_OUT_OF_BOUNDS, "Out of bounds access.")
+);
+
+/// default error type for vector module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_VEC
 
 
 /// Set vector buffer.
@@ -105,7 +107,7 @@ static inline void vec_set_buf(vec_ct vec, char *mem, size_t capacity, size_t si
 /// \param capacity     capacity to set
 ///
 /// \retval 0                   success
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 static int vec_resize(vec_ct vec, size_t capacity)
 {
     char *mem;
@@ -141,7 +143,7 @@ static int vec_resize(vec_ct vec, size_t capacity)
 /// \param n        number of elements to fit
 ///
 /// \retval 0                   success
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 static inline int vec_grow(vec_ct vec, size_t n)
 {
     if(  vec->size + n > vec->cap
@@ -571,7 +573,7 @@ void *vec_push_apv(vec_ct vec, size_t n, va_list ap)
 ///
 /// \returns                            pointer to first new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p pos is out of bounds
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 static void *vec_insert_generic(vec_ct vec, ssize_t pos, size_t n, const void *elems)
 {
     size_t size;

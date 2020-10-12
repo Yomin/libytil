@@ -27,6 +27,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <ytil/gen/error.h>
 #include <ytil/gen/str.h>
 #include <ytil/cast.h>
 
@@ -40,6 +41,9 @@ typedef enum art_error
     E_ART_INVALID_KEY,  ///< invalid key
     E_ART_NOT_FOUND,    ///< node not found
 } art_error_id;
+
+/// ART error type declaration
+ERROR_DECLARE(ART);
 
 /// ART sort mode
 ///
@@ -110,7 +114,7 @@ typedef int (*art_fold_cb)(art_const_ct art, str_const_ct key, void *data, void 
 /// \param mode     sort mode
 ///
 /// \returns                    new ART
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 art_ct art_new(art_mode_id mode);
 
 /// Free ART.
@@ -191,7 +195,7 @@ size_t art_memsize_f(art_const_ct art, art_size_cb size, const void *ctx);
 /// \param node     node to reconstruct key for
 ///
 /// \returns                    node key
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 str_ct art_node_key(art_node_const_ct node);
 
 /// Get node data.
@@ -268,7 +272,7 @@ void *art_get_data(art_const_ct art, str_const_ct key);
 ///
 /// \returns                        new node
 /// \retval NULL/E_ART_INVALID_KEY  invalid node key
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 art_node_ct art_set(art_ct art, str_const_ct key, const void *data);
 
 /// Set or insert node with value.
@@ -280,7 +284,7 @@ art_node_ct art_set(art_ct art, str_const_ct key, const void *data);
 /// \returns                        new node
 /// \retval NULL/E_ART_INVALID_KEY  invalid node key
 /// \retval NULL/E_ART_EXISTS       node with \p key already existing
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 #define art_set_value(art, key, value) \
     art_set(art, key, VALUE_TO_POINTER(value))
 
@@ -293,7 +297,7 @@ art_node_ct art_set(art_ct art, str_const_ct key, const void *data);
 /// \returns                        new node
 /// \retval NULL/E_ART_INVALID_KEY  invalid node key
 /// \retval NULL/E_ART_EXISTS       node with \p key already existing
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 art_node_ct art_insert(art_ct art, str_const_ct key, const void *data);
 
 /// Insert node with value.
@@ -305,7 +309,7 @@ art_node_ct art_insert(art_ct art, str_const_ct key, const void *data);
 /// \returns                        new node
 /// \retval NULL/E_ART_INVALID_KEY  invalid node key
 /// \retval NULL/E_ART_EXISTS       node with \p key already existing
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 #define art_insert_value(art, key, value) \
     art_insert(art, key, VALUE_TO_POINTER(value))
 
@@ -385,7 +389,7 @@ void *art_find_data(art_const_ct art, art_pred_cb pred, const void *ctx);
 ///
 /// \returns                        node
 /// \retval NULL/E_ART_NOT_FOUND    \p pred did not match any node
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 art_node_ct art_find_k(art_const_ct art, art_pred_cb pred, const void *ctx);
 
 /// Find first node matching predicate and return node data.
@@ -402,7 +406,7 @@ art_node_ct art_find_k(art_const_ct art, art_pred_cb pred, const void *ctx);
 ///
 /// \returns                        node data
 /// \retval NULL/E_ART_NOT_FOUND    \p pred did not match any node
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 void *art_find_data_k(art_const_ct art, art_pred_cb pred, const void *ctx);
 
 /// Find first node matching predicate and return node value.
@@ -420,7 +424,7 @@ void *art_find_data_k(art_const_ct art, art_pred_cb pred, const void *ctx);
 ///
 /// \returns                        node data pointer casted to \p type
 /// \retval NULL/E_ART_NOT_FOUND    \p pred did not match any node
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 #define art_find_value_k(art, pred, ctx, type) \
     POINTER_TO_VALUE(art_find_data_k(art, pred, ctx), type)
 
@@ -474,7 +478,7 @@ void *art_find_data_r(art_const_ct art, art_pred_cb pred, const void *ctx);
 ///
 /// \returns                        node
 /// \retval NULL/E_ART_NOT_FOUND    \p pred did not match any node
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 art_node_ct art_find_rk(art_const_ct art, art_pred_cb pred, const void *ctx);
 
 /// Find last node matching predicate and return node data.
@@ -491,7 +495,7 @@ art_node_ct art_find_rk(art_const_ct art, art_pred_cb pred, const void *ctx);
 ///
 /// \returns                        node data
 /// \retval NULL/E_ART_NOT_FOUND    \p pred did not match any node
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 void *art_find_data_rk(art_const_ct art, art_pred_cb pred, const void *ctx);
 
 /// Find last node matching predicate and return node value.
@@ -509,7 +513,7 @@ void *art_find_data_rk(art_const_ct art, art_pred_cb pred, const void *ctx);
 ///
 /// \returns                        node data pointer casted to \p type
 /// \retval NULL/E_ART_NOT_FOUND    \p pred did not match any node
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 #define art_find_value_rk(art, pred, ctx, type) \
     POINTER_TO_VALUE(art_find_data_rk(art, pred, ctx), type)
 
@@ -567,7 +571,7 @@ void *art_find_data_p(art_const_ct art, str_const_ct prefix, art_pred_cb pred, c
 ///
 /// \returns                        node
 /// \retval NULL/E_ART_NOT_FOUND    \p prefix not found or \p pred did not match any node
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 art_node_ct art_find_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx);
 
 /// Match prefix, find first node matching predicate and return node data.
@@ -585,7 +589,7 @@ art_node_ct art_find_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred,
 ///
 /// \returns                        node data
 /// \retval NULL/E_ART_NOT_FOUND    \p prefix not found or \p pred did not match any node
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 void *art_find_data_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx);
 
 /// Match prefix, find first node matching predicate and return node value.
@@ -604,7 +608,7 @@ void *art_find_data_pk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, 
 ///
 /// \returns                        node data pointer casted to \p type
 /// \retval NULL/E_ART_NOT_FOUND    \p prefix not found or \p pred did not match any node
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 #define art_find_value_pk(art, prefix, pred, ctx, type) \
     POINTER_TO_VALUE(art_find_data_pk(art, prefix, pred, ctx), type)
 
@@ -662,7 +666,7 @@ void *art_find_data_pr(art_const_ct art, str_const_ct prefix, art_pred_cb pred, 
 ///
 /// \returns                        node
 /// \retval NULL/E_ART_NOT_FOUND    \p prefix not found or \p pred did not match any node
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 art_node_ct art_find_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx);
 
 /// Match prefix, find last node matching predicate and return node data.
@@ -680,7 +684,7 @@ art_node_ct art_find_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred
 ///
 /// \returns                        node data
 /// \retval NULL/E_ART_NOT_FOUND    \p prefix not found or \p pred did not match any node
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 void *art_find_data_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred, const void *ctx);
 
 /// Match prefix, find last node matching predicate and return node value.
@@ -699,7 +703,7 @@ void *art_find_data_prk(art_const_ct art, str_const_ct prefix, art_pred_cb pred,
 ///
 /// \returns                        node data pointer casted to \p type
 /// \retval NULL/E_ART_NOT_FOUND    \p prefix not found or \p pred did not match any node
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 #define art_find_value_prk(art, prefix, pred, ctx, type) \
     POINTER_TO_VALUE(art_find_data_prk(art, prefix, pred, ctx), type)
 
@@ -725,7 +729,7 @@ int art_fold(art_ct art, art_fold_cb fold, const void *ctx);
 /// \retval 0                   success
 /// \retval >0                  \p fold rc
 /// \retval <0/E_ART_CALLBACK   \p fold error
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 int art_fold_k(art_ct art, art_fold_cb fold, const void *ctx);
 
 /// Fold over all nodes in ART, starting with largest key.
@@ -750,7 +754,7 @@ int art_fold_r(art_ct art, art_fold_cb fold, const void *ctx);
 /// \retval 0                   success
 /// \retval >0                  \p fold rc
 /// \retval <0/E_ART_CALLBACK   \p fold error
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 int art_fold_rk(art_ct art, art_fold_cb fold, const void *ctx);
 
 /// Match prefix and fold over all matched nodes, starting with smallest key.
@@ -779,7 +783,7 @@ int art_fold_p(art_ct art, str_const_ct prefix, art_fold_cb fold, const void *ct
 /// \retval >0                  \p fold rc
 /// \retval <0/E_ART_CALLBACK   \p fold error
 /// \retval -1/E_ART_NOT_FOUND  \p prefix not found
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 int art_fold_pk(art_ct art, str_const_ct prefix, art_fold_cb fold, const void *ctx);
 
 /// Match prefix and fold over all matched nodes, starting with largest key.
@@ -806,7 +810,7 @@ int art_fold_pr(art_ct art, str_const_ct prefix, art_fold_cb fold, const void *c
 /// \retval >0                  \p fold rc
 /// \retval <0/E_ART_CALLBACK   \p fold error
 /// \retval -1/E_ART_NOT_FOUND  \p prefix not found
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 int art_fold_prk(art_ct art, str_const_ct prefix, art_fold_cb fold, const void *ctx);
 
 /// Get full common prefix of all nodes with prefix.
@@ -817,7 +821,7 @@ int art_fold_prk(art_ct art, str_const_ct prefix, art_fold_cb fold, const void *
 /// \returns                        full common prefix
 /// \retval NULL/E_ART_EMPTY        ART is empty
 /// \retval NULL/E_ART_NOT_FOUND    \p prefix not found
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 str_ct art_complete(art_const_ct art, str_const_ct prefix);
 
 

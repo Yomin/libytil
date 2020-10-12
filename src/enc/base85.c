@@ -27,13 +27,16 @@
 #include <stdint.h>
 
 
-static const error_info_st error_infos[] =
-{
+/// base85 error type definition
+ERROR_DEFINE_LIST(BASE85,
       ERROR_INFO(E_BASE85_EMPTY, "No input data available.")
     , ERROR_INFO(E_BASE85_INVALID_ALPHABET, "Invalid base85 alphabet.")
     , ERROR_INFO(E_BASE85_INVALID_DATA, "Invalid base85 data.")
     , ERROR_INFO(E_BASE85_INVALID_COMPRESSION, "Invalid base85 compression set.")
-};
+);
+
+/// default error type for base85 module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_BASE85
 
 const char base85_alphabet_a85[] =
     "!\"#$%&'()*"   "+,-./01234"    "56789:;<=>"

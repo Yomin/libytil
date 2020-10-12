@@ -23,6 +23,7 @@
 #ifndef YTIL_TEST_CASE_H_INCLUDED
 #define YTIL_TEST_CASE_H_INCLUDED
 
+#include <ytil/gen/error.h>
 #include <ytil/ext/time.h>
 #include <stddef.h>
 #include <stdbool.h>
@@ -35,6 +36,9 @@ typedef enum test_case_error
     , E_TEST_CASE_INVALID_NAME
     , E_TEST_CASE_INVALID_CALLBACK
 } test_case_error_id;
+
+/// test_case error type declaration
+ERROR_DECLARE(TEST_CASE);
 
 
 struct test_case;

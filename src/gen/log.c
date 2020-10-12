@@ -100,16 +100,18 @@ static const log_level_st levels[] =
     // *INDENT-ON*
 };
 
-/// log errors
-static const error_info_st error_infos[] =
-{
+/// log error type definition
+ERROR_DEFINE_LIST(LOG,
     ERROR_INFO(E_LOG_CALLBACK,       "Callback error."),
     ERROR_INFO(E_LOG_EXISTS,         "Log unit exists already."),
     ERROR_INFO(E_LOG_FOPEN,          "fopen error."),
     ERROR_INFO(E_LOG_INVALID_NAME,   "Invalid unit or target name."),
     ERROR_INFO(E_LOG_INVALID_STREAM, "Invalid stream."),
     ERROR_INFO(E_LOG_NOT_FOUND,      "Log unit/target/level unknown.")
-};
+);
+
+/// default error type for log module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_LOG
 
 
 /// Vector dtor callback for freeing log unit.
@@ -496,7 +498,7 @@ static log_level_id log_sinks_max_level(vec_const_ct sinks)
 /// \param level    log level
 ///
 /// \retval 0                   success
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 static int log_sink_set(log_unit_st *unit, log_target_st *target, log_level_id level)
 {
     log_sink_st *sink;
@@ -544,7 +546,7 @@ typedef struct log_sink2_state
 /// \implements vec_fold_cb
 ///
 /// \retval 0                   success
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 static int log_vec_set_sink(vec_const_ct vec, size_t index, void *elem, void *ctx)
 {
     log_sink2_st *state     = ctx;
@@ -561,7 +563,7 @@ static int log_vec_set_sink(vec_const_ct vec, size_t index, void *elem, void *ct
 ///
 /// \retval 0                   success
 /// \retval -1/E_LOG_NOT_FOUND  target not found
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 static int log_sinks_set(log_unit_st *unit, size_t target, log_level_id level)
 {
     log_sink2_st state = { .unit = unit, .level = level };
@@ -592,7 +594,7 @@ typedef struct log_sink1_state
 ///
 /// \retval 0                   success
 /// \retval -1/E_LOG_NOT_FOUND  target not found
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 static int log_vec_set_sinks(vec_const_ct vec, size_t index, void *elem, void *ctx)
 {
     log_sink1_st *state = ctx;

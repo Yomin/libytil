@@ -25,6 +25,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <ytil/gen/error.h>
 
 
 typedef enum ring_error
@@ -34,6 +35,9 @@ typedef enum ring_error
     , E_RING_INVALID_ELEMSIZE
     , E_RING_NO_SPACE
 } ring_error_id;
+
+/// ring error type declaration
+ERROR_DECLARE(RING);
 
 typedef enum ring_action
 {

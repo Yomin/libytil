@@ -45,7 +45,7 @@ TEST_CASE_ABORT_FIXTURE(env_is_set_invalid_name1, env_init, env_free)
 TEST_CASE_FIXTURE(env_is_set_invalid_name2, env_init, env_free)
 {
     test_false(env_is_set(LIT("")));
-    test_error(0, E_ENV_INVALID_NAME);
+    test_error(0, ENV, E_ENV_INVALID_NAME);
 }
 
 TEST_CASE_FIXTURE(env_is_set_false, env_init, env_free)

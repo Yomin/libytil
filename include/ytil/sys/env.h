@@ -24,7 +24,9 @@
 #define YTIL_SYS_ENV_H_INCLUDED
 
 #include <ytil/gen/str.h>
+#include <ytil/gen/error.h>
 #include <stdbool.h>
+
 
 typedef enum env_error
 {
@@ -32,6 +34,10 @@ typedef enum env_error
     , E_ENV_INVALID_NAME
     , E_ENV_NOT_FOUND
 } env_error_id;
+
+/// env error type declaration
+ERROR_DECLARE(ENV);
+
 
 // return 0 to continue fold, anything else stops fold
 typedef int (*env_fold_cb)(str_const_ct name, str_const_ct value, void *ctx);

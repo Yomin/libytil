@@ -24,6 +24,7 @@
 #define YTIL_TEST_COM_H_INCLUDED
 
 #include <ytil/test/state.h>
+#include <ytil/gen/error.h>
 #include <ytil/ext/time.h>
 #include <stddef.h>
 #include <stdarg.h>
@@ -43,6 +44,9 @@ typedef enum test_com_error
     , E_TEST_COM_SHUTDOWN
     , E_TEST_COM_WOULD_BLOCK
 } test_com_error_id;
+
+/// test_com error type declaration
+ERROR_DECLARE(TEST_COM);
 
 typedef enum test_com_msg_type
 {

@@ -191,15 +191,17 @@ typedef struct art
     bool        ordered;    ///< sort order mode
 } art_st;
 
-/// ART errors
-static const error_info_st error_infos[] =
-{
+/// ART error type definition
+ERROR_DEFINE_LIST(ART,
     ERROR_INFO(E_ART_CALLBACK,    "Callback error."),
     ERROR_INFO(E_ART_EMPTY,       "ART is empty."),
     ERROR_INFO(E_ART_EXISTS,      "Node already exists."),
     ERROR_INFO(E_ART_INVALID_KEY, "Invalid key."),
     ERROR_INFO(E_ART_NOT_FOUND,   "Node not found.")
-};
+);
+
+/// default error type for ART module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_ART
 
 
 /// Get transient lookup path from key.
@@ -273,7 +275,7 @@ static void art_node_drop_path(art_node_ct node, size_t prefix)
 /// \param key      key to prepend
 ///
 /// \retval 0                   success
-/// \retval -1/E_SYSTEM_OOM     ouf of memory
+/// \retval -1/E_GENERIC_OOM    ouf of memory
 static int art_node_prepend_path(art_node_ct node, const unsigned char *prefix, size_t len, unsigned char key)
 {
     unsigned char *path;
@@ -623,7 +625,7 @@ static inline int art_traverse_node256(art_ct art, art_node_ct node, art_travers
 /// \param state    traverse state
 ///
 /// \returns                    traverse rc
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 static int art_traverse_node(art_ct art, size_t pos, art_node_ct node, art_traverse_st *state)
 {
     size_t path_len = node->path_len;
@@ -715,7 +717,7 @@ static int art_traverse_node(art_ct art, size_t pos, art_node_ct node, art_trave
 ///
 /// \returns                    \p traverse rc
 /// \retval -1/E_ART_NOT_FOUND  \p node is NULL or no node with \p prefix found
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 static int art_traverse(art_ct art, art_node_ct node, str_const_ct prefix, art_traverse_id order, bool key, bool reverse, art_traverse_cb traverse, void *ctx)
 {
     art_traverse_st state = { .order = order, .reverse = reverse, .cb = traverse, .ctx = ctx };
@@ -981,7 +983,7 @@ void *art_get_data(art_const_ct art, str_const_ct key)
 /// \param path     node path to set, may be NULL
 ///
 /// \returns                    new ART node
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 static art_node_ct art_node_new(art_node_id type, unsigned char key, art_node_ct parent, str_const_ct path)
 {
     art_node_ct node;
@@ -1026,7 +1028,7 @@ static art_node_ct art_node_new(art_node_id type, unsigned char key, art_node_ct
 /// \param data     node data to set
 ///
 /// \returns                    new ART leaf node
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 static art_node_ct art_node_new_leaf(art_ct art, str_const_ct path, const void *data)
 {
     art_node_ct node;
@@ -1112,7 +1114,7 @@ static inline void art_node128_to_node256(art_node_ct n256, art_node_ct n128)
 /// \param slot     slot of node to grow
 ///
 /// \returns                    new node
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 static art_node_ct art_node_grow(art_node_ct *slot)
 {
     art_node_ct node1 = *slot, node2;
@@ -1336,7 +1338,7 @@ static art_node_ct art_node_insert(art_node_ct parent, unsigned char key, art_no
 /// \param prefix   number of bytes to cut from child and assign to new parent
 ///
 /// \returns                    new parent node
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 static art_node_ct art_node_split(art_ct art, art_node_ct *slot, size_t prefix)
 {
     art_node_ct child = *slot, inode;
@@ -1660,7 +1662,7 @@ static inline void art_node256_to_node128(art_node_ct n128, art_node_ct n256)
 /// \param node1    node to shrink
 ///
 /// \returns                    new node
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 static art_node_ct art_node_shrink(art_ct art, art_node_ct node1)
 {
     art_node_ct node2;
@@ -1749,7 +1751,7 @@ static art_node_ct art_node_get_first_child(art_node_ct parent)
 /// \param node     node to merge
 ///
 /// \returns                    child node
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 static art_node_ct art_node_merge(art_ct art, art_node_ct node)
 {
     art_node_ct child;

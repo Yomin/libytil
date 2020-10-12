@@ -23,6 +23,7 @@
 #ifndef YTIL_TEST_STATE_H_INCLUDED
 #define YTIL_TEST_STATE_H_INCLUDED
 
+#include <ytil/gen/error.h>
 #include <stddef.h>
 
 typedef enum test_state_error
@@ -36,6 +37,9 @@ typedef enum test_state_error
     , E_TEST_STATE_INVALID_MSG_TYPE
     , E_TEST_STATE_INVALID_CALLBACK
 } test_state_error_id;
+
+/// test_state error type declaration
+ERROR_DECLARE(TEST_STATE);
 
 typedef enum test_status
 {

@@ -24,6 +24,7 @@
 #define YTIL_GEN_PATH_H_INCLUDED
 
 #include <ytil/gen/str.h>
+#include <ytil/gen/error.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -39,6 +40,9 @@ typedef enum path_error
     , E_PATH_MALFORMED
     , E_PATH_UNSUPPORTED
 } path_error_id;
+
+/// path error type declaration
+ERROR_DECLARE(PATH);
 
 typedef enum path_type
 {

@@ -33,6 +33,9 @@ typedef enum sys_path_error
     , E_PATH_NOT_AVAILABLE
 } sys_path_error_id;
 
+/// syspath error type declaration
+ERROR_DECLARE(SYSPATH);
+
 typedef enum path_base_dir
 {
       PATH_BASE_DIR_HOME

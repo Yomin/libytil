@@ -45,13 +45,16 @@ typedef struct ring
     size_t esize, cap, tail, size;
 } ring_st;
 
-static const error_info_st error_infos[] =
-{
+/// ring error type definition
+ERROR_DEFINE_LIST(RING,
       ERROR_INFO(E_RING_CALLBACK, "Callback error.")
     , ERROR_INFO(E_RING_EMPTY, "Ring is empty.")
     , ERROR_INFO(E_RING_INVALID_ELEMSIZE, "Invalid element size.")
     , ERROR_INFO(E_RING_NO_SPACE, "No space to put element into available.")
-};
+);
+
+/// default error type for ring module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_RING
 
 
 ring_ct ring_new(size_t capacity, size_t elemsize)

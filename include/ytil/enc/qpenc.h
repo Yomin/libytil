@@ -25,12 +25,17 @@
 
 #include <stdbool.h>
 #include <ytil/gen/str.h>
+#include <ytil/gen/error.h>
+
 
 typedef enum qpenc_error
 {
       E_QPENC_EMPTY
     , E_QPENC_INVALID_DATA
 } qpenc_error_id;
+
+/// qpenc error type declaration
+ERROR_DECLARE(QPENC);
 
 
 // quoted printable encode arbitrary data

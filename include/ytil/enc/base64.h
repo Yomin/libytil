@@ -25,6 +25,8 @@
 
 #include <stdbool.h>
 #include <ytil/gen/str.h>
+#include <ytil/gen/error.h>
+
 
 typedef enum base64_error
 {
@@ -33,6 +35,9 @@ typedef enum base64_error
     , E_BASE64_INVALID_DATA
     , E_BASE64_INVALID_PAD
 } base64_error_id;
+
+/// base64 error type declaration
+ERROR_DECLARE(BASE64);
 
 extern const char base64_alphabet_std[], base64_pad_std;
 extern const char base64_alphabet_url[], base64_pad_url;

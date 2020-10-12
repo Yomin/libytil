@@ -29,6 +29,7 @@
 #include <stdbool.h>
 #include <stdarg.h>
 #include <sys/types.h>
+#include <ytil/gen/error.h>
 
 
 /// vector error
@@ -40,6 +41,9 @@ typedef enum vec_error
     E_VEC_NOT_FOUND,        ///< element not found
     E_VEC_OUT_OF_BOUNDS,    ///< out of bounds element access
 } vec_error_id;
+
+/// vector error type declaration
+ERROR_DECLARE(VEC);
 
 
 struct vector;
@@ -113,7 +117,7 @@ typedef int (*vec_sort_cb)(const void *elem1, const void *elem2, void *ctx);
 /// \param elemsize     element size
 ///
 /// \returns                    new vector
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 vec_ct vec_new(size_t capacity, size_t elemsize);
 
 /// Free vector.
@@ -164,7 +168,7 @@ void vec_clear_f(vec_ct vec, vec_dtor_cb dtor, const void *ctx);
 /// \param vec      vector
 ///
 /// \returns                        new vector
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 vec_ct vec_clone(vec_const_ct vec);
 
 /// Clone vector with clone callback.
@@ -180,7 +184,7 @@ vec_ct vec_clone(vec_const_ct vec);
 /// \param ctx      \p clone and \p dtor context
 ///
 /// \returns                        new vector
-/// \retval NULL/E_SYSTEM_OOM       out of memory
+/// \retval NULL/E_GENERIC_OOM      out of memory
 /// \retval NULL/E_VEC_CALLBACK     \p clone callback error
 vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, const void *ctx);
 
@@ -355,7 +359,7 @@ int vec_get_last(vec_const_ct vec, void *dst);
 /// \param vec      vector
 ///
 /// \returns                    pointer to new element
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 void *vec_push(vec_ct vec);
 
 /// Push n empty elements onto vector.
@@ -364,7 +368,7 @@ void *vec_push(vec_ct vec);
 /// \param n        number of elements to push
 ///
 /// \returns                    pointer to first new element
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 void *vec_push_n(vec_ct vec, size_t n);
 
 /// Push element onto vector.
@@ -373,7 +377,7 @@ void *vec_push_n(vec_ct vec, size_t n);
 /// \param elem     pointer to element, may be NULL
 ///
 /// \returns                    pointer to new element
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 void *vec_push_e(vec_ct vec, const void *elem);
 
 /// Push pointer onto vector.
@@ -384,7 +388,7 @@ void *vec_push_e(vec_ct vec, const void *elem);
 /// \param ptr      pointer
 ///
 /// \returns                    pointer to new element
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 void *vec_push_p(vec_ct vec, const void *ptr);
 
 /// Push n elements onto vector.
@@ -394,7 +398,7 @@ void *vec_push_p(vec_ct vec, const void *ptr);
 /// \param elems    pointer to array of \p n elements, may be NULL
 ///
 /// \returns                    pointer to first new element
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 void *vec_push_en(vec_ct vec, size_t n, const void *elems);
 
 /// Push n elements with variadic list onto vector.
@@ -404,7 +408,7 @@ void *vec_push_en(vec_ct vec, size_t n, const void *elems);
 /// \param ...      variadic list of elements
 ///
 /// \returns                    pointer to first new element
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 void *vec_push_a(vec_ct vec, size_t n, ...);
 
 /// Push n pointers with variadic list onto vector.
@@ -416,7 +420,7 @@ void *vec_push_a(vec_ct vec, size_t n, ...);
 /// \param ...      variadic list of pointers
 ///
 /// \returns                    pointer to first new element
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 void *vec_push_ap(vec_ct vec, size_t n, ...);
 
 /// Push n elements with variadic list pointer onto vector.
@@ -426,7 +430,7 @@ void *vec_push_ap(vec_ct vec, size_t n, ...);
 /// \param ap       variadic list pointer
 ///
 /// \returns                    pointer to first new element
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 void *vec_push_av(vec_ct vec, size_t n, va_list ap);
 
 /// Push n pointers with variadic list pointer onto vector.
@@ -438,7 +442,7 @@ void *vec_push_av(vec_ct vec, size_t n, va_list ap);
 /// \param ap       variadic list pointer
 ///
 /// \returns                    pointer to first new element
-/// \retval NULL/E_SYSTEM_OOM   out of memory
+/// \retval NULL/E_GENERIC_OOM  out of memory
 void *vec_push_apv(vec_ct vec, size_t n, va_list ap);
 
 /// Insert empty element into vector.
@@ -448,7 +452,7 @@ void *vec_push_apv(vec_ct vec, size_t n, va_list ap);
 ///
 /// \returns                            pointer to new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p pos is out of bounds
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert(vec_ct vec, ssize_t pos);
 
 /// Insert empty element into vector.
@@ -459,7 +463,7 @@ void *vec_insert(vec_ct vec, ssize_t pos);
 ///
 /// \returns                            pointer to new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p pos is out of bounds
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_e(vec_ct vec, ssize_t pos, const void *elem);
 
 /// Insert pointer into vector.
@@ -472,7 +476,7 @@ void *vec_insert_e(vec_ct vec, ssize_t pos, const void *elem);
 ///
 /// \returns                            pointer to new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p pos is out of bounds
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_p(vec_ct vec, ssize_t pos, const void *ptr);
 
 /// Insert n empty elements into vector.
@@ -483,7 +487,7 @@ void *vec_insert_p(vec_ct vec, ssize_t pos, const void *ptr);
 ///
 /// \returns                            pointer to first new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p pos is out of bounds
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_n(vec_ct vec, ssize_t pos, size_t n);
 
 /// Insert n elements into vector.
@@ -495,7 +499,7 @@ void *vec_insert_n(vec_ct vec, ssize_t pos, size_t n);
 ///
 /// \returns                            pointer to first new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p pos is out of bounds
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_en(vec_ct vec, ssize_t pos, size_t n, const void *elems);
 
 /// Insert empty element before other element into vector.
@@ -505,7 +509,7 @@ void *vec_insert_en(vec_ct vec, ssize_t pos, size_t n, const void *elems);
 ///
 /// \returns                            pointer to new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p dst is not within vector memory
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_before(vec_ct vec, const void *dst);
 
 /// Insert element before other element into vector.
@@ -516,7 +520,7 @@ void *vec_insert_before(vec_ct vec, const void *dst);
 ///
 /// \returns                            pointer to new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p dst is not within vector memory
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_before_e(vec_ct vec, const void *dst, const void *elem);
 
 /// Insert pointer before other element into vector.
@@ -529,7 +533,7 @@ void *vec_insert_before_e(vec_ct vec, const void *dst, const void *elem);
 ///
 /// \returns                            pointer to new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p dst is not within vector memory
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_before_p(vec_ct vec, const void *dst, const void *ptr);
 
 /// Insert n empty elements before other element into vector.
@@ -540,7 +544,7 @@ void *vec_insert_before_p(vec_ct vec, const void *dst, const void *ptr);
 ///
 /// \returns                            pointer to first new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p dst is not within vector memory
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_before_n(vec_ct vec, const void *dst, size_t n);
 
 /// Insert n elements before other element into vector.
@@ -552,7 +556,7 @@ void *vec_insert_before_n(vec_ct vec, const void *dst, size_t n);
 ///
 /// \returns                            pointer to first new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p dst is not within vector memory
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_before_en(vec_ct vec, const void *dst, size_t n, const void *elems);
 
 /// Insert empty element after other element into vector.
@@ -562,7 +566,7 @@ void *vec_insert_before_en(vec_ct vec, const void *dst, size_t n, const void *el
 ///
 /// \returns                            pointer to new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p dst is not within vector memory
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_after(vec_ct vec, const void *dst);
 
 /// Insert element after other element into vector.
@@ -573,7 +577,7 @@ void *vec_insert_after(vec_ct vec, const void *dst);
 ///
 /// \returns                            pointer to new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p dst is not within vector memory
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_after_e(vec_ct vec, const void *dst, const void *elem);
 
 /// Insert pointer after other element into vector.
@@ -586,7 +590,7 @@ void *vec_insert_after_e(vec_ct vec, const void *dst, const void *elem);
 ///
 /// \returns                            pointer to new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p dst is not within vector memory
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_after_p(vec_ct vec, const void *dst, const void *ptr);
 
 /// Insert n empty elements after other element into vector.
@@ -597,7 +601,7 @@ void *vec_insert_after_p(vec_ct vec, const void *dst, const void *ptr);
 ///
 /// \returns                            pointer to first new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p dst is not within vector memory
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_after_n(vec_ct vec, const void *dst, size_t n);
 
 /// Insert n elements after other element into vector.
@@ -609,7 +613,7 @@ void *vec_insert_after_n(vec_ct vec, const void *dst, size_t n);
 ///
 /// \returns                            pointer to first new element
 /// \retval NULL/E_VEC_OUT_OF_BOUNDS    \p dst is not within vector memory
-/// \retval NULL/E_SYSTEM_OOM           out of memory
+/// \retval NULL/E_GENERIC_OOM          out of memory
 void *vec_insert_after_en(vec_ct vec, const void *dst, size_t n, const void *elems);
 
 /// Set vector element at position.
@@ -1079,7 +1083,7 @@ size_t vec_truncate_f(vec_ct vec, size_t size, vec_dtor_cb dtor, const void *ctx
 /// \param capacity     capacity to set, at least minimum capacity is set
 ///
 /// \retval 0                   success
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 int vec_set_capacity(vec_ct vec, size_t capacity);
 
 /// Set vector capacity. Destroy truncated elements.
@@ -1090,7 +1094,7 @@ int vec_set_capacity(vec_ct vec, size_t capacity);
 /// \param ctx          \p dtor context
 ///
 /// \retval 0                   success
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 int vec_set_capacity_f(vec_ct vec, size_t capacity, vec_dtor_cb dtor, const void *ctx);
 
 /// Fold over all elements, starting with first element.

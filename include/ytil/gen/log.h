@@ -27,6 +27,7 @@
 
 #include <ytil/color.h>
 #include <ytil/gen/str.h>
+#include <ytil/gen/error.h>
 #include <sys/types.h>
 #include <stdio.h>
 
@@ -68,6 +69,10 @@ typedef enum log_error
     E_LOG_INVALID_STREAM,   ///< invalid stream
     E_LOG_NOT_FOUND,        ///< log unit unknown
 } log_error_id;
+
+/// log error type declaration
+ERROR_DECLARE(LOG);
+
 
 /// log unit/target fold callback
 ///
@@ -127,7 +132,7 @@ void log_free(void);
 /// \returns                        new unit ID
 /// \retval -1/E_LOG_INVALID_NAME   invalid unit name
 /// \retval -1/E_LOG_EXISTS         log unit exists already
-/// \retval -1/E_SYSTEM_OOM         out of memory
+/// \retval -1/E_GENERIC_OOM        out of memory
 ssize_t log_unit_add(str_const_ct name);
 
 /// Get log unit by name.
@@ -180,7 +185,7 @@ size_t log_units(void);
 /// \returns                        new target ID
 /// \retval -1/E_LOG_INVALID_NAME   invalid target name
 /// \retval -1/E_LOG_FOPEN          failed to open file
-/// \retval -1/E_SYSTEM_OOM         out of memory
+/// \retval -1/E_GENERIC_OOM        out of memory
 ssize_t log_target_add_file(str_const_ct name, str_const_ct file, bool append, log_color_id color);
 
 /// Add stream log target.
@@ -193,7 +198,7 @@ ssize_t log_target_add_file(str_const_ct name, str_const_ct file, bool append, l
 /// \returns                            new target ID
 /// \retval -1/E_LOG_INVALID_NAME       invalid target name
 /// \retval -1/E_LOG_INVALID_STREAM     invalid stream
-/// \retval -1/E_SYSTEM_OOM             out of memory
+/// \retval -1/E_GENERIC_OOM            out of memory
 ssize_t log_target_add_stream(str_const_ct name, FILE *stream, bool close, log_color_id color);
 
 /// Add stdout log target.
@@ -202,7 +207,7 @@ ssize_t log_target_add_stream(str_const_ct name, FILE *stream, bool close, log_c
 ///
 /// \returns                            new target id
 /// \retval -1/E_LOG_INVALID_STREAM     invalid stream (stdout was closed)
-/// \retval -1/E_SYSTEM_OOM             out of memory
+/// \retval -1/E_GENERIC_OOM            out of memory
 ssize_t log_target_add_stdout(log_color_id color);
 
 /// Add stderr log target.
@@ -211,7 +216,7 @@ ssize_t log_target_add_stdout(log_color_id color);
 ///
 /// \returns                            new target id
 /// \retval -1/E_LOG_INVALID_STREAM     invalid stream (stderr was closed)
-/// \retval -1/E_SYSTEM_OOM             out of memory
+/// \retval -1/E_GENERIC_OOM            out of memory
 ssize_t log_target_add_stderr(log_color_id color);
 
 /// Get log target by name.
@@ -277,7 +282,7 @@ size_t log_targets(void);
 ///
 /// \retval 0                       success
 /// \retval -1/E_LOG_NOT_FOUND      unit or target not found
-/// \retval -1/E_SYSTEM_OOM         out of memory
+/// \retval -1/E_GENERIC_OOM        out of memory
 int log_sink_set_level(size_t unit, size_t target, log_level_id level);
 
 /// Get sink log level.
@@ -352,7 +357,7 @@ void log_flush(void);
 /// \param prefix   prefix string, may be NULL to unset
 ///
 /// \retval 0                   success
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 int log_prefix_set(str_const_ct prefix);
 
 /// Add custom log message prefix specifier.
@@ -362,7 +367,7 @@ int log_prefix_set(str_const_ct prefix);
 /// \param ctx      \p write context
 ///
 /// \retval 0                   success
-/// \retval -1/E_SYSTEM_OOM     out of memory
+/// \retval -1/E_GENERIC_OOM    out of memory
 int log_prefix_add_spec(char spec, log_spec_cb write, const void *ctx);
 
 /// Log message.

@@ -53,6 +53,9 @@ const char *strerrno(int err)
 #ifdef EBADE
     CASE_STRERRNO(EBADE)
 #endif
+#ifdef EBADF
+    CASE_STRERRNO(EBADF)
+#endif
 #ifdef EBADFD
     CASE_STRERRNO(EBADFD)
 #endif

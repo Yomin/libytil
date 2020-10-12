@@ -38,12 +38,15 @@ typedef struct env_fold_state
     void *ctx;
 } env_fold_state_st;
 
-static const error_info_st error_infos[] =
-{
+/// env error type definition
+ERROR_DEFINE_LIST(ENV,
       ERROR_INFO(E_ENV_CALLBACK, "Callback error.")
     , ERROR_INFO(E_ENV_INVALID_NAME, "Invalid environment name.")
     , ERROR_INFO(E_ENV_NOT_FOUND, "Environment value not found.")
-};
+);
+
+/// default error type for env module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_ENV
 
 static art_ct env;
 extern char **environ;

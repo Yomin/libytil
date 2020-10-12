@@ -27,11 +27,14 @@
 #include <stdio.h>
 
 
-static const error_info_st error_infos[] =
-{
+/// pctenc error type definition
+ERROR_DEFINE_LIST(PCTENC,
       ERROR_INFO(E_PCTENC_EMPTY, "No input data available.")
     , ERROR_INFO(E_PCTENC_INVALID_DATA, "Invalid percent encoded data.")
-};
+);
+
+/// default error type for pctenc module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_PCTENC
 
 
 static ssize_t pctenc_translate_encode(unsigned char *dst, size_t *written, const unsigned char *src, size_t *read, ssize_t len, bool null_stop)

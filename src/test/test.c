@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <setjmp.h>
+#include <errno.h>
 
 
 void _test_pos(void *vctx, test_pos_id type, const char *file, size_t line)
@@ -50,35 +51,33 @@ static void _test_msg_v(void *vctx, const char *file, size_t line, test_msg_id t
     
     if(backtrace)
         for(e=0; e < error_depth(); e++)
-            switch(error_stack_get_type(e))
-            {
-            case ERROR_TYPE_ERROR:
-                switch(error_stack_get_error(e))
+        {
+            if(error_stack_get_type(e) == &ERROR_TYPE_GENERIC)
+                switch(error_stack_get_code(e))
                 {
-                case E_ERROR_UNSET:
+                case E_GENERIC_INVALID:
                     abort();
-                case E_ERROR_WRAP:
+                case E_GENERIC_WRAP:
                     test_com_send_msg(ctx->com, type, 1, "%02zu %s: <wrap>",
                         e, error_stack_get_func(e));
                     continue;
-                case E_ERROR_PASS:
-                    test_com_send_msg(ctx->com, type, 1, "%02zu %s",
+                case E_GENERIC_PASS:
+                    test_com_send_msg(ctx->com, type, 1, "%02zu %s: <pass>",
                         e, error_stack_get_func(e));
                     continue;
-                case E_ERROR_SKIP:
+                case E_GENERIC_SKIP:
                     test_com_send_msg(ctx->com, type, 1, "%02zu %s: <skip>",
                         e, error_stack_get_func(e));
                     continue;
                 default:
                     break;
                 }
-                // fallthrough
-            default:
-                test_com_send_msg(ctx->com, type, 1, "%02zu %s: %s",
-                    e, error_stack_get_func(e), error_stack_get_name(e));
-                test_com_send_msg(ctx->com, type, 2, "%s",
-                    error_stack_get_desc(e));
-            }
+
+            test_com_send_msg(ctx->com, type, 1, "%02zu %s: %s",
+                e, error_stack_get_func(e), error_stack_get_name(e));
+            test_com_send_msg(ctx->com, type, 2, "%s",
+                error_stack_get_desc(e));
+        }
 }
 
 void _test_msg(void *ctx, const char *file, size_t line, test_msg_id type, size_t level, bool backtrace, const char *msg, ...)

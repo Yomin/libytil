@@ -39,12 +39,15 @@ typedef struct test_case
     int endval;
 } test_case_st;
 
-static const error_info_st error_infos[] =
-{
+/// test_case error type definition
+ERROR_DEFINE_LIST(TEST_CASE,
       ERROR_INFO(E_TEST_CASE_INVALID_OBJECT, "Invalid test case object.")
     , ERROR_INFO(E_TEST_CASE_INVALID_NAME, "Invalid test case name.")
     , ERROR_INFO(E_TEST_CASE_INVALID_CALLBACK, "Invalid test case callback.")
-};
+);
+
+/// default error type for test_case module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_TEST_CASE
 
 
 test_case_ct _test_case_new(const char *name, test_case_cb run, const test_case_config_st *config)

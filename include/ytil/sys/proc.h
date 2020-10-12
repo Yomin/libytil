@@ -23,7 +23,9 @@
 #ifndef YTIL_SYS_PROC_H_INCLUDED
 #define YTIL_SYS_PROC_H_INCLUDED
 
+#include <ytil/gen/error.h>
 #include <stdarg.h>
+
 
 typedef enum proc_error
 {
@@ -32,6 +34,9 @@ typedef enum proc_error
     , E_PROC_NOT_AVAILABLE
     , E_PROC_NOT_INITIALIZED
 } proc_error_id;
+
+/// proc error type declaration
+ERROR_DECLARE(PROC);
 
 
 // initialize proc title by scavenging argv and environ
