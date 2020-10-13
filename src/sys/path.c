@@ -58,7 +58,7 @@ static path_ct path_get_win_folder(const KNOWNFOLDERID *id)
         return error_wrap_hresult(SHGetKnownFolderPath, rc), NULL;
     
     if((len = wcstombs(NULL, wfolder, 0)) < 0)
-        return errno = EILSEQ, error_wrap_errno(wcstombs), CoTaskMemFree(wfolder), NULL;
+        return errno = EILSEQ, error_wrap_last_errno(wcstombs), CoTaskMemFree(wfolder), NULL;
     
     cfolder = alloca(len+1);
     wcstombs(cfolder, wfolder, len+1);
@@ -90,7 +90,7 @@ static path_ct path_get_home(void)
     struct passwd *pwd;
     
     if(!(pwd = getpwuid(getuid())))
-        return error_wrap_errno(getpwuid), NULL;
+        return error_wrap_last_errno(getpwuid), NULL;
     
     return error_wrap_ptr(path_new_c(pwd->pw_dir, PATH_STYLE_NATIVE));
 #endif

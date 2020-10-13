@@ -810,28 +810,45 @@ TEST_CASE(error_info_errno)
 
 TEST_CASE(error_pass_errno)
 {
-    errno = EFAULT;
-    test_void(error_pass_errno(foo));
+    test_void(error_pass_errno(foo, EFAULT));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EFAULT);
     test_stack_error(1, GENERIC, E_GENERIC_PASS);
 }
 
+TEST_CASE(error_pass_last_errno)
+{
+    errno = EEXIST;
+    test_void(error_pass_last_errno(foo));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, EEXIST);
+    test_stack_error(1, GENERIC, E_GENERIC_PASS);
+}
+
 TEST_CASE(error_wrap_errno)
 {
-    errno = EFAULT;
-    test_void(error_wrap_errno(foo));
+    test_void(error_wrap_errno(foo, EFAULT));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EFAULT);
     test_stack_error(1, GENERIC, E_GENERIC_WRAP);
 }
 
+TEST_CASE(error_wrap_last_errno)
+{
+    errno = EEXIST;
+    test_void(error_wrap_last_errno(foo));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, EEXIST);
+    test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+}
+
 TEST_CASE(error_wrap_errno_ENOMEM)
 {
-    errno = ENOMEM;
-    test_void(error_wrap_errno(foo));
+    test_void(error_wrap_errno(foo, ENOMEM));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOMEM);
@@ -840,18 +857,26 @@ TEST_CASE(error_wrap_errno_ENOMEM)
 
 TEST_CASE(error_pack_errno)
 {
-    errno = EFAULT;
-    test_void(error_pack_errno(E_TEST_ERROR_1, foo));
+    test_void(error_pack_errno(E_TEST_ERROR_1, foo, EFAULT));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EFAULT);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
 }
 
+TEST_CASE(error_pack_last_errno)
+{
+    errno = EEXIST;
+    test_void(error_pack_last_errno(E_TEST_ERROR_1, foo));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, EEXIST);
+    test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+}
+
 TEST_CASE(error_pack_errno_ENOMEM)
 {
-    errno = ENOMEM;
-    test_void(error_pack_errno(E_TEST_ERROR_1, foo));
+    test_void(error_pack_errno(E_TEST_ERROR_1, foo, ENOMEM));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOMEM);
@@ -893,28 +918,45 @@ TEST_CASE(error_info_win32)
 
 TEST_CASE(error_pass_win32)
 {
-    SetLastError(ERROR_FILE_NOT_FOUND);
-    test_void(error_pass_win32(foo));
+    test_void(error_pass_win32(foo, ERROR_FILE_NOT_FOUND));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
     test_stack_error(1, GENERIC, E_GENERIC_PASS);
 }
 
+TEST_CASE(error_pass_last_win32)
+{
+    SetLastError(ERROR_PATH_NOT_FOUND);
+    test_void(error_pass_last_win32(foo));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, WIN32, ERROR_PATH_NOT_FOUND);
+    test_stack_error(1, GENERIC, E_GENERIC_PASS);
+}
+
 TEST_CASE(error_wrap_win32)
 {
-    SetLastError(ERROR_FILE_NOT_FOUND);
-    test_void(error_wrap_win32(foo));
+    test_void(error_wrap_win32(foo, ERROR_FILE_NOT_FOUND));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
     test_stack_error(1, GENERIC, E_GENERIC_WRAP);
 }
 
+TEST_CASE(error_wrap_last_win32)
+{
+    SetLastError(ERROR_PATH_NOT_FOUND);
+    test_void(error_wrap_last_win32(foo));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, WIN32, ERROR_PATH_NOT_FOUND);
+    test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+}
+
 TEST_CASE(error_wrap_win32_ERROR_NOT_ENOUGH_MEMORY)
 {
-    SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-    test_void(error_wrap_win32(foo));
+    test_void(error_wrap_win32(foo, ERROR_NOT_ENOUGH_MEMORY));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_NOT_ENOUGH_MEMORY);
@@ -923,8 +965,7 @@ TEST_CASE(error_wrap_win32_ERROR_NOT_ENOUGH_MEMORY)
 
 TEST_CASE(error_wrap_win32_ERROR_OUTOFMEMORY)
 {
-    SetLastError(ERROR_OUTOFMEMORY);
-    test_void(error_wrap_win32(foo));
+    test_void(error_wrap_win32(foo, ERROR_OUTOFMEMORY));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_OUTOFMEMORY);
@@ -933,18 +974,26 @@ TEST_CASE(error_wrap_win32_ERROR_OUTOFMEMORY)
 
 TEST_CASE(error_pack_win32)
 {
-    SetLastError(ERROR_FILE_NOT_FOUND);
-    test_void(error_pack_win32(E_TEST_ERROR_1, foo));
+    test_void(error_pack_win32(E_TEST_ERROR_1, foo, ERROR_FILE_NOT_FOUND));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
 }
 
+TEST_CASE(error_pack_last_win32)
+{
+    SetLastError(ERROR_PATH_NOT_FOUND);
+    test_void(error_pack_last_win32(E_TEST_ERROR_1, foo));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, WIN32, ERROR_PATH_NOT_FOUND);
+    test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+}
+
 TEST_CASE(error_pack_win32_ERROR_NOT_ENOUGH_MEMORY)
 {
-    SetLastError(ERROR_NOT_ENOUGH_MEMORY);
-    test_void(error_pack_win32(E_TEST_ERROR_1, foo));
+    test_void(error_pack_win32(E_TEST_ERROR_1, foo, ERROR_NOT_ENOUGH_MEMORY));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_NOT_ENOUGH_MEMORY);
@@ -953,8 +1002,7 @@ TEST_CASE(error_pack_win32_ERROR_NOT_ENOUGH_MEMORY)
 
 TEST_CASE(error_pack_win32_ERROR_OUTOFMEMORY)
 {
-    SetLastError(ERROR_OUTOFMEMORY);
-    test_void(error_pack_win32(E_TEST_ERROR_1, foo));
+    test_void(error_pack_win32(E_TEST_ERROR_1, foo, ERROR_OUTOFMEMORY));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_OUTOFMEMORY);
@@ -1155,17 +1203,23 @@ test_suite_ct test_suite_gen_error(void)
 
         test_case_new(error_info_errno),
         test_case_new(error_pass_errno),
+        test_case_new(error_pass_last_errno),
         test_case_new(error_wrap_errno),
+        test_case_new(error_wrap_last_errno),
         test_case_new(error_wrap_errno_ENOMEM),
         test_case_new(error_pack_errno),
+        test_case_new(error_pack_last_errno),
         test_case_new(error_pack_errno_ENOMEM),
 
         test_case_new_windows(error_info_win32),
         test_case_new_windows(error_pass_win32),
+        test_case_new_windows(error_pass_last_win32),
         test_case_new_windows(error_wrap_win32),
+        test_case_new_windows(error_wrap_last_win32),
         test_case_new_windows(error_wrap_win32_ERROR_NOT_ENOUGH_MEMORY),
         test_case_new_windows(error_wrap_win32_ERROR_OUTOFMEMORY),
         test_case_new_windows(error_pack_win32),
+        test_case_new_windows(error_pack_last_win32),
         test_case_new_windows(error_pack_win32_ERROR_NOT_ENOUGH_MEMORY),
         test_case_new_windows(error_pack_win32_ERROR_OUTOFMEMORY),
 

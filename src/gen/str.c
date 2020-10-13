@@ -185,7 +185,7 @@ static str_ct _str_get_writeable(str_ct str)
     return_error_if_fail(str->ref, E_STR_UNREFERENCED, NULL);
     
     if(!(data = calloc(1, _str_get_len(str)+1)))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
     
     memcpy(data, str->data, _str_get_len(str));
     
@@ -237,7 +237,7 @@ str_ct _str_new(str_type_id type, unsigned char *data, ssize_t len, ssize_t cap,
     str_ct str;
     
     if(!(str = calloc(1, sizeof(str_st))))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
     
     return _str_init(str, flags, 1, type, data, len, cap);
 }
@@ -550,7 +550,7 @@ str_ct str_ref(str_const_ct str)
         cap = len;
     }
     else
-        return error_wrap_errno(memdup), NULL;
+        return error_wrap_last_errno(memdup), NULL;
     
     if(!(nstr = _str_new(type, data, len, cap, flags)))
     {
@@ -673,7 +673,7 @@ str_ct str_resize(str_ct str, size_t len)
         if(!str->ref)
             return error_set(E_STR_UNREFERENCED), NULL;
         else if(!(data = calloc(1, len+1)))
-            return error_wrap_errno(calloc), NULL;
+            return error_wrap_last_errno(calloc), NULL;
         else
         {
             memcpy(data, str->data, MIN(len, _str_get_len(str)));
@@ -688,7 +688,7 @@ str_ct str_resize(str_ct str, size_t len)
         else if(!str->ref)
             return error_set(E_STR_UNREFERENCED), NULL;
         else if(!(data = calloc(1, len+1)))
-            return error_wrap_errno(calloc), NULL;
+            return error_wrap_last_errno(calloc), NULL;
         else
         {
             memcpy(data, str->data, MIN(len, _str_get_len(str)));
@@ -702,7 +702,7 @@ str_ct str_resize(str_ct str, size_t len)
         if(len <= _str_get_cap(str))
             break;
         else if(!(data = realloc(str->data, len+1)))
-            return error_wrap_errno(realloc), NULL;
+            return error_wrap_last_errno(realloc), NULL;
         else
         {
             str->cap = len;
@@ -786,7 +786,7 @@ str_ct str_prepare_c(size_t len, size_t cap)
     return_error_if_fail(len <= cap, E_STR_INVALID_LENGTH, NULL);
     
     if(!(data = calloc(1, cap+1)))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
     
     if(!(str = _str_new(DATA_HEAP, data, len, cap, NO_FLAGS)))
         return error_pass(), free(data), NULL;
@@ -807,7 +807,7 @@ str_ct str_prepare_bc(size_t len, size_t cap)
     return_error_if_fail(len <= cap, E_STR_INVALID_LENGTH, NULL);
     
     if(!(data = calloc(1, cap+1)))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
     
     if(!(str = _str_new(DATA_HEAP, data, len, cap, FLAG_BINARY)))
         return error_pass(), free(data), NULL;
@@ -2206,7 +2206,7 @@ str_ct str_translate(str_ct str, ctype_translate_cb trans)
         len = strtranslate_mem(NULL, str->data, _str_get_len(str), trans);
         
         if(!(data = calloc(1, len+1)))
-            return error_wrap_errno(calloc), NULL;
+            return error_wrap_last_errno(calloc), NULL;
         
         strtranslate_mem(data, str->data, str->len, trans);
         
@@ -2218,7 +2218,7 @@ str_ct str_translate(str_ct str, ctype_translate_cb trans)
         len = strtranslate(NULL, (char*)str->data, trans);
         
         if(!(data = calloc(1, len+1)))
-            return error_wrap_errno(calloc), NULL;
+            return error_wrap_last_errno(calloc), NULL;
         
         strtranslate(data, (char*)str->data, trans);
         

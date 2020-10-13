@@ -290,7 +290,7 @@ static int art_node_prepend_path(art_node_ct node, const unsigned char *prefix, 
     else
     {
         if(!(path = malloc(node->path_len + len + 1)))
-            return error_wrap_errno(malloc), -1;
+            return error_wrap_last_errno(malloc), -1;
 
         memcpy(path, prefix, len);
         path[len] = key;
@@ -761,7 +761,7 @@ art_ct art_new(art_mode_id mode)
     art_ct art;
 
     if(!(art = calloc(1, sizeof(art_st))))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
 
     init_magic(art);
 
@@ -989,14 +989,14 @@ static art_node_ct art_node_new(art_node_id type, unsigned char key, art_node_ct
     art_node_ct node;
 
     if(!(node = calloc(1, art_node_size(type))))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
 
     if(path)
     {
         if(str_len(path) <= sizeof(unsigned char *))
             memcpy(&node->path, str_bc(path), str_len(path));
         else if(!(node->path = memdup(str_bc(path), str_len(path))))
-            return error_wrap_errno(memdup), NULL;
+            return error_wrap_last_errno(memdup), NULL;
     }
 
     switch(type)

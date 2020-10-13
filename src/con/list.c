@@ -94,7 +94,7 @@ list_ct list_new(void)
     list_ct list;
 
     if(!(list = calloc(1, sizeof(list_st))))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
 
     init_magic(list);
     list->head.next = list->head.prev = &list->head;
@@ -166,7 +166,7 @@ static list_node_ct list_node_new(list_ct list, const void *data)
     list_node_ct node;
 
     if(!(node = calloc(1, sizeof(list_node_st))))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
 
     init_magic_n(node, NODE_MAGIC);
     DEBUG(node->list    = list);

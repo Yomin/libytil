@@ -285,7 +285,7 @@ ssize_t log_target_add_file(str_const_ct name, str_const_ct file, bool append, l
     assert(file);
 
     if(!(stream = fopen(str_c(file), append ? "ab" : "wb")))
-        return error_pack_errno(E_LOG_FOPEN, fopen), -1;
+        return error_pack_last_errno(E_LOG_FOPEN, fopen), -1;
 
     if((target = log_target_add_stream(name ? name : file, stream, true, color)) < 0)
         return error_pass(), fclose(stream), -1;
@@ -304,7 +304,7 @@ ssize_t log_target_add_stream(str_const_ct name, FILE *stream, bool close, log_c
     return_error_if_pass(str_is_empty(name), E_LOG_INVALID_NAME, -1);
 
     if((fd = fileno(stream)) < 0)
-        return error_pack_errno(E_LOG_INVALID_STREAM, fileno), -1;
+        return error_pack_last_errno(E_LOG_INVALID_STREAM, fileno), -1;
 
     if(!log.targets && !(log.targets = vec_new(2, sizeof(log_target_st))))
         return error_wrap(), -1;

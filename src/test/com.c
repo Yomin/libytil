@@ -67,7 +67,7 @@ test_com_ct test_com_new(test_com_msg_cb cb, const void *ctx)
     test_com_ct com;
     
     if(!(com = calloc(1, sizeof(test_com_st))))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
     
     com->cb = cb;
     com->ctx = (void *)ctx;
@@ -139,7 +139,7 @@ static int test_com_write(test_com_ct com, void *vdata, size_t size)
     
     for(; size; data += count, size -= count)
         if((count = send(com->sock, data, size, 0)) < 0)
-            return error_wrap_errno(send), -1;
+            return error_wrap_last_errno(send), -1;
     
     return 0;
 }
@@ -315,7 +315,7 @@ static char *test_com_alloc(test_com_ct com, size_t size)
         cap = MAX(size, 128U);
         
         if(!(com->buf = malloc(cap)))
-            return error_wrap_errno(malloc), NULL;
+            return error_wrap_last_errno(malloc), NULL;
         
         com->cap = cap;
         com->size = 0;
@@ -325,7 +325,7 @@ static char *test_com_alloc(test_com_ct com, size_t size)
         cap = MAX(com->size+size, com->cap*2);
         
         if(!(tmp = realloc(com->buf, cap)))
-            return error_wrap_errno(realloc), NULL;
+            return error_wrap_last_errno(realloc), NULL;
         
         com->buf = tmp;
         com->cap = cap;
@@ -355,7 +355,7 @@ static int test_com_read(test_com_ct com, void *dst, size_t dst_size)
             else if(errno == EWOULDBLOCK)
                 return error_set(E_TEST_COM_WOULD_BLOCK), -1;
             else
-                return error_wrap_errno(recv), -1;
+                return error_wrap_last_errno(recv), -1;
     }
     
     if(dst)

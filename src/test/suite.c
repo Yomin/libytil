@@ -59,7 +59,7 @@ test_suite_ct test_suite_new(const char *name)
     return_error_if_fail(name, E_TEST_SUITE_INVALID_NAME, NULL);
     
     if(!(suite = calloc(1, sizeof(test_suite_st))))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
     
     suite->name = name;
     

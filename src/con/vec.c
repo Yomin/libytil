@@ -114,7 +114,7 @@ static int vec_resize(vec_ct vec, size_t capacity)
     if(!vec->mem)
     {
         if(!(mem = calloc(1, OFFSET + capacity * vec->esize)))
-            return error_wrap_errno(calloc), -1;
+            return error_wrap_last_errno(calloc), -1;
 
         vec_set_buf(vec, mem, capacity, 0);
     }
@@ -125,7 +125,7 @@ static int vec_resize(vec_ct vec, size_t capacity)
         if(!(mem = realloc(mem, OFFSET + capacity * vec->esize)))
         {
             if(capacity > vec->cap)
-                return error_wrap_errno(realloc), -1;
+                return error_wrap_last_errno(realloc), -1;
             else
                 return 0;
         }
@@ -188,7 +188,7 @@ vec_ct vec_new(size_t capacity, size_t elemsize)
     assert(elemsize);
 
     if(!(vec = calloc(1, sizeof(struct vector))))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
 
     init_magic(vec);
     vec->esize      = elemsize;
@@ -274,7 +274,7 @@ vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, const
     assert_magic(vec);
 
     if(!(nvec = calloc(1, sizeof(vec_st))))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
 
     init_magic(nvec);
     nvec->esize     = vec->esize;

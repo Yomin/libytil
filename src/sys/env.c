@@ -72,7 +72,7 @@ int env_init(void)
             continue;
         
         if(!(value = calloc(1, sizeof(env_value_st))))
-            return error_wrap_errno(calloc), env_free(), -1;
+            return error_wrap_last_errno(calloc), env_free(), -1;
         
         sep[0] = '\0';
         str_set_sn(name, *var, sep - *var);
@@ -136,7 +136,7 @@ int env_set(str_const_ct name, str_const_ct str)
     if(!(value = art_get_data(env, name)))
     {
         if(!(value = calloc(1, sizeof(env_value_st))))
-            return error_wrap_errno(calloc), str_unref(str), -1;
+            return error_wrap_last_errno(calloc), str_unref(str), -1;
         
         if(!art_insert(env, name, value))
             return error_wrap(), free(value), str_unref(str), -1;

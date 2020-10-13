@@ -130,7 +130,7 @@ path_ct path_new_current(void)
     path_ct path;
     
     if(!(path = calloc(1, sizeof(path_st))))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
     
     init_magic(path);
     
@@ -163,7 +163,7 @@ static int path_vec_dup_comp(vec_const_ct vec, size_t index, void *elem, void *c
         return error_wrap(), -1;
     
     if(comp->name && !(ncomp->name = strdup(comp->name)))
-        return error_wrap_errno(strdup), vec_pop(nvec), -1;
+        return error_wrap_last_errno(strdup), vec_pop(nvec), -1;
     
     ncomp->len = comp->len;
     
@@ -177,7 +177,7 @@ path_ct path_dup(path_const_ct path)
     assert_magic(path);
     
     if(!(npath = calloc(1, sizeof(path_st))))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
     
     memcpy(npath, path, sizeof(path_st));
     
@@ -435,7 +435,7 @@ static path_comp_st *path_set_comp(path_comp_st *comp, const char *str, size_t l
     }
     
     if(!(name = strndup(str, len)))
-        return error_wrap_errno(strndup), NULL;
+        return error_wrap_last_errno(strndup), NULL;
     
     if(comp->name)
         free(comp->name);
@@ -792,7 +792,7 @@ path_ct path_set_suffix(path_ct path, str_const_ct suffix)
         name = strdup_printf("%s.%s", comp->name, str_c(suffix));
     
     if(!name)
-        return error_wrap_errno(strdup_printf), NULL;
+        return error_wrap_last_errno(strdup_printf), NULL;
     
     free(comp->name);
     comp->len = (ptr ? (size_t)(ptr-comp->name) : comp->len) + 1 + str_len(suffix);
@@ -813,7 +813,7 @@ path_ct path_add_suffix(path_ct path, str_const_ct suffix)
         return error_set(E_PATH_INVALID_PATH), NULL;
     
     if(!(name = strdup_printf("%s.%s", comp->name, str_c(suffix))))
-        return error_wrap_errno(strdup_printf), NULL;
+        return error_wrap_last_errno(strdup_printf), NULL;
     
     free(comp->name);
     comp->name = name;

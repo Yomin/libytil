@@ -852,7 +852,16 @@ ERROR_DECLARE(ERRNO);
 /// Clear stack, push sub function errno and generic pass error.
 ///
 /// \param sub          name of sub function
-#define error_pass_errno(sub) \
+/// \param code         ERRNO
+#define error_pass_errno(sub, code) \
+    error_pass_sub_f(__func__, #sub, &ERROR_TYPE_ERRNO, code)
+
+/// Pass last sub function errno.
+///
+/// Clear stack, push last sub function errno and generic pass error.
+///
+/// \param sub          name of sub function
+#define error_pass_last_errno(sub) \
     error_pass_last_sub_f(__func__, #sub, &ERROR_TYPE_ERRNO, NULL)
 
 /// Wrap sub function errno.
@@ -861,7 +870,17 @@ ERROR_DECLARE(ERRNO);
 /// If sub errno is ENOMEM, push generic OOM error instead.
 ///
 /// \param sub          name of sub function
-#define error_wrap_errno(sub) \
+/// \param code         ERRNO
+#define error_wrap_errno(sub, code) \
+    error_wrap_sub_f(__func__, #sub, &ERROR_TYPE_ERRNO, code)
+
+/// Wrap last sub function errno.
+///
+/// Clear stack, push last sub function errno and generic wrap error.
+/// If sub errno is ENOMEM, push generic OOM error instead.
+///
+/// \param sub          name of sub function
+#define error_wrap_last_errno(sub) \
     error_wrap_last_sub_f(__func__, #sub, &ERROR_TYPE_ERRNO, NULL)
 
 /// Pack sub function errno with error of default type.
@@ -871,7 +890,19 @@ ERROR_DECLARE(ERRNO);
 ///
 /// \param code         error code
 /// \param sub          name of sub function
-#define error_pack_errno(code, sub)                              \
+/// \param sub_code     ERRNO
+#define error_pack_errno(code, sub, sub_code)               \
+    error_pack_sub_f(__func__, &ERROR_TYPE_DEFAULT, (code), \
+        #sub, &ERROR_TYPE_ERRNO, sub_code)
+
+/// Pack last sub function errno with error of default type.
+///
+/// Clear stack, push last sub function errno and pack given error.
+/// If sub errno is ENOMEM, push generic OOM error instead.
+///
+/// \param code         error code
+/// \param sub          name of sub function
+#define error_pack_last_errno(code, sub)                         \
     error_pack_last_sub_f(__func__, &ERROR_TYPE_DEFAULT, (code), \
         #sub, &ERROR_TYPE_ERRNO, NULL)
 
@@ -886,7 +917,16 @@ ERROR_DECLARE(WIN32);
 /// Clear stack, push sub function WIN32 error and generic pass error.
 ///
 /// \param sub          name of sub function
-#define error_pass_win32(sub) \
+/// \param code         WIN32 error
+#define error_pass_win32(sub, code) \
+    error_pass_sub_f(__func__, #sub, &ERROR_TYPE_WIN32, code)
+
+/// Pass last sub function WIN32 error.
+///
+/// Clear stack, push last sub function WIN32 error and generic pass error.
+///
+/// \param sub          name of sub function
+#define error_pass_last_win32(sub) \
     error_pass_last_sub_f(__func__, #sub, &ERROR_TYPE_WIN32, NULL)
 
 /// Wrap sub function WIN32 error.
@@ -896,7 +936,18 @@ ERROR_DECLARE(WIN32);
 /// push generic OOM error instead.
 ///
 /// \param sub          name of sub function
-#define error_wrap_win32(sub) \
+/// \param code         WIN32 error
+#define error_wrap_win32(sub, code) \
+    error_wrap_sub_f(__func__, #sub, &ERROR_TYPE_WIN32, code)
+
+/// Wrap last sub function WIN32 error.
+///
+/// Clear stack, push last sub function WIN32 error and generic wrap error.
+/// If sub error is ERROR_NOT_ENOUGH_MEMORY or ERROR_OUTOFMEMORY,
+/// push generic OOM error instead.
+///
+/// \param sub          name of sub function
+#define error_wrap_last_win32(sub) \
     error_wrap_last_sub_f(__func__, #sub, &ERROR_TYPE_WIN32, NULL)
 
 /// Pack sub function WIN32 error with error of default type.
@@ -907,7 +958,20 @@ ERROR_DECLARE(WIN32);
 ///
 /// \param code         error code
 /// \param sub          name of sub function
-#define error_pack_win32(code, sub)                              \
+/// \param sub_code     WIN32 error
+#define error_pack_win32(code, sub, sub_code)               \
+    error_pack_sub_f(__func__, &ERROR_TYPE_DEFAULT, (code), \
+        #sub, &ERROR_TYPE_WIN32, sub_code)
+
+/// Pack last sub function WIN32 error with error of default type.
+///
+/// Clear stack, push last sub function WIN32 error and pack given error.
+/// If sub error is ERROR_NOT_ENOUGH_MEMORY or ERROR_OUTOFMEMORY,
+/// push generic OOM error instead.
+///
+/// \param code         error code
+/// \param sub          name of sub function
+#define error_pack_last_win32(code, sub)                         \
     error_pack_last_sub_f(__func__, &ERROR_TYPE_DEFAULT, (code), \
         #sub, &ERROR_TYPE_WIN32, NULL)
 

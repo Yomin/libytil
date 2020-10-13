@@ -64,7 +64,7 @@ ring_ct ring_new(size_t capacity, size_t elemsize)
     return_error_if_fail(elemsize, E_RING_INVALID_ELEMSIZE, NULL);
     
     if(!(ring = calloc(1, sizeof(ring_st))))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
     
     init_magic(ring);
     ring->esize = elemsize;
@@ -155,7 +155,7 @@ void *ring_put_ef(ring_ct ring, const void *elem, ring_overflow_cb overflow, con
     assert_magic(ring);
     
     if(!ring->mem && !(ring->mem = calloc(ring->cap, ring->esize)))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
     
     if(ring->size == ring->cap)
     {

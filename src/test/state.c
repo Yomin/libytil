@@ -63,7 +63,7 @@ test_state_ct test_state_new(void)
     test_state_ct state;
     
     if(!(state = calloc(1, sizeof(test_state_st))))
-        return error_wrap_errno(calloc), NULL;
+        return error_wrap_last_errno(calloc), NULL;
     
     return state;
 }
@@ -143,7 +143,7 @@ int test_state_set_position(test_state_ct state, test_pos_id type, const char *f
         free(state->pos.file);
     
     if(!(state->pos.file = strdup(file)))
-        return error_wrap_errno(strdup), -1;
+        return error_wrap_last_errno(strdup), -1;
     
     state->pos.type = type;
     state->pos.line = line;
@@ -242,7 +242,7 @@ static int _test_state_add_msg(test_state_ct state, test_msg_id type, size_t lev
     char *text;
     
     if((!len && !(text = strdup(msgtext))) || (len && !(text = strndup(msgtext, len))))
-        return error_wrap_errno(strdup), -1;
+        return error_wrap_last_errno(strdup), -1;
     
     if(!state->msg && !(state->msg = vec_new(10, sizeof(test_msg_st))))
         return error_wrap(), free(text), -1;
