@@ -526,6 +526,99 @@ TEST_CASE(error_pack_last)
     test_error(1, TEST_ERROR, E_TEST_ERROR_1);
 }
 
+static int _test_error_map(const error_type_st *type, int code)
+{
+    switch(code)
+    {
+    case EINVAL:
+        return E_TEST_ERROR_1;
+
+    case EISDIR:
+        return E_TEST_ERROR_2;
+
+    case EACCES:
+        return E_TEST_ERROR_3;
+
+    default:
+        return E_GENERIC_WRAP;
+    }
+}
+
+TEST_CASE_ABORT(error_map_invalid_type)
+{
+    test_void(error_set_s(ERRNO, EINVAL));
+    error_map_f(__func__, NULL, _test_error_map);
+}
+
+TEST_CASE_ABORT(error_map_missing)
+{
+    error_clear();
+    error_map_s(TEST_ERROR, _test_error_map);
+}
+
+TEST_CASE(error_map)
+{
+    test_void(error_set_s(ERRNO, EINVAL));
+    test_void(error_map_s(TEST_ERROR, _test_error_map));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, EINVAL);
+    test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+    test_str_eq(error_stack_get_func(0), __func__);
+    test_str_eq(error_stack_get_func(1), __func__);
+    test_error(0, TEST_ERROR, E_TEST_ERROR_1);
+    test_error(1, ERRNO, EINVAL);
+}
+
+TEST_CASE(error_map_default)
+{
+    test_void(error_set_s(ERRNO, EINVAL));
+    test_void(error_map(_test_error_map));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, EINVAL);
+    test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+    test_str_eq(error_stack_get_func(0), __func__);
+    test_str_eq(error_stack_get_func(1), __func__);
+}
+
+TEST_CASE(error_map_no_match)
+{
+    test_void(error_set_s(ERRNO, ENOSYS));
+    test_void(error_map_s(TEST_ERROR, _test_error_map));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, ENOSYS);
+    test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+    test_str_eq(error_stack_get_func(0), __func__);
+    test_str_eq(error_stack_get_func(1), __func__);
+    test_error(0, GENERIC, E_GENERIC_WRAP);
+    test_error(1, ERRNO, ENOSYS);
+}
+
+TEST_CASE(error_map_system)
+{
+    test_void(error_set_s(GENERIC, E_GENERIC_SYSTEM));
+    test_void(error_map_s(TEST_ERROR, _test_error_map));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, GENERIC, E_GENERIC_SYSTEM);
+    test_stack_error(1, GENERIC, E_GENERIC_PASS);
+    test_error(0, GENERIC, E_GENERIC_SYSTEM);
+}
+
+TEST_CASE(error_map_oom)
+{
+    test_void(error_set_s(ERRNO, ENOMEM));
+    test_void(error_map_s(TEST_ERROR, _test_error_map));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, ENOMEM);
+    test_stack_error(1, GENERIC, E_GENERIC_OOM);
+    test_error(0, GENERIC, E_GENERIC_OOM);
+    test_error(1, ERRNO, ENOMEM);
+}
+
 TEST_CASE_ABORT(error_pass_missing)
 {
     error_clear();
@@ -785,6 +878,95 @@ TEST_CASE(error_pack_last_sub_oom)
     test_str_eq(error_stack_get_func(1), __func__);
 }
 
+TEST_CASE_ABORT(error_map_sub_invalid_type1)
+{
+    error_map_sub_f(__func__, NULL, _test_error_map, "buff", &ERROR_TYPE_ERRNO, EISDIR);
+}
+
+TEST_CASE_ABORT(error_map_sub_invalid_type2)
+{
+    error_map_sub_f(__func__, &ERROR_TYPE_TEST_ERROR, _test_error_map, "buff", NULL, EISDIR);
+}
+
+TEST_CASE(error_map_sub)
+{
+    test_void(error_map_sub(_test_error_map, buff, ERRNO, EISDIR));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, EISDIR);
+    test_stack_error(1, TEST_ERROR, E_TEST_ERROR_2);
+    test_str_eq(error_stack_get_func(0), "buff");
+    test_str_eq(error_stack_get_func(1), __func__);
+}
+
+TEST_CASE(error_map_sub_no_match)
+{
+    test_void(error_map_sub(_test_error_map, buff, ERRNO, ENOSYS));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, ENOSYS);
+    test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+    test_str_eq(error_stack_get_func(0), "buff");
+    test_str_eq(error_stack_get_func(1), __func__);
+}
+
+TEST_CASE(error_map_sub_oom)
+{
+    test_void(error_map_sub(_test_error_map, boff, ERRNO, ENOMEM));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, ENOMEM);
+    test_stack_error(1, GENERIC, E_GENERIC_OOM);
+    test_str_eq(error_stack_get_func(0), "boff");
+    test_str_eq(error_stack_get_func(1), __func__);
+}
+
+TEST_CASE_ABORT(error_map_last_sub_invalid_type1)
+{
+    error_map_last_sub_f(__func__, NULL, _test_error_map, "bazz", &ERROR_TYPE_ERRNO, NULL);
+}
+
+TEST_CASE_ABORT(error_map_last_sub_invalid_type2)
+{
+    error_map_last_sub_f(__func__, &ERROR_TYPE_TEST_ERROR, _test_error_map, "bazz", NULL, NULL);
+}
+
+TEST_CASE(error_map_last_sub)
+{
+    errno = EACCES;
+    test_void(error_map_last_sub(_test_error_map, bazz, ERRNO, NULL));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, EACCES);
+    test_stack_error(1, TEST_ERROR, E_TEST_ERROR_3);
+    test_str_eq(error_stack_get_func(0), "bazz");
+    test_str_eq(error_stack_get_func(1), __func__);
+}
+
+TEST_CASE(error_map_last_sub_no_match)
+{
+    errno = ENOSYS;
+    test_void(error_map_last_sub(_test_error_map, buzz, ERRNO, NULL));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, ENOSYS);
+    test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+    test_str_eq(error_stack_get_func(0), "buzz");
+    test_str_eq(error_stack_get_func(1), __func__);
+}
+
+TEST_CASE(error_map_last_sub_oom)
+{
+    errno = ENOMEM;
+    test_void(error_map_last_sub(_test_error_map, bizz, ERRNO, NULL));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, ENOMEM);
+    test_stack_error(1, GENERIC, E_GENERIC_OOM);
+    test_str_eq(error_stack_get_func(0), "bizz");
+    test_str_eq(error_stack_get_func(1), __func__);
+}
+
 TEST_CASE(error_info_generic)
 {
     test_void(error_set_s(GENERIC, E_GENERIC_SYSTEM));
@@ -882,6 +1064,44 @@ TEST_CASE(error_pack_errno_ENOMEM)
     test_stack_error(0, ERRNO, ENOMEM);
     test_stack_error(1, GENERIC, E_GENERIC_OOM);
 }
+
+TEST_CASE(error_map_errno)
+{
+    test_void(error_map_errno(_test_error_map, foo, EINVAL));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, EINVAL);
+    test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+}
+
+TEST_CASE(error_map_last_errno)
+{
+    errno = EISDIR;
+    test_void(error_map_last_errno(_test_error_map, foo));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, EISDIR);
+    test_stack_error(1, TEST_ERROR, E_TEST_ERROR_2);
+}
+
+TEST_CASE(error_map_errno_no_match)
+{
+    test_void(error_map_errno(_test_error_map, foo, ENOSYS));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, ENOSYS);
+    test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+}
+
+TEST_CASE(error_map_errno_ENOMEM)
+{
+    test_void(error_map_errno(_test_error_map, foo, ENOMEM));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, ENOMEM);
+    test_stack_error(1, GENERIC, E_GENERIC_OOM);
+}
+
 
 #ifdef _WIN32
 
@@ -1009,6 +1229,69 @@ TEST_CASE(error_pack_win32_ERROR_OUTOFMEMORY)
     test_stack_error(1, GENERIC, E_GENERIC_OOM);
 }
 
+static int _test_error_map_win(const error_type_st *type, int code)
+{
+    switch(code)
+    {
+    case ERROR_FILE_NOT_FOUND:
+    case HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND):
+    case STATUS_TIMEOUT:
+        return E_TEST_ERROR_1;
+
+    case ERROR_PATH_NOT_FOUND:
+        return E_TEST_ERROR_2;
+
+    default:
+        return E_GENERIC_WRAP;
+    }
+}
+
+TEST_CASE(error_map_win32)
+{
+    test_void(error_map_win32(_test_error_map_win, foo, ERROR_FILE_NOT_FOUND));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
+    test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+}
+
+TEST_CASE(error_map_last_win32)
+{
+    SetLastError(ERROR_PATH_NOT_FOUND);
+    test_void(error_map_last_win32(_test_error_map_win, foo));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, WIN32, ERROR_PATH_NOT_FOUND);
+    test_stack_error(1, TEST_ERROR, E_TEST_ERROR_2);
+}
+
+TEST_CASE(error_map_win32_no_match)
+{
+    test_void(error_map_win32(_test_error_map_win, foo, ERROR_INVALID_FUNCTION));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, WIN32, ERROR_INVALID_FUNCTION);
+    test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+}
+
+TEST_CASE(error_map_win32_ERROR_NOT_ENOUGH_MEMORY)
+{
+    test_void(error_map_win32(_test_error_map_win, foo, ERROR_NOT_ENOUGH_MEMORY));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, WIN32, ERROR_NOT_ENOUGH_MEMORY);
+    test_stack_error(1, GENERIC, E_GENERIC_OOM);
+}
+
+TEST_CASE(error_map_win32_ERROR_OUTOFMEMORY)
+{
+    test_void(error_map_win32(_test_error_map_win, foo, ERROR_OUTOFMEMORY));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, WIN32, ERROR_OUTOFMEMORY);
+    test_stack_error(1, GENERIC, E_GENERIC_OOM);
+}
+
 TEST_CASE(error_info_hresult)
 {
     test_void(error_set_s(HRESULT, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
@@ -1047,6 +1330,24 @@ TEST_CASE(error_pack_hresult)
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
 }
 
+TEST_CASE(error_map_hresult)
+{
+    test_void(error_map_hresult(_test_error_map_win, foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, HRESULT, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
+    test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+}
+
+TEST_CASE(error_map_hresult_no_match)
+{
+    test_void(error_map_hresult(_test_error_map_win, foo, HRESULT_FROM_WIN32(ERROR_INVALID_FUNCTION)));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, HRESULT, HRESULT_FROM_WIN32(ERROR_INVALID_FUNCTION));
+    test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+}
+
 TEST_CASE(error_info_ntstatus)
 {
     test_void(error_set_s(NTSTATUS, STATUS_TIMEOUT));
@@ -1083,6 +1384,24 @@ TEST_CASE(error_pack_ntstatus)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, NTSTATUS, STATUS_TIMEOUT);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+}
+
+TEST_CASE(error_map_ntstatus)
+{
+    test_void(error_map_ntstatus(_test_error_map_win, foo, STATUS_TIMEOUT));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, NTSTATUS, STATUS_TIMEOUT);
+    test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+}
+
+TEST_CASE(error_map_ntstatus_no_match)
+{
+    test_void(error_map_ntstatus(_test_error_map_win, foo, STATUS_ABANDONED));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, NTSTATUS, STATUS_ABANDONED);
+    test_stack_error(1, GENERIC, E_GENERIC_WRAP);
 }
 
 #endif // _WIN32
@@ -1165,6 +1484,14 @@ test_suite_ct test_suite_gen_error(void)
         test_case_new(error_pack_last_unsupported),
         test_case_new(error_pack_last),
 
+        test_case_new(error_map_invalid_type),
+        test_case_new(error_map_missing),
+        test_case_new(error_map),
+        test_case_new(error_map_default),
+        test_case_new(error_map_no_match),
+        test_case_new(error_map_system),
+        test_case_new(error_map_oom),
+
         test_case_new(error_pass_missing),
         test_case_new(error_pass),
         test_case_new(error_pass_double),
@@ -1199,6 +1526,17 @@ test_suite_ct test_suite_gen_error(void)
         test_case_new(error_pack_last_sub),
         test_case_new(error_pack_last_sub_oom),
 
+        test_case_new(error_map_sub_invalid_type1),
+        test_case_new(error_map_sub_invalid_type2),
+        test_case_new(error_map_sub),
+        test_case_new(error_map_sub_no_match),
+        test_case_new(error_map_sub_oom),
+        test_case_new(error_map_last_sub_invalid_type1),
+        test_case_new(error_map_last_sub_invalid_type2),
+        test_case_new(error_map_last_sub),
+        test_case_new(error_map_last_sub_no_match),
+        test_case_new(error_map_last_sub_oom),
+
         test_case_new(error_info_generic),
 
         test_case_new(error_info_errno),
@@ -1210,6 +1548,10 @@ test_suite_ct test_suite_gen_error(void)
         test_case_new(error_pack_errno),
         test_case_new(error_pack_last_errno),
         test_case_new(error_pack_errno_ENOMEM),
+        test_case_new(error_map_errno),
+        test_case_new(error_map_last_errno),
+        test_case_new(error_map_errno_no_match),
+        test_case_new(error_map_errno_ENOMEM),
 
         test_case_new_windows(error_info_win32),
         test_case_new_windows(error_pass_win32),
@@ -1222,15 +1564,24 @@ test_suite_ct test_suite_gen_error(void)
         test_case_new_windows(error_pack_last_win32),
         test_case_new_windows(error_pack_win32_ERROR_NOT_ENOUGH_MEMORY),
         test_case_new_windows(error_pack_win32_ERROR_OUTOFMEMORY),
+        test_case_new_windows(error_map_win32),
+        test_case_new_windows(error_map_last_win32),
+        test_case_new_windows(error_map_win32_no_match),
+        test_case_new_windows(error_map_win32_ERROR_NOT_ENOUGH_MEMORY),
+        test_case_new_windows(error_map_win32_ERROR_OUTOFMEMORY),
 
         test_case_new_windows(error_info_hresult),
         test_case_new_windows(error_pass_hresult),
         test_case_new_windows(error_wrap_hresult),
         test_case_new_windows(error_pack_hresult),
+        test_case_new_windows(error_map_hresult),
+        test_case_new_windows(error_map_hresult_no_match),
 
         test_case_new_windows(error_info_ntstatus),
         test_case_new_windows(error_pass_ntstatus),
         test_case_new_windows(error_wrap_ntstatus),
-        test_case_new_windows(error_pack_ntstatus)
+        test_case_new_windows(error_pack_ntstatus),
+        test_case_new_windows(error_map_ntstatus),
+        test_case_new_windows(error_map_ntstatus_no_match)
     );
 }

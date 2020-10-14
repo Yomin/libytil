@@ -403,6 +403,8 @@ void error_wrap_f(const char *func)
 
 void error_pack_f(const char *func, const error_type_st *type, int code)
 {
+    assert(type);
+
     if(error_type(0) == &ERROR_TYPE_GENERIC && error_code(0) <= E_GENERIC_SYSTEM)
         error_pass_f(func);
     else if(error_is_oom(0))
@@ -417,6 +419,22 @@ void error_pack_last_f(const char *func, const error_type_st *type, const void *
     assert(type->error_last);
 
     error_pack_f(func, type, type->error_last(type, (void *)ctx));
+}
+
+void error_map_f(const char *func, const error_type_st *type, error_map_cb map)
+{
+    int code;
+
+    assert(type);
+
+    if(error_type(0) == &ERROR_TYPE_GENERIC && error_code(0) <= E_GENERIC_SYSTEM)
+        error_pass_f(func);
+    else if(error_is_oom(0))
+        error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_OOM);
+    else if((code = map(error_type(0), error_code(0))) < 0)
+        error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_WRAP);
+    else
+        error_push_f(func, type, code);
 }
 
 void error_pick_f(const char *func, int code)
@@ -475,6 +493,21 @@ void error_pack_last_sub_f(const char *func, const error_type_st *type, int code
     assert(sub_type->error_last);
 
     error_pack_sub_f(func, type, code,
+        sub, sub_type, sub_type->error_last(sub_type, (void *)sub_ctx));
+}
+
+void error_map_sub_f(const char *func, const error_type_st *type, error_map_cb map, const char *sub, const error_type_st *sub_type, int sub_code)
+{
+    error_set_f(sub, sub_type, sub_code);
+    error_map_f(func, type, map);
+}
+
+void error_map_last_sub_f(const char *func, const error_type_st *type, error_map_cb map, const char *sub, const error_type_st *sub_type, void *sub_ctx)
+{
+    assert(sub_type);
+    assert(sub_type->error_last);
+
+    error_map_sub_f(func, type, map,
         sub, sub_type, sub_type->error_last(sub_type, (void *)sub_ctx));
 }
 
