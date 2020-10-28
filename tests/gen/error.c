@@ -35,22 +35,27 @@ typedef enum test_error
     E_TEST_ERROR_1,
     E_TEST_ERROR_2,
     E_TEST_ERROR_3,
-    E_TEST_ERROR_OV,
+    E_TEST_ERROR_OV1,
+    E_TEST_ERROR_OV2,
 } test_error_id;
 
 ERROR_DEFINE_LIST(TEST_ERROR,
-    ERROR_INFO(E_TEST_ERROR_1,  "Test error 1."),
-    ERROR_INFO(E_TEST_ERROR_2,  "Test error 2."),
-    ERROR_INFO(E_TEST_ERROR_3,  "Test error 3."),
-    ERROR_INFO(E_TEST_ERROR_OV, "Test error Override.")
+    ERROR_INFO(E_TEST_ERROR_1,   "Test error 1."),
+    ERROR_INFO(E_TEST_ERROR_2,   "Test error 2."),
+    ERROR_INFO(E_TEST_ERROR_3,   "Test error 3."),
+    ERROR_INFO(E_TEST_ERROR_OV1, "Test error Override 1."),
+    ERROR_INFO(E_TEST_ERROR_OV2, "Test error Override 2.")
 );
 
-static int test_error_last(const error_type_st *type, const char **desc, void *ctx)
+static int test_error_last(const error_type_st *type, const char **desc, const char *ctx_type, void *ctx)
 {
     if(desc)
         *desc = ctx;
 
-    return E_TEST_ERROR_OV;
+    if(ctx_type && !strcmp(ctx_type, "override"))
+        return E_TEST_ERROR_OV2;
+    else
+        return E_TEST_ERROR_OV1;
 }
 
 ERROR_DEFINE_CALLBACK(TEST_ERROR_OVERRIDE, NULL, NULL, NULL, test_error_last);
@@ -110,26 +115,47 @@ TEST_CASE(error_type_is_oom)
 
 TEST_CASE_ABORT(error_type_get_last_invalid_type)
 {
-    error_type_get_last(NULL, NULL, NULL);
+    error_type_get_last(NULL, NULL);
 }
 
 TEST_CASE_ABORT(error_type_get_last_unsupported)
 {
-    error_type_get_last(&ERROR_TYPE_TEST_ERROR, NULL, NULL);
+    error_type_get_last(&ERROR_TYPE_TEST_ERROR, NULL);
 }
 
 TEST_CASE(error_type_get_last)
 {
     errno = E2BIG;
-    test_int_eq(error_type_get_last(&ERROR_TYPE_ERRNO, NULL, NULL), E2BIG);
+    test_int_eq(error_type_get_last(&ERROR_TYPE_ERRNO, NULL), E2BIG);
 }
 
-TEST_CASE(error_type_get_last_override_desc)
+TEST_CASE_ABORT(error_type_get_last_x_invalid_type)
+{
+    error_type_get_last_x(NULL, NULL, NULL, NULL);
+}
+
+TEST_CASE_ABORT(error_type_get_last_x_unsupported)
+{
+    error_type_get_last_x(&ERROR_TYPE_TEST_ERROR, NULL, NULL, NULL);
+}
+
+TEST_CASE(error_type_get_last_x)
+{
+    errno = E2BIG;
+    test_int_eq(error_type_get_last_x(&ERROR_TYPE_ERRNO, NULL, NULL, NULL), E2BIG);
+}
+
+TEST_CASE(error_type_get_last_x_override_desc)
 {
     const char *desc = NULL;
 
-    test_int_eq(error_type_get_last(&ERROR_TYPE_TEST_ERROR_OVERRIDE, &desc, "override"), E_TEST_ERROR_OV);
+    test_int_eq(error_type_get_last_x(&ERROR_TYPE_TEST_ERROR_OVERRIDE, &desc, NULL, "override"), E_TEST_ERROR_OV1);
     test_str_eq(desc, "override");
+}
+
+TEST_CASE(error_type_get_last_x_override_ctx)
+{
+    test_int_eq(error_type_get_last_x(&ERROR_TYPE_TEST_ERROR_OVERRIDE, NULL, "override", NULL), E_TEST_ERROR_OV2);
 }
 
 TEST_CASE_ABORT(error_stack_get_func_oob)
@@ -333,18 +359,18 @@ TEST_CASE(error_set_default_override_desc)
 
 TEST_CASE_ABORT(error_set_last_invalid_type)
 {
-    error_set_last_f(__func__, NULL, NULL);
+    error_set_last_f(__func__, NULL, NULL, NULL);
 }
 
 TEST_CASE_ABORT(error_set_last_unsupported)
 {
-    error_set_last_s(TEST_ERROR, NULL);
+    error_set_last_s(TEST_ERROR);
 }
 
 TEST_CASE(error_set_last)
 {
     errno = EINVAL;
-    test_void(error_set_last_s(ERRNO, NULL));
+    test_void(error_set_last_s(ERRNO));
     test_stack_error(0, ERRNO, EINVAL);
     test_str_eq(error_stack_get_func(0), __func__);
     test_error(0, ERRNO, EINVAL);
@@ -352,9 +378,15 @@ TEST_CASE(error_set_last)
 
 TEST_CASE(error_set_last_override_desc)
 {
-    test_void(error_set_last_s(TEST_ERROR_OVERRIDE, "override"));
-    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV);
+    test_void(error_set_last_sx(TEST_ERROR_OVERRIDE, NULL, "override"));
+    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV1);
     test_str_eq(error_stack_get_desc(0), "override");
+}
+
+TEST_CASE(error_set_last_override_ctx)
+{
+    test_void(error_set_last_sx(TEST_ERROR_OVERRIDE, "override", NULL));
+    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV2);
 }
 
 TEST_CASE_ABORT(error_push_invalid_type)
@@ -410,19 +442,19 @@ TEST_CASE(error_push_default_override_desc)
 
 TEST_CASE_ABORT(error_push_last_invalid_type)
 {
-    error_push_last_f(__func__, NULL, NULL);
+    error_push_last_f(__func__, NULL, NULL, NULL);
 }
 
 TEST_CASE_ABORT(error_push_last_unsupported)
 {
-    error_push_last_s(TEST_ERROR, NULL);
+    error_push_last_s(TEST_ERROR);
 }
 
 TEST_CASE(error_push_last)
 {
     error_clear();
     errno = ENOENT;
-    test_void(error_push_last_s(ERRNO, NULL));
+    test_void(error_push_last_s(ERRNO));
     test_stack_error(0, ERRNO, ENOENT);
     test_str_eq(error_stack_get_func(0), __func__);
     test_error(0, ERRNO, ENOENT);
@@ -431,9 +463,16 @@ TEST_CASE(error_push_last)
 TEST_CASE(error_push_last_override_desc)
 {
     error_clear();
-    test_void(error_push_last_s(TEST_ERROR_OVERRIDE, "override"));
-    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV);
+    test_void(error_push_last_sx(TEST_ERROR_OVERRIDE, NULL, "override"));
+    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV1);
     test_str_eq(error_stack_get_desc(0), "override");
+}
+
+TEST_CASE(error_push_last_override_ctx)
+{
+    error_clear();
+    test_void(error_push_last_sx(TEST_ERROR_OVERRIDE, "override", NULL));
+    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV2);
 }
 
 TEST_CASE(error_reset)
@@ -587,20 +626,20 @@ TEST_CASE(error_pack_oom)
 TEST_CASE_ABORT(error_pack_last_invalid_type)
 {
     test_void(error_set_s(TEST_ERROR, E_TEST_ERROR_1));
-    error_pack_last_f(__func__, NULL, NULL);
+    error_pack_last_f(__func__, NULL, NULL, NULL);
 }
 
 TEST_CASE_ABORT(error_pack_last_unsupported)
 {
     test_void(error_set_s(TEST_ERROR, E_TEST_ERROR_1));
-    error_pack_last_s(TEST_ERROR, NULL);
+    error_pack_last_s(TEST_ERROR);
 }
 
 TEST_CASE(error_pack_last)
 {
     test_void(error_set_s(TEST_ERROR, E_TEST_ERROR_1));
     errno = EBADF;
-    test_void(error_pack_last_s(ERRNO, NULL));
+    test_void(error_pack_last_s(ERRNO));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, TEST_ERROR, E_TEST_ERROR_1);
@@ -614,10 +653,18 @@ TEST_CASE(error_pack_last)
 TEST_CASE(error_pack_last_override_desc)
 {
     test_void(error_set_s(TEST_ERROR, E_TEST_ERROR_1));
-    test_void(error_pack_last_s(TEST_ERROR_OVERRIDE, "override"));
+    test_void(error_pack_last_sx(TEST_ERROR_OVERRIDE, NULL, "override"));
 
-    test_stack_error(1, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV);
+    test_stack_error(1, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV1);
     test_str_eq(error_stack_get_desc(1), "override");
+}
+
+TEST_CASE(error_pack_last_override_ctx)
+{
+    test_void(error_set_s(TEST_ERROR, E_TEST_ERROR_1));
+    test_void(error_pack_last_sx(TEST_ERROR_OVERRIDE, "override", NULL));
+
+    test_stack_error(1, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV2);
 }
 
 static int _test_error_map(const error_type_st *type, int code)
@@ -866,13 +913,13 @@ TEST_CASE(error_pass_sub_override_desc)
 
 TEST_CASE_ABORT(error_pass_last_sub_invalid_type)
 {
-    error_pass_last_sub_f(__func__, "bar", NULL, NULL);
+    error_pass_last_sub_f(__func__, "bar", NULL, NULL, NULL);
 }
 
 TEST_CASE(error_pass_last_sub)
 {
     errno = EBUSY;
-    test_void(error_pass_last_sub(bar, ERRNO, NULL));
+    test_void(error_pass_last_sub(bar, ERRNO));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EBUSY);
@@ -883,10 +930,17 @@ TEST_CASE(error_pass_last_sub)
 
 TEST_CASE(error_pass_last_sub_override_desc)
 {
-    test_void(error_pass_last_sub(bar, TEST_ERROR_OVERRIDE, "override"));
+    test_void(error_pass_last_sub_x(bar, TEST_ERROR_OVERRIDE, NULL, "override"));
 
-    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV);
+    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV1);
     test_str_eq(error_stack_get_desc(0), "override");
+}
+
+TEST_CASE(error_pass_last_sub_override_ctx)
+{
+    test_void(error_pass_last_sub_x(bar, TEST_ERROR_OVERRIDE, "override", NULL));
+
+    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV2);
 }
 
 TEST_CASE_ABORT(error_wrap_sub_invalid_type)
@@ -915,13 +969,13 @@ TEST_CASE(error_wrap_sub_override_desc)
 
 TEST_CASE_ABORT(error_wrap_last_sub_invalid_type)
 {
-    error_wrap_last_sub_f(__func__, "boz", NULL, NULL);
+    error_wrap_last_sub_f(__func__, "boz", NULL, NULL, NULL);
 }
 
 TEST_CASE(error_wrap_last_sub)
 {
     errno = ENOENT;
-    test_void(error_wrap_last_sub(boz, ERRNO, NULL));
+    test_void(error_wrap_last_sub(boz, ERRNO));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOENT);
@@ -932,10 +986,17 @@ TEST_CASE(error_wrap_last_sub)
 
 TEST_CASE(error_wrap_last_sub_override_desc)
 {
-    test_void(error_wrap_last_sub(boz, TEST_ERROR_OVERRIDE, "override"));
+    test_void(error_wrap_last_sub_x(boz, TEST_ERROR_OVERRIDE, NULL, "override"));
 
-    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV);
+    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV1);
     test_str_eq(error_stack_get_desc(0), "override");
+}
+
+TEST_CASE(error_wrap_last_sub_override_ctx)
+{
+    test_void(error_wrap_last_sub_x(boz, TEST_ERROR_OVERRIDE, "override", NULL));
+
+    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV2);
 }
 
 TEST_CASE_ABORT(error_pack_sub_invalid_type1)
@@ -983,19 +1044,19 @@ TEST_CASE(error_pack_sub_oom)
 TEST_CASE_ABORT(error_pack_last_sub_invalid_type1)
 {
     error_pack_last_sub_f(__func__, NULL, E_TEST_ERROR_2, NULL,
-        "bazz", &ERROR_TYPE_ERRNO, NULL);
+        "bazz", &ERROR_TYPE_ERRNO, NULL, NULL);
 }
 
 TEST_CASE_ABORT(error_pack_last_sub_invalid_type2)
 {
     error_pack_last_sub_f(__func__, &ERROR_TYPE_TEST_ERROR, E_TEST_ERROR_2, NULL,
-        "bazz", NULL, NULL);
+        "bazz", NULL, NULL, NULL);
 }
 
 TEST_CASE(error_pack_last_sub)
 {
     errno = EACCES;
-    test_void(error_pack_last_sub(E_TEST_ERROR_2, bazz, ERRNO, NULL));
+    test_void(error_pack_last_sub(E_TEST_ERROR_2, bazz, ERRNO));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EACCES);
@@ -1006,16 +1067,23 @@ TEST_CASE(error_pack_last_sub)
 
 TEST_CASE(error_pack_last_sub_override_desc)
 {
-    test_void(error_pack_last_sub(E_TEST_ERROR_2, bazz, TEST_ERROR_OVERRIDE, "override"));
+    test_void(error_pack_last_sub_x(E_TEST_ERROR_2, bazz, TEST_ERROR_OVERRIDE, NULL, "override"));
 
-    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV);
+    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV1);
     test_str_eq(error_stack_get_desc(0), "override");
+}
+
+TEST_CASE(error_pack_last_sub_override_ctx)
+{
+    test_void(error_pack_last_sub_x(E_TEST_ERROR_2, bazz, TEST_ERROR_OVERRIDE, "override", NULL));
+
+    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV2);
 }
 
 TEST_CASE(error_pack_last_sub_oom)
 {
     errno = ENOMEM;
-    test_void(error_pack_last_sub(E_TEST_ERROR_1, bizz, ERRNO, NULL));
+    test_void(error_pack_last_sub(E_TEST_ERROR_1, bizz, ERRNO));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOMEM);
@@ -1079,18 +1147,18 @@ TEST_CASE(error_map_sub_oom)
 
 TEST_CASE_ABORT(error_map_last_sub_invalid_type1)
 {
-    error_map_last_sub_f(__func__, NULL, _test_error_map, "bazz", &ERROR_TYPE_ERRNO, NULL);
+    error_map_last_sub_f(__func__, NULL, _test_error_map, "bazz", &ERROR_TYPE_ERRNO, NULL, NULL);
 }
 
 TEST_CASE_ABORT(error_map_last_sub_invalid_type2)
 {
-    error_map_last_sub_f(__func__, &ERROR_TYPE_TEST_ERROR, _test_error_map, "bazz", NULL, NULL);
+    error_map_last_sub_f(__func__, &ERROR_TYPE_TEST_ERROR, _test_error_map, "bazz", NULL, NULL, NULL);
 }
 
 TEST_CASE(error_map_last_sub)
 {
     errno = EACCES;
-    test_void(error_map_last_sub(_test_error_map, bazz, ERRNO, NULL));
+    test_void(error_map_last_sub(_test_error_map, bazz, ERRNO));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EACCES);
@@ -1101,16 +1169,23 @@ TEST_CASE(error_map_last_sub)
 
 TEST_CASE(error_map_last_sub_override_desc)
 {
-    test_void(error_map_last_sub(_test_error_map, bazz, TEST_ERROR_OVERRIDE, "override"));
+    test_void(error_map_last_sub_x(_test_error_map, bazz, TEST_ERROR_OVERRIDE, NULL, "override"));
 
-    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV);
+    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV1);
     test_str_eq(error_stack_get_desc(0), "override");
+}
+
+TEST_CASE(error_map_last_sub_override_ctx)
+{
+    test_void(error_map_last_sub_x(_test_error_map, bazz, TEST_ERROR_OVERRIDE, "override", NULL));
+
+    test_stack_error(0, TEST_ERROR_OVERRIDE, E_TEST_ERROR_OV2);
 }
 
 TEST_CASE(error_map_last_sub_no_match)
 {
     errno = ENOSYS;
-    test_void(error_map_last_sub(_test_error_map, buzz, ERRNO, NULL));
+    test_void(error_map_last_sub(_test_error_map, buzz, ERRNO));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOSYS);
@@ -1122,7 +1197,7 @@ TEST_CASE(error_map_last_sub_no_match)
 TEST_CASE(error_map_last_sub_oom)
 {
     errno = ENOMEM;
-    test_void(error_map_last_sub(_test_error_map, bizz, ERRNO, NULL));
+    test_void(error_map_last_sub(_test_error_map, bizz, ERRNO));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOMEM);
@@ -1161,6 +1236,7 @@ TEST_CASE(error_pass_errno)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EFAULT);
     test_stack_error(1, GENERIC, E_GENERIC_PASS);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_pass_last_errno)
@@ -1171,6 +1247,7 @@ TEST_CASE(error_pass_last_errno)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EEXIST);
     test_stack_error(1, GENERIC, E_GENERIC_PASS);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_wrap_errno)
@@ -1180,6 +1257,7 @@ TEST_CASE(error_wrap_errno)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EFAULT);
     test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_wrap_last_errno)
@@ -1190,6 +1268,7 @@ TEST_CASE(error_wrap_last_errno)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EEXIST);
     test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_wrap_errno_ENOMEM)
@@ -1208,6 +1287,7 @@ TEST_CASE(error_pack_errno)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EFAULT);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_pack_last_errno)
@@ -1218,6 +1298,7 @@ TEST_CASE(error_pack_last_errno)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EEXIST);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_pack_errno_ENOMEM)
@@ -1236,6 +1317,7 @@ TEST_CASE(error_map_errno)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EINVAL);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_map_last_errno)
@@ -1246,6 +1328,7 @@ TEST_CASE(error_map_last_errno)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EISDIR);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_2);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_map_errno_no_match)
@@ -1307,6 +1390,7 @@ TEST_CASE(error_pass_win32)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
     test_stack_error(1, GENERIC, E_GENERIC_PASS);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_pass_last_win32)
@@ -1317,6 +1401,7 @@ TEST_CASE(error_pass_last_win32)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_PATH_NOT_FOUND);
     test_stack_error(1, GENERIC, E_GENERIC_PASS);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_wrap_win32)
@@ -1326,6 +1411,7 @@ TEST_CASE(error_wrap_win32)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
     test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_wrap_last_win32)
@@ -1336,6 +1422,7 @@ TEST_CASE(error_wrap_last_win32)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_PATH_NOT_FOUND);
     test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_wrap_win32_ERROR_NOT_ENOUGH_MEMORY)
@@ -1363,6 +1450,7 @@ TEST_CASE(error_pack_win32)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_pack_last_win32)
@@ -1373,6 +1461,7 @@ TEST_CASE(error_pack_last_win32)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_PATH_NOT_FOUND);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_pack_win32_ERROR_NOT_ENOUGH_MEMORY)
@@ -1417,6 +1506,7 @@ TEST_CASE(error_map_win32)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_map_last_win32)
@@ -1427,6 +1517,7 @@ TEST_CASE(error_map_last_win32)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, WIN32, ERROR_PATH_NOT_FOUND);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_2);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_map_win32_no_match)
@@ -1474,6 +1565,7 @@ TEST_CASE(error_pass_hresult)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, HRESULT, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
     test_stack_error(1, GENERIC, E_GENERIC_PASS);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_wrap_hresult)
@@ -1483,6 +1575,7 @@ TEST_CASE(error_wrap_hresult)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, HRESULT, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
     test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_pack_hresult)
@@ -1492,6 +1585,7 @@ TEST_CASE(error_pack_hresult)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, HRESULT, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_map_hresult)
@@ -1501,6 +1595,7 @@ TEST_CASE(error_map_hresult)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, HRESULT, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_map_hresult_no_match)
@@ -1530,6 +1625,7 @@ TEST_CASE(error_pass_ntstatus)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, NTSTATUS, STATUS_TIMEOUT);
     test_stack_error(1, GENERIC, E_GENERIC_PASS);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_wrap_ntstatus)
@@ -1539,6 +1635,7 @@ TEST_CASE(error_wrap_ntstatus)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, NTSTATUS, STATUS_TIMEOUT);
     test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_pack_ntstatus)
@@ -1548,6 +1645,7 @@ TEST_CASE(error_pack_ntstatus)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, NTSTATUS, STATUS_TIMEOUT);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_map_ntstatus)
@@ -1557,6 +1655,7 @@ TEST_CASE(error_map_ntstatus)
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, NTSTATUS, STATUS_TIMEOUT);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
+    test_str_eq(error_stack_get_func(0), "foo");
 }
 
 TEST_CASE(error_map_ntstatus_no_match)
@@ -1575,17 +1674,24 @@ test_suite_ct test_suite_gen_error(void)
     return test_suite_new_with_cases("error",
         test_case_new(error_type_name_invalid_type),
         test_case_new(error_type_name),
+
         test_case_new(error_type_get_name_invalid_type),
         test_case_new(error_type_get_name),
         test_case_new(error_type_get_desc_invalid_type),
         test_case_new(error_type_get_desc),
+
         test_case_new(error_type_is_oom_invalid_type),
         test_case_new(error_type_is_oom_unsupported),
         test_case_new(error_type_is_oom),
+
         test_case_new(error_type_get_last_invalid_type),
         test_case_new(error_type_get_last_unsupported),
         test_case_new(error_type_get_last),
-        test_case_new(error_type_get_last_override_desc),
+        test_case_new(error_type_get_last_x_invalid_type),
+        test_case_new(error_type_get_last_x_unsupported),
+        test_case_new(error_type_get_last_x),
+        test_case_new(error_type_get_last_x_override_desc),
+        test_case_new(error_type_get_last_x_override_ctx),
 
         test_case_new(error_stack_get_func_oob),
         test_case_new(error_stack_get_func),
@@ -1626,6 +1732,7 @@ test_suite_ct test_suite_gen_error(void)
         test_case_new(error_set_last_unsupported),
         test_case_new(error_set_last),
         test_case_new(error_set_last_override_desc),
+        test_case_new(error_set_last_override_ctx),
 
         test_case_new(error_push_invalid_type),
         test_case_new(error_push),
@@ -1636,6 +1743,7 @@ test_suite_ct test_suite_gen_error(void)
         test_case_new(error_push_last_unsupported),
         test_case_new(error_push_last),
         test_case_new(error_push_last_override_desc),
+        test_case_new(error_push_last_override_ctx),
 
         test_case_new(error_reset),
 
@@ -1657,6 +1765,7 @@ test_suite_ct test_suite_gen_error(void)
         test_case_new(error_pack_last_unsupported),
         test_case_new(error_pack_last),
         test_case_new(error_pack_last_override_desc),
+        test_case_new(error_pack_last_override_ctx),
 
         test_case_new(error_map_invalid_type),
         test_case_new(error_map_missing),
@@ -1687,6 +1796,7 @@ test_suite_ct test_suite_gen_error(void)
         test_case_new(error_pass_last_sub_invalid_type),
         test_case_new(error_pass_last_sub),
         test_case_new(error_pass_last_sub_override_desc),
+        test_case_new(error_pass_last_sub_override_ctx),
 
         test_case_new(error_wrap_sub_invalid_type),
         test_case_new(error_wrap_sub),
@@ -1694,6 +1804,7 @@ test_suite_ct test_suite_gen_error(void)
         test_case_new(error_wrap_last_sub_invalid_type),
         test_case_new(error_wrap_last_sub),
         test_case_new(error_wrap_last_sub_override_desc),
+        test_case_new(error_wrap_last_sub_override_ctx),
 
         test_case_new(error_pack_sub_invalid_type1),
         test_case_new(error_pack_sub_invalid_type2),
@@ -1704,6 +1815,7 @@ test_suite_ct test_suite_gen_error(void)
         test_case_new(error_pack_last_sub_invalid_type2),
         test_case_new(error_pack_last_sub),
         test_case_new(error_pack_last_sub_override_desc),
+        test_case_new(error_pack_last_sub_override_ctx),
         test_case_new(error_pack_last_sub_oom),
 
         test_case_new(error_map_sub_invalid_type1),
@@ -1716,6 +1828,7 @@ test_suite_ct test_suite_gen_error(void)
         test_case_new(error_map_last_sub_invalid_type2),
         test_case_new(error_map_last_sub),
         test_case_new(error_map_last_sub_override_desc),
+        test_case_new(error_map_last_sub_override_ctx),
         test_case_new(error_map_last_sub_no_match),
         test_case_new(error_map_last_sub_oom),
 

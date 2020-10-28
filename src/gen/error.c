@@ -148,12 +148,20 @@ bool error_type_is_oom(const error_type_st *type, int code)
     return type->error_is_oom && type->error_is_oom(type, code);
 }
 
-int error_type_get_last(const error_type_st *type, const char **desc, const void *ctx)
+int error_type_get_last(const error_type_st *type, const char **desc)
 {
     assert(type);
     assert(type->error_last);
 
-    return type->error_last(type, desc, (void *)ctx);
+    return type->error_last(type, desc, NULL, NULL);
+}
+
+int error_type_get_last_x(const error_type_st *type, const char **desc, const char *ctx_type, const void *ctx)
+{
+    assert(type);
+    assert(type->error_last);
+
+    return type->error_last(type, desc, ctx_type, (void *)ctx);
 }
 
 __attribute__((destructor))
@@ -376,7 +384,7 @@ void error_push_f(const char *func, const error_type_st *type, int code, const c
         errors.clean++;
 }
 
-void error_push_last_f(const char *func, const error_type_st *type, const void *ctx)
+void error_push_last_f(const char *func, const error_type_st *type, const char *ctx_type, const void *ctx)
 {
     const char *desc = NULL;
     int code;
@@ -384,7 +392,7 @@ void error_push_last_f(const char *func, const error_type_st *type, const void *
     assert(type);
     assert(type->error_last);
 
-    code = type->error_last(type, &desc, (void *)ctx);
+    code = type->error_last(type, &desc, ctx_type, (void *)ctx);
     error_push_f(func, type, code, desc);
 }
 
@@ -394,7 +402,7 @@ void error_set_f(const char *func, const error_type_st *type, int code, const ch
     error_push_f(func, type, code, desc);
 }
 
-void error_set_last_f(const char *func, const error_type_st *type, const void *ctx)
+void error_set_last_f(const char *func, const error_type_st *type, const char *ctx_type, const void *ctx)
 {
     const char *desc = NULL;
     int code;
@@ -402,7 +410,7 @@ void error_set_last_f(const char *func, const error_type_st *type, const void *c
     assert(type);
     assert(type->error_last);
 
-    code = type->error_last(type, &desc, (void *)ctx);
+    code = type->error_last(type, &desc, ctx_type, (void *)ctx);
     error_set_f(func, type, code, desc);
 }
 
@@ -442,7 +450,7 @@ void error_pack_f(const char *func, const error_type_st *type, int code, const c
         error_push_f(func, type, code, desc);
 }
 
-void error_pack_last_f(const char *func, const error_type_st *type, const void *ctx)
+void error_pack_last_f(const char *func, const error_type_st *type, const char *ctx_type, const void *ctx)
 {
     const char *desc = NULL;
     int code;
@@ -450,7 +458,7 @@ void error_pack_last_f(const char *func, const error_type_st *type, const void *
     assert(type);
     assert(type->error_last);
 
-    code = type->error_last(type, &desc, (void *)ctx);
+    code = type->error_last(type, &desc, ctx_type, (void *)ctx);
     error_pack_f(func, type, code, desc);
 }
 
@@ -492,7 +500,7 @@ void error_pass_sub_f(const char *func, const char *sub, const error_type_st *su
     error_pass_f(func);
 }
 
-void error_pass_last_sub_f(const char *func, const char *sub, const error_type_st *sub_type, const void *sub_ctx)
+void error_pass_last_sub_f(const char *func, const char *sub, const error_type_st *sub_type, const char *sub_ctx_type, const void *sub_ctx)
 {
     const char *sub_desc = NULL;
     int sub_code;
@@ -500,7 +508,7 @@ void error_pass_last_sub_f(const char *func, const char *sub, const error_type_s
     assert(sub_type);
     assert(sub_type->error_last);
 
-    sub_code = sub_type->error_last(sub_type, &sub_desc, (void *)sub_ctx);
+    sub_code = sub_type->error_last(sub_type, &sub_desc, sub_ctx_type, (void *)sub_ctx);
     error_pass_sub_f(func, sub, sub_type, sub_code, sub_desc);
 }
 
@@ -510,7 +518,7 @@ void error_wrap_sub_f(const char *func, const char *sub, const error_type_st *su
     error_wrap_f(func);
 }
 
-void error_wrap_last_sub_f(const char *func, const char *sub, const error_type_st *sub_type, const void *sub_ctx)
+void error_wrap_last_sub_f(const char *func, const char *sub, const error_type_st *sub_type, const char *sub_ctx_type, const void *sub_ctx)
 {
     const char *sub_desc = NULL;
     int sub_code;
@@ -518,7 +526,7 @@ void error_wrap_last_sub_f(const char *func, const char *sub, const error_type_s
     assert(sub_type);
     assert(sub_type->error_last);
 
-    sub_code = sub_type->error_last(sub_type, &sub_desc, (void *)sub_ctx);
+    sub_code = sub_type->error_last(sub_type, &sub_desc, sub_ctx_type, (void *)sub_ctx);
     error_wrap_sub_f(func, sub, sub_type, sub_code, sub_desc);
 }
 
@@ -528,7 +536,7 @@ void error_pack_sub_f(const char *func, const error_type_st *type, int code, con
     error_pack_f(func, type, code, desc);
 }
 
-void error_pack_last_sub_f(const char *func, const error_type_st *type, int code, const char *desc, const char *sub, const error_type_st *sub_type, const void *sub_ctx)
+void error_pack_last_sub_f(const char *func, const error_type_st *type, int code, const char *desc, const char *sub, const error_type_st *sub_type, const char *sub_ctx_type, const void *sub_ctx)
 {
     const char *sub_desc = NULL;
     int sub_code;
@@ -536,7 +544,7 @@ void error_pack_last_sub_f(const char *func, const error_type_st *type, int code
     assert(sub_type);
     assert(sub_type->error_last);
 
-    sub_code = sub_type->error_last(sub_type, &sub_desc, (void *)sub_ctx);
+    sub_code = sub_type->error_last(sub_type, &sub_desc, sub_ctx_type, (void *)sub_ctx);
     error_pack_sub_f(func, type, code, desc, sub, sub_type, sub_code, sub_desc);
 }
 
@@ -546,7 +554,7 @@ void error_map_sub_f(const char *func, const error_type_st *type, error_map_cb m
     error_map_f(func, type, map);
 }
 
-void error_map_last_sub_f(const char *func, const error_type_st *type, error_map_cb map, const char *sub, const error_type_st *sub_type, void *sub_ctx)
+void error_map_last_sub_f(const char *func, const error_type_st *type, error_map_cb map, const char *sub, const error_type_st *sub_type, const char *sub_ctx_type, const void *sub_ctx)
 {
     const char *sub_desc = NULL;
     int sub_code;
@@ -554,7 +562,7 @@ void error_map_last_sub_f(const char *func, const error_type_st *type, error_map
     assert(sub_type);
     assert(sub_type->error_last);
 
-    sub_code = sub_type->error_last(sub_type, &sub_desc, (void *)sub_ctx);
+    sub_code = sub_type->error_last(sub_type, &sub_desc, sub_ctx_type, (void *)sub_ctx);
     error_map_sub_f(func, type, map, sub, sub_type, sub_code, sub_desc);
 }
 
@@ -606,7 +614,7 @@ static bool error_errno_is_oom(const error_type_st *type, int code)
 /// Error retrieval callback to retrieve last ERRNO code.
 ///
 /// \implements error_last_cb
-static int error_errno_last(const error_type_st *type, const char **desc, void *ctx)
+static int error_errno_last(const error_type_st *type, const char **desc, const char *ctx_type, void *ctx)
 {
     return errno;
 }
@@ -685,7 +693,7 @@ static bool error_win32_is_oom(const error_type_st *type, int code)
 /// Error retrieval callback to retrieve last WIN32 code.
 ///
 /// \implements error_last_cb
-static int error_win32_last(const error_type_st *type, const char **desc, void *ctx)
+static int error_win32_last(const error_type_st *type, const char **desc, const char *ctx_type, void *ctx)
 {
     return GetLastError();
 }

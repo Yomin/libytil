@@ -124,11 +124,11 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_end(); \
 } while(0)
 
-#define _test_int_success_native(expr, expr_s, type, ctx) do { \
+#define _test_int_success_native(expr, expr_s, type, ctx_type, ctx) do { \
     test_begin(); \
     \
     intmax_t rc = (expr); \
-    int code = error_type_get_last(&ERROR_TYPE_ ## type, NULL, ctx); \
+    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
     \
     if(rc < 0) \
         test_abort("INT SUCCESS test failed: %s (%jd, %s)", \
@@ -137,8 +137,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_end(); \
 } while(0)
 
-#define test_int_success_errno(expr) _test_int_success_native((expr), #expr, ERRNO, NULL)
-#define test_int_success_win32(expr) _test_int_success_native((expr), #expr, WIN32, NULL)
+#define test_int_success_errno(expr) _test_int_success_native((expr), #expr, ERRNO, NULL, NULL)
+#define test_int_success_win32(expr) _test_int_success_native((expr), #expr, WIN32, NULL, NULL)
 
 #define _test_int_maybe(expr, expr_s, err, err_s) do { \
     test_begin(); \
@@ -157,11 +157,11 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define test_int_pick_maybe(expr, pick_err, err) _test_int_maybe(error_pick_int((pick_err), (expr)), #expr, (err), #err)
 #define test_int_lift_maybe(expr, lift_err, err) _test_int_maybe(error_lift_int((lift_err), (expr)), #expr, (err), #err)
 
-#define _test_int_maybe_native(expr, expr_s, err, err_s, type, ctx) do { \
+#define _test_int_maybe_native(expr, expr_s, err, err_s, type, ctx_type, ctx) do { \
     test_begin(); \
     \
     intmax_t rc = (expr); \
-    int code = error_type_get_last(&ERROR_TYPE_ ## type, NULL, ctx); \
+    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
     \
     if(rc < 0 && err != code) \
         test_abort("INT MAYBE test failed: %s (%jd, %s == %s)", \
@@ -170,8 +170,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_end(); \
 } while(0)
 
-#define test_int_maybe_errno(expr, err) _test_int_maybe_native((expr), #expr, (err), #err, ERRNO, NULL)
-#define test_int_maybe_win32(expr, err) _test_int_maybe_native((expr), #expr, (err), #err, WIN32, NULL)
+#define test_int_maybe_errno(expr, err) _test_int_maybe_native((expr), #expr, (err), #err, ERRNO, NULL, NULL)
+#define test_int_maybe_win32(expr, err) _test_int_maybe_native((expr), #expr, (err), #err, WIN32, NULL, NULL)
 
 #define _test_int_error(expr, expr_s, err, err_s) do { \
     test_begin(); \
@@ -191,11 +191,11 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define test_int_pick_error(expr, pick_err, err) _test_int_error(error_pick_int((pick_err), (expr)), #expr, (err), #err)
 #define test_int_lift_error(expr, lift_err, err) _test_int_error(error_lift_int((lift_err), (expr)), #expr, (err), #err)
 
-#define _test_int_error_native(expr, expr_s, err, err_s, type, ctx) do { \
+#define _test_int_error_native(expr, expr_s, err, err_s, type, ctx_type, ctx) do { \
     test_begin(); \
     \
     intmax_t rc = (expr); \
-    int code = error_type_get_last(&ERROR_TYPE_ ## type, NULL, ctx); \
+    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
     \
     if(rc >= 0) \
         test_abort("INT ERROR test failed: %s (%jd)", expr_s, rc); \
@@ -206,8 +206,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_end(); \
 } while(0)
 
-#define test_int_error_errno(expr, err) _test_int_error_native((expr), #expr, (err), #err, ERRNO, NULL)
-#define test_int_error_win32(expr, err) _test_int_error_native((expr), #expr, (err), #err, WIN32, NULL)
+#define test_int_error_errno(expr, err) _test_int_error_native((expr), #expr, (err), #err, ERRNO, NULL, NULL)
+#define test_int_error_win32(expr, err) _test_int_error_native((expr), #expr, (err), #err, WIN32, NULL, NULL)
 
 
 // --- [INT VALUE RC] ---
@@ -225,11 +225,11 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_end(); \
 } while(0)
 
-#define _test_rc_success_native(expr, expr_s, trc, trc_s, type, ctx) do { \
+#define _test_rc_success_native(expr, expr_s, trc, trc_s, type, ctx_type, ctx) do { \
     test_begin(); \
     \
     intmax_t rc, _trc = (trc); \
-    int code = error_type_get_last(&ERROR_TYPE_ ## type, NULL, ctx); \
+    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
     \
     if((rc = (expr)) < 0) \
         test_abort("RC SUCCESS test failed: %s (%jd, %s)", \
@@ -240,8 +240,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_end(); \
 } while(0)
 
-#define test_rc_success_errno(expr, trc) _test_rc_success_native((expr), #expr, (trc), #trc, ERRNO, NULL)
-#define test_rc_success_win32(expr, trc) _test_rc_success_native((expr), #expr, (trc), #trc, WIN32, NULL)
+#define test_rc_success_errno(expr, trc) _test_rc_success_native((expr), #expr, (trc), #trc, ERRNO, NULL, NULL)
+#define test_rc_success_win32(expr, trc) _test_rc_success_native((expr), #expr, (trc), #trc, WIN32, NULL, NULL)
 
 #define _test_rc_error(expr, expr_s, trc, trc_s, err, err_s) do { \
     test_begin(); \
@@ -261,11 +261,11 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define test_rc_pick_error(expr, trc, pick_err, err) _test_rc_error(error_pick_int((pick_err), (expr)), #expr, (trc), #trc, (err), #err)
 #define test_rc_lift_error(expr, trc, lift_err, err) _test_rc_error(error_lift_int((lift_err), (expr)), #expr, (trc), #trc, (err), #err)
 
-#define _test_rc_error_native(expr, expr_s, trc, trc_s, err, err_s, type, ctx) do { \
+#define _test_rc_error_native(expr, expr_s, trc, trc_s, err, err_s, type, ctx_type, ctx) do { \
     test_begin(); \
     \
     intmax_t rc = (expr), _trc = (trc); \
-    int code = error_type_get_last(&ERROR_TYPE_ ## type, NULL, ctx); \
+    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
     \
     if(rc != _trc) \
         test_abort("RC ERROR test failed: %s == %s (%jd == %jd)", expr_s, trc_s, rc, _trc); \
@@ -276,8 +276,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_end(); \
 } while(0)
 
-#define test_rc_error_errno(expr, trc, err) _test_rc_error_native((expr), #expr, (trc), #trc, (err), #err, errno, errno)
-#define test_rc_error_win32(expr, trc, err) _test_rc_error_native((expr), #expr, (trc), #trc, (err), #err, win32, GetLastError())
+#define test_rc_error_errno(expr, trc, err) _test_rc_error_native((expr), #expr, (trc), #trc, (err), #err, ERRNO, NULL, NULL)
+#define test_rc_error_win32(expr, trc, err) _test_rc_error_native((expr), #expr, (trc), #trc, (err), #err, WIN32, NULL, NULL)
 
 
 // --- [PTR RC] ---
@@ -291,11 +291,11 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_end(); \
 } while(0)
 
-#define _test_ptr_success_native(expr, expr_s, type, ctx) do { \
+#define _test_ptr_success_native(expr, expr_s, type, ctx_type, ctx) do { \
     test_begin(); \
     \
     const void *ptr = (expr); \
-    int code = error_type_get_last(&ERROR_TYPE_ ## type, NULL, ctx); \
+    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
     \
     if(!ptr) \
         test_abort("PTR SUCCESS test failed: %s (%s)", \
@@ -304,8 +304,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_end(); \
 } while(0)
 
-#define test_ptr_success_errno(expr) _test_ptr_success_native((expr), #expr, ERRNO, NULL)
-#define test_ptr_success_win32(expr) _test_ptr_success_native((expr), #expr, WIN32, NULL)
+#define test_ptr_success_errno(expr) _test_ptr_success_native((expr), #expr, ERRNO, NULL, NULL)
+#define test_ptr_success_win32(expr) _test_ptr_success_native((expr), #expr, WIN32, NULL, NULL)
 
 #define _test_ptr_maybe(expr, expr_s, err, err_s) do { \
     test_begin(); \
@@ -321,11 +321,11 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define test_ptr_pick_maybe(expr, pick_err, err) _test_ptr_maybe(error_pick_ptr((pick_err), (expr)), #expr, (err), #err)
 #define test_ptr_lift_maybe(expr, lift_err, err) _test_ptr_maybe(error_lift_ptr((lift_err), (expr)), #expr, (err), #err)
 
-#define _test_ptr_maybe_native(expr, expr_s, err, err_s, type, ctx) do { \
+#define _test_ptr_maybe_native(expr, expr_s, err, err_s, type, ctx_type, ctx) do { \
     test_begin(); \
     \
     const void *ptr = (expr); \
-    int code = error_type_get_last(&ERROR_TYPE_ ## type, NULL, ctx); \
+    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
     \
     if(!ptr && err != _value) \
         test_abort("PTR MAYBE test failed: %s (%s == %s)", \
@@ -334,8 +334,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_end(); \
 } while(0)
 
-#define test_ptr_maybe_errno(expr, err) _test_ptr_maybe_native((expr), #expr, (err), #err, ERRNO, NULL)
-#define test_ptr_maybe_win32(expr, err) _test_ptr_maybe_native((expr), #expr, (err), #err, WIN32, NULL)
+#define test_ptr_maybe_errno(expr, err) _test_ptr_maybe_native((expr), #expr, (err), #err, ERRNO, NULL, NULL)
+#define test_ptr_maybe_win32(expr, err) _test_ptr_maybe_native((expr), #expr, (err), #err, WIN32, NULL, NULL)
 
 #define _test_ptr_error(expr, expr_s, err, err_s) do { \
     test_begin(); \
@@ -355,11 +355,11 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define test_ptr_pick_error(expr, pick_err, err) _test_ptr_error(error_pick_ptr((pick_err), (expr)), #expr, (err), #err)
 #define test_ptr_lift_error(expr, lift_err, err) _test_ptr_error(error_lift_ptr((lift_err), (expr)), #expr, (err), #err)
 
-#define _test_ptr_error_native(expr, expr_s, err, err_s, type, ctx) do { \
+#define _test_ptr_error_native(expr, expr_s, err, err_s, type, ctx_type, ctx) do { \
     test_begin(); \
     \
     const void *ptr = (expr); \
-    int code = error_type_get_last(&ERROR_TYPE_ ## type, NULL, ctx); \
+    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
     \
     if(ptr) \
         test_abort("PTR ERROR test failed: %s (%p)", expr_s, ptr); \
@@ -370,8 +370,8 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_end(); \
 } while(0)
 
-#define test_ptr_error_errno(expr, err) _test_ptr_error_native((expr), #expr, (err), #err, ERRNO, NULL)
-#define test_ptr_error_win32(expr, err) _test_ptr_error_native((expr), #expr, (err), #err, WIN32, NULL)
+#define test_ptr_error_errno(expr, err) _test_ptr_error_native((expr), #expr, (err), #err, ERRNO, NULL, NULL)
+#define test_ptr_error_win32(expr, err) _test_ptr_error_native((expr), #expr, (err), #err, WIN32, NULL, NULL)
 
 
 // --- [VOID] ---
