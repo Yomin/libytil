@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
 {
     test_suite_ct suite;
     test_run_ct run;
-    int rc;
+    int rc = -1;
 
     suite = test_suite_new_with_suites("ytil",
         test_suite_con(),
@@ -42,12 +42,16 @@ int main(int argc, char *argv[])
     );
 
     if(!suite)
-        return perror("failed to setup test suites"), -1;
+        return fprintf(stderr, "failed to setup test suites: %s\n", error_desc(0)), -1;
 
     if((run = test_run_new_with_args(argc, argv)))
     {
         rc = test_run_exec(run, suite);
         test_run_free(run);
+    }
+    else
+    {
+        fprintf(stderr, "failed to run test suites: %s\n", error_desc(0));
     }
 
     test_suite_free(suite);

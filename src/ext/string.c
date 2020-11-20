@@ -583,7 +583,7 @@ int memcasecmp(const void *vmem1, const void *vmem2, size_t size)
 char *trim(char *str, const char *reject)
 {
     if(!(str = strcpbrk(str, reject)))
-        return str + strlen(str);
+        return str[0] = '\0', str;
     
     return rtrim(str, reject);
 }

@@ -22,8 +22,6 @@
 
 /// \file
 
-#define _GNU_SOURCE
-
 #include <ytil/con/vec.h>
 #include <ytil/def.h>
 #include <ytil/magic.h>

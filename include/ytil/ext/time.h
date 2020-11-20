@@ -32,6 +32,12 @@ typedef struct timespec timespec_st;
 typedef struct timeval  timeval_st;
 
 
+#ifdef _WIN32
+    #define timegm      _mkgmtime
+    #define timelocal   mktime
+#endif
+
+
 // format date into static buffer
 char *time_isodate(const tm_st *tm);
 // format time into static buffer

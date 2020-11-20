@@ -725,8 +725,8 @@ static int test_run_worker(test_run_ct run, test_case_const_ct tcase)
         
         if((null = open("/dev/null", O_RDWR)) >= 0)
         {
-            dup(null);
-            dup(null);
+            UNUSED_RESULT(dup(null));
+            UNUSED_RESULT(dup(null));
         }
     }
     else

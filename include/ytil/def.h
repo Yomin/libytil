@@ -86,6 +86,10 @@
 #define UNUSED(x) \
     (void)(x)
 
+// suppress compiler warning for unused results
+#define UNUSED_RESULT(x) \
+    __extension__({ if(x) {}; })
+
 // return if condition true
 #define return_if_pass(condition) do { \
     if((condition)) \
@@ -133,6 +137,10 @@
     error_set((error)); \
     return (value); \
 } while(0)
+
+// fallthrough statement attribute
+#define fallthrough \
+    __attribute__((fallthrough))
 
 
 #ifdef NDEBUG
