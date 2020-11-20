@@ -52,7 +52,7 @@ static void _test_msg_v(void *vctx, const char *file, size_t line, test_msg_id t
     if(backtrace)
         for(e=0; e < error_depth(); e++)
         {
-            if(error_stack_get_type(e) == &ERROR_TYPE_GENERIC)
+            if(error_stack_get_type(e) == ERROR_TYPE(GENERIC))
                 switch(error_stack_get_code(e))
                 {
                 case E_GENERIC_INVALID:

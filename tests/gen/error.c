@@ -70,7 +70,7 @@ TEST_CASE_ABORT(error_type_name_invalid_type)
 
 TEST_CASE(error_type_name)
 {
-    test_str_eq(error_type_name(&ERROR_TYPE_TEST_ERROR), "TEST_ERROR");
+    test_str_eq(error_type_name(ERROR_TYPE(TEST_ERROR)), "TEST_ERROR");
 }
 
 TEST_CASE_ABORT(error_type_get_name_invalid_type)
@@ -81,7 +81,7 @@ TEST_CASE_ABORT(error_type_get_name_invalid_type)
 TEST_CASE(error_type_get_name)
 {
     test_str_eq(
-        error_type_get_name(&ERROR_TYPE_TEST_ERROR, E_TEST_ERROR_1),
+        error_type_get_name(ERROR_TYPE(TEST_ERROR), E_TEST_ERROR_1),
         "E_TEST_ERROR_1");
 }
 
@@ -93,7 +93,7 @@ TEST_CASE_ABORT(error_type_get_desc_invalid_type)
 TEST_CASE(error_type_get_desc)
 {
     test_str_eq(
-        error_type_get_desc(&ERROR_TYPE_TEST_ERROR, E_TEST_ERROR_1),
+        error_type_get_desc(ERROR_TYPE(TEST_ERROR), E_TEST_ERROR_1),
         "Test error 1.");
 }
 
@@ -104,13 +104,13 @@ TEST_CASE_ABORT(error_type_is_oom_invalid_type)
 
 TEST_CASE(error_type_is_oom_unsupported)
 {
-    test_false(error_type_is_oom(&ERROR_TYPE_TEST_ERROR, E_TEST_ERROR_1));
+    test_false(error_type_is_oom(ERROR_TYPE(TEST_ERROR), E_TEST_ERROR_1));
 }
 
 TEST_CASE(error_type_is_oom)
 {
-    test_true(error_type_is_oom(&ERROR_TYPE_ERRNO, ENOMEM));
-    test_false(error_type_is_oom(&ERROR_TYPE_ERRNO, EINVAL));
+    test_true(error_type_is_oom(ERROR_TYPE(ERRNO), ENOMEM));
+    test_false(error_type_is_oom(ERROR_TYPE(ERRNO), EINVAL));
 }
 
 TEST_CASE_ABORT(error_type_get_last_invalid_type)
@@ -120,13 +120,13 @@ TEST_CASE_ABORT(error_type_get_last_invalid_type)
 
 TEST_CASE_ABORT(error_type_get_last_unsupported)
 {
-    error_type_get_last(&ERROR_TYPE_TEST_ERROR, NULL);
+    error_type_get_last(ERROR_TYPE(TEST_ERROR), NULL);
 }
 
 TEST_CASE(error_type_get_last)
 {
     errno = E2BIG;
-    test_int_eq(error_type_get_last(&ERROR_TYPE_ERRNO, NULL), E2BIG);
+    test_int_eq(error_type_get_last(ERROR_TYPE(ERRNO), NULL), E2BIG);
 }
 
 TEST_CASE_ABORT(error_type_get_last_x_invalid_type)
@@ -136,26 +136,26 @@ TEST_CASE_ABORT(error_type_get_last_x_invalid_type)
 
 TEST_CASE_ABORT(error_type_get_last_x_unsupported)
 {
-    error_type_get_last_x(&ERROR_TYPE_TEST_ERROR, NULL, NULL, NULL);
+    error_type_get_last_x(ERROR_TYPE(TEST_ERROR), NULL, NULL, NULL);
 }
 
 TEST_CASE(error_type_get_last_x)
 {
     errno = E2BIG;
-    test_int_eq(error_type_get_last_x(&ERROR_TYPE_ERRNO, NULL, NULL, NULL), E2BIG);
+    test_int_eq(error_type_get_last_x(ERROR_TYPE(ERRNO), NULL, NULL, NULL), E2BIG);
 }
 
 TEST_CASE(error_type_get_last_x_override_desc)
 {
     const char *desc = NULL;
 
-    test_int_eq(error_type_get_last_x(&ERROR_TYPE_TEST_ERROR_OVERRIDE, &desc, NULL, "override"), E_TEST_ERROR_OV1);
+    test_int_eq(error_type_get_last_x(ERROR_TYPE(TEST_ERROR_OVERRIDE), &desc, NULL, "override"), E_TEST_ERROR_OV1);
     test_str_eq(desc, "override");
 }
 
 TEST_CASE(error_type_get_last_x_override_ctx)
 {
-    test_int_eq(error_type_get_last_x(&ERROR_TYPE_TEST_ERROR_OVERRIDE, NULL, "override", NULL), E_TEST_ERROR_OV2);
+    test_int_eq(error_type_get_last_x(ERROR_TYPE(TEST_ERROR_OVERRIDE), NULL, "override", NULL), E_TEST_ERROR_OV2);
 }
 
 TEST_CASE_ABORT(error_stack_get_func_oob)
@@ -179,7 +179,7 @@ TEST_CASE_ABORT(error_stack_get_type_oob)
 TEST_CASE(error_stack_get_type)
 {
     test_void(error_set_s(TEST_ERROR, E_TEST_ERROR_1));
-    test_ptr_eq(error_stack_get_type(0), &ERROR_TYPE_TEST_ERROR);
+    test_ptr_eq(error_stack_get_type(0), ERROR_TYPE(TEST_ERROR));
 }
 
 TEST_CASE_ABORT(error_stack_get_code_oob)
@@ -251,7 +251,7 @@ TEST_CASE_ABORT(error_type_oob)
 TEST_CASE(error_type)
 {
     test_void(error_set_s(TEST_ERROR, E_TEST_ERROR_1));
-    test_ptr_eq(error_type(0), &ERROR_TYPE_TEST_ERROR);
+    test_ptr_eq(error_type(0), ERROR_TYPE(TEST_ERROR));
 }
 
 TEST_CASE_ABORT(error_code_oob)
@@ -1002,12 +1002,12 @@ TEST_CASE(error_wrap_last_sub_override_ctx)
 TEST_CASE_ABORT(error_pack_sub_invalid_type1)
 {
     error_pack_sub_f(__func__, NULL, E_TEST_ERROR_1, NULL,
-        "buzz", &ERROR_TYPE_ERRNO, EPERM, NULL);
+        "buzz", ERROR_TYPE(ERRNO), EPERM, NULL);
 }
 
 TEST_CASE_ABORT(error_pack_sub_invalid_type2)
 {
-    error_pack_sub_f(__func__, &ERROR_TYPE_TEST_ERROR, E_TEST_ERROR_1, NULL,
+    error_pack_sub_f(__func__, ERROR_TYPE(TEST_ERROR), E_TEST_ERROR_1, NULL,
         "buzz", NULL, EPERM, NULL);
 }
 
@@ -1044,12 +1044,12 @@ TEST_CASE(error_pack_sub_oom)
 TEST_CASE_ABORT(error_pack_last_sub_invalid_type1)
 {
     error_pack_last_sub_f(__func__, NULL, E_TEST_ERROR_2, NULL,
-        "bazz", &ERROR_TYPE_ERRNO, NULL, NULL);
+        "bazz", ERROR_TYPE(ERRNO), NULL, NULL);
 }
 
 TEST_CASE_ABORT(error_pack_last_sub_invalid_type2)
 {
-    error_pack_last_sub_f(__func__, &ERROR_TYPE_TEST_ERROR, E_TEST_ERROR_2, NULL,
+    error_pack_last_sub_f(__func__, ERROR_TYPE(TEST_ERROR), E_TEST_ERROR_2, NULL,
         "bazz", NULL, NULL, NULL);
 }
 
@@ -1095,12 +1095,12 @@ TEST_CASE(error_pack_last_sub_oom)
 TEST_CASE_ABORT(error_map_sub_invalid_type1)
 {
     error_map_sub_f(__func__, NULL, _test_error_map,
-        "buff", &ERROR_TYPE_ERRNO, EISDIR, NULL);
+        "buff", ERROR_TYPE(ERRNO), EISDIR, NULL);
 }
 
 TEST_CASE_ABORT(error_map_sub_invalid_type2)
 {
-    error_map_sub_f(__func__, &ERROR_TYPE_TEST_ERROR, _test_error_map,
+    error_map_sub_f(__func__, ERROR_TYPE(TEST_ERROR), _test_error_map,
         "buff", NULL, EISDIR, NULL);
 }
 
@@ -1147,12 +1147,12 @@ TEST_CASE(error_map_sub_oom)
 
 TEST_CASE_ABORT(error_map_last_sub_invalid_type1)
 {
-    error_map_last_sub_f(__func__, NULL, _test_error_map, "bazz", &ERROR_TYPE_ERRNO, NULL, NULL);
+    error_map_last_sub_f(__func__, NULL, _test_error_map, "bazz", ERROR_TYPE(ERRNO), NULL, NULL);
 }
 
 TEST_CASE_ABORT(error_map_last_sub_invalid_type2)
 {
-    error_map_last_sub_f(__func__, &ERROR_TYPE_TEST_ERROR, _test_error_map, "bazz", NULL, NULL, NULL);
+    error_map_last_sub_f(__func__, ERROR_TYPE(TEST_ERROR), _test_error_map, "bazz", NULL, NULL, NULL);
 }
 
 TEST_CASE(error_map_last_sub)
@@ -1206,12 +1206,53 @@ TEST_CASE(error_map_last_sub_oom)
     test_str_eq(error_stack_get_func(1), __func__);
 }
 
+TEST_CASE_ABORT(error_map_pre_sub_invalid_type)
+{
+    error_map_pre_sub_f(__func__, NULL, _test_error_map, "bazz");
+}
+
+TEST_CASE(error_map_pre_sub)
+{
+    test_void(error_set_s(ERRNO, EACCES));
+    test_void(error_map_pre_sub(_test_error_map, bazz));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, EACCES);
+    test_stack_error(1, TEST_ERROR, E_TEST_ERROR_3);
+    test_str_eq(error_stack_get_func(0), "bazz");
+    test_str_eq(error_stack_get_func(1), __func__);
+}
+
+TEST_CASE(error_map_pre_sub_no_match)
+{
+    test_void(error_set_s(ERRNO, ENOSYS));
+    test_void(error_map_pre_sub(_test_error_map, buzz));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, ENOSYS);
+    test_stack_error(1, GENERIC, E_GENERIC_WRAP);
+    test_str_eq(error_stack_get_func(0), "buzz");
+    test_str_eq(error_stack_get_func(1), __func__);
+}
+
+TEST_CASE(error_map_pre_sub_oom)
+{
+    test_void(error_set_s(ERRNO, ENOMEM));
+    test_void(error_map_pre_sub(_test_error_map, bizz));
+
+    test_uint_eq(error_depth(), 2);
+    test_stack_error(0, ERRNO, ENOMEM);
+    test_stack_error(1, GENERIC, E_GENERIC_OOM);
+    test_str_eq(error_stack_get_func(0), "bizz");
+    test_str_eq(error_stack_get_func(1), __func__);
+}
+
 TEST_CASE(error_info_generic)
 {
     test_void(error_set_s(GENERIC, E_GENERIC_SYSTEM));
 
     test_uint_eq(error_depth(), 1);
-    test_ptr_eq(error_stack_get_type(0), &ERROR_TYPE_GENERIC);
+    test_ptr_eq(error_stack_get_type(0), ERROR_TYPE(GENERIC));
     test_int_eq(error_stack_get_code(0), E_GENERIC_SYSTEM);
     test_str_eq(error_stack_get_name(0), "E_GENERIC_SYSTEM");
     test_str_eq(error_stack_get_desc(0), "System error.");
@@ -1222,7 +1263,7 @@ TEST_CASE(error_info_errno)
     test_void(error_set_s(ERRNO, ENOMEM));
 
     test_uint_eq(error_depth(), 1);
-    test_ptr_eq(error_stack_get_type(0), &ERROR_TYPE_ERRNO);
+    test_ptr_eq(error_stack_get_type(0), ERROR_TYPE(ERRNO));
     test_int_eq(error_stack_get_code(0), ENOMEM);
     test_str_eq(error_stack_get_name(0), strerrno(ENOMEM));
     test_str_eq(error_stack_get_desc(0), strerror(ENOMEM));
@@ -1374,7 +1415,7 @@ TEST_CASE(error_info_win32)
     test_ptr_success(msg = _test_error_format_win32(ERROR_NOT_ENOUGH_MEMORY));
 
     test_uint_eq(error_depth(), 1);
-    test_ptr_eq(error_stack_get_type(0), &ERROR_TYPE_WIN32);
+    test_ptr_eq(error_stack_get_type(0), ERROR_TYPE(WIN32));
     test_int_eq(error_stack_get_code(0), ERROR_NOT_ENOUGH_MEMORY);
     test_str_eq(error_stack_get_name(0), "WIN32_00000008");
     test_str_eq(error_stack_get_desc(0), msg);
@@ -1552,7 +1593,7 @@ TEST_CASE(error_info_hresult)
     test_void(error_set_s(HRESULT, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
 
     test_uint_eq(error_depth(), 1);
-    test_ptr_eq(error_stack_get_type(0), &ERROR_TYPE_HRESULT);
+    test_ptr_eq(error_stack_get_type(0), ERROR_TYPE(HRESULT));
     test_int_eq(error_stack_get_code(0), HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
     test_str_eq(error_stack_get_name(0), "HRESULT_80070002");
     // test_str_eq(error_stack_get_desc(0), );
@@ -1612,7 +1653,7 @@ TEST_CASE(error_info_ntstatus)
     test_void(error_set_s(NTSTATUS, STATUS_TIMEOUT));
 
     test_uint_eq(error_depth(), 1);
-    test_ptr_eq(error_stack_get_type(0), &ERROR_TYPE_NTSTATUS);
+    test_ptr_eq(error_stack_get_type(0), ERROR_TYPE(NTSTATUS));
     test_int_eq(error_stack_get_code(0), STATUS_TIMEOUT);
     test_str_eq(error_stack_get_name(0), "NTSTATUS_00000102");
     // test_str_eq(error_stack_get_desc(0), );
@@ -1831,6 +1872,11 @@ test_suite_ct test_suite_gen_error(void)
         test_case_new(error_map_last_sub_override_ctx),
         test_case_new(error_map_last_sub_no_match),
         test_case_new(error_map_last_sub_oom),
+
+        test_case_new(error_map_pre_sub_invalid_type),
+        test_case_new(error_map_pre_sub),
+        test_case_new(error_map_pre_sub_no_match),
+        test_case_new(error_map_pre_sub_oom),
 
         test_case_new(error_info_generic),
 

@@ -87,12 +87,12 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define test_error(depth, type, error) do { \
     test_begin(); \
     \
-    if(error_type(depth) != &ERROR_TYPE_ ## type) \
+    if(error_type(depth) != ERROR_TYPE(type)) \
         test_abort_backtrace("ERROR type test failed: %s == %s", \
-            error_type_name(error_type(depth)), error_type_name(&ERROR_TYPE_ ## type)); \
+            error_type_name(error_type(depth)), error_type_name(ERROR_TYPE(type))); \
     else if(error_code(depth) != (error)) \
         test_abort_backtrace("%s test failed: %s == %s", \
-            error_type_name(&ERROR_TYPE_ ## type), error_name(depth), #error); \
+            error_type_name(ERROR_TYPE(type)), error_name(depth), #error); \
     \
     test_end(); \
 } while(0)
@@ -100,12 +100,12 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 #define test_stack_error(level, type, error) do { \
     test_begin(); \
     \
-    if(error_stack_get_type(level) != &ERROR_TYPE_ ## type) \
+    if(error_stack_get_type(level) != ERROR_TYPE(type)) \
         test_abort_backtrace("ERROR type test failed: %s == %s", \
-            error_type_name(error_stack_get_type(level)), error_type_name(&ERROR_TYPE_ ## type)); \
+            error_type_name(error_stack_get_type(level)), error_type_name(ERROR_TYPE(type))); \
     else if(error_stack_get_code(level) != (error)) \
         test_abort_backtrace("%s test failed: %s == %s", \
-            error_type_name(&ERROR_TYPE_ ## type), error_stack_get_name(level), #error); \
+            error_type_name(ERROR_TYPE(type)), error_stack_get_name(level), #error); \
     \
     test_end(); \
 } while(0)
@@ -128,11 +128,11 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     intmax_t rc = (expr); \
-    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
+    int code = error_type_get_last_x(ERROR_TYPE(type), NULL, (ctx_type), (ctx)); \
     \
     if(rc < 0) \
         test_abort("INT SUCCESS test failed: %s (%jd, %s)", \
-            expr_s, rc, error_type_get_name(&ERROR_TYPE_ ## type, code)); \
+            expr_s, rc, error_type_get_name(ERROR_TYPE(type), code)); \
     \
     test_end(); \
 } while(0)
@@ -161,11 +161,11 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     intmax_t rc = (expr); \
-    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
+    int code = error_type_get_last_x(ERROR_TYPE(type), NULL, (ctx_type), (ctx)); \
     \
     if(rc < 0 && err != code) \
         test_abort("INT MAYBE test failed: %s (%jd, %s == %s)", \
-            expr_s, rc, error_type_get_name(&ERROR_TYPE_ ## type, code), err_s); \
+            expr_s, rc, error_type_get_name(ERROR_TYPE(type), code), err_s); \
     \
     test_end(); \
 } while(0)
@@ -195,13 +195,13 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     intmax_t rc = (expr); \
-    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
+    int code = error_type_get_last_x(ERROR_TYPE(type), NULL, (ctx_type), (ctx)); \
     \
     if(rc >= 0) \
         test_abort("INT ERROR test failed: %s (%jd)", expr_s, rc); \
     else if(err != code) \
         test_abort("INT ERROR test failed: %s (%s == %s)", \
-            expr_s, error_type_get_name(&ERROR_TYPE_ ## type, code), err_s); \
+            expr_s, error_type_get_name(ERROR_TYPE(type), code), err_s); \
     \
     test_end(); \
 } while(0)
@@ -229,11 +229,11 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     intmax_t rc, _trc = (trc); \
-    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
+    int code = error_type_get_last_x(ERROR_TYPE(type), NULL, (ctx_type), (ctx)); \
     \
     if((rc = (expr)) < 0) \
         test_abort("RC SUCCESS test failed: %s (%jd, %s)", \
-            expr_s, rc, error_type_get_name(&ERROR_TYPE_ ## type, code)); \
+            expr_s, rc, error_type_get_name(ERROR_TYPE(type), code)); \
     else if(rc != _trc) \
         test_abort("RC SUCCESS test failed: %s == %s (%jd == %jd)", expr_s, trc_s, rc, _trc); \
     \
@@ -265,13 +265,13 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     intmax_t rc = (expr), _trc = (trc); \
-    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
+    int code = error_type_get_last_x(ERROR_TYPE(type), NULL, (ctx_type), (ctx)); \
     \
     if(rc != _trc) \
         test_abort("RC ERROR test failed: %s == %s (%jd == %jd)", expr_s, trc_s, rc, _trc); \
     else if(err != code) \
         test_abort("RC ERROR test failed: %s (%s == %s)", \
-            expr_s, error_type_get_name(&ERROR_TYPE_ ## type, code), err_s); \
+            expr_s, error_type_get_name(ERROR_TYPE(type), code), err_s); \
     \
     test_end(); \
 } while(0)
@@ -295,11 +295,11 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     const void *ptr = (expr); \
-    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
+    int code = error_type_get_last_x(ERROR_TYPE(type), NULL, (ctx_type), (ctx)); \
     \
     if(!ptr) \
         test_abort("PTR SUCCESS test failed: %s (%s)", \
-            expr_s, error_type_get_name(&ERROR_TYPE_ ## type, code)); \
+            expr_s, error_type_get_name(ERROR_TYPE(type), code)); \
     \
     test_end(); \
 } while(0)
@@ -325,11 +325,11 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     const void *ptr = (expr); \
-    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
+    int code = error_type_get_last_x(ERROR_TYPE(type), NULL, (ctx_type), (ctx)); \
     \
     if(!ptr && err != _value) \
         test_abort("PTR MAYBE test failed: %s (%s == %s)", \
-            expr_s, error_type_get_name(&ERROR_TYPE_ ## type, code), err_s); \
+            expr_s, error_type_get_name(ERROR_TYPE(type), code), err_s); \
     \
     test_end(); \
 } while(0)
@@ -359,13 +359,13 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
     test_begin(); \
     \
     const void *ptr = (expr); \
-    int code = error_type_get_last_x(&ERROR_TYPE_ ## type, NULL, (ctx_type), (ctx)); \
+    int code = error_type_get_last_x(ERROR_TYPE(type), NULL, (ctx_type), (ctx)); \
     \
     if(ptr) \
         test_abort("PTR ERROR test failed: %s (%p)", expr_s, ptr); \
     else if(err != code) \
         test_abort("PTR ERROR test failed: %s (%s == %s)", \
-            expr_s, error_type_get_name(&ERROR_TYPE_ ## type, code), err_s); \
+            expr_s, error_type_get_name(ERROR_TYPE(type), code), err_s); \
     \
     test_end(); \
 } while(0)

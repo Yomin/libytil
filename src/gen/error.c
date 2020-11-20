@@ -199,7 +199,7 @@ static ssize_t error_next_level(ssize_t level)
     {
         entry = &errors.stack[level];
 
-        if(entry->type != &ERROR_TYPE_GENERIC)
+        if(entry->type != ERROR_TYPE(GENERIC))
             return level;
 
         switch(entry->code)
@@ -418,34 +418,34 @@ void error_pass_f(const char *func)
 {
     assert(errors.size);
 
-    error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_PASS, NULL);
+    error_push_f(func, ERROR_TYPE(GENERIC), E_GENERIC_PASS, NULL);
 }
 
 void error_skip_f(const char *func)
 {
     assert(errors.size);
 
-    error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_SKIP, NULL);
+    error_push_f(func, ERROR_TYPE(GENERIC), E_GENERIC_SKIP, NULL);
 }
 
 void error_wrap_f(const char *func)
 {
-    if(error_type(0) == &ERROR_TYPE_GENERIC && error_code(0) <= E_GENERIC_SYSTEM)
+    if(error_type(0) == ERROR_TYPE(GENERIC) && error_code(0) <= E_GENERIC_SYSTEM)
         error_pass_f(func);
     else if(error_is_oom(0))
-        error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_OOM, NULL);
+        error_push_f(func, ERROR_TYPE(GENERIC), E_GENERIC_OOM, NULL);
     else
-        error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_WRAP, NULL);
+        error_push_f(func, ERROR_TYPE(GENERIC), E_GENERIC_WRAP, NULL);
 }
 
 void error_pack_f(const char *func, const error_type_st *type, int code, const char *desc)
 {
     assert(type);
 
-    if(error_type(0) == &ERROR_TYPE_GENERIC && error_code(0) <= E_GENERIC_SYSTEM)
+    if(error_type(0) == ERROR_TYPE(GENERIC) && error_code(0) <= E_GENERIC_SYSTEM)
         error_pass_f(func);
     else if(error_is_oom(0))
-        error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_OOM, NULL);
+        error_push_f(func, ERROR_TYPE(GENERIC), E_GENERIC_OOM, NULL);
     else
         error_push_f(func, type, code, desc);
 }
@@ -468,12 +468,12 @@ void error_map_f(const char *func, const error_type_st *type, error_map_cb map)
 
     assert(type);
 
-    if(error_type(0) == &ERROR_TYPE_GENERIC && error_code(0) <= E_GENERIC_SYSTEM)
+    if(error_type(0) == ERROR_TYPE(GENERIC) && error_code(0) <= E_GENERIC_SYSTEM)
         error_pass_f(func);
     else if(error_is_oom(0))
-        error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_OOM, NULL);
+        error_push_f(func, ERROR_TYPE(GENERIC), E_GENERIC_OOM, NULL);
     else if((code = map(error_type(0), error_code(0))) < 0)
-        error_push_f(func, &ERROR_TYPE_GENERIC, E_GENERIC_WRAP, NULL);
+        error_push_f(func, ERROR_TYPE(GENERIC), E_GENERIC_WRAP, NULL);
     else
         error_push_f(func, type, code, NULL);
 }
@@ -566,6 +566,11 @@ void error_map_last_sub_f(const char *func, const error_type_st *type, error_map
     error_map_sub_f(func, type, map, sub, sub_type, sub_code, sub_desc);
 }
 
+void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_cb map, const char *sub)
+{
+    error_get_entry(0)->func = sub;
+    error_map_f(func, type, map);
+}
 
 /// Define generic error info tuple.
 ///

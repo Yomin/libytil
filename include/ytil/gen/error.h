@@ -175,6 +175,12 @@ typedef struct error_type
 #define ERROR_DECLARE(_name) \
     extern const error_type_st ERROR_TYPE_ ## _name
 
+/// Get error type.
+///
+/// \param _name    type name
+#define ERROR_TYPE(_name) \
+    &ERROR_TYPE_ ## _name
+
 
 /// Get error type name.
 ///
@@ -344,21 +350,21 @@ void error_push_f(const char *func, const error_type_st *type, int code, const c
 ///
 /// \param code     error code
 #define error_push(code) \
-    error_push_f(__func__, &ERROR_TYPE_DEFAULT, (code), NULL)
+    error_push_f(__func__, ERROR_TYPE(DEFAULT), (code), NULL)
 
 /// Push error of default type with override description.
 ///
 /// \param code     error code
 /// \param desc     error description override
 #define error_push_d(code, desc) \
-    error_push_f(__func__, &ERROR_TYPE_DEFAULT, (code), (desc))
+    error_push_f(__func__, ERROR_TYPE(DEFAULT), (code), (desc))
 
 /// Push error of specific type.
 ///
 /// \param type     error type name
 /// \param code     error code
 #define error_push_s(type, code) \
-    error_push_f(__func__, &ERROR_TYPE_ ## type, (code), NULL)
+    error_push_f(__func__, ERROR_TYPE(type), (code), NULL)
 
 /// Push error of specific type with override description.
 ///
@@ -366,7 +372,7 @@ void error_push_f(const char *func, const error_type_st *type, int code, const c
 /// \param code     error code
 /// \param desc     error description override
 #define error_push_sd(type, code, desc) \
-    error_push_f(__func__, &ERROR_TYPE_ ## type, (code), (desc))
+    error_push_f(__func__, ERROR_TYPE(type), (code), (desc))
 
 /// Push last error.
 ///
@@ -380,20 +386,20 @@ void error_push_last_f(const char *func, const error_type_st *type, const char *
 ///
 ///
 #define error_push_last() \
-    error_push_last_f(__func__, &ERROR_TYPE_DEFAULT, NULL, NULL)
+    error_push_last_f(__func__, ERROR_TYPE(DEFAULT), NULL, NULL)
 
 /// Push last error of default type from context.
 ///
 /// \param ctx_type error context type string
 /// \param ctx      error context
 #define error_push_last_x(ctx_type, ctx) \
-    error_push_last_f(__func__, &ERROR_TYPE_DEFAULT, (ctx_type), (ctx))
+    error_push_last_f(__func__, ERROR_TYPE(DEFAULT), (ctx_type), (ctx))
 
 /// Push last error of specific type.
 ///
 /// \param type     error type name
 #define error_push_last_s(type) \
-    error_push_last_f(__func__, &ERROR_TYPE_ ## type, NULL, NULL)
+    error_push_last_f(__func__, ERROR_TYPE(type), NULL, NULL)
 
 /// Push last error of specific type from context.
 ///
@@ -401,7 +407,7 @@ void error_push_last_f(const char *func, const error_type_st *type, const char *
 /// \param ctx_type error context type string
 /// \param ctx      error context
 #define error_push_last_sx(type, ctx_type, ctx) \
-    error_push_last_f(__func__, &ERROR_TYPE_ ## type, (ctx_type), (ctx))
+    error_push_last_f(__func__, ERROR_TYPE(type), (ctx_type), (ctx))
 
 /// Clear stack and push error.
 ///
@@ -415,21 +421,21 @@ void error_set_f(const char *func, const error_type_st *type, int code, const ch
 ///
 /// \param code     error code
 #define error_set(code) \
-    error_set_f(__func__, &ERROR_TYPE_DEFAULT, (code), NULL)
+    error_set_f(__func__, ERROR_TYPE(DEFAULT), (code), NULL)
 
 /// Clear stack and push error of default type with override description.
 ///
 /// \param code     error code
 /// \param desc     error description override
 #define error_set_d(code, desc) \
-    error_set_f(__func__, &ERROR_TYPE_DEFAULT, (code), (desc))
+    error_set_f(__func__, ERROR_TYPE(DEFAULT), (code), (desc))
 
 /// Clear stack and push error of specific type.
 ///
 /// \param type     error type name
 /// \param code     error code
 #define error_set_s(type, code) \
-    error_set_f(__func__, &ERROR_TYPE_ ## type, (code), NULL)
+    error_set_f(__func__, ERROR_TYPE(type), (code), NULL)
 
 /// Clear stack and push error of specific type with override description.
 ///
@@ -437,7 +443,7 @@ void error_set_f(const char *func, const error_type_st *type, int code, const ch
 /// \param code     error code
 /// \param desc     error description override
 #define error_set_sd(type, code, desc) \
-    error_set_f(__func__, &ERROR_TYPE_ ## type, (code), (desc))
+    error_set_f(__func__, ERROR_TYPE(type), (code), (desc))
 
 /// Clear stack and push last error.
 ///
@@ -451,20 +457,20 @@ void error_set_last_f(const char *func, const error_type_st *type, const char *c
 ///
 ///
 #define error_set_last() \
-    error_set_last_f(__func__, &ERROR_TYPE_DEFAULT, NULL, NULL)
+    error_set_last_f(__func__, ERROR_TYPE(DEFAULT), NULL, NULL)
 
 /// Clear stack and push last error of default type from context.
 ///
 /// \param ctx_type error context type string
 /// \param ctx      error context
 #define error_set_last_x(ctx_type, ctx) \
-    error_set_last_f(__func__, &ERROR_TYPE_DEFAULT, (ctx_type), (ctx))
+    error_set_last_f(__func__, ERROR_TYPE(DEFAULT), (ctx_type), (ctx))
 
 /// Clear stack and push last error of specific type.
 ///
 /// \param type     error type name
 #define error_set_last_s(type) \
-    error_set_last_f(__func__, &ERROR_TYPE_ ## type, NULL, NULL)
+    error_set_last_f(__func__, ERROR_TYPE(type), NULL, NULL)
 
 /// Clear stack and push last error of specific type from context.
 ///
@@ -472,7 +478,7 @@ void error_set_last_f(const char *func, const error_type_st *type, const char *c
 /// \param ctx_type error context type string
 /// \param ctx      error context
 #define error_set_last_sx(type, ctx_type, ctx) \
-    error_set_last_f(__func__, &ERROR_TYPE_ ## type, (ctx_type), (ctx))
+    error_set_last_f(__func__, ERROR_TYPE(type), (ctx_type), (ctx))
 
 /// Pass error.
 ///
@@ -539,7 +545,7 @@ void error_pack_f(const char *func, const error_type_st *type, int code, const c
 ///
 /// \param code     error code
 #define error_pack(code) \
-    error_pack_f(__func__, &ERROR_TYPE_DEFAULT, (code), NULL)
+    error_pack_f(__func__, ERROR_TYPE(DEFAULT), (code), NULL)
 
 /// Pack error of default type with override description.
 ///
@@ -550,7 +556,7 @@ void error_pack_f(const char *func, const error_type_st *type, int code, const c
 /// \param code     error code
 /// \param desc     error description override
 #define error_pack_d(code, desc) \
-    error_pack_f(__func__, &ERROR_TYPE_DEFAULT, (code), (desc))
+    error_pack_f(__func__, ERROR_TYPE(DEFAULT), (code), (desc))
 
 /// Pack error of specific type.
 ///
@@ -561,7 +567,7 @@ void error_pack_f(const char *func, const error_type_st *type, int code, const c
 /// \param type     error type name
 /// \param code     error code
 #define error_pack_s(type, code) \
-    error_pack_f(__func__, &ERROR_TYPE_ ## type, (code), NULL)
+    error_pack_f(__func__, ERROR_TYPE(type), (code), NULL)
 
 /// Pack error of specific type with override description.
 ///
@@ -573,7 +579,7 @@ void error_pack_f(const char *func, const error_type_st *type, int code, const c
 /// \param code     error code
 /// \param desc     error description override
 #define error_pack_sd(type, code, desc) \
-    error_pack_f(__func__, &ERROR_TYPE_ ## type, (code), (desc))
+    error_pack_f(__func__, ERROR_TYPE(type), (code), (desc))
 
 /// Pack last error.
 ///
@@ -593,7 +599,7 @@ void error_pack_last_f(const char *func, const error_type_st *type, const char *
 /// Push generic OOM error if last error is a type specific OOM error.
 /// Else push given error.
 #define error_pack_last() \
-    error_pack_last_f(__func__, &ERROR_TYPE_DEFAULT, NULL, NULL)
+    error_pack_last_f(__func__, ERROR_TYPE(DEFAULT), NULL, NULL)
 
 /// Pack last error of default type from context.
 ///
@@ -604,7 +610,7 @@ void error_pack_last_f(const char *func, const error_type_st *type, const char *
 /// \param ctx_type error context type string
 /// \param ctx      error context
 #define error_pack_last_x(ctx_type, ctx) \
-    error_pack_last_f(__func__, &ERROR_TYPE_DEFAULT, (ctx_type), (ctx))
+    error_pack_last_f(__func__, ERROR_TYPE(DEFAULT), (ctx_type), (ctx))
 
 /// Pack last error of specific type.
 ///
@@ -614,7 +620,7 @@ void error_pack_last_f(const char *func, const error_type_st *type, const char *
 ///
 /// \param type     error type name
 #define error_pack_last_s(type) \
-    error_pack_last_f(__func__, &ERROR_TYPE_ ## type, NULL, NULL)
+    error_pack_last_f(__func__, ERROR_TYPE(type), NULL, NULL)
 
 /// Pack last error of specific type from context.
 ///
@@ -626,7 +632,7 @@ void error_pack_last_f(const char *func, const error_type_st *type, const char *
 /// \param ctx_type error context type string
 /// \param ctx      error context
 #define error_pack_last_sx(type, ctx_type, ctx) \
-    error_pack_last_f(__func__, &ERROR_TYPE_ ## type, (ctx_type), (ctx))
+    error_pack_last_f(__func__, ERROR_TYPE(type), (ctx_type), (ctx))
 
 /// Map error.
 ///
@@ -649,7 +655,7 @@ void error_map_f(const char *func, const error_type_st *type, error_map_cb map);
 ///
 /// \param map      error map callback
 #define error_map(map) \
-    error_map_f(__func__, &ERROR_TYPE_DEFAULT, map)
+    error_map_f(__func__, ERROR_TYPE(DEFAULT), map)
 
 /// Map error to error of specific type.
 ///
@@ -661,7 +667,7 @@ void error_map_f(const char *func, const error_type_st *type, error_map_cb map);
 /// \param type     error type pointer
 /// \param map      error map callback
 #define error_map_s(type, map) \
-    error_map_f(__func__, &ERROR_TYPE_ ## type, map)
+    error_map_f(__func__, ERROR_TYPE(type), map)
 
 /// Pick error.
 ///
@@ -718,7 +724,7 @@ void error_pass_sub_f(const char *func, const char *sub, const error_type_st *su
 /// \param sub_type     sub error type name
 /// \param sub_code     sub error code
 #define error_pass_sub(sub, sub_type, sub_code) \
-    error_pass_sub_f(__func__, #sub, &ERROR_TYPE_ ## sub_type, (sub_code), NULL)
+    error_pass_sub_f(__func__, #sub, ERROR_TYPE(sub_type), (sub_code), NULL)
 
 /// Pass sub function error with override description.
 ///
@@ -729,7 +735,7 @@ void error_pass_sub_f(const char *func, const char *sub, const error_type_st *su
 /// \param sub_code     sub error code
 /// \param sub_desc     sub error description override
 #define error_pass_sub_d(sub, sub_type, sub_code, sub_desc) \
-    error_pass_sub_f(__func__, #sub, &ERROR_TYPE_ ## sub_type, (sub_code), (sub_desc))
+    error_pass_sub_f(__func__, #sub, ERROR_TYPE(sub_type), (sub_code), (sub_desc))
 
 /// Pass last sub function error.
 ///
@@ -749,7 +755,7 @@ void error_pass_last_sub_f(const char *func, const char *sub, const error_type_s
 /// \param sub          name of sub function
 /// \param sub_type     sub error type name
 #define error_pass_last_sub(sub, sub_type) \
-    error_pass_last_sub_f(__func__, #sub, &ERROR_TYPE_ ## sub_type, NULL, NULL)
+    error_pass_last_sub_f(__func__, #sub, ERROR_TYPE(sub_type), NULL, NULL)
 
 /// Pass last sub function error from context.
 ///
@@ -760,7 +766,7 @@ void error_pass_last_sub_f(const char *func, const char *sub, const error_type_s
 /// \param sub_ctx_type sub error context type string
 /// \param sub_ctx      sub error context
 #define error_pass_last_sub_x(sub, sub_type, sub_ctx_type, sub_ctx) \
-    error_pass_last_sub_f(__func__, #sub, &ERROR_TYPE_ ## sub_type, (sub_ctx_type), (sub_ctx))
+    error_pass_last_sub_f(__func__, #sub, ERROR_TYPE(sub_type), (sub_ctx_type), (sub_ctx))
 
 /// Wrap sub function error.
 ///
@@ -783,7 +789,7 @@ void error_wrap_sub_f(const char *func, const char *sub, const error_type_st *su
 /// \param sub_type     sub error type name
 /// \param sub_code     sub error code
 #define error_wrap_sub(sub, sub_type, sub_code) \
-    error_wrap_sub_f(__func__, #sub, &ERROR_TYPE_ ## sub_type, (sub_code), NULL)
+    error_wrap_sub_f(__func__, #sub, ERROR_TYPE(sub_type), (sub_code), NULL)
 
 /// Wrap sub function error with override description.
 ///
@@ -795,7 +801,7 @@ void error_wrap_sub_f(const char *func, const char *sub, const error_type_st *su
 /// \param sub_code     sub error code
 /// \param sub_desc     sub error description override
 #define error_wrap_sub_d(sub, sub_type, sub_code, sub_desc) \
-    error_wrap_sub_f(__func__, #sub, &ERROR_TYPE_ ## sub_type, (sub_code), (sub_desc))
+    error_wrap_sub_f(__func__, #sub, ERROR_TYPE(sub_type), (sub_code), (sub_desc))
 
 /// Wrap last sub function error.
 ///
@@ -817,7 +823,7 @@ void error_wrap_last_sub_f(const char *func, const char *sub, const error_type_s
 /// \param sub          name of sub function
 /// \param sub_type     sub error type name
 #define error_wrap_last_sub(sub, sub_type) \
-    error_wrap_last_sub_f(__func__, #sub, &ERROR_TYPE_ ## sub_type, NULL, NULL)
+    error_wrap_last_sub_f(__func__, #sub, ERROR_TYPE(sub_type), NULL, NULL)
 
 /// Wrap last sub function error from context.
 ///
@@ -829,7 +835,7 @@ void error_wrap_last_sub_f(const char *func, const char *sub, const error_type_s
 /// \param sub_ctx_type sub error context type string
 /// \param sub_ctx      sub error context
 #define error_wrap_last_sub_x(sub, sub_type, sub_ctx_type, sub_ctx) \
-    error_wrap_last_sub_f(__func__, #sub, &ERROR_TYPE_ ## sub_type, (sub_ctx_type), (sub_ctx))
+    error_wrap_last_sub_f(__func__, #sub, ERROR_TYPE(sub_type), (sub_ctx_type), (sub_ctx))
 
 /// Pack sub function error.
 ///
@@ -856,8 +862,8 @@ void error_pack_sub_f(const char *func, const error_type_st *type, int code, con
 /// \param sub_type     sub error type name
 /// \param sub_code     sub error code
 #define error_pack_sub(code, sub, sub_type, sub_code)             \
-    error_pack_sub_f(__func__, &ERROR_TYPE_DEFAULT, (code), NULL, \
-        #sub, &ERROR_TYPE_ ## sub_type, (sub_code), NULL)
+    error_pack_sub_f(__func__, ERROR_TYPE(DEFAULT), (code), NULL, \
+        #sub, ERROR_TYPE(sub_type), (sub_code), NULL)
 
 /// Pack sub function error with override description with error of default type.
 ///
@@ -870,8 +876,8 @@ void error_pack_sub_f(const char *func, const error_type_st *type, int code, con
 /// \param sub_code     sub error code
 /// \param sub_desc     sub error description override
 #define error_pack_sub_d(code, sub, sub_type, sub_code, sub_desc) \
-    error_pack_sub_f(__func__, &ERROR_TYPE_DEFAULT, (code), NULL, \
-        #sub, &ERROR_TYPE_ ## sub_type, (sub_code), (sub_desc))
+    error_pack_sub_f(__func__, ERROR_TYPE(DEFAULT), (code), NULL, \
+        #sub, ERROR_TYPE(sub_type), (sub_code), (sub_desc))
 
 /// Pack last sub function error.
 ///
@@ -895,8 +901,8 @@ void error_pack_last_sub_f(const char *func, const error_type_st *type, int code
 /// \param sub          name of sub function
 /// \param sub_type     sub error type name
 #define error_pack_last_sub(code, sub, sub_type)                       \
-    error_pack_last_sub_f(__func__, &ERROR_TYPE_DEFAULT, (code), NULL, \
-        #sub, &ERROR_TYPE_ ## sub_type, NULL, NULL)
+    error_pack_last_sub_f(__func__, ERROR_TYPE(DEFAULT), (code), NULL, \
+        #sub, ERROR_TYPE(sub_type), NULL, NULL)
 
 /// Pack last sub function error from context with error of default type.
 ///
@@ -908,8 +914,8 @@ void error_pack_last_sub_f(const char *func, const error_type_st *type, int code
 /// \param sub_ctx_type sub error context type string
 /// \param sub_ctx      sub error context
 #define error_pack_last_sub_x(code, sub, sub_type, sub_ctx_type, sub_ctx) \
-    error_pack_last_sub_f(__func__, &ERROR_TYPE_DEFAULT, (code), NULL,    \
-        #sub, &ERROR_TYPE_ ## sub_type, (sub_ctx_type), (sub_ctx))
+    error_pack_last_sub_f(__func__, ERROR_TYPE(DEFAULT), (code), NULL,    \
+        #sub, ERROR_TYPE(sub_type), (sub_ctx_type), (sub_ctx))
 
 /// Map sub function error.
 ///
@@ -935,8 +941,8 @@ void error_map_sub_f(const char *func, const error_type_st *type, error_map_cb m
 /// \param sub_type     sub error type pointer
 /// \param sub_code     sub error code
 #define error_map_sub(map, sub, sub_type, sub_code)     \
-    error_map_sub_f(__func__, &ERROR_TYPE_DEFAULT, map, \
-        #sub, &ERROR_TYPE_ ## sub_type, (sub_code), NULL)
+    error_map_sub_f(__func__, ERROR_TYPE(DEFAULT), map, \
+        #sub, ERROR_TYPE(sub_type), (sub_code), NULL)
 
 /// Map sub function error with override description to error of default type.
 ///
@@ -949,8 +955,8 @@ void error_map_sub_f(const char *func, const error_type_st *type, error_map_cb m
 /// \param sub_code     sub error code
 /// \param sub_desc     sub error description override
 #define error_map_sub_d(map, sub, sub_type, sub_code, sub_desc) \
-    error_map_sub_f(__func__, &ERROR_TYPE_DEFAULT, map,         \
-        #sub, &ERROR_TYPE_ ## sub_type, (sub_code), (sub_desc))
+    error_map_sub_f(__func__, ERROR_TYPE(DEFAULT), map,         \
+        #sub, ERROR_TYPE(sub_type), (sub_code), (sub_desc))
 
 /// Map last sub function error.
 ///
@@ -975,8 +981,8 @@ void error_map_last_sub_f(const char *func, const error_type_st *type, error_map
 /// \param sub          name of sub function
 /// \param sub_type     sub error type pointer
 #define error_map_last_sub(map, sub, sub_type)               \
-    error_map_last_sub_f(__func__, &ERROR_TYPE_DEFAULT, map, \
-        #sub, &ERROR_TYPE_ ## sub_type, NULL, NULL)
+    error_map_last_sub_f(__func__, ERROR_TYPE(DEFAULT), map, \
+        #sub, ERROR_TYPE(sub_type), NULL, NULL)
 
 /// Map last sub function error from context to error of default type.
 ///
@@ -989,8 +995,29 @@ void error_map_last_sub_f(const char *func, const error_type_st *type, error_map
 /// \param sub_ctx_type sub error context type string
 /// \param sub_ctx      sub error context
 #define error_map_last_sub_x(map, sub, sub_type, sub_ctx_type, sub_ctx) \
-    error_map_last_sub_f(__func__, &ERROR_TYPE_DEFAULT, map,            \
-        #sub, &ERROR_TYPE_ ## sub_type, (sub_ctx_type), (sub_ctx))
+    error_map_last_sub_f(__func__, ERROR_TYPE(DEFAULT), map,            \
+        #sub, ERROR_TYPE(sub_type), (sub_ctx_type), (sub_ctx))
+
+/// Map prior sub function error.
+///
+/// Change function name of prior sub function error and map error.
+/// If sub error is a sub type OOM error, push generic OOM error instead.
+///
+/// \param func         name of error setting function
+/// \param type         error type pointer
+/// \param map          error map callback
+/// \param sub          name of sub function
+void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_cb map, const char *sub);
+
+/// Map prior sub function error to error of default type.
+///
+/// Change function name of prior sub function error and map error.
+/// If sub error is a sub type OOM error, push generic OOM error instead.
+///
+/// \param map          error map callback
+/// \param sub          name of sub function
+#define error_map_pre_sub(map, sub) \
+    error_map_pre_sub_f(__func__, ERROR_TYPE(DEFAULT), map, #sub)
 
 
 /// Convenience macro for enclosing functions to handle errors on the fly.
