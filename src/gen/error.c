@@ -23,6 +23,7 @@
 /// \file
 
 #include <ytil/gen/error.h>
+#include <ytil/gen/error.cfg.h>
 #include <ytil/ext/errno.h>
 #include <ytil/def.h>
 #include <string.h>
@@ -33,10 +34,6 @@
 #ifdef _WIN32
     #include <windows.h>
     #include <ntstatus.h>
-#endif
-
-#ifndef ERROR_STACK_SIZE
-    #define ERROR_STACK_SIZE 20 ///< number of maximum error entries
 #endif
 
 
