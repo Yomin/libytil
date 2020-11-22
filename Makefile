@@ -18,33 +18,42 @@ VAR1 = $(AR) rcs
 VAR2 = $(AR) rcsv
 VAR  = $(VAR$(verbose))
 
-ifeq ($(VCC), )
+ifeq ($(VCC),)
     $(error "invalid verbose level")
 endif
 
 NAME     := ytil
 LIBNAME  := lib$(NAME).a
 
-FEATURES := -std=gnu11 -march=native -D_GNU_SOURCE
+FLAGS    := -std=gnu11 -march=native
+PPFLAGS  := -D_GNU_SOURCE
 WARNINGS := -Wall -Wpedantic -Wextra -Wno-unused-parameter -Wimplicit-fallthrough=5
 WARNINGS += -Werror -Wfatal-errors
 INCLUDES := -Iinclude -Isrc
 LIBFLAGS :=
 LIBS     := -l$(NAME)
 
-ifeq ($(OS), Windows_NT)
-    FEATURES += -D__USE_MINGW_ANSI_STDIO=1
-    LIBS     += -lole32
+ifeq ($(OS),Windows_NT)
+    PPFLAGS += -D__USE_MINGW_ANSI_STDIO=1
+    LIBS    += -lole32
 endif
 
-CFLAGS   := $(FEATURES) $(WARNINGS) $(INCLUDES) $(CFLAGS)
-DFLAGS   := -Og -ggdb3 -D_FORTIFY_SOURCE=1 $(DFLAGS)
-PFLAGS   := -O2 -DNDEBUG -DNVALGRIND $(PFLAGS)
+CFLAGS   := $(FLAGS) $(WARNINGS) $(CFLAGS)
+DFLAGS   := -Og -ggdb3 $(DFLAGS)
+RFLAGS   := -O2 $(RFLAGS)
+CPPFLAGS := $(PPFLAGS) $(INCLUDES) $(CPPFLAGS)
+DPPFLAGS := -D_FORTIFY_SOURCE=1 $(DPPFLAGS)
+RPPFLAGS := -DNDEBUG -DNVALGRIND $(RPPFLAGS)
 LDFLAGS  := $(LIBFLAGS) $(LDFLAGS)
 LDLIBS   := $(LIBS) $(LDLIBS)
 
 SOURCES  := $(shell find src -type f -name "*.c")
-TSOURCES := $(shell find tests -type f -name "*.c")
+TSOURCES := $(shell find test -type f -name "*.c")
+
+MAKEFLAGS += --no-builtin-rules --no-builtin-variables
+
+.SUFFIXES:
+.SECONDARY:
 
 
 .PHONY: all
@@ -52,7 +61,7 @@ all: debug
 
 .PHONY: clean
 clean:
-	rm -rf debug prod test doc
+	rm -rf build doc
 
 .PHONY: doc
 doc: Doxyfile
@@ -63,43 +72,37 @@ devdoc: Doxyfile_dev
 	@doxygen $<
 
 
-.PHONY: prod
-prod: prod/$(LIBNAME)
-
--include $(patsubst src/%.c, prod/%.d, $(SOURCES))
-
-prod/%.o: src/%.c
-	@mkdir -p $(dir $@)
-	$(VCC) $(CFLAGS) $(PFLAGS) -o $@ $<
-	@$(CC) -MM -MP -MT $@ -MF $(@:%.o=%.d) $(INCLUDES) $<
-
-prod/$(LIBNAME): $(patsubst src/%.c, prod/%.o, $(SOURCES))
-	$(VAR) $@ $^
-
-
 .PHONY: debug
-debug: debug/$(LIBNAME)
+debug: CFLAGS   += $(DFLAGS)
+debug: CPPFLAGS += $(DPPFLAGS)
+debug: build/debug/$(LIBNAME)
 
--include $(patsubst src/%.c, debug/%.d, $(SOURCES))
-
-debug/%.o: src/%.c
-	@mkdir -p $(dir $@)
-	$(VCC) $(CFLAGS) $(DFLAGS) -o $@ $<
-	@$(CC) -MM -MP -MT $@ -MF $(@:%.o=%.d) $(INCLUDES) $<
-
-debug/$(LIBNAME): $(patsubst src/%.c, debug/%.o, $(SOURCES))
-	$(VAR) $@ $^
-
+.PHONY: release
+release: CFLAGS   += $(RFLAGS)
+release: CPPFLAGS += $(RPPFLAGS)
+release: build/release/$(LIBNAME)
 
 .PHONY: test
-test: test/$(NAME)
+test: CFLAGS   += $(DFLAGS)
+test: CPPFLAGS += $(DPPFLAGS)
+test: build/test/$(NAME)
 
--include $(patsubst tests/%.c, test/%.d, $(TSOURCES))
+-include $(patsubst src/%.c,build/debug/%.d,$(SOURCES))
+-include $(patsubst src/%.c,build/release/%.d,$(SOURCES))
+-include $(patsubst test/%.c,build/test/%.d,$(TSOURCES))
 
-test/%.o: tests/%.c
+build/debug/%.o build/release/%.o: src/%.c
 	@mkdir -p $(dir $@)
-	$(VCC) $(CFLAGS) $(DFLAGS) -o $@ $<
-	@$(CC) -MM -MP -MT $@ -MF $(@:%.o=%.d) $(INCLUDES) $<
+	$(VCC) $(CFLAGS) $(CPPFLAGS) -o $@ $<
+	@$(CC) $(CPPFLAGS) -MM -MP -MT $@ -MF $(@:%.o=%.d) $<
 
-test/$(NAME): debug/$(LIBNAME) $(patsubst tests/%.c, test/%.o, $(TSOURCES))
-	$(VLD) $(LDFLAGS) -o $@ $^ -Ldebug $(LDLIBS)
+build/test/%.o: test/%.c
+	@mkdir -p $(dir $@)
+	$(VCC) $(CFLAGS) $(CPPFLAGS) -o $@ $<
+	@$(CC) $(CPPFLAGS) -MM -MP -MT $@ -MF $(@:%.o=%.d) $<
+
+%/$(LIBNAME): $(addprefix %/,$(patsubst src/%.c,%.o,$(SOURCES)))
+	$(VAR) $@ $^
+
+build/test/$(NAME): build/debug/$(LIBNAME) $(patsubst test/%.c,build/test/%.o,$(TSOURCES))
+	$(VLD) $(LDFLAGS) -o $@ $^ -Lbuild/debug $(LDLIBS)
