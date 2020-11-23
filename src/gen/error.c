@@ -628,7 +628,7 @@ ERROR_DEFINE_CALLBACK(ERRNO,
 
 #ifdef _WIN32
 
-/// Error name callback to retrieve WIN32/HRESULT/NTSTATUS error name.
+/// Error name callback to retrieve EWIN32/HRESULT/NTSTATUS error name.
 ///
 /// \implements error_name_cb
 static const char *error_win_name(const error_type_st *type, int code, char *buf, size_t size)
@@ -638,10 +638,10 @@ static const char *error_win_name(const error_type_st *type, int code, char *buf
     return buf;
 }
 
-/// Error description callback to retrieve WIN32 error description.
+/// Error description callback to retrieve EWIN32 error description.
 ///
 /// \implements error_desc_cb
-static const char *error_win32_desc(const error_type_st *type, int code, char *buf, size_t size)
+static const char *error_ewin32_desc(const error_type_st *type, int code, char *buf, size_t size)
 {
     DWORD rc;
     char *tmp;
@@ -660,7 +660,7 @@ static const char *error_win32_desc(const error_type_st *type, int code, char *b
 
     if((rc = GetLastError()) != ERROR_INSUFFICIENT_BUFFER)
     {
-        snprintf(buf, size, "<WIN32_FormatMessage_Error_%08lX>", rc);
+        snprintf(buf, size, "<EWIN32_FormatMessage_Error_%08lX>", rc);
 
         return buf;
     }
@@ -672,7 +672,7 @@ static const char *error_win32_desc(const error_type_st *type, int code, char *b
     if(!rc)
     {
         rc = GetLastError();
-        snprintf(buf, size, "<WIN32_FormatMessage_Error_%08lX>", rc);
+        snprintf(buf, size, "<EWIN32_FormatMessage_Error_%08lX>", rc);
 
         return buf;
     }
@@ -684,25 +684,25 @@ static const char *error_win32_desc(const error_type_st *type, int code, char *b
     return buf;
 }
 
-/// Error out-of-memory check callback to check WIN32 codes.
+/// Error out-of-memory check callback to check EWIN32 codes.
 ///
 /// \implements error_oom_cb
-static bool error_win32_is_oom(const error_type_st *type, int code)
+static bool error_ewin32_is_oom(const error_type_st *type, int code)
 {
     return code == ERROR_NOT_ENOUGH_MEMORY || code == ERROR_OUTOFMEMORY;
 }
 
-/// Error retrieval callback to retrieve last WIN32 code.
+/// Error retrieval callback to retrieve last EWIN32 code.
 ///
 /// \implements error_last_cb
-static int error_win32_last(const error_type_st *type, const char **desc, const char *ctx_type, void *ctx)
+static int error_ewin32_last(const error_type_st *type, const char **desc, const char *ctx_type, void *ctx)
 {
     return GetLastError();
 }
 
-/// WIN32 error type definition
-ERROR_DEFINE_CALLBACK(WIN32,
-    error_win_name, error_win32_desc, error_win32_is_oom, error_win32_last);
+/// EWIN32 error type definition
+ERROR_DEFINE_CALLBACK(EWIN32,
+    error_win_name, error_ewin32_desc, error_ewin32_is_oom, error_ewin32_last);
 
 
 /// Error description callback to retrieve HRESULT error description.

@@ -658,6 +658,54 @@ static char *trim(char *str)
     return str;
 }
 
+#ifdef _WIN32
+
+/// Read a line from stream into buffer.
+///
+/// \param line     pointer to malloced buffer, if NULL buffer will be allocated
+/// \param size     pointer to size of line buffer, will be updated on realloc
+/// \param stream   stream
+///
+/// \returns        number of characters read
+/// \retval -1      error or EOF
+static ssize_t getline(char **line, size_t *size, FILE *stream)
+{
+    char *ptr, *tmp;
+    int c;
+
+    if(!*line)
+    {
+        if(!(*line = malloc(64)))
+            return -1;
+
+        *size = 64;
+    }
+
+    for(ptr = *line; (c = fgetc(stream)) != EOF;)
+    {
+        if((size_t)(ptr - *line) >= *size - 1)
+        {
+            if(!(tmp = realloc(*line, *size * 2)))
+                return -1;
+
+            *size   *= 2;
+            ptr     = tmp + (ptr - *line);
+            *line   = tmp;
+        }
+
+        ptr[0] = c;
+        ptr++;
+
+        if(c == '\n')
+            break;
+    }
+
+    ptr[0] = '\0';
+
+    return ptr - *line;
+}
+#endif
+
 /// Import config file.
 ///
 /// \param file     config file
@@ -862,6 +910,12 @@ static int config_export_header(const char *file, FILE *fp, config_op_id op, con
     return 0;
 }
 
+#ifdef _WIN32
+    #define mkdir2(dir) mkdir(dir) ///< mkdir wrapper
+#else
+    #define mkdir2(dir) mkdir(dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) ///< mkdir wrapper
+#endif
+
 /// Create all directories up to file.
 ///
 /// \param file     file
@@ -879,7 +933,7 @@ static int mkdir_for_file(const char *file)
     {
         sep[0] = '\0';
 
-        if(mkdir(dir, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) && errno != EEXIST)
+        if(mkdir2(dir) && errno != EEXIST)
             return perror("failed to mkdir"), free(dir), -1;
 
         sep[0] = '/';
@@ -889,6 +943,12 @@ static int mkdir_for_file(const char *file)
 
     return 0;
 }
+
+#ifdef _WIN32
+    #define rename2(src, dst) unlink(dst), rename(src, dst) ///< rename wrapper
+#else
+    #define rename2(src, dst) rename(src, dst) ///< rename wrapper
+#endif
 
 /// Export config file.
 ///
@@ -929,7 +989,7 @@ static int config_export(const char *file, config_export_cb export)
 
     fclose(fp);
 
-    if(rename(tmp, file))
+    if(rename2(tmp, file))
     {
         fprintf(stderr, "%s: failed to replace: %s\n", file, strerror(errno));
         unlink(tmp);

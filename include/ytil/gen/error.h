@@ -1277,92 +1277,92 @@ ERROR_DECLARE(ERRNO);
 
 #ifdef _WIN32
 
-/// WIN32 error type declaration
-ERROR_DECLARE(WIN32);
+/// EWIN32 error type declaration
+ERROR_DECLARE(EWIN32);
 
-/// Pass sub function WIN32 error.
+/// Pass sub function EWIN32 error.
 ///
-/// Clear stack, push sub function WIN32 error and generic pass error.
+/// Clear stack, push sub function EWIN32 error and generic pass error.
 ///
 /// \param sub          name of sub function
-/// \param code         WIN32 error
-#define error_pass_win32(sub, code) \
-    error_pass_sub(sub, WIN32, (code))
+/// \param code         EWIN32 error
+#define error_pass_ewin32(sub, code) \
+    error_pass_sub(sub, EWIN32, (code))
 
-/// Pass last sub function WIN32 error.
+/// Pass last sub function EWIN32 error.
 ///
-/// Clear stack, push last sub function WIN32 error and generic pass error.
+/// Clear stack, push last sub function EWIN32 error and generic pass error.
 ///
 /// \param sub          name of sub function
-#define error_pass_last_win32(sub) \
-    error_pass_last_sub(sub, WIN32)
+#define error_pass_last_ewin32(sub) \
+    error_pass_last_sub(sub, EWIN32)
 
-/// Wrap sub function WIN32 error.
+/// Wrap sub function EWIN32 error.
 ///
-/// Clear stack, push sub function WIN32 error and generic wrap error.
+/// Clear stack, push sub function EWIN32 error and generic wrap error.
 /// If sub error is ERROR_NOT_ENOUGH_MEMORY or ERROR_OUTOFMEMORY,
 /// push generic OOM error instead.
 ///
 /// \param sub          name of sub function
-/// \param code         WIN32 error
-#define error_wrap_win32(sub, code) \
-    error_wrap_sub(sub, WIN32, (code))
+/// \param code         EWIN32 error
+#define error_wrap_ewin32(sub, code) \
+    error_wrap_sub(sub, EWIN32, (code))
 
-/// Wrap last sub function WIN32 error.
+/// Wrap last sub function EWIN32 error.
 ///
-/// Clear stack, push last sub function WIN32 error and generic wrap error.
+/// Clear stack, push last sub function EWIN32 error and generic wrap error.
 /// If sub error is ERROR_NOT_ENOUGH_MEMORY or ERROR_OUTOFMEMORY,
 /// push generic OOM error instead.
 ///
 /// \param sub          name of sub function
-#define error_wrap_last_win32(sub) \
-    error_wrap_last_sub(sub, WIN32)
+#define error_wrap_last_ewin32(sub) \
+    error_wrap_last_sub(sub, EWIN32)
 
-/// Pack sub function WIN32 error with error of default type.
+/// Pack sub function EWIN32 error with error of default type.
 ///
-/// Clear stack, push sub function WIN32 error and pack given error.
-/// If sub error is ERROR_NOT_ENOUGH_MEMORY or ERROR_OUTOFMEMORY,
-/// push generic OOM error instead.
-///
-/// \param code         error code
-/// \param sub          name of sub function
-/// \param sub_code     WIN32 error
-#define error_pack_win32(code, sub, sub_code) \
-    error_pack_sub((code), sub, WIN32, (sub_code))
-
-/// Pack last sub function WIN32 error with error of default type.
-///
-/// Clear stack, push last sub function WIN32 error and pack given error.
+/// Clear stack, push sub function EWIN32 error and pack given error.
 /// If sub error is ERROR_NOT_ENOUGH_MEMORY or ERROR_OUTOFMEMORY,
 /// push generic OOM error instead.
 ///
 /// \param code         error code
 /// \param sub          name of sub function
-#define error_pack_last_win32(code, sub) \
-    error_pack_last_sub((code), sub, WIN32)
+/// \param sub_code     EWIN32 error
+#define error_pack_ewin32(code, sub, sub_code) \
+    error_pack_sub((code), sub, EWIN32, (sub_code))
 
-/// Map sub function WIN32 error to error of default type.
+/// Pack last sub function EWIN32 error with error of default type.
 ///
-/// Clear stack, push sub function WIN32 error and map error.
+/// Clear stack, push last sub function EWIN32 error and pack given error.
+/// If sub error is ERROR_NOT_ENOUGH_MEMORY or ERROR_OUTOFMEMORY,
+/// push generic OOM error instead.
+///
+/// \param code         error code
+/// \param sub          name of sub function
+#define error_pack_last_ewin32(code, sub) \
+    error_pack_last_sub((code), sub, EWIN32)
+
+/// Map sub function EWIN32 error to error of default type.
+///
+/// Clear stack, push sub function EWIN32 error and map error.
 /// If sub error is ERROR_NOT_ENOUGH_MEMORY or ERROR_OUTOFMEMORY,
 /// push generic OOM error instead.
 ///
 /// \param map          error map callback
 /// \param sub          name of sub function
-/// \param sub_code     WIN32 error
-#define error_map_win32(map, sub, sub_code) \
-    error_map_sub((map), sub, WIN32, (sub_code))
+/// \param sub_code     EWIN32 error
+#define error_map_ewin32(map, sub, sub_code) \
+    error_map_sub((map), sub, EWIN32, (sub_code))
 
-/// Map last sub function WIN32 error to error of default type.
+/// Map last sub function EWIN32 error to error of default type.
 ///
-/// Clear stack, push last sub function WIN32 error and map error.
+/// Clear stack, push last sub function EWIN32 error and map error.
 /// If sub error is ERROR_NOT_ENOUGH_MEMORY or ERROR_OUTOFMEMORY,
 /// push generic OOM error instead.
 ///
 /// \param map          error map callback
 /// \param sub          name of sub function
-#define error_map_last_win32(map, sub) \
-    error_map_last_sub((map), sub, WIN32)
+#define error_map_last_ewin32(map, sub) \
+    error_map_last_sub((map), sub, EWIN32)
 
 
 /// HRESULT error type declaration

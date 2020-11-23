@@ -1393,7 +1393,7 @@ TEST_CASE(error_map_errno_ENOMEM)
 
 #ifdef _WIN32
 
-static char *_test_error_format_win32(DWORD error)
+static char *_test_error_format_ewin32(DWORD error)
 {
     char *msg;
     DWORD rc;
@@ -1407,119 +1407,119 @@ static char *_test_error_format_win32(DWORD error)
     return msg;
 }
 
-TEST_CASE(error_info_win32)
+TEST_CASE(error_info_ewin32)
 {
     char *msg;
 
-    test_void(error_set_s(WIN32, ERROR_NOT_ENOUGH_MEMORY));
-    test_ptr_success(msg = _test_error_format_win32(ERROR_NOT_ENOUGH_MEMORY));
+    test_void(error_set_s(EWIN32, ERROR_NOT_ENOUGH_MEMORY));
+    test_ptr_success(msg = _test_error_format_ewin32(ERROR_NOT_ENOUGH_MEMORY));
 
     test_uint_eq(error_depth(), 1);
-    test_ptr_eq(error_stack_get_type(0), ERROR_TYPE(WIN32));
+    test_ptr_eq(error_stack_get_type(0), ERROR_TYPE(EWIN32));
     test_int_eq(error_stack_get_code(0), ERROR_NOT_ENOUGH_MEMORY);
-    test_str_eq(error_stack_get_name(0), "WIN32_00000008");
+    test_str_eq(error_stack_get_name(0), "EWIN32_00000008");
     test_str_eq(error_stack_get_desc(0), msg);
     test_true(error_stack_is_oom(0));
 
     LocalFree(msg);
 }
 
-TEST_CASE(error_pass_win32)
+TEST_CASE(error_pass_ewin32)
 {
-    test_void(error_pass_win32(foo, ERROR_FILE_NOT_FOUND));
+    test_void(error_pass_ewin32(foo, ERROR_FILE_NOT_FOUND));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
+    test_stack_error(0, EWIN32, ERROR_FILE_NOT_FOUND);
     test_stack_error(1, GENERIC, E_GENERIC_PASS);
     test_str_eq(error_stack_get_func(0), "foo");
 }
 
-TEST_CASE(error_pass_last_win32)
+TEST_CASE(error_pass_last_ewin32)
 {
     SetLastError(ERROR_PATH_NOT_FOUND);
-    test_void(error_pass_last_win32(foo));
+    test_void(error_pass_last_ewin32(foo));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_PATH_NOT_FOUND);
+    test_stack_error(0, EWIN32, ERROR_PATH_NOT_FOUND);
     test_stack_error(1, GENERIC, E_GENERIC_PASS);
     test_str_eq(error_stack_get_func(0), "foo");
 }
 
-TEST_CASE(error_wrap_win32)
+TEST_CASE(error_wrap_ewin32)
 {
-    test_void(error_wrap_win32(foo, ERROR_FILE_NOT_FOUND));
+    test_void(error_wrap_ewin32(foo, ERROR_FILE_NOT_FOUND));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
+    test_stack_error(0, EWIN32, ERROR_FILE_NOT_FOUND);
     test_stack_error(1, GENERIC, E_GENERIC_WRAP);
     test_str_eq(error_stack_get_func(0), "foo");
 }
 
-TEST_CASE(error_wrap_last_win32)
+TEST_CASE(error_wrap_last_ewin32)
 {
     SetLastError(ERROR_PATH_NOT_FOUND);
-    test_void(error_wrap_last_win32(foo));
+    test_void(error_wrap_last_ewin32(foo));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_PATH_NOT_FOUND);
+    test_stack_error(0, EWIN32, ERROR_PATH_NOT_FOUND);
     test_stack_error(1, GENERIC, E_GENERIC_WRAP);
     test_str_eq(error_stack_get_func(0), "foo");
 }
 
-TEST_CASE(error_wrap_win32_ERROR_NOT_ENOUGH_MEMORY)
+TEST_CASE(error_wrap_ewin32_ERROR_NOT_ENOUGH_MEMORY)
 {
-    test_void(error_wrap_win32(foo, ERROR_NOT_ENOUGH_MEMORY));
+    test_void(error_wrap_ewin32(foo, ERROR_NOT_ENOUGH_MEMORY));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_NOT_ENOUGH_MEMORY);
+    test_stack_error(0, EWIN32, ERROR_NOT_ENOUGH_MEMORY);
     test_stack_error(1, GENERIC, E_GENERIC_OOM);
 }
 
-TEST_CASE(error_wrap_win32_ERROR_OUTOFMEMORY)
+TEST_CASE(error_wrap_ewin32_ERROR_OUTOFMEMORY)
 {
-    test_void(error_wrap_win32(foo, ERROR_OUTOFMEMORY));
+    test_void(error_wrap_ewin32(foo, ERROR_OUTOFMEMORY));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_OUTOFMEMORY);
+    test_stack_error(0, EWIN32, ERROR_OUTOFMEMORY);
     test_stack_error(1, GENERIC, E_GENERIC_OOM);
 }
 
-TEST_CASE(error_pack_win32)
+TEST_CASE(error_pack_ewin32)
 {
-    test_void(error_pack_win32(E_TEST_ERROR_1, foo, ERROR_FILE_NOT_FOUND));
+    test_void(error_pack_ewin32(E_TEST_ERROR_1, foo, ERROR_FILE_NOT_FOUND));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
+    test_stack_error(0, EWIN32, ERROR_FILE_NOT_FOUND);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
     test_str_eq(error_stack_get_func(0), "foo");
 }
 
-TEST_CASE(error_pack_last_win32)
+TEST_CASE(error_pack_last_ewin32)
 {
     SetLastError(ERROR_PATH_NOT_FOUND);
-    test_void(error_pack_last_win32(E_TEST_ERROR_1, foo));
+    test_void(error_pack_last_ewin32(E_TEST_ERROR_1, foo));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_PATH_NOT_FOUND);
+    test_stack_error(0, EWIN32, ERROR_PATH_NOT_FOUND);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
     test_str_eq(error_stack_get_func(0), "foo");
 }
 
-TEST_CASE(error_pack_win32_ERROR_NOT_ENOUGH_MEMORY)
+TEST_CASE(error_pack_ewin32_ERROR_NOT_ENOUGH_MEMORY)
 {
-    test_void(error_pack_win32(E_TEST_ERROR_1, foo, ERROR_NOT_ENOUGH_MEMORY));
+    test_void(error_pack_ewin32(E_TEST_ERROR_1, foo, ERROR_NOT_ENOUGH_MEMORY));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_NOT_ENOUGH_MEMORY);
+    test_stack_error(0, EWIN32, ERROR_NOT_ENOUGH_MEMORY);
     test_stack_error(1, GENERIC, E_GENERIC_OOM);
 }
 
-TEST_CASE(error_pack_win32_ERROR_OUTOFMEMORY)
+TEST_CASE(error_pack_ewin32_ERROR_OUTOFMEMORY)
 {
-    test_void(error_pack_win32(E_TEST_ERROR_1, foo, ERROR_OUTOFMEMORY));
+    test_void(error_pack_ewin32(E_TEST_ERROR_1, foo, ERROR_OUTOFMEMORY));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_OUTOFMEMORY);
+    test_stack_error(0, EWIN32, ERROR_OUTOFMEMORY);
     test_stack_error(1, GENERIC, E_GENERIC_OOM);
 }
 
@@ -1540,51 +1540,51 @@ static int _test_error_map_win(const error_type_st *type, int code)
     }
 }
 
-TEST_CASE(error_map_win32)
+TEST_CASE(error_map_ewin32)
 {
-    test_void(error_map_win32(_test_error_map_win, foo, ERROR_FILE_NOT_FOUND));
+    test_void(error_map_ewin32(_test_error_map_win, foo, ERROR_FILE_NOT_FOUND));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_FILE_NOT_FOUND);
+    test_stack_error(0, EWIN32, ERROR_FILE_NOT_FOUND);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_1);
     test_str_eq(error_stack_get_func(0), "foo");
 }
 
-TEST_CASE(error_map_last_win32)
+TEST_CASE(error_map_last_ewin32)
 {
     SetLastError(ERROR_PATH_NOT_FOUND);
-    test_void(error_map_last_win32(_test_error_map_win, foo));
+    test_void(error_map_last_ewin32(_test_error_map_win, foo));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_PATH_NOT_FOUND);
+    test_stack_error(0, EWIN32, ERROR_PATH_NOT_FOUND);
     test_stack_error(1, TEST_ERROR, E_TEST_ERROR_2);
     test_str_eq(error_stack_get_func(0), "foo");
 }
 
-TEST_CASE(error_map_win32_no_match)
+TEST_CASE(error_map_ewin32_no_match)
 {
-    test_void(error_map_win32(_test_error_map_win, foo, ERROR_INVALID_FUNCTION));
+    test_void(error_map_ewin32(_test_error_map_win, foo, ERROR_INVALID_FUNCTION));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_INVALID_FUNCTION);
+    test_stack_error(0, EWIN32, ERROR_INVALID_FUNCTION);
     test_stack_error(1, GENERIC, E_GENERIC_WRAP);
 }
 
-TEST_CASE(error_map_win32_ERROR_NOT_ENOUGH_MEMORY)
+TEST_CASE(error_map_ewin32_ERROR_NOT_ENOUGH_MEMORY)
 {
-    test_void(error_map_win32(_test_error_map_win, foo, ERROR_NOT_ENOUGH_MEMORY));
+    test_void(error_map_ewin32(_test_error_map_win, foo, ERROR_NOT_ENOUGH_MEMORY));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_NOT_ENOUGH_MEMORY);
+    test_stack_error(0, EWIN32, ERROR_NOT_ENOUGH_MEMORY);
     test_stack_error(1, GENERIC, E_GENERIC_OOM);
 }
 
-TEST_CASE(error_map_win32_ERROR_OUTOFMEMORY)
+TEST_CASE(error_map_ewin32_ERROR_OUTOFMEMORY)
 {
-    test_void(error_map_win32(_test_error_map_win, foo, ERROR_OUTOFMEMORY));
+    test_void(error_map_ewin32(_test_error_map_win, foo, ERROR_OUTOFMEMORY));
 
     test_uint_eq(error_depth(), 2);
-    test_stack_error(0, WIN32, ERROR_OUTOFMEMORY);
+    test_stack_error(0, EWIN32, ERROR_OUTOFMEMORY);
     test_stack_error(1, GENERIC, E_GENERIC_OOM);
 }
 
@@ -1894,22 +1894,22 @@ test_suite_ct test_suite_gen_error(void)
         test_case_new(error_map_errno_no_match),
         test_case_new(error_map_errno_ENOMEM),
 
-        test_case_new_windows(error_info_win32),
-        test_case_new_windows(error_pass_win32),
-        test_case_new_windows(error_pass_last_win32),
-        test_case_new_windows(error_wrap_win32),
-        test_case_new_windows(error_wrap_last_win32),
-        test_case_new_windows(error_wrap_win32_ERROR_NOT_ENOUGH_MEMORY),
-        test_case_new_windows(error_wrap_win32_ERROR_OUTOFMEMORY),
-        test_case_new_windows(error_pack_win32),
-        test_case_new_windows(error_pack_last_win32),
-        test_case_new_windows(error_pack_win32_ERROR_NOT_ENOUGH_MEMORY),
-        test_case_new_windows(error_pack_win32_ERROR_OUTOFMEMORY),
-        test_case_new_windows(error_map_win32),
-        test_case_new_windows(error_map_last_win32),
-        test_case_new_windows(error_map_win32_no_match),
-        test_case_new_windows(error_map_win32_ERROR_NOT_ENOUGH_MEMORY),
-        test_case_new_windows(error_map_win32_ERROR_OUTOFMEMORY),
+        test_case_new_windows(error_info_ewin32),
+        test_case_new_windows(error_pass_ewin32),
+        test_case_new_windows(error_pass_last_ewin32),
+        test_case_new_windows(error_wrap_ewin32),
+        test_case_new_windows(error_wrap_last_ewin32),
+        test_case_new_windows(error_wrap_ewin32_ERROR_NOT_ENOUGH_MEMORY),
+        test_case_new_windows(error_wrap_ewin32_ERROR_OUTOFMEMORY),
+        test_case_new_windows(error_pack_ewin32),
+        test_case_new_windows(error_pack_last_ewin32),
+        test_case_new_windows(error_pack_ewin32_ERROR_NOT_ENOUGH_MEMORY),
+        test_case_new_windows(error_pack_ewin32_ERROR_OUTOFMEMORY),
+        test_case_new_windows(error_map_ewin32),
+        test_case_new_windows(error_map_last_ewin32),
+        test_case_new_windows(error_map_ewin32_no_match),
+        test_case_new_windows(error_map_ewin32_ERROR_NOT_ENOUGH_MEMORY),
+        test_case_new_windows(error_map_ewin32_ERROR_OUTOFMEMORY),
 
         test_case_new_windows(error_info_hresult),
         test_case_new_windows(error_pass_hresult),

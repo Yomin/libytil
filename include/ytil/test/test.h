@@ -138,7 +138,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 } while(0)
 
 #define test_int_success_errno(expr) _test_int_success_native((expr), #expr, ERRNO, NULL, NULL)
-#define test_int_success_win32(expr) _test_int_success_native((expr), #expr, WIN32, NULL, NULL)
+#define test_int_success_ewin32(expr) _test_int_success_native((expr), #expr, EWIN32, NULL, NULL)
 
 #define _test_int_maybe(expr, expr_s, err, err_s) do { \
     test_begin(); \
@@ -171,7 +171,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 } while(0)
 
 #define test_int_maybe_errno(expr, err) _test_int_maybe_native((expr), #expr, (err), #err, ERRNO, NULL, NULL)
-#define test_int_maybe_win32(expr, err) _test_int_maybe_native((expr), #expr, (err), #err, WIN32, NULL, NULL)
+#define test_int_maybe_ewin32(expr, err) _test_int_maybe_native((expr), #expr, (err), #err, EWIN32, NULL, NULL)
 
 #define _test_int_error(expr, expr_s, err, err_s) do { \
     test_begin(); \
@@ -207,7 +207,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 } while(0)
 
 #define test_int_error_errno(expr, err) _test_int_error_native((expr), #expr, (err), #err, ERRNO, NULL, NULL)
-#define test_int_error_win32(expr, err) _test_int_error_native((expr), #expr, (err), #err, WIN32, NULL, NULL)
+#define test_int_error_ewin32(expr, err) _test_int_error_native((expr), #expr, (err), #err, EWIN32, NULL, NULL)
 
 
 // --- [INT VALUE RC] ---
@@ -241,7 +241,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 } while(0)
 
 #define test_rc_success_errno(expr, trc) _test_rc_success_native((expr), #expr, (trc), #trc, ERRNO, NULL, NULL)
-#define test_rc_success_win32(expr, trc) _test_rc_success_native((expr), #expr, (trc), #trc, WIN32, NULL, NULL)
+#define test_rc_success_ewin32(expr, trc) _test_rc_success_native((expr), #expr, (trc), #trc, EWIN32, NULL, NULL)
 
 #define _test_rc_error(expr, expr_s, trc, trc_s, err, err_s) do { \
     test_begin(); \
@@ -277,7 +277,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 } while(0)
 
 #define test_rc_error_errno(expr, trc, err) _test_rc_error_native((expr), #expr, (trc), #trc, (err), #err, ERRNO, NULL, NULL)
-#define test_rc_error_win32(expr, trc, err) _test_rc_error_native((expr), #expr, (trc), #trc, (err), #err, WIN32, NULL, NULL)
+#define test_rc_error_ewin32(expr, trc, err) _test_rc_error_native((expr), #expr, (trc), #trc, (err), #err, EWIN32, NULL, NULL)
 
 
 // --- [PTR RC] ---
@@ -305,7 +305,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 } while(0)
 
 #define test_ptr_success_errno(expr) _test_ptr_success_native((expr), #expr, ERRNO, NULL, NULL)
-#define test_ptr_success_win32(expr) _test_ptr_success_native((expr), #expr, WIN32, NULL, NULL)
+#define test_ptr_success_ewin32(expr) _test_ptr_success_native((expr), #expr, EWIN32, NULL, NULL)
 
 #define _test_ptr_maybe(expr, expr_s, err, err_s) do { \
     test_begin(); \
@@ -335,7 +335,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 } while(0)
 
 #define test_ptr_maybe_errno(expr, err) _test_ptr_maybe_native((expr), #expr, (err), #err, ERRNO, NULL, NULL)
-#define test_ptr_maybe_win32(expr, err) _test_ptr_maybe_native((expr), #expr, (err), #err, WIN32, NULL, NULL)
+#define test_ptr_maybe_ewin32(expr, err) _test_ptr_maybe_native((expr), #expr, (err), #err, EWIN32, NULL, NULL)
 
 #define _test_ptr_error(expr, expr_s, err, err_s) do { \
     test_begin(); \
@@ -371,7 +371,7 @@ void    _test_free(void *ctx, const char *file, size_t line, void *mem);
 } while(0)
 
 #define test_ptr_error_errno(expr, err) _test_ptr_error_native((expr), #expr, (err), #err, ERRNO, NULL, NULL)
-#define test_ptr_error_win32(expr, err) _test_ptr_error_native((expr), #expr, (err), #err, WIN32, NULL, NULL)
+#define test_ptr_error_ewin32(expr, err) _test_ptr_error_native((expr), #expr, (err), #err, EWIN32, NULL, NULL)
 
 
 // --- [VOID] ---
