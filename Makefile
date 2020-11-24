@@ -84,10 +84,10 @@ devdoc: Doxyfile_dev
 
 .PHONY: config
 config: build/util/config
-	$(foreach config,$(CONFIGS),$(VCF) -i \
+	@$(foreach config,$(CONFIGS),$< -i \
 		$(config) \
 		$(patsubst src/%,config/$(NAME)/%,$(config)) \
-		$(patsubst src/%,config/$(NAME)/%.h,$(config)))
+		$(patsubst src/%,config/$(NAME)/%.h,$(config));)
 
 build/util/config: util/config.c
 	@mkdir -p $(dir $@)

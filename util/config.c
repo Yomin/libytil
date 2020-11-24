@@ -56,6 +56,29 @@ static const char *config_types[] =
     [CONFIG_TYPE_TEXT]      = "text",
 };
 
+/// config OS type
+typedef enum config_os
+{
+    CONFIG_OS_ALL,          ///< all
+    CONFIG_OS_UNIX,         ///< unix OS
+    CONFIG_OS_WINDOWS,      ///< windows OS
+    CONFIG_OS_TYPES,        ///< number of OS types
+} config_os_id;
+
+/// config OS type names
+static const char *config_os_types[] =
+{
+    [CONFIG_OS_ALL]     = "all",
+    [CONFIG_OS_UNIX]    = "unix",
+    [CONFIG_OS_WINDOWS] = "windows",
+};
+
+#ifdef _WIN32
+    #define CONFIG_OS_CURRENT CONFIG_OS_WINDOWS ///< current OS
+#else
+    #define CONFIG_OS_CURRENT CONFIG_OS_UNIX ///< current OS
+#endif
+
 /// config error
 typedef enum config_error
 {
@@ -65,6 +88,7 @@ typedef enum config_error
     E_CONFIG_INVALID_VALUE,     ///< invalid value
     E_CONFIG_INVALID_DEP,       ///< invalid dependency
     E_CONFIG_UNKNOWN_DEP,       ///< unknown dependency
+    E_CONFIG_INVALID_OS,        ///< invalid OS
 } config_error_id;
 
 /// config operation
@@ -84,6 +108,7 @@ typedef struct config_option
     char                    *def;       ///< option default value
     char                    *value;     ///< option value
     struct config_option    **deps;     ///< option dependencies, NULL terminated
+    config_os_id            os;         ///< option OS type
 } config_option_st;
 
 /// config options
@@ -411,6 +436,29 @@ static int config_option_set_deps(config_option_st *option, char *deps)
     return 0;
 }
 
+/// Set option OS.
+///
+/// \param option   option
+/// \param os       os string
+///
+/// \retval 0                       success
+/// \retval E_CONFIG_INVALID_OS     invalid OS
+static int config_option_set_os(config_option_st *option, const char *os)
+{
+    size_t o;
+
+    if(!os[0])
+        return option->os = CONFIG_OS_ALL, 0;
+
+    for(o = 0; o < CONFIG_OS_TYPES; o++)
+    {
+        if(!strcmp(os, config_os_types[o]))
+            return option->os = o, 0;
+    }
+
+    return E_CONFIG_INVALID_OS;
+}
+
 /// Check if option is active (all dependencies are toggled on and active).
 ///
 /// \param option   option
@@ -421,6 +469,9 @@ static bool config_option_is_active(const config_option_st *option)
 {
     config_option_st **dep;
     char *value;
+
+    if(option->os != CONFIG_OS_ALL && option->os != CONFIG_OS_CURRENT)
+        return false;
 
     if(!option->deps)
         return true;
@@ -483,6 +534,9 @@ static void config_option_print(const config_option_st *option, int indent)
 
         printf("\n");
     }
+
+    if(option->os)
+        printf("%*sos:       %s\n", indent, "", config_os_types[option->os]);
 }
 
 /// Import key value pair from template config file.
@@ -574,6 +628,11 @@ static int config_import_template(const char *file, size_t line, config_op_id op
         default:
             return -1;
         }
+    }
+    else if(!strcmp(key, "os"))
+    {
+        if(config_option_set_os(option, value))
+            return fprintf(stderr, "%s:%zu: invalid os [%s]\n", file, line, value), -1;
     }
     else
     {
@@ -704,7 +763,7 @@ static ssize_t getline(char **line, size_t *size, FILE *stream)
 
     return ptr - *line;
 }
-#endif
+#endif /* ifdef _WIN32 */
 
 /// Import config file.
 ///
@@ -722,7 +781,7 @@ static int config_import(const char *file, bool optional, config_import_cb impor
 
     if(!(fp = fopen(file, "rb")))
     {
-        if(optional)
+        if(optional && errno == ENOENT)
             return 0;
         else
             return fprintf(stderr, "%s: failed to open: %s\n", file, strerror(errno)), -1;
@@ -733,33 +792,27 @@ static int config_import(const char *file, bool optional, config_import_cb impor
 
     for(lineno = 1, errno = 0; getline(&line, &size, fp) > 0; lineno++, errno = 0)
     {
-        key     = line;
-        value   = strchr(line, '=');
+        key = trim(line);
 
-        if(value)
-        {
-            value[0] = '\0';
-            value++;
-        }
+        if(key[0] == '\0' || key[0] == '#') // empty or comment
+            continue;
 
-        key     = trim(key);
-        value   = trim(value);
-
-        if(key[0] && !value)
+        if(!(value = strchr(line, '=')))
         {
             fprintf(stderr, "%s:%zu: missing value for '%s'\n", file, lineno, key);
             return free(line), fclose(fp), -1;
         }
 
-        if(!key[0])
-        {
-            if(value)
-            {
-                fprintf(stderr, "%s:%zu: missing key for value '%s'\n", file, lineno, value);
-                return free(line), fclose(fp), -1;
-            }
+        value[0] = '\0';
+        value++;
 
-            continue;
+        key     = trim(key);
+        value   = trim(value);
+
+        if(!key[0] && value)
+        {
+            fprintf(stderr, "%s:%zu: missing key for value '%s'\n", file, lineno, value);
+            return free(line), fclose(fp), -1;
         }
 
         if(import(file, lineno, CONFIG_OP_OPTION, key, value))
@@ -1100,6 +1153,8 @@ static int config_modify(void)
         if(all)
             break;
     }
+
+    printf("\n");
 
     free(line);
 
