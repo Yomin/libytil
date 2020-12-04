@@ -21,6 +21,7 @@
  */
 
 #include "enc.h"
+#include <ytil/test/run.h>
 #include <ytil/test/test.h>
 #include <ytil/enc/pctenc.h>
 #include <stdio.h>
@@ -50,24 +51,24 @@ TEST_CASE(pctenc_encode_empty)
     test_ptr_error(pctenc_encode(LIT("")), E_PCTENC_EMPTY);
 }
 
-TEST_SETUP(mktext, bool upper)
+TEST_PSETUP(mktext, bool upper)
 {
     int i;
-    
+
     for(i=0,len_enc=0; i<128; i++)
     {
         text_plain[i] = i;
-        
+
         if(isalnum(i) || i == '-' || i == '_' || i == '.' || i == '~')
             text_enc[len_enc++] = i;
         else
             len_enc += snprintf(&text_enc[len_enc], 4, upper ? "%%%02X" : "%%%02x", i);
     }
-    
+
     text_enc[len_enc] = '\0';
 }
 
-TEST_CASE_ARGS(pctenc_encode, mktext, NULL, true)
+TEST_CASE_PFIX(pctenc_encode, mktext, no_teardown, true)
 {
     test_ptr_success(str = pctenc_encode(BLOB(text_plain, 128)));
     test_false(str_is_binary(str));
@@ -115,7 +116,7 @@ TEST_CASE(pctenc_decode_invalid_hex2)
     test_ptr_error(pctenc_decode(LIT("foo%AG")), E_PCTENC_INVALID_DATA);
 }
 
-TEST_CASE_ARGS(pctenc_decode_upper, mktext, NULL, true)
+TEST_CASE_PFIX(pctenc_decode_upper, mktext, no_teardown, true)
 {
     test_ptr_success(str = pctenc_decode(STR(text_enc)));
     test_true(str_is_binary(str));
@@ -124,7 +125,7 @@ TEST_CASE_ARGS(pctenc_decode_upper, mktext, NULL, true)
     str_unref(str);
 }
 
-TEST_CASE_ARGS(pctenc_decode_lower, mktext, NULL, false)
+TEST_CASE_PFIX(pctenc_decode_lower, mktext, no_teardown, false)
 {
     test_ptr_success(str = pctenc_decode(STR(text_enc)));
     test_true(str_is_binary(str));
@@ -173,44 +174,46 @@ TEST_CASE(pctenc_is_valid_invalid_hex2)
     test_false(pctenc_is_valid(LIT("foo%AG")));
 }
 
-TEST_CASE_ARGS(pctenc_is_valid_upper, mktext, NULL, true)
+TEST_CASE_PFIX(pctenc_is_valid_upper, mktext, no_teardown, true)
 {
     test_true(pctenc_is_valid(STR(text_enc)));
 }
 
-TEST_CASE_ARGS(pctenc_is_valid_lower, mktext, NULL, false)
+TEST_CASE_PFIX(pctenc_is_valid_lower, mktext, no_teardown, false)
 {
     test_true(pctenc_is_valid(STR(text_enc)));
 }
 
-test_suite_ct test_suite_enc_pctenc(void)
+int test_suite_enc_pctenc(void)
 {
-    return test_suite_new_with_cases("pctenc"
-        , test_case_new(pctenc_encode_invalid_blob1)
-        , test_case_new(pctenc_encode_invalid_blob2)
-        , test_case_new(pctenc_encode_empty)
-        , test_case_new(pctenc_encode)
-        
-        , test_case_new(pctenc_decode_invalid_blob1)
-        , test_case_new(pctenc_decode_invalid_blob2)
-        , test_case_new(pctenc_decode_empty)
-        , test_case_new(pctenc_decode_invalid_data)
-        , test_case_new(pctenc_decode_incomplete_hex1)
-        , test_case_new(pctenc_decode_incomplete_hex2)
-        , test_case_new(pctenc_decode_invalid_hex1)
-        , test_case_new(pctenc_decode_invalid_hex2)
-        , test_case_new(pctenc_decode_upper)
-        , test_case_new(pctenc_decode_lower)
-        
-        , test_case_new(pctenc_is_valid_invalid_blob1)
-        , test_case_new(pctenc_is_valid_invalid_blob2)
-        , test_case_new(pctenc_is_valid_empty)
-        , test_case_new(pctenc_is_valid_invalid_data)
-        , test_case_new(pctenc_is_valid_incomplete_hex1)
-        , test_case_new(pctenc_is_valid_incomplete_hex2)
-        , test_case_new(pctenc_is_valid_invalid_hex1)
-        , test_case_new(pctenc_is_valid_invalid_hex2)
-        , test_case_new(pctenc_is_valid_upper)
-        , test_case_new(pctenc_is_valid_lower)
-    );
+    return error_pass_int(test_run_cases("pctenc",
+        test_case(pctenc_encode_invalid_blob1),
+        test_case(pctenc_encode_invalid_blob2),
+        test_case(pctenc_encode_empty),
+        test_case(pctenc_encode),
+
+        test_case(pctenc_decode_invalid_blob1),
+        test_case(pctenc_decode_invalid_blob2),
+        test_case(pctenc_decode_empty),
+        test_case(pctenc_decode_invalid_data),
+        test_case(pctenc_decode_incomplete_hex1),
+        test_case(pctenc_decode_incomplete_hex2),
+        test_case(pctenc_decode_invalid_hex1),
+        test_case(pctenc_decode_invalid_hex2),
+        test_case(pctenc_decode_upper),
+        test_case(pctenc_decode_lower),
+
+        test_case(pctenc_is_valid_invalid_blob1),
+        test_case(pctenc_is_valid_invalid_blob2),
+        test_case(pctenc_is_valid_empty),
+        test_case(pctenc_is_valid_invalid_data),
+        test_case(pctenc_is_valid_incomplete_hex1),
+        test_case(pctenc_is_valid_incomplete_hex2),
+        test_case(pctenc_is_valid_invalid_hex1),
+        test_case(pctenc_is_valid_invalid_hex2),
+        test_case(pctenc_is_valid_upper),
+        test_case(pctenc_is_valid_lower),
+
+        NULL
+    ));
 }

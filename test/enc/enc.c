@@ -21,14 +21,16 @@
  */
 
 #include "enc.h"
+#include <ytil/test/run.h>
 
 
-test_suite_ct test_suite_enc(void)
+int test_suite_enc(void)
 {
-    return test_suite_new_with_suites("enc",
-        test_suite_enc_base64(),
-        test_suite_enc_base85(),
-        test_suite_enc_pctenc(),
-        test_suite_enc_qpenc()
-    );
+    return error_pass_int(test_run_suites("enc",
+        test_suite_enc_base64,
+        test_suite_enc_base85,
+        test_suite_enc_pctenc,
+        test_suite_enc_qpenc,
+        NULL
+    ));
 }

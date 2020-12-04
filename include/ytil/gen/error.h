@@ -1023,40 +1023,51 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 
 /// Convenience macro for enclosing functions to handle errors on the fly.
 ///
-/// \param action   error action
 /// \param sub      encapsulated function
-/// \param cond     condition that is true if rc indicates error
+/// \param action   error action
+/// \param cond     condition that is true if sub_rc indicates error
 /// \param ...      error action args
 ///
 /// \returns        \p sub rc
-#define error_proc(action, sub, cond, ...) __extension__ ({ \
-    __auto_type rc = (sub);                                 \
+#define error_proc(sub, cond, action, ...) __extension__ ({ \
+    __auto_type sub_rc = (sub);                             \
                                                             \
     if(cond)                                                \
-        error_##action(__VA_ARGS__);                        \
+        error_ ## action(__VA_ARGS__);                      \
                                                             \
-    rc;                                                     \
+    sub_rc;                                                 \
 })
 
 /// Convenience macro for enclosing int functions to handle errors on the fly.
 ///
-/// \param action   error action
 /// \param sub      encapsulated function
+/// \param action   error action
 /// \param ...      error action args
 ///
 /// \returns        \p sub rc
-#define error_proc_int(action, sub, ...) \
-    error_proc(action, sub, rc < 0, __VA_ARGS__)
+#define error_proc_int(sub, action, ...) \
+    error_proc(sub, sub_rc < 0, action, __VA_ARGS__)
 
 /// Convenience macro for enclosing pointer functions to handle errors on the fly.
 ///
-/// \param action   error action
 /// \param sub      encapsulated function
+/// \param action   error action
 /// \param ...      error action args
 ///
 /// \returns        \p sub rc
-#define error_proc_ptr(action, sub, ...) \
-    error_proc(action, sub, !rc,    __VA_ARGS__)
+#define error_proc_ptr(sub, action, ...) \
+    error_proc(sub, !sub_rc, action, __VA_ARGS__)
+
+/// Convenience macro for enclosing arbitrary rc functions to handle errors on the fly.
+///
+/// \param sub      encapsulated function
+/// \param rc       error rc
+/// \param action   error action
+/// \param ...      error action args
+///
+/// \returns        \p sub rc
+#define error_proc_rc(sub, rc, action, ...) \
+    error_proc(sub, sub_rc == (rc), action, __VA_ARGS__)
 
 /// Convenience error push macro for enclosing int functions.
 ///
@@ -1065,7 +1076,7 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_push_int(err, sub) \
-    error_proc_int(push, sub, err)
+    error_proc_int(sub, push, err)
 
 /// Convenience error push macro for enclosing pointer functions.
 ///
@@ -1074,7 +1085,17 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_push_ptr(err, sub) \
-    error_proc_ptr(push, sub, err)
+    error_proc_ptr(sub, push, err)
+
+/// Convenience error push macro for enclosing arbitrary rc functions.
+///
+/// \param rc       error rc
+/// \param err      error to push
+/// \param sub      encapsulated function
+///
+/// \returns        \p sub rc
+#define error_push_rc(rc, err, sub) \
+    error_proc_rc(sub, rc, push, err)
 
 /// Convenience error wrap macro for enclosing int functions.
 ///
@@ -1082,7 +1103,7 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_wrap_int(sub) \
-    error_proc_int(wrap, sub)
+    error_proc_int(sub, wrap)
 
 /// Convenience error wrap macro for enclosing pointer functions.
 ///
@@ -1090,7 +1111,16 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_wrap_ptr(sub) \
-    error_proc_ptr(wrap, sub)
+    error_proc_ptr(sub, wrap)
+
+/// Convenience error wrap macro for enclosing arbitrary rc functions.
+///
+/// \param rc       error rc
+/// \param sub      encapsulated function
+///
+/// \returns        \p sub rc
+#define error_wrap_rc(rc, sub) \
+    error_proc_rc(sub, rc, wrap)
 
 /// Convenience error pack macro for enclosing int functions.
 ///
@@ -1099,7 +1129,7 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_pack_int(err, sub) \
-    error_proc_int(pack, sub, err)
+    error_proc_int(sub, pack, err)
 
 /// Convenience error pack macro for enclosing pointer functions.
 ///
@@ -1108,7 +1138,17 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_pack_ptr(err, sub) \
-    error_proc_ptr(pack, sub, err)
+    error_proc_ptr(sub, pack, err)
+
+/// Convenience error pack macro for enclosing arbitrary rc functions.
+///
+/// \param rc       error rc
+/// \param err      error to pack
+/// \param sub      encapsulated function
+///
+/// \returns        \p sub rc
+#define error_pack_rc(rc, err, sub) \
+    error_proc_rc(sub, rc, pack, err)
 
 /// Convenience error pass macro for enclosing int functions.
 ///
@@ -1116,7 +1156,7 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_pass_int(sub) \
-    error_proc_int(pass, sub)
+    error_proc_int(sub, pass)
 
 /// Convenience error pass macro for enclosing pointer functions.
 ///
@@ -1124,7 +1164,16 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_pass_ptr(sub) \
-    error_proc_ptr(pass, sub)
+    error_proc_ptr(sub, pass)
+
+/// Convenience error pass macro for enclosing arbitrary rc functions.
+///
+/// \param rc       error rc
+/// \param sub      encapsulated function
+///
+/// \returns        \p sub rc
+#define error_pass_rc(rc, sub) \
+    error_proc_rc(sub, rc, pass)
 
 /// Convenience error skip macro for enclosing int functions.
 ///
@@ -1132,7 +1181,7 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_skip_int(sub) \
-    error_proc_int(skip, sub)
+    error_proc_int(sub, skip)
 
 /// Convenience error pass macro for enclosing pointer functions.
 ///
@@ -1140,7 +1189,16 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_skip_ptr(sub) \
-    error_proc_ptr(skip, sub)
+    error_proc_ptr(sub, skip)
+
+/// Convenience error pass macro for enclosing arbitrary functions.
+///
+/// \param rc       error rc
+/// \param sub      encapsulated function
+///
+/// \returns        \p sub rc
+#define error_skip_rc(rc, sub) \
+    error_proc_rc(sub, rc, skip)
 
 /// Convenience error pick macro for enclosing int functions.
 ///
@@ -1149,7 +1207,7 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_pick_int(err, sub) \
-    error_proc_int(pick, sub, err)
+    error_proc_int(sub, pick, err)
 
 /// Convenience error pick macro for enclosing pointer functions.
 ///
@@ -1158,7 +1216,17 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_pick_ptr(err, sub) \
-    error_proc_ptr(pick, sub, err)
+    error_proc_ptr(sub, pick, err)
+
+/// Convenience error pick macro for enclosing arbitrary rc functions.
+///
+/// \param rc       error rc
+/// \param err      error to pick
+/// \param sub      encapsulated function
+///
+/// \returns        \p sub rc
+#define error_pick_rc(rc, err, sub) \
+    error_proc_rc(sub, rc, pick, err)
 
 /// Convenience error lift macro for enclosing int functions.
 ///
@@ -1167,7 +1235,7 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_lift_int(err, sub) \
-    error_proc_int(lift, sub, err)
+    error_proc_int(sub, lift, err)
 
 /// Convenience error lift macro for enclosing pointer functions.
 ///
@@ -1176,7 +1244,17 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 ///
 /// \returns        \p sub rc
 #define error_lift_ptr(err, sub) \
-    error_proc_ptr(lift, sub, err)
+    error_proc_ptr(sub, lift, err)
+
+/// Convenience error lift macro for enclosing arbitrary rc functions.
+///
+/// \param rc       error rc
+/// \param err      error to lift
+/// \param sub      encapsulated function
+///
+/// \returns        \p sub rc
+#define error_lift_rc(rc, err, sub) \
+    error_proc_rc(sub, rc, lift, err)
 
 
 /// generic error type declaration

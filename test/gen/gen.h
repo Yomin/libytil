@@ -20,16 +20,15 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_TEST_GEN_H__
-#define __YTIL_TEST_GEN_H__
+#ifndef YTIL_TEST_SUITE_GEN_INCLUDED
+#define YTIL_TEST_SUITE_GEN_INCLUDED
 
-#include <ytil/test/suite.h>
 
-test_suite_ct   test_suite_gen(void);
-test_suite_ct   test_suite_gen_error(void);
-test_suite_ct   test_suite_gen_log(void);
-test_suite_ct   test_suite_gen_path(void);
-test_suite_ct   test_suite_gen_str(void);
+int test_suite_gen(void);
+int test_suite_gen_error(void);
+int test_suite_gen_log(void);
+int test_suite_gen_path(void);
+int test_suite_gen_str(void);
 
 
 #endif

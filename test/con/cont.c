@@ -21,14 +21,16 @@
  */
 
 #include "cont.h"
+#include <ytil/test/run.h>
 
 
-test_suite_ct test_suite_con(void)
+int test_suite_con(void)
 {
-    return test_suite_new_with_suites("con",
-        test_suite_con_art(),
-        test_suite_con_list(),
-        test_suite_con_ring(),
-        test_suite_con_vec()
-    );
+    return error_pass_int(test_run_suites("con",
+        test_suite_con_art,
+        test_suite_con_list,
+        test_suite_con_ring,
+        test_suite_con_vec,
+        NULL
+    ));
 }

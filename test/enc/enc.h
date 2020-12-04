@@ -20,16 +20,15 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_TEST_ENC_H__
-#define __YTIL_TEST_ENC_H__
+#ifndef YTIL_TEST_SUITE_ENC_INCLUDED
+#define YTIL_TEST_SUITE_ENC_INCLUDED
 
-#include <ytil/test/suite.h>
 
-test_suite_ct   test_suite_enc(void);
-test_suite_ct   test_suite_enc_base64(void);
-test_suite_ct   test_suite_enc_base85(void);
-test_suite_ct   test_suite_enc_pctenc(void);
-test_suite_ct   test_suite_enc_qpenc(void);
+int test_suite_enc(void);
+int test_suite_enc_base64(void);
+int test_suite_enc_base85(void);
+int test_suite_enc_pctenc(void);
+int test_suite_enc_qpenc(void);
 
 
 #endif

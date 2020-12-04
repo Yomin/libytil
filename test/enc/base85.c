@@ -21,6 +21,7 @@
  */
 
 #include "enc.h"
+#include <ytil/test/run.h>
 #include <ytil/test/test.h>
 #include <ytil/enc/base85.h>
 
@@ -52,10 +53,10 @@ TEST_CASE(base85_encode_invalid_alphabet_insufficient)
 TEST_CASE(base85_encode_invalid_alphabet_duplicates)
 {
     char alphabet[86];
-    
+
     memset(alphabet, 'a', 85);
     alphabet[85] = '\0';
-    
+
     test_ptr_error(base85_encode(BIN("foo"), alphabet, NULL), E_BASE85_INVALID_ALPHABET);
 }
 
@@ -194,10 +195,10 @@ TEST_CASE(base85_decode_invalid_alphabet_insufficient)
 TEST_CASE(base85_decode_invalid_alphabet_duplicates)
 {
     char alphabet[86];
-    
+
     memset(alphabet, 'a', 85);
     alphabet[85] = '\0';
-    
+
     test_ptr_error(base85_decode(LIT("foo"), alphabet, NULL), E_BASE85_INVALID_ALPHABET);
 }
 
@@ -387,10 +388,10 @@ TEST_CASE_ABORT(base85_is_valid_invalid_alphabet_insufficient)
 TEST_CASE_ABORT(base85_is_valid_invalid_alphabet_duplicates)
 {
     char alphabet[86];
-    
+
     memset(alphabet, 'a', 85);
     alphabet[85] = '\0';
-    
+
     base85_is_valid(LIT("foo"), alphabet, NULL);
 }
 
@@ -524,92 +525,94 @@ TEST_CASE(base85_is_valid_compression)
     test_true(base85_is_valid(LIT("xyz"), base85_alphabet_a85, "x\x00y\x01z\x02"));
 }
 
-test_suite_ct test_suite_enc_base85(void)
+int test_suite_enc_base85(void)
 {
-    return test_suite_new_with_cases("base85"
-        , test_case_new(base85_encode_invalid_alphabet_null)
-        , test_case_new(base85_encode_invalid_alphabet_insufficient)
-        , test_case_new(base85_encode_invalid_alphabet_duplicates)
-        , test_case_new(base85_encode_invalid_compression_in_alphabet)
-        , test_case_new(base85_encode_invalid_compression_duplicates1)
-        , test_case_new(base85_encode_invalid_compression_duplicates2)
-        , test_case_new(base85_encode_invalid_blob1)
-        , test_case_new(base85_encode_invalid_blob2)
-        , test_case_new(base85_encode_empty)
-        , test_case_new(base85_encode_a85_full)
-        , test_case_new(base85_encode_z85_full)
-        , test_case_new(base85_encode_a85_1)
-        , test_case_new(base85_encode_a85_2)
-        , test_case_new(base85_encode_a85_3)
-        , test_case_new(base85_encode_a85_zero_1)
-        , test_case_new(base85_encode_a85_zero_2)
-        , test_case_new(base85_encode_a85_zero_3)
-        , test_case_new(base85_encode_a85_zero_4)
-        , test_case_new(base85_encode_a85_zero_5)
-        , test_case_new(base85_encode_compression)
-        
-        , test_case_new(base85_decode_invalid_alphabet_null)
-        , test_case_new(base85_decode_invalid_alphabet_insufficient)
-        , test_case_new(base85_decode_invalid_alphabet_duplicates)
-        , test_case_new(base85_decode_invalid_compression_in_alphabet)
-        , test_case_new(base85_decode_invalid_compression_duplicates1)
-        , test_case_new(base85_decode_invalid_compression_duplicates2)
-        , test_case_new(base85_decode_invalid_str1)
-        , test_case_new(base85_decode_invalid_str2)
-        , test_case_new(base85_decode_invalid_len)
-        , test_case_new(base85_decode_empty)
-        , test_case_new(base85_decode_a85_invalid_b85_11)
-        , test_case_new(base85_decode_a85_invalid_b85_12)
-        , test_case_new(base85_decode_a85_invalid_b85_21)
-        , test_case_new(base85_decode_a85_invalid_b85_22)
-        , test_case_new(base85_decode_a85_invalid_b85_31)
-        , test_case_new(base85_decode_a85_invalid_b85_32)
-        , test_case_new(base85_decode_a85_invalid_b85_41)
-        , test_case_new(base85_decode_a85_invalid_b85_42)
-        , test_case_new(base85_decode_a85_invalid_b85_5)
-        , test_case_new(base85_decode_a85_invalid_compression_11)
-        , test_case_new(base85_decode_a85_invalid_compression_12)
-        , test_case_new(base85_decode_a85_invalid_compression_21)
-        , test_case_new(base85_decode_a85_invalid_compression_22)
-        , test_case_new(base85_decode_a85_invalid_compression_31)
-        , test_case_new(base85_decode_a85_invalid_compression_32)
-        , test_case_new(base85_decode_a85_invalid_compression_4)
-        , test_case_new(base85_decode_a85_full)
-        , test_case_new(base85_decode_z85_full)
-        , test_case_new(base85_decode_a85_1)
-        , test_case_new(base85_decode_a85_2)
-        , test_case_new(base85_decode_a85_3)
-        , test_case_new(base85_decode_a85_4)
-        , test_case_new(base85_decode_compression)
-        
-        , test_case_new(base85_is_valid_invalid_alphabet_null)
-        , test_case_new(base85_is_valid_invalid_alphabet_insufficient)
-        , test_case_new(base85_is_valid_invalid_alphabet_duplicates)
-        , test_case_new(base85_is_valid_invalid_compression_in_alphabet)
-        , test_case_new(base85_is_valid_invalid_compression_duplicates1)
-        , test_case_new(base85_is_valid_invalid_compression_duplicates2)
-        , test_case_new(base85_is_valid_invalid_str1)
-        , test_case_new(base85_is_valid_invalid_str2)
-        , test_case_new(base85_is_valid_invalid_len)
-        , test_case_new(base85_is_valid_empty)
-        , test_case_new(base85_is_valid_a85_invalid_b85_11)
-        , test_case_new(base85_is_valid_a85_invalid_b85_12)
-        , test_case_new(base85_is_valid_a85_invalid_b85_21)
-        , test_case_new(base85_is_valid_a85_invalid_b85_22)
-        , test_case_new(base85_is_valid_a85_invalid_b85_31)
-        , test_case_new(base85_is_valid_a85_invalid_b85_32)
-        , test_case_new(base85_is_valid_a85_invalid_b85_41)
-        , test_case_new(base85_is_valid_a85_invalid_b85_42)
-        , test_case_new(base85_is_valid_a85_invalid_b85_5)
-        , test_case_new(base85_is_valid_a85_invalid_compression_11)
-        , test_case_new(base85_is_valid_a85_invalid_compression_12)
-        , test_case_new(base85_is_valid_a85_invalid_compression_21)
-        , test_case_new(base85_is_valid_a85_invalid_compression_22)
-        , test_case_new(base85_is_valid_a85_invalid_compression_31)
-        , test_case_new(base85_is_valid_a85_invalid_compression_32)
-        , test_case_new(base85_is_valid_a85_invalid_compression_4)
-        , test_case_new(base85_is_valid_a85)
-        , test_case_new(base85_is_valid_z85)
-        , test_case_new(base85_is_valid_compression)
-    );
+    return error_pass_int(test_run_cases("base85",
+        test_case(base85_encode_invalid_alphabet_null),
+        test_case(base85_encode_invalid_alphabet_insufficient),
+        test_case(base85_encode_invalid_alphabet_duplicates),
+        test_case(base85_encode_invalid_compression_in_alphabet),
+        test_case(base85_encode_invalid_compression_duplicates1),
+        test_case(base85_encode_invalid_compression_duplicates2),
+        test_case(base85_encode_invalid_blob1),
+        test_case(base85_encode_invalid_blob2),
+        test_case(base85_encode_empty),
+        test_case(base85_encode_a85_full),
+        test_case(base85_encode_z85_full),
+        test_case(base85_encode_a85_1),
+        test_case(base85_encode_a85_2),
+        test_case(base85_encode_a85_3),
+        test_case(base85_encode_a85_zero_1),
+        test_case(base85_encode_a85_zero_2),
+        test_case(base85_encode_a85_zero_3),
+        test_case(base85_encode_a85_zero_4),
+        test_case(base85_encode_a85_zero_5),
+        test_case(base85_encode_compression),
+
+        test_case(base85_decode_invalid_alphabet_null),
+        test_case(base85_decode_invalid_alphabet_insufficient),
+        test_case(base85_decode_invalid_alphabet_duplicates),
+        test_case(base85_decode_invalid_compression_in_alphabet),
+        test_case(base85_decode_invalid_compression_duplicates1),
+        test_case(base85_decode_invalid_compression_duplicates2),
+        test_case(base85_decode_invalid_str1),
+        test_case(base85_decode_invalid_str2),
+        test_case(base85_decode_invalid_len),
+        test_case(base85_decode_empty),
+        test_case(base85_decode_a85_invalid_b85_11),
+        test_case(base85_decode_a85_invalid_b85_12),
+        test_case(base85_decode_a85_invalid_b85_21),
+        test_case(base85_decode_a85_invalid_b85_22),
+        test_case(base85_decode_a85_invalid_b85_31),
+        test_case(base85_decode_a85_invalid_b85_32),
+        test_case(base85_decode_a85_invalid_b85_41),
+        test_case(base85_decode_a85_invalid_b85_42),
+        test_case(base85_decode_a85_invalid_b85_5),
+        test_case(base85_decode_a85_invalid_compression_11),
+        test_case(base85_decode_a85_invalid_compression_12),
+        test_case(base85_decode_a85_invalid_compression_21),
+        test_case(base85_decode_a85_invalid_compression_22),
+        test_case(base85_decode_a85_invalid_compression_31),
+        test_case(base85_decode_a85_invalid_compression_32),
+        test_case(base85_decode_a85_invalid_compression_4),
+        test_case(base85_decode_a85_full),
+        test_case(base85_decode_z85_full),
+        test_case(base85_decode_a85_1),
+        test_case(base85_decode_a85_2),
+        test_case(base85_decode_a85_3),
+        test_case(base85_decode_a85_4),
+        test_case(base85_decode_compression),
+
+        test_case(base85_is_valid_invalid_alphabet_null),
+        test_case(base85_is_valid_invalid_alphabet_insufficient),
+        test_case(base85_is_valid_invalid_alphabet_duplicates),
+        test_case(base85_is_valid_invalid_compression_in_alphabet),
+        test_case(base85_is_valid_invalid_compression_duplicates1),
+        test_case(base85_is_valid_invalid_compression_duplicates2),
+        test_case(base85_is_valid_invalid_str1),
+        test_case(base85_is_valid_invalid_str2),
+        test_case(base85_is_valid_invalid_len),
+        test_case(base85_is_valid_empty),
+        test_case(base85_is_valid_a85_invalid_b85_11),
+        test_case(base85_is_valid_a85_invalid_b85_12),
+        test_case(base85_is_valid_a85_invalid_b85_21),
+        test_case(base85_is_valid_a85_invalid_b85_22),
+        test_case(base85_is_valid_a85_invalid_b85_31),
+        test_case(base85_is_valid_a85_invalid_b85_32),
+        test_case(base85_is_valid_a85_invalid_b85_41),
+        test_case(base85_is_valid_a85_invalid_b85_42),
+        test_case(base85_is_valid_a85_invalid_b85_5),
+        test_case(base85_is_valid_a85_invalid_compression_11),
+        test_case(base85_is_valid_a85_invalid_compression_12),
+        test_case(base85_is_valid_a85_invalid_compression_21),
+        test_case(base85_is_valid_a85_invalid_compression_22),
+        test_case(base85_is_valid_a85_invalid_compression_31),
+        test_case(base85_is_valid_a85_invalid_compression_32),
+        test_case(base85_is_valid_a85_invalid_compression_4),
+        test_case(base85_is_valid_a85),
+        test_case(base85_is_valid_z85),
+        test_case(base85_is_valid_compression),
+
+        NULL
+    ));
 }

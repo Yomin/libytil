@@ -20,1130 +20,1051 @@
  * THE SOFTWARE.
  */
 
+/// \file
+
 #include <ytil/test/run.h>
-#include <ytil/test/com.h>
-#include <ytil/test/state.h>
-#include <ytil/test/ctx.h>
 #include <ytil/con/vec.h>
-#include <ytil/sys/proc.h>
-#include <ytil/ext/string.h>
 #include <ytil/def.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
+#include <ytil/def/color.h>
+#include <ytil/ext/stdlib.h>
+#include <ytil/gen/path.h>
 #include <errno.h>
 #include <getopt.h>
-#include <limits.h>
-#include <sys/types.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
-#ifndef _WIN32
-#   include <wait.h>
-#   include <poll.h>
-#   include <sys/socket.h>
-#   include <sys/ptrace.h>
-#   include <sys/resource.h>
+#if OS_WINDOWS
+    #include <shlwapi.h>
+#else
+    #include <fnmatch.h>
+    #include <sys/wait.h>
+    #include <sys/ptrace.h>
 #endif
 
-#define COLOR_DEFAULT   "\033[0m"
-#define COLOR_RED       "\033[1;31;40m"
-#define COLOR_GREEN     "\033[1;32;40m"
-#define COLOR_YELLOW    "\033[1;33;40m"
 
-
-enum test_run_trace_status
+/// test run trace status
+typedef struct test_trace
 {
-      TEST_PARENT_NOT_TRACED
-    , TEST_PARENT_TRACED
-    , TEST_CHILD_NOT_TRACED
-    , TEST_CHILD_TRACED
-};
+    bool    check;      ///< check trace status
+    bool    traced;     ///< process is traced
+    bool    nofork;     ///< disable fork
+    bool    skip;       ///< enable skip
+    bool    notimeout;  ///< disable timeout
+} test_trace_st;
 
-typedef enum test_run_loglvl
-{
-      TEST_LOGLVL_SUMMARY
-    , TEST_LOGLVL_SUITE
-    , TEST_LOGLVL_CASE
-} test_run_loglvl_id;
-
-typedef struct test_count
-{
-    size_t results[TEST_RESULTS], asserts;
-} test_count_st;
-
+/// test run
 typedef struct test_run
 {
-    clockid_t control_clock, worker_clock;
-    test_state_ct state;
-    test_com_ct com;
-    test_count_st count;
-    vec_ct path, filters;
-    FILE *fp;
-    bool fork, clean_exit, core_dump, skip, check_traced, traced;
-    test_run_loglvl_id loglvl;
+    path_ct         path;                       ///< suite/case path
+    str_ct          name;                       ///< last suite/case name
+    vec_ct          filter;                     ///< filters
+    size_t          result[TEST_RESULT_TYPES];  ///< test run results
+    test_config_st  config;                     ///< test run config
+    test_log_id     log;                        ///< logging level
+    test_result_id  stop;                       ///< stop on first result
+    test_trace_st   trace;                      ///< trace status
 } test_run_st;
 
-typedef struct test_filter
+/// test result info
+typedef struct test_result_info
 {
-    vec_ct path;
-    bool matched;
-    size_t level;
-} test_filter_st;
+    const char  *color;     ///< result color
+    const char  *caps;      ///< result name in capitals
+    const char  *name;      ///< result name
+} test_result_info_st;
 
-typedef struct test_filter_node
+/// test result infos
+static const test_result_info_st result_info[] =
 {
-    vec_ct units;
-} test_filter_node_st;
-
-typedef struct test_filter_unit
-{
-    char *name;
-    size_t len;
-    bool prefix;
-} test_filter_unit_st;
-
-typedef struct test_match_state
-{
-    size_t level, matched;
-    const char *name;
-    test_entry_id type;
-} test_match_st;
-
-/// test_run error type definition
-ERROR_DEFINE_LIST(TEST_RUN,
-      ERROR_INFO(E_TEST_RUN_INVALID_OBJECT, "Invalid test run object.")
-    , ERROR_INFO(E_TEST_RUN_INVALID_SUITE, "Invalid suite.")
-    , ERROR_INFO(E_TEST_RUN_INVALID_FILTER, "Invalid filter.")
-    , ERROR_INFO(E_TEST_RUN_INVALID_OPTION, "Invalid option.")
-    , ERROR_INFO(E_TEST_RUN_MISSING_ARG, "Missing argument.")
-    , ERROR_INFO(E_TEST_RUN_MALFORMED_ARG, "Malformed argument.")
-    , ERROR_INFO(E_TEST_RUN_NOT_AVAILABLE, "Function not available.")
-    , ERROR_INFO(E_TEST_RUN_TRACE_CHECK, "Trace check failed.")
-);
-
-/// default error type for test_run module
-#define ERROR_TYPE_DEFAULT ERROR_TYPE_TEST_RUN
-
-
-static void fperror(FILE *fp, const char *msg)
-{
-    fprintf(fp, "%s: %s\n", msg, error_desc(0));
-}
-
-static int test_run_get_clock(clockid_t *clock, ...)
-{
-    timespec_st ts;
-    va_list ap;
-    
-    va_start(ap, clock);
-    
-    while(1)
-    {
-        *clock = va_arg(ap, clockid_t);
-        
-        if(!clock_gettime(*clock, &ts))
-            return va_end(ap), 0;
-        
-        if(*clock == CLOCK_REALTIME)
-            return va_end(ap), error_wrap_last_errno(clock_gettime), -1;
-    }
-}
-
-static const struct option test_run_options[] =
-{
-      { "help",    no_argument,       NULL, 'h' }
-    , { "clean",   no_argument,       NULL, 'c' }
-    , { "noclean", no_argument,       NULL, 'C' }
-    , { "dump",    no_argument,       NULL, 'd' }
-    , { "nodump",  no_argument,       NULL, 'D' }
-    , { "fork",    no_argument,       NULL, 'f' }
-    , { "nofork",  no_argument,       NULL, 'F' }
-    , { "skip",    no_argument,       NULL, 's' }
-    , { "noskip",  no_argument,       NULL, 'S' }
-    , { "debug",   no_argument,       NULL, 'b' }
-    , { "loglvl",  required_argument, NULL, 'l' }
-    , { NULL,      0,                 NULL,  0  }
+    [TEST_RESULT_PASS]      = { COLOR_GREEN,    "PASS", "pass"      },
+    [TEST_RESULT_SKIP]      = { COLOR_CYAN,     "SKIP", "skip"      },
+    [TEST_RESULT_TIMEOUT]   = { COLOR_MAGENTA,  "TIME", "timeout"   },
+    [TEST_RESULT_WARN]      = { COLOR_YELLOW,   "WARN", "warn"      },
+    [TEST_RESULT_MISSING]   = { COLOR_YELLOW,   "MISS", "missing"   },
+    [TEST_RESULT_FAIL]      = { COLOR_RED,      "FAIL", "fail"      },
+    [TEST_RESULT_ERROR]     = { COLOR_RED,      "ERRR", "error"     },
 };
 
-static int test_run_config(test_run_ct run, int argc, char *argv[])
+/// test message colors
+static const char *msg_color[] =
 {
-    int opt;
-    
-    if(proc_init_title(argc, argv) && !error_check(0, E_PROC_NOT_AVAILABLE))
-        fperror(run->fp, "failed to init proc title");
-    
-    if(test_run_get_clock(&run->control_clock, CLOCK_MONOTONIC, CLOCK_REALTIME)
-    || test_run_get_clock(&run->worker_clock, CLOCK_PROCESS_CPUTIME_ID, CLOCK_MONOTONIC, CLOCK_REALTIME))
-        return error_pass(), fperror(run->fp, "failed to get clock"), -1;
-    
-    if(argc <= 1)
-        return 0;
-    
-    while((opt = getopt_long(argc, argv, ":hv", test_run_options, NULL)) != -1)
+    [TEST_MSG_INFO]     = "",
+    [TEST_MSG_WARN]     = COLOR_YELLOW,
+    [TEST_MSG_MISSING]  = COLOR_YELLOW,
+    [TEST_MSG_FAIL]     = COLOR_RED,
+    [TEST_MSG_ERROR]    = COLOR_RED,
+};
+
+/// test error type definition
+ERROR_DEFINE_LIST(TEST,
+    ERROR_INFO(E_TEST_DISABLED, "Test suite or case disabled."),
+    ERROR_INFO(E_TEST_MISSING,  "Test suite is missing something to run."),
+    ERROR_INFO(E_TEST_NOFORK,   "Fork not available."),
+    ERROR_INFO(E_TEST_STOP,     "A test case had stop result."),
+    ERROR_INFO(E_TEST_USAGE,    "Invalid cmdline usage.")
+);
+
+/// default error type for test run module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_TEST
+
+/// global test run state
+static test_run_st *run;
+
+
+/// Free test run filter.
+///
+/// \implements vec_dtor_cb
+static void test_run_vec_free_filter(vec_const_ct vec, void *elem, void *ctx)
+{
+    path_ct *filter = elem;
+
+    path_free(*filter);
+}
+
+/// Clear test run.
+///
+///
+static void test_run_clear(void)
+{
+    if(run->path)
+        path_free(run->path);
+
+    if(run->name)
+        str_unref(run->name);
+
+    if(run->filter)
+        vec_free_f(run->filter, test_run_vec_free_filter, NULL);
+
+    memset(run, 0, sizeof(test_run_st));
+}
+
+int test_run_init(void)
+{
+    if(run)
+        test_run_clear();
+    else if(!(run = calloc(1, sizeof(test_run_st))))
+        return error_wrap_last_errno(calloc), -1;
+
+    run->config.clean       = false;
+    run->config.dump        = false;
+    run->config.fork        = UNIX_WINDOWS(true, false);
+    run->config.skip        = !run->config.fork;
+    run->config.stdio       = false;
+    run->config.timeout     = 3;
+    run->log                = TEST_LOG_SUMMARY;
+    run->stop               = TEST_RESULT_TYPES;
+    run->trace.check        = run->config.fork;
+    run->trace.nofork       = true;
+    run->trace.skip         = true;
+    run->trace.notimeout    = true;
+
+    return 0;
+}
+
+/// Get result ID from name.
+///
+/// \param name     name to match
+///
+/// \returns                    result ID
+/// \retval TEST_RESULT_TYPES   no result name matched
+static test_result_id test_run_match_result_name(const char *name)
+{
+    test_result_id result;
+
+    for(result = 0; result < TEST_RESULT_TYPES; result++)
+    {
+        if(!strcmp(name, result_info[result].name))
+            break;
+    }
+
+    return result;
+}
+
+void test_run_print_usage(const char *name)
+{
+    printf("Usage: %s [path/to/suite/case [...]]"
+        "\n\t[-v|--verbose]             verbose"
+        "\n\t[-q|--quiet]               quiet"
+        "\n\t[--[no]clean]              clean up after test cases"
+        "\n\t[--[no]dump]               coredump on test case crash"
+        "\n\t[--[no]fork]               fork to execute test cases"
+        "\n\t[--[no]skip]               skip test cases expecting exit or signal"
+        "\n\t[--[no]stdio]              do not suppress stdio"
+        "\n\t[--[no]debug]              shorthand for --nofork --skip"
+        "\n\t[--[no]timeout=<sec>]      test case timeout in seconds"
+        "\n\t[--[no]stop[=<result>]]    stop on first result"
+        "\n", name);
+}
+
+/// test run cmdline options
+static const struct option test_run_options[] =
+{
+    { "help",       no_argument,        NULL,   'h' },
+    { "verbose",    no_argument,        NULL,   'v' },
+    { "quiet",      no_argument,        NULL,   'q' },
+    { "clean",      no_argument,        NULL,   'c' },
+    { "noclean",    no_argument,        NULL,   'C' },
+    { "dump",       no_argument,        NULL,   'd' },
+    { "nodump",     no_argument,        NULL,   'D' },
+    { "fork",       no_argument,        NULL,   'f' },
+    { "nofork",     no_argument,        NULL,   'F' },
+    { "skip",       no_argument,        NULL,   's' },
+    { "noskip",     no_argument,        NULL,   'S' },
+    { "stdio",      no_argument,        NULL,   'i' },
+    { "nostdio",    no_argument,        NULL,   'I' },
+    { "debug",      no_argument,        NULL,   'b' },
+    { "nodebug",    no_argument,        NULL,   'B' },
+    { "timeout",    required_argument,  NULL,   't' },
+    { "notimeout",  no_argument,        NULL,   'T' },
+    { "stop",       optional_argument,  NULL,   'r' },
+    { "nostop",     no_argument,        NULL,   'R' },
+    { NULL,         0,                  NULL,    0  }
+};
+
+int test_run_init_from_args(int argc, char *argv[])
+{
+    test_result_id result;
+    size_t timeout;
+    int opt, err;
+
+    if(test_run_init())
+        return error_pass(), -1;
+
+    err     = opterr;
+    opterr  = 0;
+
+    while((opt = getopt_long(argc, argv, "hvq", test_run_options, NULL)) != -1)
+    {
         switch(opt)
         {
         case 'h':
-            fprintf(run->fp, "Usage: %s [-v] [--loglvl=<lvl>]"
-                "\n\t[--[no]clean]  cleanup after test case"
-                "\n\t[--[no]dump]   coredump on test case crash"
-                "\n\t[--[no]fork]   fork for test case"
-                "\n\t[--[no]skip]   skip test case expecting exit or signal"
-                "\n\t[--debug]      shorthand for --nofork --skip"
-                "\n\t[path/to1,to2/suite*/case [...]]\n", argv[0]);
-            return 1;
+            goto usage;
+
+        case 'v':
+            test_run_inc_loglevel();
+            break;
+
+        case 'q':
+            test_run_set_loglevel(TEST_LOG_OFF);
+            break;
+
         case 'c':
         case 'C':
-            test_run_enable_clean(run, opt == 'c');
+            test_run_enable_clean(opt == 'c');
             break;
+
         case 'd':
         case 'D':
-            test_run_enable_dump(run, opt == 'd');
+            test_run_enable_dump(opt == 'd');
             break;
+
         case 'f':
         case 'F':
-            if(test_run_enable_fork(run, opt == 'f'))
-                return error_pass(), fprintf(run->fp, "fork not available\n"), -1;
+
+            if(test_run_enable_fork(opt == 'f'))
+                goto error;
+
             break;
+
         case 's':
         case 'S':
-            test_run_enable_skip(run, opt == 's');
+            test_run_enable_skip(opt == 's');
             break;
+
+        case 'i':
+        case 'I':
+            test_run_enable_stdio(opt == 'i');
+            break;
+
         case 'b':
-            test_run_enable_fork(run, false);
-            test_run_enable_skip(run, true);
+        case 'B':
+
+            if(test_run_enable_fork(opt != 'b'))
+                goto error;
+
+            test_run_enable_skip(opt == 'b');
             break;
-        case 'l':
-            if(strspn(optarg, "1234567890") != strlen(optarg))
-            {
-                fprintf(run->fp, "loglvl argument not numeric\n");
-                return error_set(E_TEST_RUN_MALFORMED_ARG), -1;
-            }
-            run->loglvl = atoi(optarg);
+
+        case 't':
+
+            if(str2uz(&timeout, optarg, 10) < 0)
+                goto usage;
+
+            test_run_set_timeout(timeout);
             break;
-        case 'v':
-            run->loglvl++;
+
+        case 'T':
+            test_run_set_timeout(0);
             break;
-        case '?':
-            fprintf(run->fp, "invalid option '%s'\n", argv[optind-1]);
-            return error_set(E_TEST_RUN_INVALID_OPTION), -1;
-        case ':':
-            fprintf(run->fp, "missing argument for '%s'\n", argv[optind-1]);
-            return error_set(E_TEST_RUN_MISSING_ARG), -1;
+
+        case 'r':
+            result = optarg ? test_run_match_result_name(optarg) : TEST_RESULT_TIMEOUT;
+
+            if(result == TEST_RESULT_TYPES)
+                goto usage;
+
+            test_run_enable_stop(result);
+            break;
+
+        case 'R':
+            test_run_disable_stop();
+            break;
+
         default:
-            abort();
+            goto usage;
         }
-    
-    for(; optind < argc; optind++)
-        if(test_run_add_filter(run, argv[optind]))
-        {
-            if(error_check(0, E_TEST_RUN_INVALID_FILTER))
-                fprintf(run->fp, "invalid filter '%s'\n", argv[optind]);
-            else
-                fperror(run->fp, "failed to add filter");
-            
-            return error_pass(), -1;
-        }
-    
+    }
+
+    opt     = optind;
+    optind  = 0;
+    opterr  = err;
+
+    for(; opt < argc; opt++)
+    {
+        if(test_run_add_filter(argv[opt]))
+            return error_pass(), test_run_free(), -1;
+    }
+
     return 0;
+
+usage:
+    optind  = 0;
+    opterr  = err;
+
+    test_run_free();
+
+    return_error_if_reached(E_TEST_USAGE, -1);
+
+error:
+    optind  = 0;
+    opterr  = err;
+
+    test_run_free();
+
+    return error_pass(), -1;
 }
 
-static int test_run_msg(test_com_msg_id type, test_com_msg_un *msg, void *ctx);
-
-test_run_ct test_run_new(void)
+void test_run_free(void)
 {
-    test_run_ct run;
-    
-    if(!(run = test_run_new_with_args(0, NULL)))
-        return error_pass(), NULL;
-    
-    return run;
+    if(!run)
+        return;
+
+    test_run_clear();
+    test_case_free();
+
+    free(run);
+    run = NULL;
 }
 
-test_run_ct test_run_new_with_args(int argc, char *argv[])
-{
-    test_run_ct run;
-    
-    if(!(run = calloc(1, sizeof(test_run_st))))
-        return error_wrap_last_errno(calloc), perror("failed to init test run"), NULL;
-    
-    run->fp = stdout;
-    
-#ifdef _WIN32
-    run->fork = false;
-    run->skip = true;
-    run->check_traced = false;
-#else
-    run->fork = true;
-    run->skip = false;
-    run->check_traced = true;
-#endif
-    
-    if(test_run_config(run, argc, argv))
-        return error_pass(), test_run_free(run), NULL;
-    
-    if(!(run->state = test_state_new()))
-        return error_wrap(), fperror(run->fp, "failed to init test state"), test_run_free(run), NULL;
-    
-    if(!(run->com = test_com_new(test_run_msg, run)))
-        return error_wrap(), fperror(run->fp, "failed to init com"), test_run_free(run), NULL;
-    
-    return run;
-}
-
-static void test_run_free_filter_unit(vec_const_ct vec, void *elem, void *ctx)
-{
-    test_filter_unit_st *unit = elem;
-    
-    if(unit->name)
-        free(unit->name);
-}
-
-static void test_run_free_filter_node(vec_const_ct vec, void *elem, void *ctx)
-{
-    test_filter_node_st *node = elem;
-    
-    if(node->units)
-        vec_free_f(node->units, test_run_free_filter_unit, NULL);
-}
-
-static void test_run_free_filter(vec_const_ct vec, void *elem, void *ctx)
-{
-    test_filter_st *filter = elem;
-    
-    if(filter->path)
-        vec_free_f(filter->path, test_run_free_filter_node, NULL);
-}
-
-void test_run_free(test_run_ct run)
+void test_run_enable_clean(bool clean)
 {
     assert(run);
-    
-    if(run->filters)
-        vec_free_f(run->filters, test_run_free_filter, NULL);
-    
-    if(run->state)
-        test_state_free(run->state);
-    
-    if(run->com)
-        test_com_free(run->com);
-    
-    proc_free_title();
-    
-    free(run);
+
+    run->config.clean = clean;
 }
 
-int test_run_enable_clean(test_run_ct run, bool clean)
+bool test_run_will_clean(void)
 {
-    return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
-    
-    run->clean_exit = clean;
-    
-    return 0;
+    assert(run);
+
+    return run->config.clean;
 }
 
-int test_run_enable_dump(test_run_ct run, bool dump)
+void test_run_enable_dump(bool dump)
 {
-    return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
-    
-    run->core_dump = dump;
-    
-    return 0;
+    assert(run);
+
+    run->config.dump = dump;
 }
 
-int test_run_enable_fork(test_run_ct run, bool fork)
+bool test_run_will_dump(void)
 {
-    return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
-    
-#ifdef _WIN32
-    return_error_if_fail(!fork, E_TEST_RUN_NOT_AVAILABLE, -1);
+    assert(run);
+
+    return run->config.dump;
+}
+
+int test_run_enable_fork(bool fork)
+{
+    assert(run);
+
+#if OS_WINDOWS
+
+    return_error_if_pass(fork, E_TEST_NOFORK, -1);
+
 #endif
-    
-    run->fork = fork;
-    run->check_traced = false;
-    
+
+    run->config.fork    = fork;
+    run->trace.check    = fork;     // disable trace check on nofork
+    run->trace.nofork   = false;
+
     return 0;
 }
 
-int test_run_enable_skip(test_run_ct run, bool skip)
+bool test_run_will_fork(void)
 {
-    return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
-    
-    run->skip = skip;
-    run->check_traced = false;
-    
-    return 0;
+    assert(run);
+
+    return run->config.fork;
 }
 
-int test_run_add_filter(test_run_ct run, const char *text)
+void test_run_enable_skip(bool skip)
 {
-    test_filter_st *filter;
-    test_filter_node_st *node;
-    test_filter_unit_st *unit;
-    const char *start_node, *start_unit, *end_node, *end_unit;
-    size_t len_node, len_unit;
-    
-    return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
-    return_error_if_fail(text, E_TEST_RUN_INVALID_FILTER, -1);
-    
-    if(text[0] == '/')
-        text++;
-    
-    return_error_if_fail(text[0], E_TEST_RUN_INVALID_FILTER, -1);
-    
-    if(!run->filters && !(run->filters = vec_new(2, sizeof(test_filter_st))))
+    assert(run);
+
+    run->config.skip    = skip;
+    run->trace.skip     = false;
+}
+
+bool test_run_will_skip(void)
+{
+    assert(run);
+
+    return run->config.skip;
+}
+
+void test_run_enable_stdio(bool stdio)
+{
+    assert(run);
+
+    run->config.stdio = stdio;
+}
+
+bool test_run_will_stdio(void)
+{
+    assert(run);
+
+    return run->config.stdio;
+}
+
+void test_run_set_timeout(size_t secs)
+{
+    assert(run);
+
+    run->config.timeout     = secs;
+    run->trace.notimeout    = false;
+}
+
+size_t test_run_get_timeout(void)
+{
+    assert(run);
+
+    return run->config.timeout;
+}
+
+void test_run_set_loglevel(test_log_id level)
+{
+    assert(run);
+    assert(level < TEST_LOG_LEVELS);
+
+    run->log = level;
+}
+
+void test_run_inc_loglevel(void)
+{
+    assert(run);
+
+    if(run->log < TEST_LOG_LEVELS - 1)
+        run->log++;
+}
+
+void test_run_dec_loglevel(void)
+{
+    assert(run);
+
+    if(run->log > 0)
+        run->log--;
+}
+
+test_log_id test_run_get_loglevel(void)
+{
+    assert(run);
+
+    return run->log;
+}
+
+void test_run_enable_stop(test_result_id result)
+{
+    assert(run);
+    assert(result < TEST_RESULT_TYPES);
+
+    run->stop = result;
+}
+
+void test_run_disable_stop(void)
+{
+    assert(run);
+
+    run->stop = TEST_RESULT_TYPES;
+}
+
+test_result_id test_run_get_stop(void)
+{
+    assert(run);
+
+    return run->stop;
+}
+
+int test_run_add_filter(const char *filter)
+{
+    path_ct path;
+
+    assert(run);
+    assert(filter);
+
+    if(!filter[0])
+        return 0;
+
+    if(!run->filter && !(run->filter = vec_new(2, sizeof(path_ct))))
         return error_wrap(), -1;
-    
-    if(!(filter = vec_push(run->filters))
-    || !(filter->path = vec_new(3, sizeof(test_filter_node_st))))
-        return error_wrap(), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
-    
-    for(start_node = text, end_node = strchr(start_node, '/');
-        start_node;
-        start_node = end_node ? end_node+1 : NULL,
-        end_node = end_node ? strchr(start_node, '/') : NULL)
+
+    if(!(path = path_new_c(filter, PATH_STYLE_POSIX)))
+        return error_wrap(), -1;
+
+    if(!vec_push_p(run->filter, path))
+        return error_wrap(), path_free(path), -1;
+
+    return 0;
+}
+
+/// Match filter against current path.
+///
+/// \implements vec_fold_cb
+///
+/// \retval 0                   filter does not match
+/// \retval 1                   filter does match
+/// \retval -1/E_GENERIC_OOM    out of memory
+static int test_run_vec_match_filter(vec_const_ct vec, size_t pos, void *elem, void *ctx)
+{
+    path_ct *filter = elem;
+    bool *complete  = ctx;
+    str_ct pattern;
+    int rc;
+
+    if(*complete)
+        pattern = path_get(*filter, PATH_STYLE_POSIX);
+    else
+        pattern = path_get_n(*filter, path_depth(run->path), PATH_STYLE_POSIX, false);
+
+    if(!pattern)
+        return error_wrap(), -1;
+
+#if OS_WINDOWS
+    rc = !!PathMatchSpecA(str_c(run->name), str_c(pattern));
+#else
+    rc = !fnmatch(str_c(pattern), str_c(run->name), FNM_LEADING_DIR);
+#endif
+
+    str_unref(pattern);
+
+    return rc;
+}
+
+/// Match all filters against current path.
+///
+/// \param complete     if true path must match whole filter, else only the prefix
+///
+/// \retval 0                   no filter matches
+/// \retval 1                   no filter available or a filter matches
+/// \retval -1/E_GENERIC_OOM    out of memory
+static int test_run_match_path(bool complete)
+{
+    if(!run->filter)
+        return 1;
+
+    if(!(run->name = path_get(run->path, PATH_STYLE_POSIX)))
+        return error_wrap(), -1;
+
+    return error_pick_int(E_VEC_CALLBACK,
+        vec_fold(run->filter, test_run_vec_match_filter, &complete));
+}
+
+/// End test suite or test case.
+///
+///
+static void test_run_end(void)
+{
+    path_drop(run->path, 1);
+
+    if(run->name)
     {
-        len_node = end_node ? (size_t)(end_node - start_node) : strlen(start_node);
-        
-        if(!(node = vec_push(filter->path))
-        || !(node->units = vec_new(2, sizeof(test_filter_unit_st))))
-            return error_wrap(), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
-        
-        for(start_unit = start_node, end_unit = memchr(start_unit, ',', len_node);
-            start_unit;
-            len_node -= end_unit ? len_unit+1 : 0,
-            start_unit = end_unit ? end_unit+1 : NULL,
-            end_unit = end_unit ? memchr(start_unit, ',', len_node) : NULL)
+        str_unref(run->name);
+        run->name = NULL;
+    }
+}
+
+/// Begin test suite or test case.
+///
+/// \param name         test suite or test case name
+/// \param tcase        if true begin test case else test suite
+///
+/// \retval 0                   success
+/// \retval -1/E_TEST_DISABLED  suite or case is disabled
+/// \retval -1/E_GENERIC_OOM    out of memory
+static int test_run_begin(const char *name, bool tcase)
+{
+    path_ct path;
+
+    assert(run);
+
+    if(!run->path)
+        path = path_new_c(name, PATH_STYLE_POSIX);
+    else
+        path = path_append_c(run->path, name, PATH_STYLE_POSIX);
+
+    if(!path)
+        return error_wrap(), -1;
+
+    if(run->name)
+        str_unref(run->name);
+
+    run->path   = path;
+    run->name   = NULL;
+
+    switch(test_run_match_path(tcase))
+    {
+    case 1:
+        return 0;
+
+    case 0:
+        return error_set(E_TEST_DISABLED), test_run_end(), -1;
+
+    default:
+        return error_pass(), test_run_end(), -1;
+    }
+}
+
+int test_run_begin_suite(const char *name, test_check_cb check)
+{
+    test_result_id result = TEST_RESULT_MISSING;
+    const char *msg;
+
+    if(test_run_begin(name, false))
+        return error_pass(), -1;
+
+    if(!check || !(msg = check()))
+        return 0;
+
+    run->result[result]++;
+
+    if(run->log >= TEST_LOG_SUITE)
+    {
+        if(!run->name)
+            run->name = path_get(run->path, PATH_STYLE_POSIX);
+
+        printf("[%s%s" COLOR_OFF "] %s: %s\n", result_info[result].color,
+            result_info[result].caps, run->name ? str_c(run->name) : name, msg);
+    }
+
+    return error_set(E_TEST_MISSING), test_run_end(), -1;
+}
+
+void test_run_end_suite(bool info)
+{
+    assert(run);
+    assert(run->path && path_depth(run->path));
+
+    if(info && run->log >= TEST_LOG_SUITE)
+    {
+        if(!run->name)
+            run->name = path_get(run->path, PATH_STYLE_POSIX);
+
+        printf("[DONE] %s\n", run->name ? str_c(run->name) : "<suite>");
+    }
+
+    test_run_end();
+}
+
+int test_run_begin_case(const char *name)
+{
+    return error_pass_int(test_run_begin(name, true));
+}
+
+#define TEST_MSG_INDENT 4 ///< number of spaces to indent messages
+
+/// Print test case message.
+///
+/// \implements test_case_msg_cb
+static void test_run_print_msg(const test_msg_st *msg, void *ctx)
+{
+    const test_call_st *call;
+    const test_line_st *line;
+    const char *text, *ptr;
+    size_t i;
+
+    return_if_fail(msg->type != TEST_MSG_INFO || run->log >= TEST_LOG_INFO);
+
+    for(i = 0, call = msg->call; i < msg->calls; i++, call++)
+    {
+        printf("%*s" COLOR_MAGENTA "%s:%zu" COLOR_OFF "\n%*s%s\n",
+            TEST_MSG_INDENT, "",
+            call->pos.file ? call->pos.file : "<file>", call->pos.line,
+            TEST_MSG_INDENT, "",
+            call->call ? call->call : "<call>");
+    }
+
+    printf("%*s%s" COLOR_MAGENTA "%s:%zu" COLOR_OFF "\n",
+        TEST_MSG_INDENT, "",
+        msg->pos.after ? COLOR_YELLOW "after " : "",
+        msg->pos.file ? msg->pos.file : "<file>", msg->pos.line);
+
+    printf("%s", msg_color[msg->type]);
+
+    for(i = 0, line = msg->line; i < msg->lines; i++, line++)
+    {
+        if(!line->msg)
         {
-            len_unit = end_unit ? (size_t)(end_unit - start_unit) : len_node;
-            
-            if(!len_unit)
-                return error_set(E_TEST_RUN_INVALID_FILTER), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
-            
-            if(!(unit = vec_push(node->units)))
-                return error_wrap(), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
-            
-            unit->len = len_unit;
-            
-            if(start_unit[len_unit-1] == '*')
+            printf("\n");
+            continue;
+        }
+
+        for(text = line->msg; (ptr = strchr(text, '\n')); text = ptr + 1)
+        {
+            if(ptr == text)
             {
-                unit->prefix = true;
-                unit->len--;
+                printf("\n");
             }
-            
-            if(memchr(start_unit, '*', unit->len))
-                return error_set(E_TEST_RUN_INVALID_FILTER), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
-            
-            if(unit->len && !(unit->name = strndup(start_unit, unit->len)))
-                return error_wrap_last_errno(strndup), vec_pop_f(run->filters, test_run_free_filter, NULL), -1;
+            else
+            {
+                printf("%*s%.*s\n", TEST_MSG_INDENT * (line->level + 1), "",
+                    (int)(ptr - text), text);
+            }
+        }
+
+        printf("%*s%s\n", TEST_MSG_INDENT * (line->level + 1), "", text);
+    }
+
+    printf("%s\n", COLOR_OFF);
+}
+
+void test_run_end_case(bool info)
+{
+    test_result_id result;
+
+    assert(run);
+    assert(run->path && path_depth(run->path));
+
+    if(!info || run->log < TEST_LOG_PROBLEM)
+    {
+        test_run_end();
+        return;
+    }
+
+    result = test_case_result();
+
+    if(run->log < TEST_LOG_ALL && (result == TEST_RESULT_PASS || result == TEST_RESULT_SKIP))
+    {
+        test_run_end();
+        return;
+    }
+
+    if(!run->name)
+        run->name = path_get(run->path, PATH_STYLE_POSIX);
+
+    printf("[%s%s" COLOR_OFF "] %s\n", result_info[result].color,
+        result_info[result].caps, run->name ? str_c(run->name) : test_case_name());
+
+    test_case_fold_msg(test_run_print_msg, NULL);
+
+    test_run_end();
+}
+
+int test_run_suites(const char *name, ...)
+{
+    va_list ap;
+    int rc;
+
+    va_start(ap, name);
+    rc = test_run_suites_check_v(name, NULL, ap);
+    va_end(ap);
+
+    return error_pass_int(rc);
+}
+
+int test_run_suites_check(const char *name, test_check_cb check, ...)
+{
+    va_list ap;
+    int rc;
+
+    va_start(ap, check);
+    rc = test_run_suites_check_v(name, check, ap);
+    va_end(ap);
+
+    return error_pass_int(rc);
+}
+
+int test_run_suites_v(const char *name, va_list ap)
+{
+    return error_pass_int(test_run_suites_check_v(name, NULL, ap));
+}
+
+int test_run_suites_check_v(const char *name, test_check_cb check, va_list ap)
+{
+    test_suite_cb suite;
+    int rc = 0;
+
+    assert(run);
+
+    if(name && (rc = test_run_begin_suite(name, check)))
+    {
+        switch(error_code(0))
+        {
+        case E_TEST_DISABLED:
+            return 0;
+
+        case E_TEST_MISSING:
+
+            if(TEST_RESULT_MISSING >= run->stop)
+                return error_push(E_TEST_STOP), -1;
+
+            return 0;
+
+        default:
+            return error_pass_int(rc);
         }
     }
-    
-    return 0;
+
+    while((suite = va_arg(ap, test_suite_cb)))
+    {
+        if(suite == TEST_SUITE_NOP)
+            continue;
+
+        if((rc = suite()))
+            break;
+    }
+
+    if(name)
+        test_run_end_suite(true);
+
+    return error_pass_int(rc);
 }
 
-static int test_run_check_traced(test_run_ct run)
+int test_run_cases(const char *name, ...)
 {
-#ifdef _WIN32
-    return TEST_PARENT_NOT_TRACED;
+    va_list ap;
+    int rc;
+
+    va_start(ap, name);
+    rc = test_run_cases_check_v(name, NULL, ap);
+    va_end(ap);
+
+    return error_pass_int(rc);
+}
+
+int test_run_cases_check(const char *name, test_check_cb check, ...)
+{
+    va_list ap;
+    int rc;
+
+    va_start(ap, check);
+    rc = test_run_cases_check_v(name, check, ap);
+    va_end(ap);
+
+    return error_pass_int(rc);
+}
+
+int test_run_cases_v(const char *name, va_list ap)
+{
+    return error_pass_int(test_run_cases_check_v(name, NULL, ap));
+}
+
+int test_run_cases_check_v(const char *name, test_check_cb check, va_list ap)
+{
+    const test_case_st *tcase;
+    int rc = 0;
+
+    assert(run);
+
+    if(name && (rc = test_run_begin_suite(name, check)))
+    {
+        switch(error_code(0))
+        {
+        case E_TEST_DISABLED:
+            return 0;
+
+        case E_TEST_MISSING:
+
+            if(TEST_RESULT_MISSING >= run->stop)
+                return error_push(E_TEST_STOP), -1;
+
+            return 0;
+
+        default:
+            return error_pass_int(rc);
+        }
+    }
+
+    while((tcase = va_arg(ap, const test_case_st *)))
+    {
+        if(tcase == TEST_CASE_NOP)
+            continue;
+
+        if((rc = test_run_case(tcase)))
+            break;
+    }
+
+    if(name)
+        test_run_end_suite(true);
+
+    return error_pass_int(rc);
+}
+
+/// Check if process is traced.
+///
+/// \retval 0                   success
+/// \retval 1                   child, process is not traced
+/// \retval 2                   child, process is traced
+/// \retval -1/E_GENERIC_WRAP   wrapped errno
+static int test_run_trace_check(void)
+{
+#if OS_WINDOWS
+
+    return 0;
+
 #else
+
     pid_t child, parent;
     int status, rc;
-    
+
+    if(!run->trace.check)
+        return 0;
+
+    run->trace.check = false;
+
     if((child = fork()) < 0)
-    {
-        fperror(run->fp, "failed to check trace status");
         return error_wrap_last_errno(fork), -1;
-    }
-    else if(child)
+
+    if(child)
     {
         if(waitpid(child, &status, 0) < 0)
-        {
-            fperror(run->fp, "failed to check trace status");
             return error_wrap_last_errno(waitpid), -1;
-        }
-        else if(WIFSIGNALED(status))
+
+        if(WIFEXITED(status) && WEXITSTATUS(status) == 2)
         {
-            fprintf(run->fp, "failed to check trace status: %s\n", strsignal(WTERMSIG(status)));
-            return error_set(E_TEST_RUN_TRACE_CHECK), -1;
+            run->trace.traced   = true;
+            run->config.fork    = run->trace.nofork ? false : run->config.fork;
+            run->config.skip    = run->trace.skip ? true : run->config.skip;
+            run->config.timeout = run->trace.notimeout ? 0 : run->config.timeout;
+
+            if(run->log >= TEST_LOG_PROBLEM)
+            {
+                if(run->trace.nofork)
+                    printf("[" COLOR_YELLOW "TRCE" COLOR_OFF "] --nofork\n");
+
+                if(run->trace.skip)
+                    printf("[" COLOR_YELLOW "TRCE" COLOR_OFF "] --skip\n");
+
+                if(run->trace.notimeout)
+                    printf("[" COLOR_YELLOW "TRCE" COLOR_OFF "] --notimeout\n");
+            }
         }
-        else if((rc = WEXITSTATUS(status)) < 0)
-        {
-            fprintf(run->fp, "failed to check trace status: %s\n", strerror(-rc));
-            return error_set(E_TEST_RUN_TRACE_CHECK), -1;
-        }
-        else switch(rc)
-        {
-        case TEST_CHILD_TRACED:        return TEST_PARENT_TRACED;
-        case TEST_CHILD_NOT_TRACED:    return TEST_PARENT_NOT_TRACED;
-        default:                       abort();
-        }
+
+        return 0;
     }
     else
     {
         parent = getppid();
-        
+
         if(ptrace(PTRACE_ATTACH, parent, NULL, NULL) < 0)
         {
-            rc = errno == EPERM ? TEST_CHILD_TRACED : -errno;
+            rc = errno == EPERM ? 2 : 1;
         }
         else
         {
             waitpid(parent, NULL, 0);
-            
-            rc = ptrace(PTRACE_DETACH, parent, NULL, NULL);
-            rc = rc < 0 ? -errno : TEST_CHILD_NOT_TRACED;
+            ptrace(PTRACE_DETACH, parent, NULL, NULL);
+            rc = 1;
         }
-        
-        if(run->clean_exit)
+
+        if(run->config.clean)
             return rc;
-        
+
         _exit(rc);
     }
-#endif
+
+#endif // if OS_WINDOWS
 }
 
-static int test_run_set_core_dump(test_run_ct run)
+int test_run_case(const test_case_st *tcase)
 {
-#ifndef _WIN32
-    struct rlimit limit;
-    
-    if(getrlimit(RLIMIT_CORE, &limit))
-        return error_wrap_last_errno(getrlimit), fperror(run->fp, "failed to get core dump size"), -1;
-    
-    if(!run->core_dump && limit.rlim_cur)
-    {
-        limit.rlim_cur = 0;
-        
-        if(setrlimit(RLIMIT_CORE, &limit))
-            return error_wrap_last_errno(setrlimit), fperror(run->fp, "failed to disable core dump"), -1;
-    }
-    else if(run->core_dump && !limit.rlim_cur)
-    {
-        limit.rlim_cur = limit.rlim_max;
-        
-        if(setrlimit(RLIMIT_CORE, &limit))
-            return error_wrap_last_errno(setrlimit), fperror(run->fp, "failed to enable core dump"), -1;
-    }
-    
-#endif
-    return 0;
-}
-
-static bool test_run_match_filter_unit(vec_const_ct vec, const void *elem, void *ctx)
-{
-    const test_filter_unit_st *unit = elem;
-    const char *name = ctx;
-    size_t len;
-    
-    if(!unit->name)
-        return true;
-    
-    len = strlen(name);
-    
-    if(len < unit->len
-    || (len > unit->len && !unit->prefix)
-    || strncmp(name, unit->name, unit->len))
-        return false;
-    
-    return true;
-}
-
-static int test_run_match_filter(vec_const_ct vec, size_t index, void *elem, void *ctx)
-{
-    test_match_st *state = ctx;
-    test_filter_st *filter = elem;
-    test_filter_node_st *node;
-    
-    // filter did not match or filter path is prefix of test path
-    if(filter->level < state->level
-    || !(node = vec_at(filter->path, state->level)))
-    {
-        // last filter node matched -> keep matching
-        if(filter->matched)
-            state->matched++;
-        
-        return 0;
-    }
-    
-    // test path is test case and filter path has unmatched nodes
-    // or no unit matches test path
-    if((state->type == TEST_ENTRY_CASE && vec_at(filter->path, state->level+1))
-    || !vec_find(node->units, test_run_match_filter_unit, (void*)state->name))
-    {
-        filter->matched = false;
-        return 0;
-    }
-    
-    filter->matched = true;
-    filter->level = state->level+1; // filter ready for next level
-    state->matched++;
-    
-    return 0;
-}
-
-static bool test_run_filter(test_run_ct run, test_entry_id type, const char *name)
-{
-    test_match_st state = { .name = name, .type = type };
-    
-    if(!run->filters || vec_is_empty(run->filters))
-        return true;
-    
-    state.level = run->path ? vec_size(run->path) : 0;
-    
-    vec_fold(run->filters, test_run_match_filter, &state);
-    
-    return state.matched > 0;
-}
-
-static int test_run_push(test_run_ct run, const char *name)
-{
-    if(!run->path && !(run->path = vec_new(10, sizeof(char*))))
-        return error_wrap(), fperror(run->fp, "failed to init path"), -1;
-    
-    if(!vec_push_p(run->path, name))
-        return error_wrap(), fperror(run->fp, "failed to push path"), -1;
-    
-    return 0;
-}
-
-static void test_run_pop(test_run_ct run)
-{
-    if(run->path)
-    {
-        vec_pop(run->path);
-        run->path = vec_free_if_empty(run->path);
-    }
-}
-
-static void test_run_print_path(test_run_ct run)
-{
-    size_t i;
-    
-    if(vec_is_empty(run->path))
-        fprintf(run->fp, "<top>");
-    else
-        for(i=0; i < vec_size(run->path); i++)
-            fprintf(run->fp, "%s%s", i ? "/" : "", (char*)vec_at_p(run->path, i));
-}
-
-static bool test_run_has_error(test_run_ct run)
-{
-    return run->count.results[TEST_RESULT_FAIL]
-    ||     run->count.results[TEST_RESULT_TIMEOUT]
-    ||     run->count.results[TEST_RESULT_ERROR];
-}
-
-static bool test_run_has_warning(test_run_ct run)
-{
-    return run->count.results[TEST_RESULT_WARNING]
-    ||     run->count.results[TEST_RESULT_SKIP];
-}
-
-static size_t test_run_sum_count(test_run_ct run)
-{
-    size_t sum, c;
-    
-    for(sum=0, c=0; c < TEST_RESULTS; c++)
-        sum += run->count.results[c];
-    
-    return sum;
-}
-
-static void test_run_add_count(test_run_ct run, test_count_st *count)
-{
-    size_t c;
-    
-    for(c=0; c < TEST_RESULTS; c++)
-        run->count.results[c] += count->results[c];
-    
-    run->count.asserts += count->asserts;
-}
-
-static int test_run_entry(test_suite_const_ct suite, test_entry_st *entry, void *ctx);
-
-static int test_run_suite(test_run_ct run, test_suite_const_ct suite)
-{
-    test_count_st count;
+    test_result_id result;
     int rc;
-    
-    if(!test_run_filter(run, TEST_ENTRY_SUITE, test_suite_get_name(suite)))
-        return 0;
-    
-    memcpy(&count, &run->count, sizeof(test_count_st));
-    memset(&run->count, 0, sizeof(test_count_st));
-    
-    if(test_run_push(run, test_suite_get_name(suite)))
-        return error_pass(), -1;
-    
-    if(run->loglvl >= TEST_LOGLVL_CASE)
-    {
-        test_run_print_path(run);
-        fprintf(run->fp, "\n");
-    }
-    
-    rc = test_suite_fold(suite, test_run_entry, run);
-    
-    if(run->loglvl >= TEST_LOGLVL_SUITE)
-    {
-        test_run_print_path(run);
-        
-        if(rc)
-            fprintf(run->fp, COLOR_RED" error"COLOR_DEFAULT"\n");
-        else
-            fprintf(run->fp, ": %zu case%s %sdone"COLOR_DEFAULT"\n",
-                test_run_sum_count(run), test_run_sum_count(run) == 1 ? "" : "s",
-                test_run_has_error(run) ? COLOR_RED :
-                test_run_has_warning(run) ? COLOR_YELLOW : COLOR_GREEN);
-    }
-    
-    test_run_pop(run);
-    
-    test_run_add_count(run, &count);
-    
-    return rc;
-}
 
-static int test_run_worker(test_run_ct run, test_case_const_ct tcase)
-{
-    test_ctx_st ctx = { .com = run->com, .clock = run->worker_clock };
-    test_case_cb fun;
-    void *state = NULL;
-    jmp_buf jump;
-    
-#ifndef _WIN32
-    if(run->fork)
+    assert(run);
+    assert(tcase);
+
+    if((rc = test_run_begin_case(tcase->name)))
     {
-        int null;
-        
-        // put test process into own process group
-        // so kill(0, SIGKILL) wont kill the runner
-        setpgid(0, 0);
-        
-        close(STDIN_FILENO);
-        close(STDOUT_FILENO);
-        close(STDERR_FILENO);
-        
-        if((null = open("/dev/null", O_RDWR)) >= 0)
-        {
-            UNUSED_RESULT(dup(null));
-            UNUSED_RESULT(dup(null));
-        }
-    }
-    else
-#endif
-    {
-        ctx.jump = &jump;
-        
-        if(setjmp(jump)) // returns 1 on jump
+        if(error_code(0) == E_TEST_DISABLED)
             return 0;
-    }
-    
-    proc_append_title(" [%s]", test_case_get_name(tcase));
-    
-    if((fun = test_case_get_setup(tcase)))
-    {
-        test_com_send_status(run->com, TEST_STATUS_SETUP);
-        fun(&ctx, &state);
-    }
-    
-    test_com_send_status(run->com, TEST_STATUS_RUN);
-    clock_gettime(run->worker_clock, &ctx.start);
-    
-    fun = test_case_get_run(tcase);
-    fun(&ctx, &state);
-    
-    test_com_send_duration(run->com, run->worker_clock, &ctx.start);
-    
-    if((fun = test_case_get_teardown(tcase)))
-    {
-        test_com_send_status(run->com, TEST_STATUS_TEARDOWN);
-        fun(&ctx, &state);
-    }
-    
-    test_com_send_status(run->com, TEST_STATUS_FINISH);
-    
-    if(run->fork && !run->clean_exit)
-        _exit(0);
-    
-    // if forked return 1 to prevent child doing tests but cleanup properly
-    return run->fork ? 1 : 0;
-}
 
-static int test_run_msg(test_com_msg_id type, test_com_msg_un *msg, void *ctx)
-{
-    test_run_ct run = ctx;
-    
-    switch(type)
-    {
-    case TEST_COM_STATUS:
-        return test_state_set_status(run->state, msg->status);
-    case TEST_COM_RESULT:
-        return test_state_set_result(run->state, msg->result);
-    case TEST_COM_DURATION:
-        return test_state_add_duration(run->state, msg->duration);
-    case TEST_COM_POS:
-        return test_state_set_position(run->state, msg->pos.type, msg->pos.file, msg->pos.line);
-    case TEST_COM_PASS:
-        if(test_state_get_status(run->state) == TEST_STATUS_RUN)
-            return test_state_inc_asserts(run->state);
-        return 0;
-    case TEST_COM_MSG:
-        return test_state_add_msg(run->state, msg->msg.type, msg->msg.level, msg->msg.text);
-    default:
-        abort();
+        return error_pass_int(rc);
     }
-}
 
-static int test_run_print_msg(test_pos_st *pos, test_msg_id type, size_t level, char *msg, void *ctx)
-{
-    test_run_ct run = ctx;
-    size_t l;
-    
-    if(pos->file && !level)
-        fprintf(run->fp, "    %s"COLOR_DEFAULT"%s:%zu\n",
-            pos->type == TEST_POS_AFTER ? COLOR_YELLOW"after " : "",
-            pos->file, pos->line);
-    
-    for(l=0; l < level+3; l++)
-        fprintf(run->fp, "  ");
-    
-    switch(type)
-    {
-    case TEST_MSG_INFO:     break;
-    case TEST_MSG_WARNING:  fprintf(run->fp, COLOR_YELLOW); break;
-    case TEST_MSG_ERROR:    fprintf(run->fp, COLOR_RED); break;
-    default:                abort();
-    }
-    
-    fprintf(run->fp, "%s"COLOR_DEFAULT"\n", msg);
-    
+    if((rc = test_run_trace_check()) > 0) // child process
+        return test_run_end_case(false), rc;
+
+    if((rc = test_case_run(tcase, &run->config)) < 0)
+        return error_pass(), test_run_end_case(false), -1;
+
+    if(rc > 0) // worker process
+        return test_run_end_case(false), rc;
+
+    result = test_case_result();
+    run->result[result]++;
+
+    test_run_end_case(true);
+
+    if(result >= run->stop)
+        return error_set(E_TEST_STOP), -1;
+
     return 0;
 }
 
-static void test_run_eval(test_run_ct run, test_case_const_ct tcase)
+size_t test_run_get_result(test_result_id type)
+{
+    assert(run);
+    assert(type < TEST_RESULT_TYPES);
+
+    return run->result[type];
+}
+
+size_t test_run_get_results(void)
 {
     test_result_id result;
-    size_t duration, asserts;
-    char *color, *strduration;
-    
-    result = test_state_get_result(run->state);
-    asserts = test_state_get_asserts(run->state);
-    
-    run->count.results[result]++;
-    run->count.asserts += asserts;
-    
-    if(run->loglvl >= TEST_LOGLVL_CASE
-    || (result != TEST_RESULT_PASS && result != TEST_RESULT_SKIP))
-    {
-        if(run->loglvl < TEST_LOGLVL_CASE)
-        {
-            test_run_print_path(run);
-            fprintf(run->fp, "/%s: ", test_case_get_name(tcase));
-        }
-        
-        switch(result)
-        {
-        case TEST_RESULT_PASS:      color = COLOR_GREEN; break;
-        case TEST_RESULT_WARNING:
-        case TEST_RESULT_SKIP:      color = COLOR_YELLOW; break;
-        default:                    color = COLOR_RED; break;
-        }
-        
-        fprintf(run->fp, "%zu assert%s %s%s"COLOR_DEFAULT,
-            asserts, asserts == 1 ? "" : "s", color, test_state_strresult(result));
-        
-        if((duration = test_state_get_duration(run->state)))
-        {
-            strduration = time_strdup_duration(0, duration);
-            fprintf(run->fp, " (%s)\n", strduration);
-            free(strduration);
-        }
-        else
-            fprintf(run->fp, "\n");
-        
-        test_state_fold_msg(run->state, test_run_print_msg, run);
-    }
+    size_t results;
+
+    assert(run);
+
+    for(results = 0, result = 0; result < TEST_RESULT_TYPES; result++)
+        results += run->result[result];
+
+    return results;
 }
 
-static void test_run_eval_status(test_run_ct run, test_case_const_ct tcase, bool signaled, int signal, bool exited, int rc)
-{
-    if(test_state_get_result(run->state) == TEST_RESULT_SKIP)
-        ; // skip signal/rc inspection
-#ifndef _WIN32
-    else if(signaled)
-    {
-        if(!test_case_expects_signal(tcase))
-        {
-            test_state_set_result(run->state, TEST_RESULT_ERROR);
-            test_state_add_msg_f(run->state, TEST_MSG_ERROR, 0,
-                "signal %i (%s) during %s",
-                signal, strsignal(signal), test_state_get_strstatus(run->state));
-        }
-        else if(signal != test_case_get_signal(tcase))
-        {
-            test_state_set_result(run->state, TEST_RESULT_FAIL);
-            test_state_add_msg_f(run->state, TEST_MSG_ERROR, 0,
-                "signal %i (%s), expected %i (%s)",
-                signal, strsignal(signal),
-                test_case_get_signal(tcase), strsignal(test_case_get_signal(tcase)));
-        }
-    }
-#endif
-    else if(exited)
-    {
-#ifndef _WIN32
-        if(test_case_expects_signal(tcase))
-        {
-            test_state_set_result(run->state, TEST_RESULT_FAIL);
-            test_state_add_msg_f(run->state, TEST_MSG_ERROR, 0,
-                "exit %i, expected signal %i (%s)",
-                rc, test_case_get_signal(tcase), strsignal(test_case_get_signal(tcase)));
-        }
-        else
-#endif
-        if(test_case_expects_exit(tcase) && rc != test_case_get_exit(tcase))
-        {
-            test_state_set_result(run->state, TEST_RESULT_FAIL);
-            test_state_add_msg_f(run->state, TEST_MSG_ERROR, 0,
-                "exit %i, expected %i",
-                rc, test_case_get_exit(tcase));
-        }
-    }
-    else
-        abort();
-    
-    test_run_eval(run, tcase);
-}
-
-#ifndef _WIN32
-static int test_run_collect(test_run_ct run, test_case_const_ct tcase, pid_t worker)
-{
-    int status;
-    
-    if(waitpid(worker, &status, 0) < 0)
-        return error_wrap_last_errno(waitpid), fperror(run->fp, "failed to wait for test worker"), -1;
-    
-    test_run_eval_status(run, tcase,
-        WIFSIGNALED(status), WTERMSIG(status), WIFEXITED(status), WEXITSTATUS(status));
-    
-    return 0;
-}
-
-static int test_run_kill(test_run_ct run, pid_t worker)
-{
-    // kill whole process group
-    if(killpg(worker, SIGKILL))
-        return error_wrap_last_errno(killpg), fperror(run->fp, "failed to kill test worker"), -1;
-    
-    if(waitpid(worker, NULL, 0) < 0)
-        return error_wrap_last_errno(waitpid), fperror(run->fp, "failed to wait for test worker"), -1;
-    
-    return 0;
-}
-
-static void tcperror(test_run_ct run, test_case_const_ct tcase, const char *msg)
-{
-    if(run->loglvl < TEST_LOGLVL_CASE)
-        fprintf(run->fp, "%s:\n", test_case_get_name(tcase));
-    else
-        fprintf(run->fp, "\n");
-    
-    fperror(run->fp, msg);
-}
-
-static int test_run_control(test_run_ct run, test_case_const_ct tcase, pid_t worker)
-{
-    struct pollfd pfds[1];
-    timespec_st start, end, timeout, diff;
-    int rc, poll_timeout;
-    
-    pfds[0].fd = test_com_get_socket(run->com);
-    pfds[0].events = POLLIN;
-    
-    if(!run->traced)
-    {
-        time_ts_set_sec(&timeout, test_case_get_timeout(tcase));
-        clock_gettime(run->control_clock, &start);
-    }
-    
-    while(1)
-    {
-        if(run->traced)
-            poll_timeout = -1;
-        else
-            poll_timeout = MIN((size_t)INT_MAX, time_ts_get_milli(&timeout));
-        
-        if((rc = poll(pfds, 1, poll_timeout)) < 0)
-            return error_wrap_last_errno(poll), tcperror(run, tcase, "failed to poll"), test_run_kill(run, worker), -1;
-        
-        if(!rc)
-            break;
-        
-        if(pfds[0].revents & POLLIN
-        && test_com_recv(run->com))
-            return tcperror(run, tcase, "failed to recv"), test_run_kill(run, worker), -1;
-        
-        if(pfds[0].revents & POLLERR)
-            return tcperror(run, tcase, "failed to poll"), test_run_kill(run, worker), -1;
-        
-        if(pfds[0].revents & POLLHUP)
-            return test_run_collect(run, tcase, worker);
-        
-        if(!run->traced)
-        {
-            clock_gettime(run->control_clock, &end);
-            time_ts_set_diff(&diff, &start, &end);
-            
-            if(time_ts_cmp(&diff, &timeout) >= 0)
-                break;
-            
-            time_ts_set_diff(&timeout, &diff, &timeout);
-            start = end;
-        }
-    }
-    
-    if(test_run_kill(run, worker))
-        return error_pass(), -1;
-    
-    test_state_set_result(run->state, TEST_RESULT_TIMEOUT);
-    test_run_eval(run, tcase);
-    
-    return 0;
-}
-#endif // !_WIN32
-
-static int test_run_case(test_run_ct run, test_case_const_ct tcase)
-{
-    int rc = 0;
-    
-    if(!test_run_filter(run, TEST_ENTRY_CASE, test_case_get_name(tcase)))
-        return 0;
-    
-    if(run->loglvl >= TEST_LOGLVL_CASE)
-    {
-        fprintf(run->fp, "  %s: ", test_case_get_name(tcase));
-        fflush(run->fp);
-    }
-    
-    if(run->skip && !test_case_expects_nothing(tcase))
-    {
-        test_state_set_result(run->state, TEST_RESULT_SKIP);
-        test_run_eval(run, tcase);
-    }
-    else if(!run->fork)
-    {
-        if((rc = test_run_worker(run, tcase)) >= 0)
-            test_run_eval_status(run, tcase, false, 0, true, rc);
-    }
-#ifndef _WIN32
-    else
-    {
-        pid_t pid;
-        int sv[2];
-        
-        if(socketpair(AF_UNIX, SOCK_STREAM|SOCK_NONBLOCK, 0, sv) == -1)
-            return error_wrap_last_errno(socketpair), tcperror(run, tcase, "failed to init com"), -1;
-        
-        if((pid = fork()) == -1)
-        {
-            error_wrap_last_errno(fork);
-            tcperror(run, tcase, "failed to fork");
-            return close(sv[0]), close(sv[1]), -1;
-        }
-        
-        if(!pid)
-        {
-            close(sv[0]);
-            test_com_set_socket(run->com, sv[1]);
-            rc = test_run_worker(run, tcase);
-        }
-        else
-        {
-            close(sv[1]);
-            test_com_set_socket(run->com, sv[0]);
-            rc = test_run_control(run, tcase, pid);
-        }
-    }
-#endif
-    
-    test_state_reset(run->state);
-    test_com_reset(run->com);
-    
-    return rc;
-}
-
-static int test_run_entry(test_suite_const_ct suite, test_entry_st *entry, void *ctx)
-{
-    test_run_ct run = ctx;
-    
-    switch(entry->type)
-    {
-    case TEST_ENTRY_SUITE:  return test_run_suite(run, entry->value.suite);
-    case TEST_ENTRY_CASE:   return test_run_case(run, entry->value.tcase);
-    default:                abort();
-    }
-}
-
-static void test_run_print_summary(test_run_ct run)
+void test_run_print_summary(void)
 {
     test_result_id result;
-    bool first = true;
-    const char *color;
-    
-    fprintf(run->fp, "Summary: ");
-    
-    for(result=0; result < TEST_RESULTS; result++)
-        if(run->count.results[result])
-        {
-            switch(result)
-            {
-            case TEST_RESULT_PASS:      color = COLOR_GREEN; break;
-            case TEST_RESULT_WARNING:
-            case TEST_RESULT_SKIP:      color = COLOR_YELLOW; break;
-            default:                    color = COLOR_RED; break;
-            }
-            
-            fprintf(run->fp, "%s%s%zu %s"COLOR_DEFAULT,
-                first ? "" : ", ", color, run->count.results[result],
-                test_state_strresult(result));
-            
-            first = false;
-        }
-    
-    if(first)
-        fprintf(run->fp, COLOR_YELLOW"no test cases executed"COLOR_DEFAULT);
-    
-    fprintf(run->fp, "\n");
-}
+    int n;
 
-int test_run_exec(test_run_ct run, test_suite_const_ct suite)
-{
-    int rc;
-    
-    return_error_if_fail(run, E_TEST_RUN_INVALID_OBJECT, -1);
-    return_error_if_fail(suite, E_TEST_RUN_INVALID_SUITE, -1);
-    
-    if((run->fork || !run->skip) && run->check_traced)
-        switch((rc = test_run_check_traced(run)))
+    assert(run);
+
+    return_if_fail(run->log >= TEST_LOG_SUMMARY);
+
+    printf("Summary: ");
+
+    for(n = 0, result = 0; result < TEST_RESULT_TYPES; result++)
+    {
+        if(run->result[result])
         {
-        case TEST_PARENT_NOT_TRACED:
-            break;
-        case TEST_PARENT_TRACED:
-            fprintf(run->fp, COLOR_YELLOW"tracer detected: disabling fork + enabling skip"COLOR_DEFAULT"\n");
-            run->traced = true;
-            run->fork = false;
-            run->skip = true;
-            break;
-        default:
-            return rc;
+            n += printf("%s%s%zu %s", n ? ", " : "", result_info[result].color,
+                run->result[result], result_info[result].name);
         }
-    
-    test_com_enable_shortcut(run->com, !run->fork);
-    
-    test_run_set_core_dump(run);
-    
-    if(!(rc = test_run_suite(run, suite)))
-        test_run_print_summary(run);
-    
-    return rc;
+    }
+
+    if(!n)
+        printf(COLOR_YELLOW "no test cases executed");
+
+    printf(COLOR_OFF "\n");
 }

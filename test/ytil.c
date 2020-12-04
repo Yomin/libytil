@@ -30,31 +30,41 @@
 
 int main(int argc, char *argv[])
 {
-    test_suite_ct suite;
-    test_run_ct run;
-    int rc = -1;
+    int rc;
 
-    suite = test_suite_new_with_suites("ytil",
-        test_suite_con(),
-        test_suite_enc(),
-        test_suite_gen(),
-        test_suite_sys()
+    if(test_run_init_from_args(argc, argv))
+    {
+        if(error_code(0) == E_TEST_USAGE)
+            test_run_print_usage(argv[0]);
+        else
+            fprintf(stderr, "failed to create test run: %s\n", error_desc(0));
+
+        return -1;
+    }
+
+    rc = test_run_suites(NULL,
+        test_suite_con,
+        test_suite_enc,
+        test_suite_gen,
+        test_suite_sys,
+        NULL
     );
 
-    if(!suite)
-        return fprintf(stderr, "failed to setup test suites: %s\n", error_desc(0)), -1;
-
-    if((run = test_run_new_with_args(argc, argv)))
+    if(rc > 0) // worker process
     {
-        rc = test_run_exec(run, suite);
-        test_run_free(run);
+        rc = 0;
+    }
+    else if(!rc || error_code(0) == E_TEST_STOP)
+    {
+        test_run_print_summary();
+        rc = 0;
     }
     else
     {
         fprintf(stderr, "failed to run test suites: %s\n", error_desc(0));
     }
 
-    test_suite_free(suite);
+    test_run_free();
 
     return rc;
 }

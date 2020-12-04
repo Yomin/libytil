@@ -21,6 +21,7 @@
  */
 
 #include "enc.h"
+#include <ytil/test/run.h>
 #include <ytil/test/test.h>
 #include <ytil/enc/qpenc.h>
 #include <stdio.h>
@@ -53,22 +54,22 @@ TEST_CASE(qpenc_encode_empty)
 TEST_SETUP(mktext)
 {
     int i;
-    
+
     for(i=0,len_enc=0; i<128; i++)
     {
         text_plain[i] = i;
-        
+
         if((i >= '!' && i <= '~' && i != '=')
         || (i == ' ' || i == '\t'))
             text_enc[len_enc++] = i;
         else
             len_enc += snprintf(&text_enc[len_enc], 4, "=%02X", i);
     }
-    
+
     text_enc[len_enc] = '\0';
 }
 
-TEST_CASE_FIXTURE(qpenc_encode, mktext, NULL)
+TEST_CASE_FIX(qpenc_encode, mktext, no_teardown)
 {
     test_ptr_success(str = qpenc_encode(BLOB(text_plain, 128)));
     test_false(str_is_binary(str));
@@ -150,7 +151,7 @@ TEST_CASE(qpenc_decode_trailing_tab)
     test_ptr_error(qpenc_decode(LIT("foo\t")), E_QPENC_INVALID_DATA);
 }
 
-TEST_CASE_FIXTURE(qpenc_decode, mktext, NULL)
+TEST_CASE_FIX(qpenc_decode, mktext, no_teardown)
 {
     test_ptr_success(str = qpenc_decode(STR(text_enc)));
     test_true(str_is_binary(str));
@@ -219,47 +220,49 @@ TEST_CASE(qpenc_is_valid_trailing_tab)
     test_false(qpenc_is_valid(LIT("foo\t")));
 }
 
-TEST_CASE_FIXTURE(qpenc_is_valid, mktext, NULL)
+TEST_CASE_FIX(qpenc_is_valid, mktext, no_teardown)
 {
     test_true(qpenc_is_valid(STR(text_enc)));
 }
 
-test_suite_ct test_suite_enc_qpenc(void)
+int test_suite_enc_qpenc(void)
 {
-    return test_suite_new_with_cases("qpenc"
-        , test_case_new(qpenc_encode_invalid_blob1)
-        , test_case_new(qpenc_encode_invalid_blob2)
-        , test_case_new(qpenc_encode_empty)
-        , test_case_new(qpenc_encode)
-        , test_case_new(qpenc_encode_trailing_space)
-        , test_case_new(qpenc_encode_trailing_tab)
-        
-        , test_case_new(qpenc_decode_invalid_blob1)
-        , test_case_new(qpenc_decode_invalid_blob2)
-        , test_case_new(qpenc_decode_empty)
-        , test_case_new(qpenc_decode_invalid_data)
-        , test_case_new(qpenc_decode_incomplete_hex1)
-        , test_case_new(qpenc_decode_incomplete_hex2)
-        , test_case_new(qpenc_decode_invalid_hex1)
-        , test_case_new(qpenc_decode_invalid_hex2)
-        , test_case_new(qpenc_decode_invalid_hex3)
-        , test_case_new(qpenc_decode_invalid_hex4)
-        , test_case_new(qpenc_decode_trailing_space)
-        , test_case_new(qpenc_decode_trailing_tab)
-        , test_case_new(qpenc_decode)
-        
-        , test_case_new(qpenc_is_valid_invalid_blob1)
-        , test_case_new(qpenc_is_valid_invalid_blob2)
-        , test_case_new(qpenc_is_valid_empty)
-        , test_case_new(qpenc_is_valid_invalid_data)
-        , test_case_new(qpenc_is_valid_incomplete_hex1)
-        , test_case_new(qpenc_is_valid_incomplete_hex2)
-        , test_case_new(qpenc_is_valid_invalid_hex1)
-        , test_case_new(qpenc_is_valid_invalid_hex2)
-        , test_case_new(qpenc_is_valid_invalid_hex3)
-        , test_case_new(qpenc_is_valid_invalid_hex4)
-        , test_case_new(qpenc_is_valid_trailing_space)
-        , test_case_new(qpenc_is_valid_trailing_tab)
-        , test_case_new(qpenc_is_valid)
-    );
+    return error_pass_int(test_run_cases("qpenc",
+        test_case(qpenc_encode_invalid_blob1),
+        test_case(qpenc_encode_invalid_blob2),
+        test_case(qpenc_encode_empty),
+        test_case(qpenc_encode),
+        test_case(qpenc_encode_trailing_space),
+        test_case(qpenc_encode_trailing_tab),
+
+        test_case(qpenc_decode_invalid_blob1),
+        test_case(qpenc_decode_invalid_blob2),
+        test_case(qpenc_decode_empty),
+        test_case(qpenc_decode_invalid_data),
+        test_case(qpenc_decode_incomplete_hex1),
+        test_case(qpenc_decode_incomplete_hex2),
+        test_case(qpenc_decode_invalid_hex1),
+        test_case(qpenc_decode_invalid_hex2),
+        test_case(qpenc_decode_invalid_hex3),
+        test_case(qpenc_decode_invalid_hex4),
+        test_case(qpenc_decode_trailing_space),
+        test_case(qpenc_decode_trailing_tab),
+        test_case(qpenc_decode),
+
+        test_case(qpenc_is_valid_invalid_blob1),
+        test_case(qpenc_is_valid_invalid_blob2),
+        test_case(qpenc_is_valid_empty),
+        test_case(qpenc_is_valid_invalid_data),
+        test_case(qpenc_is_valid_incomplete_hex1),
+        test_case(qpenc_is_valid_incomplete_hex2),
+        test_case(qpenc_is_valid_invalid_hex1),
+        test_case(qpenc_is_valid_invalid_hex2),
+        test_case(qpenc_is_valid_invalid_hex3),
+        test_case(qpenc_is_valid_invalid_hex4),
+        test_case(qpenc_is_valid_trailing_space),
+        test_case(qpenc_is_valid_trailing_tab),
+        test_case(qpenc_is_valid),
+
+        NULL
+    ));
 }

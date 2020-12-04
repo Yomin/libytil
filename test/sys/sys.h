@@ -20,14 +20,13 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_TEST_SYS_H__
-#define __YTIL_TEST_SYS_H__
+#ifndef YTIL_TEST_SUITE_SYS_INCLUDED
+#define YTIL_TEST_SUITE_SYS_INCLUDED
 
-#include <ytil/test/suite.h>
 
-test_suite_ct   test_suite_sys(void);
-test_suite_ct   test_suite_sys_env(void);
-test_suite_ct   test_suite_sys_path(void);
+int test_suite_sys(void);
+int test_suite_sys_env(void);
+int test_suite_sys_path(void);
 
 
 #endif

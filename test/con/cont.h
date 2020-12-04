@@ -20,16 +20,15 @@
  * THE SOFTWARE.
  */
 
-#ifndef __YTIL_TEST_CON_H__
-#define __YTIL_TEST_CON_H__
+#ifndef YTIL_TEST_SUITE_CON_INCLUDED
+#define YTIL_TEST_SUITE_CON_INCLUDED
 
-#include <ytil/test/suite.h>
 
-test_suite_ct   test_suite_con(void);
-test_suite_ct   test_suite_con_art(void);
-test_suite_ct   test_suite_con_list(void);
-test_suite_ct   test_suite_con_ring(void);
-test_suite_ct   test_suite_con_vec(void);
+int test_suite_con(void);
+int test_suite_con_art(void);
+int test_suite_con_list(void);
+int test_suite_con_ring(void);
+int test_suite_con_vec(void);
 
 
 #endif

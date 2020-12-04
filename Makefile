@@ -40,7 +40,7 @@ LIBS     := -l$(NAME)
 
 ifeq ($(OS),Windows_NT)
     PPFLAGS += -D__USE_MINGW_ANSI_STDIO=1
-    LIBS    += -lole32 -lssp
+    LIBS    += -lole32 -lssp -lshlwapi -lws2_32
 endif
 
 CFLAGS   := $(FLAGS) $(WARNINGS) $(CFLAGS)

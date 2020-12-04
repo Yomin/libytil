@@ -152,6 +152,9 @@ path_ct path_drop_suffix(path_ct path);
 // get path as string
 str_ct path_get(path_const_ct path, path_style_id style);
 
+// get n path components as string
+str_ct path_get_n(path_const_ct path, size_t n, path_style_id style, bool trailing);
+
 // get drive letter for drive paths
 char path_get_drive_letter(path_const_ct path);
 // get host for UNC paths

@@ -21,6 +21,7 @@
  */
 
 #include "enc.h"
+#include <ytil/test/run.h>
 #include <ytil/test/test.h>
 #include <ytil/enc/base64.h>
 
@@ -347,64 +348,66 @@ TEST_CASE(base64_is_valid_url)
     test_true(base64_is_valid_url(STR(base64_alphabet_url)));
 }
 
-test_suite_ct test_suite_enc_base64(void)
+int test_suite_enc_base64(void)
 {
-    return test_suite_new_with_cases("base64"
-        , test_case_new(base64_encode_invalid_alphabet1)
-        , test_case_new(base64_encode_invalid_alphabet2)
-        , test_case_new(base64_encode_invalid_pad)
-        , test_case_new(base64_encode_invalid_blob1)
-        , test_case_new(base64_encode_invalid_blob2)
-        , test_case_new(base64_encode_empty)
-        , test_case_new(base64_encode_std_full)
-        , test_case_new(base64_encode_url_full)
-        , test_case_new(base64_encode_std_1)
-        , test_case_new(base64_encode_std_2)
-        , test_case_new(base64_encode_std_3)
-        
-        , test_case_new(base64_decode_invalid_alphabet1)
-        , test_case_new(base64_decode_invalid_alphabet2)
-        , test_case_new(base64_decode_invalid_pad)
-        , test_case_new(base64_decode_invalid_str1)
-        , test_case_new(base64_decode_invalid_str2)
-        , test_case_new(base64_decode_empty)
-        , test_case_new(base64_decode_std_invalid_len)
-        , test_case_new(base64_decode_std_invalid_b64_11)
-        , test_case_new(base64_decode_std_invalid_b64_12)
-        , test_case_new(base64_decode_std_invalid_b64_21)
-        , test_case_new(base64_decode_std_invalid_b64_22)
-        , test_case_new(base64_decode_std_invalid_b64_31)
-        , test_case_new(base64_decode_std_invalid_b64_32)
-        , test_case_new(base64_decode_std_invalid_b64_4)
-        , test_case_new(base64_decode_std_invalid_b64_eq1)
-        , test_case_new(base64_decode_std_invalid_b64_eq2)
-        , test_case_new(base64_decode_std_invalid_b64_eq3)
-        , test_case_new(base64_decode_std_full)
-        , test_case_new(base64_decode_url_full)
-        , test_case_new(base64_decode_std_11)
-        , test_case_new(base64_decode_std_12)
-        , test_case_new(base64_decode_std_21)
-        , test_case_new(base64_decode_std_22)
-        , test_case_new(base64_decode_std_3)
-        
-        , test_case_new(base64_is_valid_invalid_alphabet1)
-        , test_case_new(base64_is_valid_invalid_alphabet2)
-        , test_case_new(base64_is_valid_invalid_pad)
-        , test_case_new(base64_is_valid_invalid_str1)
-        , test_case_new(base64_is_valid_invalid_str2)
-        , test_case_new(base64_is_valid_empty)
-        , test_case_new(base64_is_valid_std_invalid_len)
-        , test_case_new(base64_is_valid_std_invalid_b64_11)
-        , test_case_new(base64_is_valid_std_invalid_b64_12)
-        , test_case_new(base64_is_valid_std_invalid_b64_21)
-        , test_case_new(base64_is_valid_std_invalid_b64_22)
-        , test_case_new(base64_is_valid_std_invalid_b64_31)
-        , test_case_new(base64_is_valid_std_invalid_b64_32)
-        , test_case_new(base64_is_valid_std_invalid_b64_4)
-        , test_case_new(base64_is_valid_std_invalid_b64_eq1)
-        , test_case_new(base64_is_valid_std_invalid_b64_eq2)
-        , test_case_new(base64_is_valid_std_invalid_b64_eq3)
-        , test_case_new(base64_is_valid_std)
-        , test_case_new(base64_is_valid_url)
-    );
+    return error_pass_int(test_run_cases("base64",
+        test_case(base64_encode_invalid_alphabet1),
+        test_case(base64_encode_invalid_alphabet2),
+        test_case(base64_encode_invalid_pad),
+        test_case(base64_encode_invalid_blob1),
+        test_case(base64_encode_invalid_blob2),
+        test_case(base64_encode_empty),
+        test_case(base64_encode_std_full),
+        test_case(base64_encode_url_full),
+        test_case(base64_encode_std_1),
+        test_case(base64_encode_std_2),
+        test_case(base64_encode_std_3),
+
+        test_case(base64_decode_invalid_alphabet1),
+        test_case(base64_decode_invalid_alphabet2),
+        test_case(base64_decode_invalid_pad),
+        test_case(base64_decode_invalid_str1),
+        test_case(base64_decode_invalid_str2),
+        test_case(base64_decode_empty),
+        test_case(base64_decode_std_invalid_len),
+        test_case(base64_decode_std_invalid_b64_11),
+        test_case(base64_decode_std_invalid_b64_12),
+        test_case(base64_decode_std_invalid_b64_21),
+        test_case(base64_decode_std_invalid_b64_22),
+        test_case(base64_decode_std_invalid_b64_31),
+        test_case(base64_decode_std_invalid_b64_32),
+        test_case(base64_decode_std_invalid_b64_4),
+        test_case(base64_decode_std_invalid_b64_eq1),
+        test_case(base64_decode_std_invalid_b64_eq2),
+        test_case(base64_decode_std_invalid_b64_eq3),
+        test_case(base64_decode_std_full),
+        test_case(base64_decode_url_full),
+        test_case(base64_decode_std_11),
+        test_case(base64_decode_std_12),
+        test_case(base64_decode_std_21),
+        test_case(base64_decode_std_22),
+        test_case(base64_decode_std_3),
+
+        test_case(base64_is_valid_invalid_alphabet1),
+        test_case(base64_is_valid_invalid_alphabet2),
+        test_case(base64_is_valid_invalid_pad),
+        test_case(base64_is_valid_invalid_str1),
+        test_case(base64_is_valid_invalid_str2),
+        test_case(base64_is_valid_empty),
+        test_case(base64_is_valid_std_invalid_len),
+        test_case(base64_is_valid_std_invalid_b64_11),
+        test_case(base64_is_valid_std_invalid_b64_12),
+        test_case(base64_is_valid_std_invalid_b64_21),
+        test_case(base64_is_valid_std_invalid_b64_22),
+        test_case(base64_is_valid_std_invalid_b64_31),
+        test_case(base64_is_valid_std_invalid_b64_32),
+        test_case(base64_is_valid_std_invalid_b64_4),
+        test_case(base64_is_valid_std_invalid_b64_eq1),
+        test_case(base64_is_valid_std_invalid_b64_eq2),
+        test_case(base64_is_valid_std_invalid_b64_eq3),
+        test_case(base64_is_valid_std),
+        test_case(base64_is_valid_url),
+
+        NULL
+    ));
 }

@@ -96,8 +96,8 @@ ERROR_DEFINE_LIST(PATH,
     , ERROR_INFO(E_PATH_UNSUPPORTED, "Unsupported path.")
 );
 
-/// default error type for vector module
-#define ERROR_TYPE_DEFAULT ERROR_TYPE_VEC
+/// default error type for path module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_PATH
 
 
 path_ct path_new(str_const_ct str, path_style_id style)
@@ -875,14 +875,15 @@ path_ct path_drop_suffix(path_ct path)
     return path;
 }
 
-static str_ct path_cat_comp(str_ct str, path_const_ct path, path_style_id style, bool dirname)
+static str_ct path_cat_comp(str_ct str, path_const_ct path, size_t n, path_style_id style, bool dirname, bool trailing)
 {
     path_comp_st *comp;
-    size_t c, comps;
+    size_t c;
     
     if(!path->comp || vec_is_empty(path->comp))
         return str ? str : error_wrap_ptr(str_dup_f("%s%.1s",
-            path_props[style].current, path->trailing ? path_props[style].sep : ""));
+            path_props[style].current,
+            trailing && path->trailing ? path_props[style].sep : ""));
     
     if(dirname && vec_size(path->comp) == 1)
     {
@@ -896,15 +897,15 @@ static str_ct path_cat_comp(str_ct str, path_const_ct path, path_style_id style,
             return error_wrap_ptr(str_new_s(path_props[style].parent));
     }
     
+    n -= dirname ? 1 : 0;
+    
     if(!str && !(str = str_new_l("")))
         return error_wrap(), NULL;
     
-    comps = vec_size(path->comp) - (dirname ? 1 : 0);
-    
     if(dirname && (comp = vec_last(path->comp)) && !comp->name && comp->len == PATH_COMP_CURRENT)
-        comps--;
+        n--;
     
-    for(c=0; c < comps; c++)
+    for(c=0; c < n; c++)
     {
         comp = vec_at(path->comp, c);
         
@@ -931,7 +932,7 @@ static str_ct path_cat_comp(str_ct str, path_const_ct path, path_style_id style,
         }
     }
     
-    if(!dirname && path->trailing && !str_append_set(str, 1, path_props[style].sep[0]))
+    if(trailing && path->trailing && !str_append_set(str, 1, path_props[style].sep[0]))
         return error_wrap(), str_unref(str), NULL;
     
     return str;
@@ -990,7 +991,7 @@ static str_ct path_get_device(path_const_ct path, path_style_id style)
     }
 }
 
-static str_ct _path_get(path_const_ct path, path_style_id style, bool dirname)
+static str_ct _path_get(path_const_ct path, size_t n, path_style_id style, bool dirname, bool trailing)
 {
     str_ct str = NULL;
     
@@ -1016,7 +1017,7 @@ static str_ct _path_get(path_const_ct path, path_style_id style, bool dirname)
         abort();
     }
     
-    return error_pass_ptr(path_cat_comp(str, path, style, dirname));
+    return error_pass_ptr(path_cat_comp(str, path, n, style, dirname, trailing));
 }
 
 str_ct path_get(path_const_ct path, path_style_id style)
@@ -1024,7 +1025,18 @@ str_ct path_get(path_const_ct path, path_style_id style)
     assert_magic(path);
     assert(style < PATH_STYLES);
     
-    return error_pass_ptr(_path_get(path, style, false));
+    return error_pass_ptr(_path_get(path,
+        path->comp ? vec_size(path->comp) : 0, style, false, true));
+}
+
+str_ct path_get_n(path_const_ct path, size_t n, path_style_id style, bool trailing)
+{
+    assert_magic(path);
+    assert(style < PATH_STYLES);
+    
+    n = MIN(n, path->comp ? vec_size(path->comp) : 0);
+    
+    return error_pass_ptr(_path_get(path, n, style, false, trailing));
 }
 
 char path_get_drive_letter(path_const_ct path)
@@ -1088,7 +1100,8 @@ str_ct path_dirname(path_const_ct path, path_style_id style)
     assert_magic(path);
     assert(style < PATH_STYLES);
     
-    return error_pass_ptr(_path_get(path, style, true));
+    return error_pass_ptr(_path_get(path,
+        path->comp ? vec_size(path->comp) : 0, style, true, false));
 }
 
 str_ct path_basename(path_const_ct path, path_style_id style)

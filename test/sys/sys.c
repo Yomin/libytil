@@ -21,12 +21,14 @@
  */
 
 #include "sys.h"
+#include <ytil/test/run.h>
 
 
-test_suite_ct test_suite_sys(void)
+int test_suite_sys(void)
 {
-    return test_suite_new_with_suites("sys",
-        test_suite_sys_env(),
-        test_suite_sys_path()
-    );
+    return error_pass_int(test_run_suites("sys",
+        test_suite_sys_env,
+        test_suite_sys_path,
+        NULL
+    ));
 }
