@@ -22,12 +22,13 @@
 
 #include <ytil/gen/str.h>
 #include <ytil/def.h>
-#include <ytil/magic.h>
-#include <ytil/bits.h>
+#include <ytil/def/bits.h>
+#include <ytil/def/magic.h>
 #include <ytil/ext/string.h>
 #include <ytil/con/vec.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
 #define MAGIC define_magic("STR")

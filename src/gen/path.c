@@ -25,7 +25,7 @@
 #include <ytil/ext/string.h>
 #include <ytil/ext/stdlib.h>
 #include <ytil/ext/stdio.h>
-#include <ytil/magic.h>
+#include <ytil/def/magic.h>
 #include <ytil/def.h>
 
 

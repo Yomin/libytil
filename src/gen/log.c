@@ -27,6 +27,7 @@
 #include <ytil/ext/time.h>
 #include <ytil/def.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 
 /// log unit

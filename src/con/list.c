@@ -24,10 +24,9 @@
 
 #include <ytil/con/list.h>
 #include <ytil/def.h>
-#include <ytil/magic.h>
-
+#include <ytil/def/magic.h>
 #include <stdlib.h>
-#include <string.h>
+
 
 /// Iterate over list.
 ///

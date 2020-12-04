@@ -25,11 +25,11 @@
 #ifndef YTIL_CON_ART_H_INCLUDED
 #define YTIL_CON_ART_H_INCLUDED
 
-#include <stddef.h>
-#include <stdbool.h>
 #include <ytil/gen/error.h>
 #include <ytil/gen/str.h>
-#include <ytil/cast.h>
+#include <ytil/def/cast.h>
+#include <stddef.h>
+#include <stdbool.h>
 
 
 /// ART error

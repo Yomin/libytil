@@ -25,6 +25,7 @@
 #ifndef YTIL_GEN_ERROR_H_INCLUDED
 #define YTIL_GEN_ERROR_H_INCLUDED
 
+#include <ytil/def/os.h>
 #include <stddef.h>
 #include <stdbool.h>
 
@@ -1275,7 +1276,7 @@ ERROR_DECLARE(ERRNO);
     error_map_last_sub((map), sub, ERRNO)
 
 
-#ifdef _WIN32
+#if OS_WINDOWS
 
 /// EWIN32 error type declaration
 ERROR_DECLARE(EWIN32);
@@ -1448,7 +1449,7 @@ ERROR_DECLARE(NTSTATUS);
 #define error_map_ntstatus(map, sub, status) \
     error_map_sub((map), sub, NTSTATUS, (status))
 
-#endif // ifdef _WIN32
+#endif // if OS_WINDOWS
 
 
 #endif // ifndef YTIL_GEN_ERROR_H_INCLUDED

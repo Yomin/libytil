@@ -22,8 +22,8 @@
 
 /// \file
 
-#ifndef YTIL_COLOR_H_INCLUDED
-#define YTIL_COLOR_H_INCLUDED
+#ifndef YTIL_DEF_COLOR_H_INCLUDED
+#define YTIL_DEF_COLOR_H_INCLUDED
 
 
 #define COLOR_OFF               "\x1B[0m"       ///< ANSI SGR color off
@@ -45,4 +45,4 @@
 #define COLOR_BRIGHT_WHITE      "\x1B[1;37m"    ///< ANSI SGR color bright white
 
 
-#endif // ifndef YTIL_COLOR_H_INCLUDED
+#endif // ifndef YTIL_DEF_COLOR_H_INCLUDED

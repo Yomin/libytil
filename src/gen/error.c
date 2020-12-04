@@ -29,9 +29,10 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
-#ifdef _WIN32
+#if OS_WINDOWS
     #include <windows.h>
     #include <ntstatus.h>
 #endif
@@ -626,7 +627,7 @@ ERROR_DEFINE_CALLBACK(ERRNO,
     error_errno_name, error_errno_desc, error_errno_is_oom, error_errno_last);
 
 
-#ifdef _WIN32
+#if OS_WINDOWS
 
 /// Error name callback to retrieve EWIN32/HRESULT/NTSTATUS error name.
 ///
@@ -728,4 +729,4 @@ static const char *error_ntstatus_desc(const error_type_st *type, int code, char
 /// NTSTATUS error type definition
 ERROR_DEFINE_CALLBACK(NTSTATUS, error_win_name, error_ntstatus_desc, NULL, NULL);
 
-#endif /* ifdef _WIN32 */
+#endif // if OS_WINDOWS

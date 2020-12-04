@@ -22,9 +22,10 @@
 
 #include <ytil/enc/base85.h>
 #include <ytil/def.h>
-#include <ytil/bits.h>
+#include <ytil/def/bits.h>
 #include <ytil/ext/string.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 
 /// base85 error type definition

@@ -25,7 +25,7 @@
 #ifndef YTIL_GEN_LOG_H_INCLUDED
 #define YTIL_GEN_LOG_H_INCLUDED
 
-#include <ytil/color.h>
+#include <ytil/def/color.h>
 #include <ytil/gen/str.h>
 #include <ytil/gen/error.h>
 #include <sys/types.h>

@@ -24,12 +24,13 @@
 
 #include <ytil/con/vec.h>
 #include <ytil/def.h>
-#include <ytil/magic.h>
+#include <ytil/def/magic.h>
 #include <ytil/ext/stdlib.h>
 #include <string.h>
 
+
 /// offset of first vector element
-#define OFFSET PROD_DEBUG(0, vec->esize)
+#define OFFSET DEBUG_RELEASE(vec->esize, 0)
 
 /// Get position of vector element.
 ///

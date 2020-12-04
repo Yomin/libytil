@@ -22,7 +22,8 @@
 
 #include <ytil/enc/base64.h>
 #include <ytil/def.h>
-#include <ytil/bits.h>
+#include <ytil/def/bits.h>
+#include <stdlib.h>
 
 
 /// base64 error type definition

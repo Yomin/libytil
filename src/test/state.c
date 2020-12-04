@@ -25,6 +25,7 @@
 #include <ytil/ext/stdio.h>
 #include <ytil/ext/string.h>
 #include <ytil/con/vec.h>
+#include <stdlib.h>
 
 
 typedef struct test_state

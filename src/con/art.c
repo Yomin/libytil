@@ -25,9 +25,8 @@
 #include <ytil/con/art.h>
 #include <ytil/ext/string.h>
 #include <ytil/def.h>
-#include <ytil/magic.h>
-#include <ytil/simd.h>
-#include <stdint.h>
+#include <ytil/def/magic.h>
+#include <ytil/def/simd.h>
 #include <stdlib.h>
 
 
@@ -376,7 +375,7 @@ static inline art_node_ct *art_node4_get_child(art_node_const_ct node, unsigned 
 /// \retval NULL    key not found
 static inline art_node_ct *art_node8_get_child(art_node_const_ct node, unsigned char key)
 {
-#ifdef SIMD64
+#if SIMD64
     int index = simd64_index8(node->v.n8.key, node->size, key);
 #else
     int index = art_node_find_child(node->v.n8.key, node->size, key);
@@ -395,7 +394,7 @@ static inline art_node_ct *art_node8_get_child(art_node_const_ct node, unsigned 
 /// \retval NULL    key not found
 static inline art_node_ct *art_node16_get_child(art_node_const_ct node, unsigned char key)
 {
-#ifdef SIMD128
+#if SIMD128
     int index = simd128_index8(node->v.n16.key, node->size, key);
 #else
     int index = art_node_find_child(node->v.n16.key, node->size, key);
@@ -414,7 +413,7 @@ static inline art_node_ct *art_node16_get_child(art_node_const_ct node, unsigned
 /// \retval NULL    key not found
 static inline art_node_ct *art_node32_get_child(art_node_const_ct node, unsigned char key)
 {
-#ifdef SIMD256
+#if SIMD256
     int index = simd256_index8(node->v.n32.key, node->size, key);
 #else
     int index = art_node_find_child(node->v.n32.key, node->size, key);
@@ -1182,7 +1181,7 @@ static inline void art_node_list_insert(art_node_ct parent, unsigned char *keys,
     children[index] = child;
 }
 
-#if defined(SIMD64) || defined(SIMD128) || defined(SIMD256)
+#if SIMD64 || SIMD128 || SIMD256
 /// Append child node to list parent.
 ///
 /// \param parent   parent to append child to
@@ -1234,7 +1233,7 @@ static inline void art_node4_insert(art_node_ct parent, unsigned char key, art_n
 /// \param ordered  if true insert keeping ascending order
 static inline void art_node8_insert(art_node_ct parent, unsigned char key, art_node_ct child, bool ordered)
 {
-#ifdef SIMD64
+#if SIMD64
 
     if(!ordered)
         art_node_list_append(parent, parent->v.n8.key, parent->v.n8.child, key, child);
@@ -1252,7 +1251,7 @@ static inline void art_node8_insert(art_node_ct parent, unsigned char key, art_n
 /// \param ordered  if true insert keeping ascending order
 static inline void art_node16_insert(art_node_ct parent, unsigned char key, art_node_ct child, bool ordered)
 {
-#ifdef SIMD128
+#if SIMD128
 
     if(!ordered)
         art_node_list_append(parent, parent->v.n16.key, parent->v.n16.child, key, child);
@@ -1270,7 +1269,7 @@ static inline void art_node16_insert(art_node_ct parent, unsigned char key, art_
 /// \param ordered  if true insert keeping ascending order
 static inline void art_node32_insert(art_node_ct parent, unsigned char key, art_node_ct child, bool ordered)
 {
-#ifdef SIMD256
+#if SIMD256
 
     if(!ordered)
         art_node_list_append(parent, parent->v.n32.key, parent->v.n32.child, key, child);
@@ -1435,7 +1434,7 @@ static inline void art_node_remove_child_sorted(art_node_ct parent, unsigned cha
     }
 }
 
-#if defined(SIMD64) || defined(SIMD128) || defined(SIMD256)
+#if SIMD64 || SIMD128 || SIMD256
 /// Remove child node from list node without keeping order.
 ///
 /// \param parent   parent to remove child from
@@ -1502,7 +1501,7 @@ static inline void art_node4_remove_child(art_node_ct parent, unsigned char key)
 /// \param ordered  if true remove keeping ascending order
 static inline void art_node8_remove_child(art_node_ct parent, unsigned char key, bool ordered)
 {
-#ifdef SIMD64
+#if SIMD64
 
     if(ordered)
         art_node_remove_child_sorted(parent, parent->v.n8.key, parent->v.n8.child,
@@ -1524,7 +1523,7 @@ static inline void art_node8_remove_child(art_node_ct parent, unsigned char key,
 /// \param ordered  if true remove keeping ascending order
 static inline void art_node16_remove_child(art_node_ct parent, unsigned char key, bool ordered)
 {
-#ifdef SIMD128
+#if SIMD128
 
     if(ordered)
         art_node_remove_child_sorted(parent, parent->v.n16.key, parent->v.n16.child,
@@ -1546,7 +1545,7 @@ static inline void art_node16_remove_child(art_node_ct parent, unsigned char key
 /// \param ordered  if true remove keeping ascending order
 static inline void art_node32_remove_child(art_node_ct parent, unsigned char key, bool ordered)
 {
-#ifdef SIMD256
+#if SIMD256
 
     if(ordered)
         art_node_remove_child_sorted(parent, parent->v.n32.key, parent->v.n32.child,

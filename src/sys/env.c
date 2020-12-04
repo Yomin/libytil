@@ -24,6 +24,7 @@
 #include <ytil/con/art.h>
 #include <ytil/def.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 
 typedef struct env_value
