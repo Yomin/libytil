@@ -29,6 +29,7 @@ int test_suite_sys(void)
     return error_pass_int(test_run_suites("sys",
         test_suite_sys_env,
         test_suite_sys_path,
+        test_suite_windows(test_suite_sys_service),
         NULL
     ));
 }

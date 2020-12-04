@@ -23,10 +23,19 @@
 #ifndef YTIL_TEST_SUITE_SYS_INCLUDED
 #define YTIL_TEST_SUITE_SYS_INCLUDED
 
+#include <ytil/def/os.h>
+
 
 int test_suite_sys(void);
 int test_suite_sys_env(void);
 int test_suite_sys_path(void);
 
+#if OS_WINDOWS
+
+int test_suite_sys_service(void);
+int test_service(int argc, char *argv[]);
 
 #endif
+
+
+#endif // ifndef YTIL_TEST_SUITE_SYS_INCLUDED

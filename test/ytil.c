@@ -26,11 +26,19 @@
 #include "gen/gen.h"
 #include "sys/sys.h"
 #include <stdio.h>
+#include <string.h>
 
 
 int main(int argc, char *argv[])
 {
     int rc;
+
+#if _WIN32
+
+    if(argc >= 2 && !strcmp(argv[1], "service"))
+        return test_service(argc - 1, argv + 1);
+
+#endif
 
     if(test_run_init_from_args(argc, argv))
     {
