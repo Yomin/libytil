@@ -24,11 +24,11 @@
 #define YTIL_TEST_SUITE_ENC_INCLUDED
 
 
-int test_suite_enc(void);
-int test_suite_enc_base64(void);
-int test_suite_enc_base85(void);
-int test_suite_enc_pctenc(void);
-int test_suite_enc_qpenc(void);
+int test_suite_enc(void *param);
+int test_suite_enc_base64(void *param);
+int test_suite_enc_base85(void *param);
+int test_suite_enc_pctenc(void *param);
+int test_suite_enc_qpenc(void *param);
 
 
 #endif

@@ -454,7 +454,7 @@ static const char *test_suite_sys_service_check(void)
     return IsUserAnAdmin() ? NULL : "Missing admin rights.";
 }
 
-int test_suite_sys_service(void)
+int test_suite_sys_service(void *param)
 {
     return error_pass_int(test_run_cases_check("service",
         test_suite_sys_service_check,

@@ -901,7 +901,7 @@ TEST_CASE_FIX(art_complete_end, art_new4, art_free)
     test_void(str_unref(key));
 }
 
-int test_suite_con_art(void)
+int test_suite_con_art(void *param)
 {
     return error_pass_int(test_run_cases("art",
         test_case(art_is_empty_invalid_magic),

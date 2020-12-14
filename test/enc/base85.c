@@ -525,7 +525,7 @@ TEST_CASE(base85_is_valid_compression)
     test_true(base85_is_valid(LIT("xyz"), base85_alphabet_a85, "x\x00y\x01z\x02"));
 }
 
-int test_suite_enc_base85(void)
+int test_suite_enc_base85(void *param)
 {
     return error_pass_int(test_run_cases("base85",
         test_case(base85_encode_invalid_alphabet_null),

@@ -59,6 +59,39 @@
     rc;                                             \
 })
 
+/// Execute test case setup within a test case.
+///
+/// \param setup    setup name
+#define test_setup(setup) \
+    test_trace(test_case_setup_ ## setup())
+
+/// Execute parameterized test case setup within a test case.
+///
+/// \param setup    setup name
+/// \param ...      setup parameters
+#define test_psetup(setup, ...) \
+    test_trace(test_case_psetup_ ## setup(__VA_ARGS__))
+
+/// Execute test case teardown within a test case.
+///
+/// \param teardown teardown name
+#define test_teardown(teardown) \
+    test_trace(test_case_teardown_ ## teardown())
+
+/// Execute test case cleanup within a test case.
+///
+/// \param cleanup  cleanup name
+#define test_cleanup(cleanup) \
+    test_trace(test_case_cleanup_ ## cleanup())
+
+/// Execute test case within a test case.
+///
+/// If the test case is a fixture, no setup/teardown/cleanup is executed.
+///
+/// \param name     test case name
+#define test_exec(name) \
+    test_trace(test_case_cb_ ## name())
+
 /// Abort test case.
 ///
 ///

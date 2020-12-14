@@ -24,13 +24,13 @@
 #include <ytil/test/run.h>
 
 
-int test_suite_gen(void)
+int test_suite_gen(void *param)
 {
     return error_pass_int(test_run_suites("gen",
-        test_suite_gen_error,
-        test_suite_gen_log,
-        test_suite_gen_path,
-        test_suite_gen_str,
+        test_suite(gen_error),
+        test_suite(gen_log),
+        test_suite(gen_path),
+        test_suite(gen_str),
         NULL
     ));
 }

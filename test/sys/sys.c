@@ -24,12 +24,12 @@
 #include <ytil/test/run.h>
 
 
-int test_suite_sys(void)
+int test_suite_sys(void *param)
 {
     return error_pass_int(test_run_suites("sys",
-        test_suite_sys_env,
-        test_suite_sys_path,
-        test_suite_windows(test_suite_sys_service),
+        test_suite(sys_env),
+        test_suite(sys_path),
+        test_suite_windows(sys_service),
         NULL
     ));
 }

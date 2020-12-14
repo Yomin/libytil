@@ -225,7 +225,7 @@ TEST_CASE_FIX(qpenc_is_valid, mktext, no_teardown)
     test_true(qpenc_is_valid(STR(text_enc)));
 }
 
-int test_suite_enc_qpenc(void)
+int test_suite_enc_qpenc(void *param)
 {
     return error_pass_int(test_run_cases("qpenc",
         test_case(qpenc_encode_invalid_blob1),

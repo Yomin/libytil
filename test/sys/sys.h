@@ -26,13 +26,13 @@
 #include <ytil/def/os.h>
 
 
-int test_suite_sys(void);
-int test_suite_sys_env(void);
-int test_suite_sys_path(void);
+int test_suite_sys(void *param);
+int test_suite_sys_env(void *param);
+int test_suite_sys_path(void *param);
 
 #if OS_WINDOWS
 
-int test_suite_sys_service(void);
+int test_suite_sys_service(void *param);
 int test_service(int argc, char *argv[]);
 
 #endif

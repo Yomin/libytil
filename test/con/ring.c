@@ -435,7 +435,7 @@ TEST_CASE_FIX(ring_fold_r, ring_new, ring_free)
     test_int_eq(sum, 4321);
 }
 
-int test_suite_con_ring(void)
+int test_suite_con_ring(void *param)
 {
     return error_pass_int(test_run_cases("ring",
         test_case(ring_new_invalid_elemsize),

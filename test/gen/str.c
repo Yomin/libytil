@@ -621,7 +621,7 @@ TEST_CASE(str_prepare_set_bc)
     test_void(str_unref(str));
 }
 
-int test_suite_gen_str_new(void)
+int test_suite_gen_str_new(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_new_h_invalid_cstr),
@@ -968,7 +968,7 @@ TEST_CASE_FIX(str_truncate, str_new_h, str_unref)
     test_uint_eq(str_capacity(str), 5);
 }
 
-int test_suite_gen_str_resize(void)
+int test_suite_gen_str_resize(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_resize_invalid_magic),
@@ -1136,7 +1136,7 @@ TEST_CASE(str_dup_f)
     test_void(str_unref(str));
 }
 
-int test_suite_gen_str_dup(void)
+int test_suite_gen_str_dup(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_dup_invalid_magic),
@@ -1393,7 +1393,7 @@ TEST_CASE_FIX(str_set_bs, str_new_s, str_unref)
     test_ptr_eq(str_bc(str), bin);
 }
 
-int test_suite_gen_str_set(void)
+int test_suite_gen_str_set(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_set_h_invalid_magic),
@@ -1686,7 +1686,7 @@ TEST_CASE_FIX(str_at_u, str_new_s, str_unref)
     test_uint_eq(c, lit[len/2]);
 }
 
-int test_suite_gen_str_get(void)
+int test_suite_gen_str_get(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_c_invalid_magic),
@@ -1806,7 +1806,7 @@ TEST_CASE_FIX(str_ref_transient_heap, cstr_new, no_teardown)
     test_void(str_unref(str));
 }
 
-int test_suite_gen_str_ref(void)
+int test_suite_gen_str_ref(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_ref),
@@ -2008,7 +2008,7 @@ TEST_CASE_FIX(str_copy_f, str_new_h, str_unref)
     test_str_eq(str_c(str), "123abc");
 }
 
-int test_suite_gen_str_copy(void)
+int test_suite_gen_str_copy(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_copy_invalid_dst_magic),
@@ -2329,7 +2329,7 @@ TEST_CASE_FIX(str_overwrite_fn, str_new_h, str_unref)
     test_str_eq(str_c(str), "12345abc90");
 }
 
-int test_suite_gen_str_overwrite(void)
+int test_suite_gen_str_overwrite(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_overwrite_invalid_dst_magic),
@@ -2548,7 +2548,7 @@ TEST_CASE_FIX(str_prepend_f, str_new_h, str_unref)
     test_str_eq(str_c(str), "prefix1234567890");
 }
 
-int test_suite_gen_str_prepend(void)
+int test_suite_gen_str_prepend(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_prepend_invalid_dst_magic),
@@ -2746,7 +2746,7 @@ TEST_CASE_FIX(str_append_f, str_new_h, str_unref)
     test_str_eq(str_c(str), "1234567890suffix");
 }
 
-int test_suite_gen_str_append(void)
+int test_suite_gen_str_append(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_append_invalid_dst_magic),
@@ -2979,7 +2979,7 @@ TEST_CASE_FIX(str_insert_f, str_new_h, str_unref)
     test_str_eq(str_c(str), "12345substr67890");
 }
 
-int test_suite_gen_str_insert(void)
+int test_suite_gen_str_insert(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_insert_invalid_dst_magic),
@@ -3088,7 +3088,7 @@ TEST_CASE_FIX(str_cat_b, no_setup, str_unref)
     test_str_eq(str_bc(str), "124589");
 }
 
-int test_suite_gen_str_cat(void)
+int test_suite_gen_str_cat(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_cat_invalid_magic),
@@ -3935,7 +3935,7 @@ TEST_CASE_FIX(str_replace_b_all_grow, no_setup, str_unref)
     test_true(str_is_binary(str));
 }
 
-int test_suite_gen_str_remove_replace(void)
+int test_suite_gen_str_remove_replace(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_remove_invalid_str_magic),
@@ -4289,7 +4289,7 @@ TEST_CASE_FIX(str_cut_negative_pos, str_new_s, str_unref)
     test_prefix_eq(str_c(str)+2, lit+7, 3);
 }
 
-int test_suite_gen_str_sub(void)
+int test_suite_gen_str_sub(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_substr_invalid_magic),
@@ -4493,7 +4493,7 @@ TEST_CASE_FIX(str_dup_translate_b_unescape, str_new_escaped_b, str_unref)
     str_unref(str2);
 }
 
-int test_suite_gen_str_mod(void)
+int test_suite_gen_str_mod(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_trim_pred_invalid_magic),
@@ -5505,7 +5505,7 @@ TEST_CASE_FIX(str_casecmp_nb_bin_gt, str_new_foo_b, str_unref)
     test_int_gt(str_casecmp_nb(str, "FAa", 3), 0);
 }
 
-int test_suite_gen_str_cmp(void)
+int test_suite_gen_str_cmp(void *param)
 {
     return error_pass_int(test_run_cases(NULL,
         test_case(str_cmp_invalid_str1_magic),
@@ -5684,25 +5684,25 @@ int test_suite_gen_str_cmp(void)
     ));
 }
 
-int test_suite_gen_str(void)
+int test_suite_gen_str(void *param)
 {
     return error_pass_int(test_run_suites("str",
-        test_suite_gen_str_new,
-        test_suite_gen_str_resize,
-        test_suite_gen_str_dup,
-        test_suite_gen_str_set,
-        test_suite_gen_str_get,
-        test_suite_gen_str_ref,
-        test_suite_gen_str_copy,
-        test_suite_gen_str_overwrite,
-        test_suite_gen_str_prepend,
-        test_suite_gen_str_append,
-        test_suite_gen_str_insert,
-        test_suite_gen_str_cat,
-        test_suite_gen_str_remove_replace,
-        test_suite_gen_str_sub,
-        test_suite_gen_str_mod,
-        test_suite_gen_str_cmp,
+        test_suite(gen_str_new),
+        test_suite(gen_str_resize),
+        test_suite(gen_str_dup),
+        test_suite(gen_str_set),
+        test_suite(gen_str_get),
+        test_suite(gen_str_ref),
+        test_suite(gen_str_copy),
+        test_suite(gen_str_overwrite),
+        test_suite(gen_str_prepend),
+        test_suite(gen_str_append),
+        test_suite(gen_str_insert),
+        test_suite(gen_str_cat),
+        test_suite(gen_str_remove_replace),
+        test_suite(gen_str_sub),
+        test_suite(gen_str_mod),
+        test_suite(gen_str_cmp),
         NULL
     ));
 }

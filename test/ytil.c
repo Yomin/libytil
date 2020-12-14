@@ -51,10 +51,10 @@ int main(int argc, char *argv[])
     }
 
     rc = test_run_suites(NULL,
-        test_suite_con,
-        test_suite_enc,
-        test_suite_gen,
-        test_suite_sys,
+        test_suite(con),
+        test_suite(enc),
+        test_suite(gen),
+        test_suite(sys),
         NULL
     );
 

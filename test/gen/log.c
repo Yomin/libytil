@@ -926,7 +926,7 @@ TEST_CASE_FIX(log_msg_e_level_gt, log_init, log_free_unlink)
     test_str_eq(msg, "");
 }
 
-int test_suite_gen_log(void)
+int test_suite_gen_log(void *param)
 {
     return error_pass_int(test_run_cases("log",
         test_case(log_unit_add_invalid_name1),

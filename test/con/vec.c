@@ -2488,7 +2488,7 @@ TEST_CASE_FIX(vec_sort, vec_new_int, vec_free)
     test_int_eq(*(int *)vec_at(vec, 2), 3);
 }
 
-int test_suite_con_vec(void)
+int test_suite_con_vec(void *param)
 {
     return error_pass_int(test_run_cases("vec",
         test_case(vec_new_invalid_elemsize),

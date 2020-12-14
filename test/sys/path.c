@@ -1015,7 +1015,7 @@ TEST_CASE_FIX(path_get_app_dir_tmp_tmp_unset_temp_unset_tmpdir_unset, env_init, 
     test_void(path_free(path));
 }
 
-int test_suite_sys_path(void)
+int test_suite_sys_path(void *param)
 {
     return error_pass_int(test_run_cases("path",
         test_case(path_get_base_dir_invalid_ident),

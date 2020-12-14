@@ -218,7 +218,7 @@ TEST_CASE_FIX(env_unset_unset_def, env_init, env_free)
     test_ptr_error(env_get(LIT("PATH")), E_ENV_NOT_FOUND);
 }
 
-int test_suite_sys_env(void)
+int test_suite_sys_env(void *param)
 {
     return error_pass_int(test_run_cases("env",
         test_case(env_is_set_invalid_name1),

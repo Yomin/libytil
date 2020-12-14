@@ -348,7 +348,7 @@ TEST_CASE(base64_is_valid_url)
     test_true(base64_is_valid_url(STR(base64_alphabet_url)));
 }
 
-int test_suite_enc_base64(void)
+int test_suite_enc_base64(void *param)
 {
     return error_pass_int(test_run_cases("base64",
         test_case(base64_encode_invalid_alphabet1),

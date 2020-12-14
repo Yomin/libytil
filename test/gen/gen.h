@@ -24,11 +24,11 @@
 #define YTIL_TEST_SUITE_GEN_INCLUDED
 
 
-int test_suite_gen(void);
-int test_suite_gen_error(void);
-int test_suite_gen_log(void);
-int test_suite_gen_path(void);
-int test_suite_gen_str(void);
+int test_suite_gen(void *param);
+int test_suite_gen_error(void *param);
+int test_suite_gen_log(void *param);
+int test_suite_gen_path(void *param);
+int test_suite_gen_str(void *param);
 
 
 #endif

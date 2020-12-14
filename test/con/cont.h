@@ -24,11 +24,11 @@
 #define YTIL_TEST_SUITE_CON_INCLUDED
 
 
-int test_suite_con(void);
-int test_suite_con_art(void);
-int test_suite_con_list(void);
-int test_suite_con_ring(void);
-int test_suite_con_vec(void);
+int test_suite_con(void *param);
+int test_suite_con_art(void *param);
+int test_suite_con_list(void *param);
+int test_suite_con_ring(void *param);
+int test_suite_con_vec(void *param);
 
 
 #endif

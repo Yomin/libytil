@@ -24,13 +24,13 @@
 #include <ytil/test/run.h>
 
 
-int test_suite_enc(void)
+int test_suite_enc(void *param)
 {
     return error_pass_int(test_run_suites("enc",
-        test_suite_enc_base64,
-        test_suite_enc_base85,
-        test_suite_enc_pctenc,
-        test_suite_enc_qpenc,
+        test_suite(enc_base64),
+        test_suite(enc_base85),
+        test_suite(enc_pctenc),
+        test_suite(enc_qpenc),
         NULL
     ));
 }

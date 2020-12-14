@@ -801,7 +801,7 @@ int test_run_suites_v(const char *name, va_list ap)
 
 int test_run_suites_check_v(const char *name, test_check_cb check, va_list ap)
 {
-    test_suite_cb suite;
+    const test_suite_st *suite;
     int rc = 0;
 
     assert(run);
@@ -825,12 +825,12 @@ int test_run_suites_check_v(const char *name, test_check_cb check, va_list ap)
         }
     }
 
-    while((suite = va_arg(ap, test_suite_cb)))
+    while((suite = va_arg(ap, const test_suite_st *)))
     {
         if(suite == TEST_SUITE_NOP)
             continue;
 
-        if((rc = suite()))
+        if((rc = suite->run(suite->param)))
             break;
     }
 

@@ -2221,7 +2221,7 @@ TEST_CASE_FIX(path_dirname_parent, path_new_parent, path_free)
     test_void(str_unref(str));
 }
 
-int test_suite_gen_path(void)
+int test_suite_gen_path(void *param)
 {
     return error_pass_int(test_run_cases("path",
         test_case(path_new_invalid_str),

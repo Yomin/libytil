@@ -886,7 +886,7 @@ TEST_CASE_FIX(list_fold_r, list_new, list_free)
     test_int_eq(sum, 4321);
 }
 
-int test_suite_con_list(void)
+int test_suite_con_list(void *param)
 {
     return error_pass_int(test_run_cases("list",
         test_case(list_free_invalid_magic),

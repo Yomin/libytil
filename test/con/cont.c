@@ -24,13 +24,13 @@
 #include <ytil/test/run.h>
 
 
-int test_suite_con(void)
+int test_suite_con(void *param)
 {
     return error_pass_int(test_run_suites("con",
-        test_suite_con_art,
-        test_suite_con_list,
-        test_suite_con_ring,
-        test_suite_con_vec,
+        test_suite(con_art),
+        test_suite(con_list),
+        test_suite(con_ring),
+        test_suite(con_vec),
         NULL
     ));
 }

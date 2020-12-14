@@ -56,10 +56,12 @@ typedef enum test_log_level
 
 /// test suite callback
 ///
+/// \param param    test suite parameters
+///
 /// \retval 0   success
 /// \retval <0  stop test run with error
 /// \retval >0  do not use, reserved for worker exit codes
-typedef int (*test_suite_cb)(void);
+typedef int (*test_suite_cb)(void *param);
 
 /// test suite check callback
 ///
@@ -67,16 +69,48 @@ typedef int (*test_suite_cb)(void);
 /// \retval msg     do not run suite, msg states why
 typedef const char *(*test_check_cb)(void);
 
+/// test suite
+typedef struct test_suite
+{
+    test_suite_cb   run;        ///< test suite callback
+    void            *param;     ///< test suite parameters
+} test_suite_st;
+
 /// NOP test suite which is ignored by test_run_suites().
-#define TEST_SUITE_NOP ((test_suite_cb)1)
+#define TEST_SUITE_NOP ((test_suite_st *)1)
 
-/// Unix only test suite.
+/// Create test suite.
+///
+/// \param _suite   test suite callback name without test_suite prefix
+///
+/// \returns        pointer to transient test suite
+#define test_suite(_suite) \
+    &(test_suite_st){ .run = test_suite_ ## _suite }
+
+/// Create parameterized test suite.
+///
+/// \param _suite   test suite callback name without test_suite prefix
+/// \param _param   test suite parameters
+///
+/// \returns        pointer to transient test suite
+#define test_suite_p(_suite, _param) \
+    &(test_suite_st){ .run = test_suite_ ## _suite, .param = _param }
+
+/// Create unix only test suite.
 #define test_suite_unix(suite) \
-    UNIX_WINDOWS(suite, TEST_SUITE_NOP)
+    UNIX_WINDOWS(test_suite((suite)), TEST_SUITE_NOP)
 
-/// Windows only test suite.
+/// Create parameterized unix only test suite.
+#define test_suite_unix_p(suite, param) \
+    UNIX_WINDOWS(test_suite_p((suite), (param)), TEST_SUITE_NOP)
+
+/// Create windows only test suite.
 #define test_suite_windows(suite) \
-    UNIX_WINDOWS(TEST_SUITE_NOP, suite)
+    UNIX_WINDOWS(TEST_SUITE_NOP, test_suite((suite)))
+
+/// Create parameterized windows only test suite.
+#define test_suite_windows_p(suite, param) \
+    UNIX_WINDOWS(TEST_SUITE_NOP, test_suite_p((suite), (param)))
 
 
 /// Initialize test run.
@@ -252,7 +286,7 @@ void test_run_end_case(bool info);
 /// Run test suites.
 ///
 /// \param name     suite name, if NULL do not create a new parent suite
-/// \param ...      NULL terminated variadic list of test_suite_cb callbacks
+/// \param ...      NULL terminated variadic list of test_suite_st pointers
 ///
 /// \retval 0                   success
 /// \retval >0                  worker process, cleanup and exit
@@ -265,7 +299,7 @@ int test_run_suites(const char *name, ...);
 ///
 /// \param name     suite name, if NULL do not create a new parent suite
 /// \param check    suite check callback, may be NULL
-/// \param ...      NULL terminated variadic list of test_suite_cb callbacks
+/// \param ...      NULL terminated variadic list of test_suite_st pointers
 ///
 /// \retval 0                   success
 /// \retval >0                  worker process, cleanup and exit
@@ -277,7 +311,7 @@ int test_run_suites_check(const char *name, test_check_cb check, ...);
 /// Run test suite of suites.
 ///
 /// \param name     suite name, if NULL do not create a new parent suite
-/// \param ap       NULL terminated variadic list of test_suite_cb callbacks
+/// \param ap       NULL terminated variadic list of test_suite_st pointers
 ///
 /// \retval 0                   success
 /// \retval >0                  worker process, cleanup and exit
@@ -290,7 +324,7 @@ int test_run_suites_v(const char *name, va_list ap);
 ///
 /// \param name     suite name, if NULL do not create a new parent suite
 /// \param check    suite check callback, may be NULL
-/// \param ap       NULL terminated variadic list of test_suite_cb callbacks
+/// \param ap       NULL terminated variadic list of test_suite_st pointers
 ///
 /// \retval 0                   success
 /// \retval >0                  worker process, cleanup and exit

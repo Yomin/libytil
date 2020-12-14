@@ -184,7 +184,7 @@ TEST_CASE_PFIX(pctenc_is_valid_lower, mktext, no_teardown, false)
     test_true(pctenc_is_valid(STR(text_enc)));
 }
 
-int test_suite_enc_pctenc(void)
+int test_suite_enc_pctenc(void *param)
 {
     return error_pass_int(test_run_cases("pctenc",
         test_case(pctenc_encode_invalid_blob1),

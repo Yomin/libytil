@@ -1711,7 +1711,7 @@ TEST_CASE(error_map_ntstatus_no_match)
 
 #endif // _WIN32
 
-int test_suite_gen_error(void)
+int test_suite_gen_error(void *param)
 {
     return error_pass_int(test_run_cases("error",
         test_case(error_type_name_invalid_type),
