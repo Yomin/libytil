@@ -460,7 +460,7 @@ void error_pack_last_f(const char *func, const error_type_st *type, const char *
     error_pack_f(func, type, code, desc);
 }
 
-void error_map_f(const char *func, const error_type_st *type, error_map_cb map)
+void error_map_f(const char *func, const error_type_st *type, error_map_cb map, const void *ctx)
 {
     int code;
 
@@ -470,7 +470,7 @@ void error_map_f(const char *func, const error_type_st *type, error_map_cb map)
         error_pass_f(func);
     else if(error_is_oom(0))
         error_push_f(func, ERROR_TYPE(GENERIC), E_GENERIC_OOM, NULL);
-    else if((code = map(error_type(0), error_code(0))) < 0)
+    else if((code = map(error_type(0), error_code(0), (void *)ctx)) < 0)
         error_push_f(func, ERROR_TYPE(GENERIC), E_GENERIC_WRAP, NULL);
     else
         error_push_f(func, type, code, NULL);
@@ -546,13 +546,13 @@ void error_pack_last_sub_f(const char *func, const error_type_st *type, int code
     error_pack_sub_f(func, type, code, desc, sub, sub_type, sub_code, sub_desc);
 }
 
-void error_map_sub_f(const char *func, const error_type_st *type, error_map_cb map, const char *sub, const error_type_st *sub_type, int sub_code, const char *sub_desc)
+void error_map_sub_f(const char *func, const error_type_st *type, error_map_cb map, const void *ctx, const char *sub, const error_type_st *sub_type, int sub_code, const char *sub_desc)
 {
     error_set_f(sub, sub_type, sub_code, sub_desc);
-    error_map_f(func, type, map);
+    error_map_f(func, type, map, ctx);
 }
 
-void error_map_last_sub_f(const char *func, const error_type_st *type, error_map_cb map, const char *sub, const error_type_st *sub_type, const char *sub_ctx_type, const void *sub_ctx)
+void error_map_last_sub_f(const char *func, const error_type_st *type, error_map_cb map, const void *map_ctx, const char *sub, const error_type_st *sub_type, const char *sub_ctx_type, const void *sub_ctx)
 {
     const char *sub_desc = NULL;
     int sub_code;
@@ -561,13 +561,13 @@ void error_map_last_sub_f(const char *func, const error_type_st *type, error_map
     assert(sub_type->error_last);
 
     sub_code = sub_type->error_last(sub_type, &sub_desc, sub_ctx_type, (void *)sub_ctx);
-    error_map_sub_f(func, type, map, sub, sub_type, sub_code, sub_desc);
+    error_map_sub_f(func, type, map, map_ctx, sub, sub_type, sub_code, sub_desc);
 }
 
-void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_cb map, const char *sub)
+void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_cb map, const void *ctx, const char *sub)
 {
     error_get_entry(0)->func = sub;
-    error_map_f(func, type, map);
+    error_map_f(func, type, map, ctx);
 }
 
 /// Define generic error info tuple.

@@ -668,7 +668,7 @@ TEST_CASE(error_pack_last_override_ctx)
     test_stack_error(1, TERROR_OVERRIDE, E_TERROR_OV2);
 }
 
-static int _test_error_map(const error_type_st *type, int code)
+static int _test_error_map(const error_type_st *type, int code, void *ctx)
 {
     switch(code)
     {
@@ -689,19 +689,19 @@ static int _test_error_map(const error_type_st *type, int code)
 TEST_CASE_ABORT(error_map_invalid_type)
 {
     test_void(error_set_s(ERRNO, EINVAL));
-    error_map_f(__func__, NULL, _test_error_map);
+    error_map_f(__func__, NULL, _test_error_map, NULL);
 }
 
 TEST_CASE_ABORT(error_map_missing)
 {
     error_clear();
-    error_map_s(TERROR, _test_error_map);
+    error_map_s(TERROR, _test_error_map, NULL);
 }
 
 TEST_CASE(error_map)
 {
     test_void(error_set_s(ERRNO, EINVAL));
-    test_void(error_map_s(TERROR, _test_error_map));
+    test_void(error_map_s(TERROR, _test_error_map, NULL));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EINVAL);
@@ -715,7 +715,7 @@ TEST_CASE(error_map)
 TEST_CASE(error_map_default)
 {
     test_void(error_set_s(ERRNO, EINVAL));
-    test_void(error_map(_test_error_map));
+    test_void(error_map(_test_error_map, NULL));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EINVAL);
@@ -727,7 +727,7 @@ TEST_CASE(error_map_default)
 TEST_CASE(error_map_no_match)
 {
     test_void(error_set_s(ERRNO, ENOSYS));
-    test_void(error_map_s(TERROR, _test_error_map));
+    test_void(error_map_s(TERROR, _test_error_map, NULL));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOSYS);
@@ -741,7 +741,7 @@ TEST_CASE(error_map_no_match)
 TEST_CASE(error_map_system)
 {
     test_void(error_set_s(GENERIC, E_GENERIC_SYSTEM));
-    test_void(error_map_s(TERROR, _test_error_map));
+    test_void(error_map_s(TERROR, _test_error_map, NULL));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, GENERIC, E_GENERIC_SYSTEM);
@@ -752,7 +752,7 @@ TEST_CASE(error_map_system)
 TEST_CASE(error_map_oom)
 {
     test_void(error_set_s(ERRNO, ENOMEM));
-    test_void(error_map_s(TERROR, _test_error_map));
+    test_void(error_map_s(TERROR, _test_error_map, NULL));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOMEM);
@@ -1095,19 +1095,19 @@ TEST_CASE(error_pack_last_sub_oom)
 
 TEST_CASE_ABORT(error_map_sub_invalid_type1)
 {
-    error_map_sub_f(__func__, NULL, _test_error_map,
+    error_map_sub_f(__func__, NULL, _test_error_map, NULL,
         "buff", ERROR_TYPE(ERRNO), EISDIR, NULL);
 }
 
 TEST_CASE_ABORT(error_map_sub_invalid_type2)
 {
-    error_map_sub_f(__func__, ERROR_TYPE(TERROR), _test_error_map,
+    error_map_sub_f(__func__, ERROR_TYPE(TERROR), _test_error_map, NULL,
         "buff", NULL, EISDIR, NULL);
 }
 
 TEST_CASE(error_map_sub)
 {
-    test_void(error_map_sub(_test_error_map, buff, ERRNO, EISDIR));
+    test_void(error_map_sub(_test_error_map, NULL, buff, ERRNO, EISDIR));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EISDIR);
@@ -1118,7 +1118,7 @@ TEST_CASE(error_map_sub)
 
 TEST_CASE(error_map_sub_override_desc)
 {
-    test_void(error_map_sub_d(_test_error_map, buff, ERRNO, EISDIR, "override"));
+    test_void(error_map_sub_d(_test_error_map, NULL, buff, ERRNO, EISDIR, "override"));
 
     test_stack_error(0, ERRNO, EISDIR);
     test_str_eq(error_stack_get_desc(0), "override");
@@ -1126,7 +1126,7 @@ TEST_CASE(error_map_sub_override_desc)
 
 TEST_CASE(error_map_sub_no_match)
 {
-    test_void(error_map_sub(_test_error_map, buff, ERRNO, ENOSYS));
+    test_void(error_map_sub(_test_error_map, NULL, buff, ERRNO, ENOSYS));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOSYS);
@@ -1137,7 +1137,7 @@ TEST_CASE(error_map_sub_no_match)
 
 TEST_CASE(error_map_sub_oom)
 {
-    test_void(error_map_sub(_test_error_map, boff, ERRNO, ENOMEM));
+    test_void(error_map_sub(_test_error_map, NULL, boff, ERRNO, ENOMEM));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOMEM);
@@ -1148,18 +1148,18 @@ TEST_CASE(error_map_sub_oom)
 
 TEST_CASE_ABORT(error_map_last_sub_invalid_type1)
 {
-    error_map_last_sub_f(__func__, NULL, _test_error_map, "bazz", ERROR_TYPE(ERRNO), NULL, NULL);
+    error_map_last_sub_f(__func__, NULL, _test_error_map, NULL, "bazz", ERROR_TYPE(ERRNO), NULL, NULL);
 }
 
 TEST_CASE_ABORT(error_map_last_sub_invalid_type2)
 {
-    error_map_last_sub_f(__func__, ERROR_TYPE(TERROR), _test_error_map, "bazz", NULL, NULL, NULL);
+    error_map_last_sub_f(__func__, ERROR_TYPE(TERROR), _test_error_map, NULL, "bazz", NULL, NULL, NULL);
 }
 
 TEST_CASE(error_map_last_sub)
 {
     errno = EACCES;
-    test_void(error_map_last_sub(_test_error_map, bazz, ERRNO));
+    test_void(error_map_last_sub(_test_error_map, NULL, bazz, ERRNO));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EACCES);
@@ -1170,7 +1170,7 @@ TEST_CASE(error_map_last_sub)
 
 TEST_CASE(error_map_last_sub_override_desc)
 {
-    test_void(error_map_last_sub_x(_test_error_map, bazz, TERROR_OVERRIDE, NULL, "override"));
+    test_void(error_map_last_sub_x(_test_error_map, NULL, bazz, TERROR_OVERRIDE, NULL, "override"));
 
     test_stack_error(0, TERROR_OVERRIDE, E_TERROR_OV1);
     test_str_eq(error_stack_get_desc(0), "override");
@@ -1178,7 +1178,7 @@ TEST_CASE(error_map_last_sub_override_desc)
 
 TEST_CASE(error_map_last_sub_override_ctx)
 {
-    test_void(error_map_last_sub_x(_test_error_map, bazz, TERROR_OVERRIDE, "override", NULL));
+    test_void(error_map_last_sub_x(_test_error_map, NULL, bazz, TERROR_OVERRIDE, "override", NULL));
 
     test_stack_error(0, TERROR_OVERRIDE, E_TERROR_OV2);
 }
@@ -1186,7 +1186,7 @@ TEST_CASE(error_map_last_sub_override_ctx)
 TEST_CASE(error_map_last_sub_no_match)
 {
     errno = ENOSYS;
-    test_void(error_map_last_sub(_test_error_map, buzz, ERRNO));
+    test_void(error_map_last_sub(_test_error_map, NULL, buzz, ERRNO));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOSYS);
@@ -1198,7 +1198,7 @@ TEST_CASE(error_map_last_sub_no_match)
 TEST_CASE(error_map_last_sub_oom)
 {
     errno = ENOMEM;
-    test_void(error_map_last_sub(_test_error_map, bizz, ERRNO));
+    test_void(error_map_last_sub(_test_error_map, NULL, bizz, ERRNO));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOMEM);
@@ -1209,13 +1209,13 @@ TEST_CASE(error_map_last_sub_oom)
 
 TEST_CASE_ABORT(error_map_pre_sub_invalid_type)
 {
-    error_map_pre_sub_f(__func__, NULL, _test_error_map, "bazz");
+    error_map_pre_sub_f(__func__, NULL, _test_error_map, NULL, "bazz");
 }
 
 TEST_CASE(error_map_pre_sub)
 {
     test_void(error_set_s(ERRNO, EACCES));
-    test_void(error_map_pre_sub(_test_error_map, bazz));
+    test_void(error_map_pre_sub(_test_error_map, NULL, bazz));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EACCES);
@@ -1227,7 +1227,7 @@ TEST_CASE(error_map_pre_sub)
 TEST_CASE(error_map_pre_sub_no_match)
 {
     test_void(error_set_s(ERRNO, ENOSYS));
-    test_void(error_map_pre_sub(_test_error_map, buzz));
+    test_void(error_map_pre_sub(_test_error_map, NULL, buzz));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOSYS);
@@ -1239,7 +1239,7 @@ TEST_CASE(error_map_pre_sub_no_match)
 TEST_CASE(error_map_pre_sub_oom)
 {
     test_void(error_set_s(ERRNO, ENOMEM));
-    test_void(error_map_pre_sub(_test_error_map, bizz));
+    test_void(error_map_pre_sub(_test_error_map, NULL, bizz));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOMEM);
@@ -1354,7 +1354,7 @@ TEST_CASE(error_pack_errno_ENOMEM)
 
 TEST_CASE(error_map_errno)
 {
-    test_void(error_map_errno(_test_error_map, foo, EINVAL));
+    test_void(error_map_errno(_test_error_map, NULL, foo, EINVAL));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EINVAL);
@@ -1365,7 +1365,7 @@ TEST_CASE(error_map_errno)
 TEST_CASE(error_map_last_errno)
 {
     errno = EISDIR;
-    test_void(error_map_last_errno(_test_error_map, foo));
+    test_void(error_map_last_errno(_test_error_map, NULL, foo));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, EISDIR);
@@ -1375,7 +1375,7 @@ TEST_CASE(error_map_last_errno)
 
 TEST_CASE(error_map_errno_no_match)
 {
-    test_void(error_map_errno(_test_error_map, foo, ENOSYS));
+    test_void(error_map_errno(_test_error_map, NULL, foo, ENOSYS));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOSYS);
@@ -1384,7 +1384,7 @@ TEST_CASE(error_map_errno_no_match)
 
 TEST_CASE(error_map_errno_ENOMEM)
 {
-    test_void(error_map_errno(_test_error_map, foo, ENOMEM));
+    test_void(error_map_errno(_test_error_map, NULL, foo, ENOMEM));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, ERRNO, ENOMEM);
@@ -1524,7 +1524,7 @@ TEST_CASE(error_pack_ewin32_ERROR_OUTOFMEMORY)
     test_stack_error(1, GENERIC, E_GENERIC_OOM);
 }
 
-static int _test_error_map_win(const error_type_st *type, int code)
+static int _test_error_map_win(const error_type_st *type, int code, void *ctx)
 {
     switch(code)
     {
@@ -1543,7 +1543,7 @@ static int _test_error_map_win(const error_type_st *type, int code)
 
 TEST_CASE(error_map_ewin32)
 {
-    test_void(error_map_ewin32(_test_error_map_win, foo, ERROR_FILE_NOT_FOUND));
+    test_void(error_map_ewin32(_test_error_map_win, NULL, foo, ERROR_FILE_NOT_FOUND));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, EWIN32, ERROR_FILE_NOT_FOUND);
@@ -1554,7 +1554,7 @@ TEST_CASE(error_map_ewin32)
 TEST_CASE(error_map_last_ewin32)
 {
     SetLastError(ERROR_PATH_NOT_FOUND);
-    test_void(error_map_last_ewin32(_test_error_map_win, foo));
+    test_void(error_map_last_ewin32(_test_error_map_win, NULL, foo));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, EWIN32, ERROR_PATH_NOT_FOUND);
@@ -1564,7 +1564,7 @@ TEST_CASE(error_map_last_ewin32)
 
 TEST_CASE(error_map_ewin32_no_match)
 {
-    test_void(error_map_ewin32(_test_error_map_win, foo, ERROR_INVALID_FUNCTION));
+    test_void(error_map_ewin32(_test_error_map_win, NULL, foo, ERROR_INVALID_FUNCTION));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, EWIN32, ERROR_INVALID_FUNCTION);
@@ -1573,7 +1573,7 @@ TEST_CASE(error_map_ewin32_no_match)
 
 TEST_CASE(error_map_ewin32_ERROR_NOT_ENOUGH_MEMORY)
 {
-    test_void(error_map_ewin32(_test_error_map_win, foo, ERROR_NOT_ENOUGH_MEMORY));
+    test_void(error_map_ewin32(_test_error_map_win, NULL, foo, ERROR_NOT_ENOUGH_MEMORY));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, EWIN32, ERROR_NOT_ENOUGH_MEMORY);
@@ -1582,7 +1582,7 @@ TEST_CASE(error_map_ewin32_ERROR_NOT_ENOUGH_MEMORY)
 
 TEST_CASE(error_map_ewin32_ERROR_OUTOFMEMORY)
 {
-    test_void(error_map_ewin32(_test_error_map_win, foo, ERROR_OUTOFMEMORY));
+    test_void(error_map_ewin32(_test_error_map_win, NULL, foo, ERROR_OUTOFMEMORY));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, EWIN32, ERROR_OUTOFMEMORY);
@@ -1632,7 +1632,7 @@ TEST_CASE(error_pack_hresult)
 
 TEST_CASE(error_map_hresult)
 {
-    test_void(error_map_hresult(_test_error_map_win, foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
+    test_void(error_map_hresult(_test_error_map_win, NULL, foo, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, HRESULT, HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
@@ -1642,7 +1642,7 @@ TEST_CASE(error_map_hresult)
 
 TEST_CASE(error_map_hresult_no_match)
 {
-    test_void(error_map_hresult(_test_error_map_win, foo, HRESULT_FROM_WIN32(ERROR_INVALID_FUNCTION)));
+    test_void(error_map_hresult(_test_error_map_win, NULL, foo, HRESULT_FROM_WIN32(ERROR_INVALID_FUNCTION)));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, HRESULT, HRESULT_FROM_WIN32(ERROR_INVALID_FUNCTION));
@@ -1692,7 +1692,7 @@ TEST_CASE(error_pack_ntstatus)
 
 TEST_CASE(error_map_ntstatus)
 {
-    test_void(error_map_ntstatus(_test_error_map_win, foo, STATUS_TIMEOUT));
+    test_void(error_map_ntstatus(_test_error_map_win, NULL, foo, STATUS_TIMEOUT));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, NTSTATUS, STATUS_TIMEOUT);
@@ -1702,7 +1702,7 @@ TEST_CASE(error_map_ntstatus)
 
 TEST_CASE(error_map_ntstatus_no_match)
 {
-    test_void(error_map_ntstatus(_test_error_map_win, foo, STATUS_ABANDONED));
+    test_void(error_map_ntstatus(_test_error_map_win, NULL, foo, STATUS_ABANDONED));
 
     test_uint_eq(error_depth(), 2);
     test_stack_error(0, NTSTATUS, STATUS_ABANDONED);

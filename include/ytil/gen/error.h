@@ -76,10 +76,11 @@ typedef int (*error_last_cb)(const error_type_st *type, const char **desc, const
 ///
 /// \param type     error type of \p code
 /// \param code     error code to map
+/// \param ctx      map context
 ///
 /// \returns                    mapped error code
 /// \retval E_GENERIC_WRAP      error code could not be mapped
-typedef int (*error_map_cb)(const error_type_st *type, int code);
+typedef int (*error_map_cb)(const error_type_st *type, int code, void *ctx);
 
 
 /// error callback interface
@@ -645,7 +646,8 @@ void error_pack_last_f(const char *func, const error_type_st *type, const char *
 /// \param func     name of error setting function
 /// \param type     error type pointer
 /// \param map      error map callback
-void error_map_f(const char *func, const error_type_st *type, error_map_cb map);
+/// \param ctx      \p map context
+void error_map_f(const char *func, const error_type_st *type, error_map_cb map, const void *ctx);
 
 /// Map error to error of default type.
 ///
@@ -655,8 +657,9 @@ void error_map_f(const char *func, const error_type_st *type, error_map_cb map);
 /// Else push mapped error.
 ///
 /// \param map      error map callback
-#define error_map(map) \
-    error_map_f(__func__, ERROR_TYPE(DEFAULT), map)
+/// \param ctx      \p map context
+#define error_map(map, ctx) \
+    error_map_f(__func__, ERROR_TYPE(DEFAULT), (map), (ctx))
 
 /// Map error to error of specific type.
 ///
@@ -667,8 +670,9 @@ void error_map_f(const char *func, const error_type_st *type, error_map_cb map);
 ///
 /// \param type     error type pointer
 /// \param map      error map callback
-#define error_map_s(type, map) \
-    error_map_f(__func__, ERROR_TYPE(type), map)
+/// \param ctx      \p map context
+#define error_map_s(type, map, ctx) \
+    error_map_f(__func__, ERROR_TYPE(type), (map), (ctx))
 
 /// Pick error.
 ///
@@ -926,11 +930,12 @@ void error_pack_last_sub_f(const char *func, const error_type_st *type, int code
 /// \param func         name of error setting function
 /// \param type         error type pointer
 /// \param map          error map callback
+/// \param ctx          \p map context
 /// \param sub          name of sub function
 /// \param sub_type     sub error type pointer
 /// \param sub_code     sub error code
 /// \param sub_desc     sub error description override, may be NULL
-void error_map_sub_f(const char *func, const error_type_st *type, error_map_cb map, const char *sub, const error_type_st *sub_type, int sub_code, const char *sub_desc);
+void error_map_sub_f(const char *func, const error_type_st *type, error_map_cb map, const void *ctx, const char *sub, const error_type_st *sub_type, int sub_code, const char *sub_desc);
 
 /// Map sub function error to error of default type.
 ///
@@ -938,11 +943,12 @@ void error_map_sub_f(const char *func, const error_type_st *type, error_map_cb m
 /// If sub error is a sub type OOM error, push generic OOM error instead.
 ///
 /// \param map          error map callback
+/// \param ctx          \p map context
 /// \param sub          name of sub function
 /// \param sub_type     sub error type pointer
 /// \param sub_code     sub error code
-#define error_map_sub(map, sub, sub_type, sub_code)     \
-    error_map_sub_f(__func__, ERROR_TYPE(DEFAULT), map, \
+#define error_map_sub(map, ctx, sub, sub_type, sub_code)         \
+    error_map_sub_f(__func__, ERROR_TYPE(DEFAULT), (map), (ctx), \
         #sub, ERROR_TYPE(sub_type), (sub_code), NULL)
 
 /// Map sub function error with override description to error of default type.
@@ -951,12 +957,13 @@ void error_map_sub_f(const char *func, const error_type_st *type, error_map_cb m
 /// If sub error is a sub type OOM error, push generic OOM error instead.
 ///
 /// \param map          error map callback
+/// \param ctx          \p map context
 /// \param sub          name of sub function
 /// \param sub_type     sub error type pointer
 /// \param sub_code     sub error code
 /// \param sub_desc     sub error description override
-#define error_map_sub_d(map, sub, sub_type, sub_code, sub_desc) \
-    error_map_sub_f(__func__, ERROR_TYPE(DEFAULT), map,         \
+#define error_map_sub_d(map, ctx, sub, sub_type, sub_code, sub_desc) \
+    error_map_sub_f(__func__, ERROR_TYPE(DEFAULT), (map), (ctx),     \
         #sub, ERROR_TYPE(sub_type), (sub_code), (sub_desc))
 
 /// Map last sub function error.
@@ -967,11 +974,12 @@ void error_map_sub_f(const char *func, const error_type_st *type, error_map_cb m
 /// \param func         name of error setting function
 /// \param type         error type pointer
 /// \param map          error map callback
+/// \param map_ctx      \p map context
 /// \param sub          name of sub function
 /// \param sub_type     sub error type pointer
 /// \param sub_ctx_type sub error context type string
 /// \param sub_ctx      sub error context
-void error_map_last_sub_f(const char *func, const error_type_st *type, error_map_cb map, const char *sub, const error_type_st *sub_type, const char *sub_ctx_type, const void *sub_ctx);
+void error_map_last_sub_f(const char *func, const error_type_st *type, error_map_cb map, const void *map_ctx, const char *sub, const error_type_st *sub_type, const char *sub_ctx_type, const void *sub_ctx);
 
 /// Map last sub function error to error of default type.
 ///
@@ -979,10 +987,11 @@ void error_map_last_sub_f(const char *func, const error_type_st *type, error_map
 /// If sub error is a sub type OOM error, push generic OOM error instead.
 ///
 /// \param map          error map callback
+/// \param map_ctx      \p map context
 /// \param sub          name of sub function
 /// \param sub_type     sub error type pointer
-#define error_map_last_sub(map, sub, sub_type)               \
-    error_map_last_sub_f(__func__, ERROR_TYPE(DEFAULT), map, \
+#define error_map_last_sub(map, map_ctx, sub, sub_type)                   \
+    error_map_last_sub_f(__func__, ERROR_TYPE(DEFAULT), (map), (map_ctx), \
         #sub, ERROR_TYPE(sub_type), NULL, NULL)
 
 /// Map last sub function error from context to error of default type.
@@ -991,12 +1000,13 @@ void error_map_last_sub_f(const char *func, const error_type_st *type, error_map
 /// If sub error is a sub type OOM error, push generic OOM error instead.
 ///
 /// \param map          error map callback
+/// \param map_ctx      \p map context
 /// \param sub          name of sub function
 /// \param sub_type     sub error type pointer
 /// \param sub_ctx_type sub error context type string
 /// \param sub_ctx      sub error context
-#define error_map_last_sub_x(map, sub, sub_type, sub_ctx_type, sub_ctx) \
-    error_map_last_sub_f(__func__, ERROR_TYPE(DEFAULT), map,            \
+#define error_map_last_sub_x(map, map_ctx, sub, sub_type, sub_ctx_type, sub_ctx) \
+    error_map_last_sub_f(__func__, ERROR_TYPE(DEFAULT), (map), (map_ctx),        \
         #sub, ERROR_TYPE(sub_type), (sub_ctx_type), (sub_ctx))
 
 /// Map prior sub function error.
@@ -1007,8 +1017,9 @@ void error_map_last_sub_f(const char *func, const error_type_st *type, error_map
 /// \param func         name of error setting function
 /// \param type         error type pointer
 /// \param map          error map callback
+/// \param ctx          \p map context
 /// \param sub          name of sub function
-void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_cb map, const char *sub);
+void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_cb map, const void *ctx, const char *sub);
 
 /// Map prior sub function error to error of default type.
 ///
@@ -1016,9 +1027,10 @@ void error_map_pre_sub_f(const char *func, const error_type_st *type, error_map_
 /// If sub error is a sub type OOM error, push generic OOM error instead.
 ///
 /// \param map          error map callback
+/// \param ctx          \p map context
 /// \param sub          name of sub function
-#define error_map_pre_sub(map, sub) \
-    error_map_pre_sub_f(__func__, ERROR_TYPE(DEFAULT), map, #sub)
+#define error_map_pre_sub(map, ctx, sub) \
+    error_map_pre_sub_f(__func__, ERROR_TYPE(DEFAULT), (map), (ctx), #sub)
 
 
 /// Convenience macro for enclosing functions to handle errors on the fly.
@@ -1338,10 +1350,11 @@ ERROR_DECLARE(ERRNO);
 /// If sub errno is ENOMEM, push generic OOM error instead.
 ///
 /// \param map          error map callback
+/// \param ctx          \p map context
 /// \param sub          name of sub function
 /// \param sub_code     ERRNO
-#define error_map_errno(map, sub, sub_code) \
-    error_map_sub((map), sub, ERRNO, (sub_code))
+#define error_map_errno(map, ctx, sub, sub_code) \
+    error_map_sub((map), (ctx), sub, ERRNO, (sub_code))
 
 /// Map last sub function errno to error of default type.
 ///
@@ -1349,9 +1362,10 @@ ERROR_DECLARE(ERRNO);
 /// If sub errno is ENOMEM, push generic OOM error instead.
 ///
 /// \param map          error map callback
+/// \param ctx          \p map context
 /// \param sub          name of sub function
-#define error_map_last_errno(map, sub) \
-    error_map_last_sub((map), sub, ERRNO)
+#define error_map_last_errno(map, ctx, sub) \
+    error_map_last_sub((map), (ctx), sub, ERRNO)
 
 
 #if OS_WINDOWS
@@ -1427,10 +1441,11 @@ ERROR_DECLARE(EWIN32);
 /// push generic OOM error instead.
 ///
 /// \param map          error map callback
+/// \param ctx          \p map context
 /// \param sub          name of sub function
 /// \param sub_code     EWIN32 error
-#define error_map_ewin32(map, sub, sub_code) \
-    error_map_sub((map), sub, EWIN32, (sub_code))
+#define error_map_ewin32(map, ctx, sub, sub_code) \
+    error_map_sub((map), (ctx),sub, EWIN32, (sub_code))
 
 /// Map last sub function EWIN32 error to error of default type.
 ///
@@ -1439,9 +1454,10 @@ ERROR_DECLARE(EWIN32);
 /// push generic OOM error instead.
 ///
 /// \param map          error map callback
+/// \param ctx          \p map context
 /// \param sub          name of sub function
-#define error_map_last_ewin32(map, sub) \
-    error_map_last_sub((map), sub, EWIN32)
+#define error_map_last_ewin32(map, ctx, sub) \
+    error_map_last_sub((map), (ctx), sub, EWIN32)
 
 
 /// HRESULT error type declaration
@@ -1480,10 +1496,11 @@ ERROR_DECLARE(HRESULT);
 /// Clear stack, push sub function HRESULT error and map error.
 ///
 /// \param map          error map callback
+/// \param ctx          \p map context
 /// \param sub          name of sub function
 /// \param result       HRESULT
-#define error_map_hresult(map, sub, result) \
-    error_map_sub((map), sub, HRESULT, (result))
+#define error_map_hresult(map, ctx, sub, result) \
+    error_map_sub((map), (ctx), sub, HRESULT, (result))
 
 
 /// NTSTATUS error type declaration
@@ -1522,10 +1539,11 @@ ERROR_DECLARE(NTSTATUS);
 /// Clear stack, push sub function NTSTATUS error and map error.
 ///
 /// \param map          error map callback
+/// \param ctx          \p map context
 /// \param sub          name of sub function
 /// \param status       NTSTATUS
-#define error_map_ntstatus(map, sub, status) \
-    error_map_sub((map), sub, NTSTATUS, (status))
+#define error_map_ntstatus(map, ctx, sub, status) \
+    error_map_sub((map), (ctx), sub, NTSTATUS, (status))
 
 #endif // if OS_WINDOWS
 
