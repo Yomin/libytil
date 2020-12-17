@@ -515,20 +515,21 @@ void test_case_fold_msg(test_case_msg_cb fold, const void *ctx)
 ///
 static void test_case_exec(void)
 {
-    volatile bool teardown = false;
-
-    if(!setjmp(state->jmp)) // returns on abort with 1
+    if(state->tcase->setup)
     {
-        if(state->tcase->setup)
-            state->tcase->setup();
+        if(setjmp(state->jmp)) // returns 1 on abort
+            return;
 
-        state->tcase->cb();
+        state->tcase->setup();
     }
 
-    if(!teardown && state->tcase->teardown)
+    if(!setjmp(state->jmp)) // returns 1 on abort
+        state->tcase->cb();
+
+    if(state->tcase->teardown)
     {
-        teardown = true;
-        state->tcase->teardown();
+        if(!setjmp(state->jmp)) // returns 1 on abort
+            state->tcase->teardown();
     }
 }
 

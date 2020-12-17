@@ -683,6 +683,53 @@ int test_run_begin_case(const char *name)
 
 #define TEST_MSG_INDENT 4 ///< number of spaces to indent messages
 
+/// Print test case message line.
+///
+/// The line is broken at newlines which are printed separately.
+/// Text between STX and ETX is printed escaped.
+///
+/// \param line     line to print
+/// \param level    level of line
+/// \param tmp      temporary string for escaping
+static void test_run_print_line(const char *line, int level, str_ct tmp)
+{
+    const char *ptr;
+
+    printf("%*s", TEST_MSG_INDENT * (level + 1), "");
+
+    for(; (ptr = strpbrk(line, "\n\x02")); line = ptr + 1)
+    {
+        printf("%.*s", (int)(ptr - line), line);
+
+        if(ptr[0] == '\n')
+        {
+            printf("\n%*s", TEST_MSG_INDENT * (level + 1), "");
+            continue;
+        }
+
+        if(!tmp)
+            continue;
+
+        line = ptr + 1;
+
+        if((ptr = strchr(line, '\x03')))
+            str_set_bs(tmp, line, ptr - line);
+        else
+            str_set_s(tmp, line);
+
+        str_escape(tmp);
+        printf("%s", str_c(tmp));
+
+        if(!ptr)
+        {
+            printf("\n");
+            return;
+        }
+    }
+
+    printf("%s\n", line);
+}
+
 /// Print test case message.
 ///
 /// \implements test_case_msg_cb
@@ -690,7 +737,7 @@ static void test_run_print_msg(const test_msg_st *msg, void *ctx)
 {
     const test_call_st *call;
     const test_line_st *line;
-    const char *text, *ptr;
+    str_ct tmp = NULL;
     size_t i;
 
     return_if_fail(msg->type != TEST_MSG_INFO || run->log >= TEST_LOG_INFO);
@@ -711,29 +758,19 @@ static void test_run_print_msg(const test_msg_st *msg, void *ctx)
 
     printf("%s", msg_color[msg->type]);
 
+    if(msg->lines)
+        tmp = str_new_l("");
+
     for(i = 0, line = msg->line; i < msg->lines; i++, line++)
     {
-        if(!line->msg)
-        {
+        if(line->msg)
+            test_run_print_line(line->msg, line->level, tmp);
+        else
             printf("\n");
-            continue;
-        }
-
-        for(text = line->msg; (ptr = strchr(text, '\n')); text = ptr + 1)
-        {
-            if(ptr == text)
-            {
-                printf("\n");
-            }
-            else
-            {
-                printf("%*s%.*s\n", TEST_MSG_INDENT * (line->level + 1), "",
-                    (int)(ptr - text), text);
-            }
-        }
-
-        printf("%*s%s\n", TEST_MSG_INDENT * (line->level + 1), "", text);
     }
+
+    if(tmp)
+        str_unref(tmp);
 
     printf("%s\n", COLOR_OFF);
 }

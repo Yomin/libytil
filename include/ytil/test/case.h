@@ -177,9 +177,8 @@ typedef struct test_case
 /// Create test case teardown.
 ///
 /// Restore the application state to the state before setup.
-/// Teardowns are executed after the test case finished
-/// or after the setup or test case failed.
-/// Teardowns are not executed if the worker aborted during setup or test case.
+/// Teardowns are only executed if the setup completed successfully.
+/// Teardowns are not executed if the worker aborted during the test case.
 /// Teardowns are executed in the worker process.
 ///
 /// \param name     teardown name

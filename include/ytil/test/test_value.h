@@ -750,22 +750,26 @@
 /// \param op       compare operation
 /// \param s2       second string
 /// \param t2       second string as text
-#define test_str(name, f, s1, t1, op, s2, t2) do {                            \
-    test_begin();                                                             \
-                                                                              \
-    const char *_s1 = (s1);                                                   \
-    const char *_s2 = (s2);                                                   \
-    const char *_q1 = _s1 ? "\"" : "";                                        \
-    const char *_q2 = _s2 ? "\"" : "";                                        \
-                                                                              \
-    if(!_s1 || !_s2 || !(f(_s1, _s2) op 0))                                   \
-    {                                                                         \
-        test_abort_fail("%s test failed\n%s %s %s\n%s%s%s %s %s%s%s",         \
-            name, t1, #op, t2,                                                \
-            _q1, _s1 ? _s1 : "null", _q1, #op, _q2, _s2 ? _s2 : "null", _q2); \
-    }                                                                         \
-                                                                              \
-    test_end();                                                               \
+#define test_str(name, f, s1, t1, op, s2, t2) do {                    \
+    test_begin();                                                     \
+                                                                      \
+    const char *_s1 = (s1);                                           \
+    const char *_s2 = (s2);                                           \
+                                                                      \
+    if(!_s1 || !_s2 || !(f(_s1, _s2) op 0))                           \
+    {                                                                 \
+        test_abort_fail("%s test failed\n%s %s %s\n%s%s%s %s %s%s%s", \
+            name, t1, #op, t2,                                        \
+            _s1 ? "\"\x02" : "",                                      \
+            _s1 ? _s1 : "null",                                       \
+            _s1 ? "\x03\"" : "",                                      \
+            #op,                                                      \
+            _s2 ? "\"\x02" : "",                                      \
+            _s2 ? _s2 : "null",                                       \
+            _s2 ? "\x03\"" : "");                                     \
+    }                                                                 \
+                                                                      \
+    test_end();                                                       \
 } while(0)
 
 /// Case sensitive comparison test of two strings.
@@ -876,18 +880,19 @@
                                                                                     \
     const char *_p1 = (p1);                                                         \
     const char *_p2 = (p2);                                                         \
-    const char *_q1 = _p1 ? "\"" : "";                                              \
-    const char *_q2 = _p2 ? "\"" : "";                                              \
     int _n          = (n);                                                          \
-    int _n1         = _p1 ? _n : 4;                                                 \
-    int _n2         = _p2 ? _n : 4;                                                 \
                                                                                     \
     if(!_p1 || !_p2 || !(f(_p1, _p2, _n) op 0))                                     \
     {                                                                               \
         test_abort_fail("%s test failed\n%s[:%d] %s %s[:%d]\n%s%.*s%s %s %s%.*s%s", \
             name, t1, _n, #op, t2, _n,                                              \
-            _q1, _n1, _p1 ? _p1 : "null", _q1, #op,                                 \
-            _q2, _n2, _p2 ? _p2 : "null", _q2);                                     \
+            _p1 ? "\"\x02" : "", _p1 ? _n : 4,                                      \
+            _p1 ? _p1 : "null",                                                     \
+            _p1 ? "\x03\"" : "",                                                    \
+            #op,                                                                    \
+            _p2 ? "\"\x02" : "", _p2 ? _n : 4,                                      \
+            _p2 ? _p2 : "null",                                                     \
+            _p2 ? "\x03\"" : "");                                                   \
     }                                                                               \
                                                                                     \
     test_end();                                                                     \
