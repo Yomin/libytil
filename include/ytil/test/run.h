@@ -98,19 +98,19 @@ typedef struct test_suite
 
 /// Create unix only test suite.
 #define test_suite_unix(suite) \
-    UNIX_WINDOWS(test_suite((suite)), TEST_SUITE_NOP)
+    UNIX_WINDOWS(test_suite(suite), TEST_SUITE_NOP)
 
 /// Create parameterized unix only test suite.
 #define test_suite_unix_p(suite, param) \
-    UNIX_WINDOWS(test_suite_p((suite), (param)), TEST_SUITE_NOP)
+    UNIX_WINDOWS(test_suite_p(suite, (param)), TEST_SUITE_NOP)
 
 /// Create windows only test suite.
 #define test_suite_windows(suite) \
-    UNIX_WINDOWS(TEST_SUITE_NOP, test_suite((suite)))
+    UNIX_WINDOWS(TEST_SUITE_NOP, test_suite(suite))
 
 /// Create parameterized windows only test suite.
 #define test_suite_windows_p(suite, param) \
-    UNIX_WINDOWS(TEST_SUITE_NOP, test_suite_p((suite), (param)))
+    UNIX_WINDOWS(TEST_SUITE_NOP, test_suite_p(suite, (param)))
 
 
 /// Initialize test run.
