@@ -351,6 +351,21 @@ int db_result_bind_float(db_stmt_ct stmt, size_t index, float *value, bool *is_n
 /// \retval -1/E_GENERIC_OOM            out of memory
 int db_result_bind_double(db_stmt_ct stmt, size_t index, double *value, bool *is_null);
 
+/// Bind long double field.
+///
+/// \param stmt     statement
+/// \param index    field index
+/// \param value    variable to store field into
+/// \param is_null  variable to set on whether field is NULL, may be NULL
+///
+/// \retval 0                           success
+/// \retval -1/E_DB_OUT_OF_BOUNDS       index is out of bounds
+/// \retval -1/E_DB_UNSUPPORTED         bind not supported by backend
+/// \retval -1/E_DB_UNSUPPORTED_MODE    bind mode not supported for type
+/// \retval -1/E_DB_UNSUPPORTED_TYPE    type not supported by backend
+/// \retval -1/E_GENERIC_OOM            out of memory
+int db_result_bind_ldouble(db_stmt_ct stmt, size_t index, long double *value, bool *is_null);
+
 /// Bind temporary text field.
 ///
 /// After fetching the result, \p text points to the fetched text.
@@ -531,25 +546,6 @@ int db_result_bind_datetime(db_stmt_ct stmt, size_t index, db_datetime_st *datet
 /// \retval -1/E_DB_UNSUPPORTED_TYPE    type not supported by backend
 /// \retval -1/E_GENERIC_OOM            out of memory
 int db_result_bind_timestamp(db_stmt_ct stmt, size_t index, time_t *timestamp, bool *is_null);
-
-/// Fetch result field value.
-///
-/// Fields are fetched into the prebound buffers while executing a statement.
-/// In case a field needs to be rebound to a different type,
-/// or in case of truncation to a larger buffer, this function
-/// will fetch the field again into the newly bound buffer.
-///
-/// \param stmt     statement
-/// \param index    field index
-/// \param offset   value offset in bytes, value is fetched starting at offset
-///
-/// \retval 0                       success
-/// \retval -1/E_DB_ILLEGAL         statement is not beeing executed
-/// \retval -1/E_DB_OUT_OF_BOUNDS   index is out of bounds
-/// \retval -1/E_DB_OUT_OF_RANGE    offset is out of range
-/// \retval -1/E_DB_UNSUPPORTED     not supported by backend
-/// \retval -1/E_GENERIC_OOM        out of memory
-int db_result_fetch(db_stmt_const_ct stmt, size_t index, size_t offset);
 
 /// Get type of result field.
 ///

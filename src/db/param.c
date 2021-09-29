@@ -86,7 +86,7 @@ int db_param_bind_bool(db_stmt_ct stmt, size_t index, bool value)
     {
         .mode   = DB_PARAM_BIND_TMP,
         .type   = DB_TYPE_BOOL,
-        .data   = &value,
+        .data.b = &value,
         .vsize  = sizeof(bool),
     };
 
@@ -103,7 +103,7 @@ int db_param_bind_bool_ref(db_stmt_ct stmt, size_t index, const bool *value, con
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_BOOL,
-        .data       = value,
+        .data.b     = (bool *)value,
         .vsize      = sizeof(bool),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -122,10 +122,10 @@ int db_param_bind_char(db_stmt_ct stmt, size_t index, char value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = db_inttype(sizeof(char), true),
-        .data   = &value,
-        .vsize  = sizeof(char),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = db_inttype(sizeof(char), true),
+        .data.blob  = &value,
+        .vsize      = sizeof(char),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -141,7 +141,7 @@ int db_param_bind_char_ref(db_stmt_ct stmt, size_t index, const char *value, con
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = db_inttype(sizeof(char), true),
-        .data       = value,
+        .data.blob  = (char *)value,
         .vsize      = sizeof(char),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -158,10 +158,10 @@ int db_param_bind_short(db_stmt_ct stmt, size_t index, short value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = db_inttype(sizeof(short), true),
-        .data   = &value,
-        .vsize  = sizeof(short),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = db_inttype(sizeof(short), true),
+        .data.blob  = &value,
+        .vsize      = sizeof(short),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -177,7 +177,7 @@ int db_param_bind_short_ref(db_stmt_ct stmt, size_t index, const short *value, c
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = db_inttype(sizeof(short), true),
-        .data       = value,
+        .data.blob  = (short *)value,
         .vsize      = sizeof(short),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -194,10 +194,10 @@ int db_param_bind_int(db_stmt_ct stmt, size_t index, int value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = db_inttype(sizeof(int), true),
-        .data   = &value,
-        .vsize  = sizeof(int),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = db_inttype(sizeof(int), true),
+        .data.blob  = &value,
+        .vsize      = sizeof(int),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -213,7 +213,7 @@ int db_param_bind_int_ref(db_stmt_ct stmt, size_t index, const int *value, const
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = db_inttype(sizeof(int), true),
-        .data       = value,
+        .data.blob  = (int *)value,
         .vsize      = sizeof(int),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -230,10 +230,10 @@ int db_param_bind_long(db_stmt_ct stmt, size_t index, long value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = db_inttype(sizeof(long), true),
-        .data   = &value,
-        .vsize  = sizeof(long),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = db_inttype(sizeof(long), true),
+        .data.blob  = &value,
+        .vsize      = sizeof(long),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -249,7 +249,7 @@ int db_param_bind_long_ref(db_stmt_ct stmt, size_t index, const long *value, con
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = db_inttype(sizeof(long), true),
-        .data       = value,
+        .data.blob  = (long *)value,
         .vsize      = sizeof(long),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -266,10 +266,10 @@ int db_param_bind_longlong(db_stmt_ct stmt, size_t index, long long value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = db_inttype(sizeof(long long), true),
-        .data   = &value,
-        .vsize  = sizeof(long long),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = db_inttype(sizeof(long long), true),
+        .data.blob  = &value,
+        .vsize      = sizeof(long long),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -285,7 +285,7 @@ int db_param_bind_longlong_ref(db_stmt_ct stmt, size_t index, const long long *v
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = db_inttype(sizeof(long long), true),
-        .data       = value,
+        .data.blob  = (long long *)value,
         .vsize      = sizeof(long long),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -302,10 +302,10 @@ int db_param_bind_int8(db_stmt_ct stmt, size_t index, int8_t value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_INT8,
-        .data   = &value,
-        .vsize  = sizeof(int8_t),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_INT8,
+        .data.i8    = &value,
+        .vsize      = sizeof(int8_t),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -321,7 +321,7 @@ int db_param_bind_int8_ref(db_stmt_ct stmt, size_t index, const int8_t *value, c
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_INT8,
-        .data       = value,
+        .data.i8    = (int8_t *)value,
         .vsize      = sizeof(int8_t),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -338,10 +338,10 @@ int db_param_bind_int16(db_stmt_ct stmt, size_t index, int16_t value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_INT16,
-        .data   = &value,
-        .vsize  = sizeof(int16_t),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_INT16,
+        .data.i16   = &value,
+        .vsize      = sizeof(int16_t),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -357,7 +357,7 @@ int db_param_bind_int16_ref(db_stmt_ct stmt, size_t index, const int16_t *value,
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_INT16,
-        .data       = value,
+        .data.i16   = (int16_t *)value,
         .vsize      = sizeof(int16_t),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -374,10 +374,10 @@ int db_param_bind_int32(db_stmt_ct stmt, size_t index, int32_t value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_INT32,
-        .data   = &value,
-        .vsize  = sizeof(int32_t),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_INT32,
+        .data.i32   = &value,
+        .vsize      = sizeof(int32_t),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -393,7 +393,7 @@ int db_param_bind_int32_ref(db_stmt_ct stmt, size_t index, const int32_t *value,
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_INT32,
-        .data       = value,
+        .data.i32   = (int32_t *)value,
         .vsize      = sizeof(int32_t),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -410,10 +410,10 @@ int db_param_bind_int64(db_stmt_ct stmt, size_t index, int64_t value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_INT64,
-        .data   = &value,
-        .vsize  = sizeof(int64_t),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_INT64,
+        .data.i64   = &value,
+        .vsize      = sizeof(int64_t),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -429,7 +429,7 @@ int db_param_bind_int64_ref(db_stmt_ct stmt, size_t index, const int64_t *value,
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_INT64,
-        .data       = value,
+        .data.i64   = (int64_t *)value,
         .vsize      = sizeof(int64_t),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -446,10 +446,10 @@ int db_param_bind_uchar(db_stmt_ct stmt, size_t index, unsigned char value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = db_inttype(sizeof(unsigned char), false),
-        .data   = &value,
-        .vsize  = sizeof(unsigned char),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = db_inttype(sizeof(unsigned char), false),
+        .data.blob  = &value,
+        .vsize      = sizeof(unsigned char),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -465,7 +465,7 @@ int db_param_bind_uchar_ref(db_stmt_ct stmt, size_t index, const unsigned char *
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = db_inttype(sizeof(unsigned char), false),
-        .data       = value,
+        .data.blob  = (unsigned char *)value,
         .vsize      = sizeof(unsigned char),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -482,10 +482,10 @@ int db_param_bind_ushort(db_stmt_ct stmt, size_t index, unsigned short value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = db_inttype(sizeof(unsigned short), false),
-        .data   = &value,
-        .vsize  = sizeof(unsigned short),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = db_inttype(sizeof(unsigned short), false),
+        .data.blob  = &value,
+        .vsize      = sizeof(unsigned short),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -501,7 +501,7 @@ int db_param_bind_ushort_ref(db_stmt_ct stmt, size_t index, const unsigned short
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = db_inttype(sizeof(unsigned short), false),
-        .data       = value,
+        .data.blob  = (unsigned short *)value,
         .vsize      = sizeof(unsigned short),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -518,10 +518,10 @@ int db_param_bind_uint(db_stmt_ct stmt, size_t index, unsigned int value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = db_inttype(sizeof(unsigned int), false),
-        .data   = &value,
-        .vsize  = sizeof(unsigned int),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = db_inttype(sizeof(unsigned int), false),
+        .data.blob  = &value,
+        .vsize      = sizeof(unsigned int),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -537,7 +537,7 @@ int db_param_bind_uint_ref(db_stmt_ct stmt, size_t index, const unsigned int *va
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = db_inttype(sizeof(unsigned int), false),
-        .data       = value,
+        .data.blob  = (unsigned int *)value,
         .vsize      = sizeof(unsigned int),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -554,10 +554,10 @@ int db_param_bind_ulong(db_stmt_ct stmt, size_t index, unsigned long value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = db_inttype(sizeof(unsigned long), false),
-        .data   = &value,
-        .vsize  = sizeof(unsigned long),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = db_inttype(sizeof(unsigned long), false),
+        .data.blob  = &value,
+        .vsize      = sizeof(unsigned long),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -573,7 +573,7 @@ int db_param_bind_ulong_ref(db_stmt_ct stmt, size_t index, const unsigned long *
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = db_inttype(sizeof(unsigned long), false),
-        .data       = value,
+        .data.blob  = (unsigned long *)value,
         .vsize      = sizeof(unsigned long),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -590,10 +590,10 @@ int db_param_bind_ulonglong(db_stmt_ct stmt, size_t index, unsigned long long va
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = db_inttype(sizeof(unsigned long long), false),
-        .data   = &value,
-        .vsize  = sizeof(unsigned long long),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = db_inttype(sizeof(unsigned long long), false),
+        .data.blob  = &value,
+        .vsize      = sizeof(unsigned long long),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -609,7 +609,7 @@ int db_param_bind_ulonglong_ref(db_stmt_ct stmt, size_t index, const unsigned lo
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = db_inttype(sizeof(unsigned long long), false),
-        .data       = value,
+        .data.blob  = (unsigned long long *)value,
         .vsize      = sizeof(unsigned long long),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -626,10 +626,10 @@ int db_param_bind_uint8(db_stmt_ct stmt, size_t index, uint8_t value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_UINT8,
-        .data   = &value,
-        .vsize  = sizeof(uint8_t),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_UINT8,
+        .data.u8    = &value,
+        .vsize      = sizeof(uint8_t),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -645,7 +645,7 @@ int db_param_bind_uint8_ref(db_stmt_ct stmt, size_t index, const uint8_t *value,
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_UINT8,
-        .data       = value,
+        .data.u8    = (uint8_t *)value,
         .vsize      = sizeof(uint8_t),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -662,10 +662,10 @@ int db_param_bind_uint16(db_stmt_ct stmt, size_t index, uint16_t value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_UINT16,
-        .data   = &value,
-        .vsize  = sizeof(uint16_t),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_UINT16,
+        .data.u16   = &value,
+        .vsize      = sizeof(uint16_t),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -681,7 +681,7 @@ int db_param_bind_uint16_ref(db_stmt_ct stmt, size_t index, const uint16_t *valu
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_UINT16,
-        .data       = value,
+        .data.u16   = (uint16_t *)value,
         .vsize      = sizeof(uint16_t),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -698,10 +698,10 @@ int db_param_bind_uint32(db_stmt_ct stmt, size_t index, uint32_t value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_UINT32,
-        .data   = &value,
-        .vsize  = sizeof(uint32_t),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_UINT32,
+        .data.u32   = &value,
+        .vsize      = sizeof(uint32_t),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -717,7 +717,7 @@ int db_param_bind_uint32_ref(db_stmt_ct stmt, size_t index, const uint32_t *valu
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_UINT32,
-        .data       = value,
+        .data.u32   = (uint32_t *)value,
         .vsize      = sizeof(uint32_t),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -734,10 +734,10 @@ int db_param_bind_uint64(db_stmt_ct stmt, size_t index, uint64_t value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_UINT64,
-        .data   = &value,
-        .vsize  = sizeof(uint64_t),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_UINT64,
+        .data.u64   = &value,
+        .vsize      = sizeof(uint64_t),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -753,7 +753,7 @@ int db_param_bind_uint64_ref(db_stmt_ct stmt, size_t index, const uint64_t *valu
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_UINT64,
-        .data       = value,
+        .data.u64   = (uint64_t *)value,
         .vsize      = sizeof(uint64_t),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -772,7 +772,7 @@ int db_param_bind_float(db_stmt_ct stmt, size_t index, float value)
     {
         .mode   = DB_PARAM_BIND_TMP,
         .type   = DB_TYPE_FLOAT,
-        .data   = &value,
+        .data.f = &value,
         .vsize  = sizeof(float),
     };
 
@@ -789,7 +789,7 @@ int db_param_bind_float_ref(db_stmt_ct stmt, size_t index, const float *value, c
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_FLOAT,
-        .data       = value,
+        .data.f     = (float *)value,
         .vsize      = sizeof(float),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -808,7 +808,7 @@ int db_param_bind_double(db_stmt_ct stmt, size_t index, double value)
     {
         .mode   = DB_PARAM_BIND_TMP,
         .type   = DB_TYPE_DOUBLE,
-        .data   = &value,
+        .data.d = &value,
         .vsize  = sizeof(double),
     };
 
@@ -825,7 +825,7 @@ int db_param_bind_double_ref(db_stmt_ct stmt, size_t index, const double *value,
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_DOUBLE,
-        .data       = value,
+        .data.d     = (double *)value,
         .vsize      = sizeof(double),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -842,10 +842,10 @@ int db_param_bind_ldouble(db_stmt_ct stmt, size_t index, long double value)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_LDOUBLE,
-        .data   = &value,
-        .vsize  = sizeof(long double),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_LDOUBLE,
+        .data.ld    = &value,
+        .vsize      = sizeof(long double),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -861,68 +861,11 @@ int db_param_bind_ldouble_ref(db_stmt_ct stmt, size_t index, const long double *
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_LDOUBLE,
-        .data       = value,
+        .data.ld    = (long double *)value,
         .vsize      = sizeof(long double),
         .rsize      = &info.vsize,
         .is_null    = is_null,
     };
-
-    return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
-    return_error_if_pass(db_stmt_is_executing(stmt), E_DB_ILLEGAL, -1);
-
-    return error_pass_int(bind(stmt, index, &info));
-}
-
-int db_param_bind_ident(db_stmt_ct stmt, size_t index, const char *id, ssize_t size)
-{
-    db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
-    db_param_bind_st info =
-    {
-        .mode   = DB_PARAM_BIND_FIX,
-        .type   = DB_TYPE_ID,
-        .data   = id,
-        .vsize  = !id ? 0 : size < 0 ? strlen(id) : (size_t)size,
-    };
-
-    assert(id);
-
-    return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
-    return_error_if_pass(db_stmt_is_executing(stmt), E_DB_ILLEGAL, -1);
-
-    return error_pass_int(bind(stmt, index, &info));
-}
-
-int db_param_bind_ident_tmp(db_stmt_ct stmt, size_t index, const char *id, ssize_t size)
-{
-    db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
-    db_param_bind_st info =
-    {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_ID,
-        .data   = id,
-        .vsize  = !id ? 0 : size < 0 ? strlen(id) : (size_t)size,
-    };
-
-    assert(id);
-
-    return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
-    return_error_if_pass(db_stmt_is_executing(stmt), E_DB_ILLEGAL, -1);
-
-    return error_pass_int(bind(stmt, index, &info));
-}
-
-int db_param_bind_ident_ref(db_stmt_ct stmt, size_t index, const char *const *id, const size_t *size)
-{
-    db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
-    db_param_bind_st info =
-    {
-        .mode   = DB_PARAM_BIND_REF,
-        .type   = DB_TYPE_ID,
-        .data   = id,
-        .rsize  = size,
-    };
-
-    assert(id);
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
     return_error_if_pass(db_stmt_is_executing(stmt), E_DB_ILLEGAL, -1);
@@ -935,10 +878,10 @@ int db_param_bind_text(db_stmt_ct stmt, size_t index, const char *text, ssize_t 
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_FIX,
-        .type   = DB_TYPE_TEXT,
-        .data   = text,
-        .vsize  = !text ? 0 : size < 0 ? strlen(text) : (size_t)size,
+        .mode       = DB_PARAM_BIND_FIX,
+        .type       = DB_TYPE_TEXT,
+        .data.text  = (char *)text,
+        .vsize      = !text ? 0 : size < 0 ? strlen(text) : (size_t)size,
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -952,10 +895,10 @@ int db_param_bind_text_tmp(db_stmt_ct stmt, size_t index, const char *text, ssiz
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_TEXT,
-        .data   = text,
-        .vsize  = !text ? 0 : size < 0 ? strlen(text) : (size_t)size,
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_TEXT,
+        .data.text  = (char *)text,
+        .vsize      = !text ? 0 : size < 0 ? strlen(text) : (size_t)size,
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -969,10 +912,10 @@ int db_param_bind_text_ref(db_stmt_ct stmt, size_t index, const char *const *tex
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_REF,
-        .type   = DB_TYPE_TEXT,
-        .data   = text,
-        .rsize  = size,
+        .mode       = DB_PARAM_BIND_REF,
+        .type       = DB_TYPE_TEXT,
+        .data.ptext = (char **)text,
+        .rsize      = size,
     };
 
     assert(text);
@@ -988,10 +931,10 @@ int db_param_bind_blob(db_stmt_ct stmt, size_t index, const void *blob, size_t s
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_FIX,
-        .type   = DB_TYPE_BLOB,
-        .data   = blob,
-        .vsize  = size,
+        .mode       = DB_PARAM_BIND_FIX,
+        .type       = DB_TYPE_BLOB,
+        .data.blob  = (void *)blob,
+        .vsize      = size,
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -1005,10 +948,10 @@ int db_param_bind_blob_tmp(db_stmt_ct stmt, size_t index, const void *blob, size
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_BLOB,
-        .data   = blob,
-        .vsize  = size,
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_BLOB,
+        .data.blob  = (void *)blob,
+        .vsize      = size,
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -1022,10 +965,10 @@ int db_param_bind_blob_ref(db_stmt_ct stmt, size_t index, const void *const *blo
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_REF,
-        .type   = DB_TYPE_BLOB,
-        .data   = blob,
-        .rsize  = size,
+        .mode       = DB_PARAM_BIND_REF,
+        .type       = DB_TYPE_BLOB,
+        .data.pblob = (void **)blob,
+        .rsize      = size,
     };
 
     assert(blob);
@@ -1067,10 +1010,10 @@ int db_param_bind_date(db_stmt_ct stmt, size_t index, const db_date_st *date)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_FIX,
-        .type   = DB_TYPE_DATE,
-        .data   = date,
-        .vsize  = sizeof(db_date_st),
+        .mode       = DB_PARAM_BIND_FIX,
+        .type       = DB_TYPE_DATE,
+        .data.date  = (db_date_st *)date,
+        .vsize      = sizeof(db_date_st),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -1085,10 +1028,10 @@ int db_param_bind_date_tmp(db_stmt_ct stmt, size_t index, const db_date_st *date
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_DATE,
-        .data   = date,
-        .vsize  = sizeof(db_date_st),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_DATE,
+        .data.date  = (db_date_st *)date,
+        .vsize      = sizeof(db_date_st),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -1112,7 +1055,7 @@ int db_param_bind_date_ref(db_stmt_ct stmt, size_t index, const db_date_st *date
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_DATE,
-        .data       = date,
+        .data.date  = (db_date_st *)date,
         .vsize      = sizeof(db_date_st),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -1132,10 +1075,10 @@ int db_param_bind_time(db_stmt_ct stmt, size_t index, const db_time_st *time)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_FIX,
-        .type   = DB_TYPE_TIME,
-        .data   = time,
-        .vsize  = sizeof(db_time_st),
+        .mode       = DB_PARAM_BIND_FIX,
+        .type       = DB_TYPE_TIME,
+        .data.time  = (db_time_st *)time,
+        .vsize      = sizeof(db_time_st),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -1150,10 +1093,10 @@ int db_param_bind_time_tmp(db_stmt_ct stmt, size_t index, const db_time_st *time
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_TIME,
-        .data   = time,
-        .vsize  = sizeof(db_time_st),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_TIME,
+        .data.time  = (db_time_st *)time,
+        .vsize      = sizeof(db_time_st),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -1177,7 +1120,7 @@ int db_param_bind_time_ref(db_stmt_ct stmt, size_t index, const db_time_st *time
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_TIME,
-        .data       = time,
+        .data.time  = (db_time_st *)time,
         .vsize      = sizeof(db_time_st),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -1197,10 +1140,10 @@ int db_param_bind_datetime(db_stmt_ct stmt, size_t index, const db_datetime_st *
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_FIX,
-        .type   = DB_TYPE_DATETIME,
-        .data   = datetime,
-        .vsize  = sizeof(db_datetime_st),
+        .mode       = DB_PARAM_BIND_FIX,
+        .type       = DB_TYPE_DATETIME,
+        .data.dt    = (db_datetime_st *)datetime,
+        .vsize      = sizeof(db_datetime_st),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -1215,10 +1158,10 @@ int db_param_bind_datetime_tmp(db_stmt_ct stmt, size_t index, const db_datetime_
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_DATETIME,
-        .data   = datetime,
-        .vsize  = sizeof(db_datetime_st),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_DATETIME,
+        .data.dt    = (db_datetime_st *)datetime,
+        .vsize      = sizeof(db_datetime_st),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -1246,7 +1189,7 @@ int db_param_bind_datetime_ref(db_stmt_ct stmt, size_t index, const db_datetime_
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_DATETIME,
-        .data       = datetime,
+        .data.dt    = (db_datetime_st *)datetime,
         .vsize      = sizeof(db_datetime_st),
         .rsize      = &info.vsize,
         .is_null    = is_null,
@@ -1266,10 +1209,10 @@ int db_param_bind_timestamp(db_stmt_ct stmt, size_t index, time_t timestamp)
     db_param_bind_cb bind = db_stmt_get_interface(stmt)->param_bind;
     db_param_bind_st info =
     {
-        .mode   = DB_PARAM_BIND_TMP,
-        .type   = DB_TYPE_TIMESTAMP,
-        .data   = &timestamp,
-        .vsize  = sizeof(time_t),
+        .mode       = DB_PARAM_BIND_TMP,
+        .type       = DB_TYPE_TIMESTAMP,
+        .data.ts    = &timestamp,
+        .vsize      = sizeof(time_t),
     };
 
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
@@ -1285,7 +1228,7 @@ int db_param_bind_timestamp_ref(db_stmt_ct stmt, size_t index, const time_t *tim
     {
         .mode       = DB_PARAM_BIND_REF,
         .type       = DB_TYPE_TIMESTAMP,
-        .data       = timestamp,
+        .data.ts    = (time_t *)timestamp,
         .vsize      = sizeof(time_t),
         .rsize      = &info.vsize,
         .is_null    = is_null,

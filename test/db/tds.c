@@ -23,97 +23,131 @@
 #include "db.h"
 #include <ytil/test/run.h>
 #include <ytil/test/test.h>
-#include <ytil/db/mysql.h>
+#include <ytil/db/tds.h>
 #include <ytil/sys/env.h>
-#include <ytil/ext/stdlib.h>
 #include "test.h"
 
 static const char *server, *user, *pass, *testdb;
-static int port;
 
 
-TEST_CASE(db_mysql_connect_unknown_host)
+TEST_CASE(db_tds_connect_unknown_host)
 {
-    test_ptr_error(db_mysql_connect("foo", 123, NULL, NULL, 1, NULL), E_DB_UNKNOWN_HOST);
+    test_ptr_error(db_tds_connect("ytil", "foo", NULL, NULL, 1, NULL), E_DB_UNKNOWN_HOST);
 }
 
-TEST_CASE(db_mysql_connect_unreachable)
+TEST_CASE(db_tds_connect_unreachable)
 {
-    test_ptr_error(db_mysql_connect("127.0.0.1", 1, NULL, NULL, 1, NULL), E_DB_CONNECTION);
+    test_ptr_error(db_tds_connect("ytil", "127.0.0.1:1", NULL, NULL, 1, NULL), E_DB_CONNECTION);
 }
 
-TEST_CASE(db_mysql_connect_login_failed)
+TEST_CASE(db_tds_connect_login_failed)
 {
-    test_ptr_error(db_mysql_connect(server, port, "foo", "bar", 1, NULL), E_DB_LOGIN_FAILED);
+    test_ptr_error(db_tds_connect("ytil", server, "foo", "bar", 1, NULL), E_DB_LOGIN_FAILED);
 }
 
-TEST_CASE(db_mysql_connect_unknown_database)
+TEST_CASE(db_tds_connect_unknown_database)
 {
-    test_ptr_error(db_mysql_connect(server, port, user, pass, 1, "foo"), E_DB_UNKNOWN_DATABASE);
+    test_ptr_error(db_tds_connect("ytil", server, user, pass, 1, "foo"), E_DB_UNKNOWN_DATABASE);
 }
 
-TEST_CASE(db_mysql_connect)
+TEST_CASE(db_tds_connect_access_denied)
+{
+    test_ptr_error(db_tds_connect("ytil", server, user, pass, 1, "model"), E_DB_ACCESS_DENIED);
+}
+
+TEST_CASE(db_tds_connect)
 {
     db_ct db;
 
-    test_ptr_success(db = db_mysql_connect(server, port, user, pass, 1, testdb));
+    test_ptr_success(db = db_tds_connect("ytil", server, user, pass, 1, testdb));
     test_int_success(db_close(db));
 }
 
-static int test_suite_db_mysql_connect(void *ctx)
+#include <stdio.h>
+static int foo(db_stmt_ct stmt, size_t row, void *ctx)
+{
+    printf("row %zu\n", row);
+    return 0;
+}
+
+TEST_CASE(foo)
+{
+    db_ct db;
+    db_stmt_ct stmt;
+    int i = 0;
+    bool null = true;
+
+    test_ptr_success(db = db_tds_connect("ytil", server, user, pass, 1, testdb));
+
+    test_ptr_success(stmt = db_prepare(db, "select 123 union select null;"));
+    test_int_success(db_result_bind_int(stmt, 0, &i, &null));
+
+    test_int_success(db_exec(stmt));
+    printf("i = %i, null = %s\n", i, null ? "true" : "false");
+
+    test_int_success(db_exec_f(stmt, foo, NULL));
+    printf("i = %i, null = %s\n", i, null ? "true" : "false");
+
+    test_int_success(db_finalize(stmt));
+    test_int_success(db_close(db));
+}
+
+static int test_suite_db_tds_connect(void *ctx)
 {
     return error_pass_int(test_run_cases(NULL,
-        test_case(db_mysql_connect_unknown_host),
-        test_case(db_mysql_connect_unreachable),
-        test_case(db_mysql_connect_login_failed),
-        test_case(db_mysql_connect_unknown_database),
-        test_case(db_mysql_connect),
+        test_case(db_tds_connect_unknown_host),
+        test_case(db_tds_connect_unreachable),
+        test_case(db_tds_connect_login_failed),
+        test_case(db_tds_connect_unknown_database),
+        test_case(db_tds_connect_access_denied),
+        test_case(db_tds_connect),
+        test_case(foo),
 
         NULL
     ));
 }
 
-static void test_db_mysql_load_env(void)
+static db_ct test_db_tds_connect(void)
 {
-    str_const_ct eserver    = env_get(LIT("MYSQL_SERVER"));
-    str_const_ct eport      = env_get(LIT("MYSQL_PORT"));
-    str_const_ct euser      = env_get(LIT("MYSQL_USER"));
-    str_const_ct epass      = env_get(LIT("MYSQL_PASS"));
-    str_const_ct edb        = env_get(LIT("MYSQL_DB"));
-    long lport;
+    return error_pass_ptr(db_tds_connect("ytil", server, user, pass, 3, testdb));
+}
+
+static void test_db_tds_load_env(void)
+{
+    str_const_ct eserver    = env_get(LIT("TDS_SERVER"));
+    str_const_ct euser      = env_get(LIT("TDS_USER"));
+    str_const_ct epass      = env_get(LIT("TDS_PASS"));
+    str_const_ct edb        = env_get(LIT("TDS_DB"));
 
     server  = eserver ? str_c(eserver) : NULL;
-    port    = eport ? (str2l(&lport, str_c(eport), 10) > 0 ? lport : 0) : 0;
     user    = euser ? str_c(euser) : NULL;
     pass    = epass ? str_c(epass) : NULL;
     testdb  = edb ? str_c(edb) : "ytil_test";
 }
 
-static db_ct test_db_mysql_connect(void)
-{
-    return error_pass_ptr(db_mysql_connect(server, port, user, pass, 1, testdb));
-}
-
-static const char *test_suite_db_mysql_check(void)
+static const char *test_suite_db_tds_check(void)
 {
     db_ct db;
 
-    if((db = test_db_mysql_connect()))
+    if((db = test_db_tds_connect()))
         return db_close(db), NULL;
 
     switch(error_code(0))
     {
     case E_DB_CONNECTION:
-        return "Unabled to connect to MySQL server.";
+        return "Unable to connect to TDS server.";
 
     case E_DB_INCOMPATIBLE:
-        return "MySQL Connector is not compatible with MySQL server.";
+        return "TDS version is not compatible with TDS server.";
 
     case E_DB_LOGIN_FAILED:
-        return "Unabled to login with user to MySQL server.";
+        return "Unable to login with user to TDS server.";
 
     case E_DB_UNKNOWN_DATABASE:
-        return "Test DB does not exist on MySQL server.";
+        return "Test DB does not exist on TDS server.";
+
+    case E_DB_ACCESS_DENIED:
+        return "User has no access rights to test DB.";
 
     case E_DB_EXTENDED:
         return error_desc(1);
@@ -123,11 +157,11 @@ static const char *test_suite_db_mysql_check(void)
     }
 }
 
-int test_suite_db_mysql(void *param)
+int test_suite_db_tds(void *param)
 {
     test_config_db_st config =
     {
-        .open       = test_db_mysql_connect,
+        .open       = test_db_tds_connect,
         .flt_dig    = FLT_DECIMAL_DIG,
         .dbl_dig    = DBL_DECIMAL_DIG,
         .nan        = "nan",
@@ -135,17 +169,21 @@ int test_suite_db_mysql(void *param)
     };
     int rc;
 
-    test_db_mysql_load_env();
+    test_db_tds_load_env();
     config.db = testdb;
 
-    rc = error_pass_int(test_run_suites_check("mysql",
-        test_suite_db_mysql_check,
+    // debug
+    (void)(test_suite_db_tds_connect);
+    (void)(config);
 
-        test_suite(db_mysql_connect),
+    rc = error_pass_int(test_run_suites_check("tds",
+        test_suite_db_tds_check,
+
+        test_suite(db_tds_connect),
 
         test_suite_db_supported(prepare, config),
         test_suite_db_supported(exec, config),
-        test_suite_db_supported(sql, config),
+        /*test_suite_db_supported(sql, config),
         test_suite_db_unsupported(trace, config),
 
         test_suite_db_supported(param_count, config),
@@ -177,7 +215,7 @@ int test_suite_db_mysql(void *param)
         test_suite_db_supported(result_get_table_name, config),
         test_suite_db_supported(result_get_original_table_name, config),
         test_suite_db_supported(result_get_field_name, config),
-        test_suite_db_supported(result_get_original_field_name, config),
+        test_suite_db_supported(result_get_original_field_name, config),*/
 
         NULL
     ));

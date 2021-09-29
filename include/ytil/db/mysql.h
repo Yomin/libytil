@@ -38,16 +38,17 @@ ERROR_DECLARE(MYSQL);
 /// \param port         port, if <= 0 default port is used
 /// \param user         user name, may be NULL for current user
 /// \param password     user password, may be NULL
+/// \param timeout      connection timeout in seconds, 0 = default
 /// \param default_db   default database, may be NULL
 ///
 /// \returns                            db handle
 /// \retval NULL/E_DB_ACCESS_DENIED     access denied
 /// \retval NULL/E_DB_CONNECTION        could not reach server
-/// \retval NULL/E_DB_UNKNOWN_DATABASE  default DB unknown or access denied
+/// \retval NULL/E_DB_INCOMPATIBLE      connector not compatible with server
+/// \retval NULL/E_DB_UNKNOWN_DATABASE  default DB unknown
 /// \retval NULL/E_DB_UNKNOWN_HOST      host not found
-/// \retval NULL/E_DB_VERSION_MISMATCH  client - server version mismatch
 /// \retval NULL/E_GENERIC_OOM          out of memory
-db_ct db_mysql_connect(const char *host, int port, const char *user, const char *password, const char *default_db);
+db_ct db_mysql_connect(const char *host, int port, const char *user, const char *password, unsigned int timeout, const char *default_db);
 
 /// Connect to local MySQL database.
 ///
@@ -58,8 +59,8 @@ db_ct db_mysql_connect(const char *host, int port, const char *user, const char 
 /// \returns                            db handle
 /// \retval NULL/E_DB_ACCESS_DENIED     access denied
 /// \retval NULL/E_DB_CONNECTION        no server with default parameters running
-/// \retval NULL/E_DB_UNKNOWN_DATABASE  default DB unknown or access denied
-/// \retval NULL/E_DB_VERSION_MISMATCH  client - server version mismatch
+/// \retval NULL/E_DB_INCOMPATIBLE      connector not compatible with server
+/// \retval NULL/E_DB_UNKNOWN_DATABASE  default DB unknown
 /// \retval NULL/E_GENERIC_OOM          out of memory
 db_ct db_mysql_connect_local(const char *user, const char *password, const char *default_db);
 
@@ -73,8 +74,8 @@ db_ct db_mysql_connect_local(const char *user, const char *password, const char 
 /// \returns                            db handle
 /// \retval NULL/E_DB_ACCESS_DENIED     access denied
 /// \retval NULL/E_DB_CONNECTION        no server with specified socket running
-/// \retval NULL/E_DB_UNKNOWN_DATABASE  default DB unknown or access denied
-/// \retval NULL/E_DB_VERSION_MISMATCH  client - server version mismatch
+/// \retval NULL/E_DB_INCOMPATIBLE      connector not compatible with server
+/// \retval NULL/E_DB_UNKNOWN_DATABASE  default DB unknown
 /// \retval NULL/E_GENERIC_OOM          out of memory
 db_ct db_mysql_connect_unix(const char *socket, const char *user, const char *password, const char *default_db);
 

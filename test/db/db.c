@@ -30,6 +30,7 @@ int test_suite_db(void *param)
         test_suite(db_interface),
         test_suite(db_sqlite),
         test_suite(db_mysql),
+        test_suite(db_tds),
         NULL
     ));
 }

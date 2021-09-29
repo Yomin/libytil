@@ -80,53 +80,61 @@ static int test_suite_db_sqlite_open(void *ctx)
 
 int test_suite_db_sqlite(void *param)
 {
+    test_config_db_st config =
+    {
+        .open       = db_sqlite_open_memory,
+        .db         = "temp",
+        .dbl_dig    = DBL_DECIMAL_DIG - 2, // always 14 ?
+        .nan        = "'NaN'",
+        .inf        = "Inf",
+    };
+
     return error_pass_int(test_run_suites("sqlite",
         test_suite(db_sqlite_open),
 
-        test_suite_db_supported(prepare, db_sqlite_open_memory),
-        test_suite_db_supported(exec, db_sqlite_open_memory),
-        test_suite_db_supported(sql, db_sqlite_open_memory),
-        test_suite_db_supported(trace, db_sqlite_open_memory),
+        test_suite_db_supported(prepare, config),
+        test_suite_db_supported(exec, config),
+        test_suite_db_supported(sql, config),
+        test_suite_db_supported(trace, config),
 
-        test_suite_db_supported(param_count, db_sqlite_open_memory),
-        test_suite_db_supported(result_count, db_sqlite_open_memory),
+        test_suite_db_supported(param_count, config),
+        test_suite_db_supported(result_count, config),
 
-        test_suite_db_supported(param_bind_null, db_sqlite_open_memory),
+        test_suite_db_supported(param_bind_null, config),
 
-        test_suite_db_unsupported(type_bool, db_sqlite_open_memory),
+        test_suite_db_unsupported(type_bool, config),
 
-        test_suite_db(type_sint8, sizeof(int8_t) == sizeof(int), db_sqlite_open_memory),
-        test_suite_db_unsupported(type_uint8, db_sqlite_open_memory),
+        test_suite_db(type_sint8, sizeof(int8_t) == sizeof(int), config),
+        test_suite_db_unsupported(type_uint8, config),
 
-        test_suite_db(type_sint16, sizeof(int16_t) == sizeof(int), db_sqlite_open_memory),
-        test_suite_db_unsupported(type_uint16, db_sqlite_open_memory),
+        test_suite_db(type_sint16, sizeof(int16_t) == sizeof(int), config),
+        test_suite_db_unsupported(type_uint16, config),
 
-        test_suite_db(type_sint32, sizeof(int32_t) == sizeof(int), db_sqlite_open_memory),
-        test_suite_db_unsupported(type_uint32, db_sqlite_open_memory),
+        test_suite_db(type_sint32, sizeof(int32_t) == sizeof(int), config),
+        test_suite_db_unsupported(type_uint32, config),
 
-        test_suite_db_supported(type_sint64, db_sqlite_open_memory),
-        test_suite_db_unsupported(type_uint64, db_sqlite_open_memory),
+        test_suite_db_supported(type_sint64, config),
+        test_suite_db_unsupported(type_uint64, config),
 
-        test_suite_db_unsupported(type_float, db_sqlite_open_memory),
-        test_suite_db_supported(type_double, db_sqlite_open_memory),
+        test_suite_db_unsupported(type_float, config),
+        test_suite_db_supported(type_double, config),
+        test_suite_db_unsupported(type_ldouble, config),
 
-        test_suite_db_supported(type_text, db_sqlite_open_memory),
-        test_suite_db_supported(type_blob, db_sqlite_open_memory),
+        test_suite_db_supported(type_text, config),
+        test_suite_db_supported(type_blob, config),
 
-        test_suite_db_unsupported(type_date, db_sqlite_open_memory),
-        test_suite_db_unsupported(type_time, db_sqlite_open_memory),
-        test_suite_db_unsupported(type_datetime, db_sqlite_open_memory),
-        test_suite_db_unsupported(type_timestamp, db_sqlite_open_memory),
+        test_suite_db_unsupported(type_date, config),
+        test_suite_db_unsupported(type_time, config),
+        test_suite_db_unsupported(type_datetime, config),
+        test_suite_db_unsupported(type_timestamp, config),
 
-        test_suite_db_supported(result_fetch, db_sqlite_open_memory),
+        test_suite_db_unsupported(result_get_type, config),
 
-        test_suite_db_unsupported(result_get_type, db_sqlite_open_memory),
-
-        test_suite_db_supported(result_get_database_name, db_sqlite_open_memory),
-        test_suite_db_unsupported(result_get_table_name, db_sqlite_open_memory),
-        test_suite_db_supported(result_get_original_table_name, db_sqlite_open_memory),
-        test_suite_db_supported(result_get_field_name, db_sqlite_open_memory),
-        test_suite_db_supported(result_get_original_field_name, db_sqlite_open_memory),
+        test_suite_db_supported(result_get_database_name, config),
+        test_suite_db_unsupported(result_get_table_name, config),
+        test_suite_db_supported(result_get_original_table_name, config),
+        test_suite_db_supported(result_get_field_name, config),
+        test_suite_db_supported(result_get_original_field_name, config),
 
         NULL
     ));

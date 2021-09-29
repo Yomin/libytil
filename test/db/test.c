@@ -25,14 +25,14 @@
 #include <ytil/test/test.h>
 #include <ytil/gen/str.h>
 
-static test_suite_db_st *suite;
+static test_param_db_st *param;
 static db_ct db;
 static db_stmt_ct stmt;
 
 
 TEST_SETUP(db_open)
 {
-    test_ptr_success(db = suite->db_open());
+    test_ptr_success(db = param->config->open());
 }
 
 TEST_TEARDOWN(db_close)
@@ -42,12 +42,12 @@ TEST_TEARDOWN(db_close)
 
 TEST_CASE_FIX(db_prepare_unsupported, db_open, db_close)
 {
-    test_ptr_error(db_prepare(db, "foo"), E_DB_UNSUPPORTED);
+    test_ptr_error(db_prepare(db, "select 123;"), E_DB_UNSUPPORTED);
 }
 
 TEST_CASE_FIX(db_prepare_malformed_query, db_open, db_close)
 {
-    test_ptr_error(db_prepare(db, "foo"), E_DB_MALFORMED_SQL);
+    test_ptr_error(db_prepare(db, "123"), E_DB_MALFORMED_SQL);
 }
 
 TEST_CASE_FIX(db_prepare_multi_stmt, db_open, db_close)
@@ -61,11 +61,11 @@ TEST_CASE_FIX(db_prepare, db_open, db_close)
     test_int_success(db_finalize(stmt));
 }
 
-int test_suite_db_prepare(void *param)
+int test_suite_db_prepare(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_prepare_unsupported)));
 
@@ -164,11 +164,11 @@ TEST_CASE_FIX(db_exec_result_unused, db_prepare_multi, db_finalize)
     test_int_success(db_exec(stmt));
 }
 
-int test_suite_db_exec(void *param)
+int test_suite_db_exec(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_exec_unsupported)));
 
@@ -201,11 +201,11 @@ TEST_CASE_FIX(db_sql_plain, db_prepare_e, db_finalize)
     test_str_eq(sql, "select 'foo\nbar';");
 }
 
-int test_suite_db_sql_plain(void *param)
+int test_suite_db_sql_plain(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_sql_plain_unsupported)));
 
@@ -248,11 +248,11 @@ TEST_CASE_FIX(db_sql_expanded2, db_prepare_p, db_finalize)
     test_str_eq(sql, "select 'baz\rboz';");
 }
 
-int test_suite_db_sql_expanded(void *param)
+int test_suite_db_sql_expanded(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_sql_expanded_unsupported)));
 
@@ -263,11 +263,11 @@ int test_suite_db_sql_expanded(void *param)
     ));
 }
 
-int test_suite_db_sql(void *param)
+int test_suite_db_sql(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_sql_plain, param),
-        test_suite_p(db_sql_expanded, param),
+        test_suite_p(db_sql_plain, vparam),
+        test_suite_p(db_sql_expanded, vparam),
         NULL
     ));
 }
@@ -297,11 +297,11 @@ TEST_CASE_FIX(db_trace, db_prepare1, db_finalize)
     test_void(str_unref(str));
 }
 
-int test_suite_db_trace(void *param)
+int test_suite_db_trace(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_trace_unsupported)));
 
@@ -311,190 +311,199 @@ int test_suite_db_trace(void *param)
     ));
 }
 
-int test_suite_db_type_bool(void *param) {
+int test_suite_db_type_bool(void *vparam) {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_bool, param),
-        test_suite_p(db_result_bind_bool, param),
+        test_suite_p(db_param_bind_bool, vparam),
+        test_suite_p(db_result_bind_bool, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_sint8(void *param)
+int test_suite_db_type_sint8(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_sint8, param),
-        test_suite_p(db_result_bind_sint8, param),
+        test_suite_p(db_param_bind_sint8, vparam),
+        test_suite_p(db_result_bind_sint8, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_uint8(void *param)
+int test_suite_db_type_uint8(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_uint8, param),
-        test_suite_p(db_result_bind_uint8, param),
+        test_suite_p(db_param_bind_uint8, vparam),
+        test_suite_p(db_result_bind_uint8, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_int8(void *param)
+int test_suite_db_type_int8(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_int8, param),
-        test_suite_p(db_result_bind_int8, param),
+        test_suite_p(db_param_bind_int8, vparam),
+        test_suite_p(db_result_bind_int8, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_sint16(void *param)
+int test_suite_db_type_sint16(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_sint16, param),
-        test_suite_p(db_result_bind_sint16, param),
+        test_suite_p(db_param_bind_sint16, vparam),
+        test_suite_p(db_result_bind_sint16, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_uint16(void *param)
+int test_suite_db_type_uint16(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_uint16, param),
-        test_suite_p(db_result_bind_uint16, param),
+        test_suite_p(db_param_bind_uint16, vparam),
+        test_suite_p(db_result_bind_uint16, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_int16(void *param)
+int test_suite_db_type_int16(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_int16, param),
-        test_suite_p(db_result_bind_int16, param),
+        test_suite_p(db_param_bind_int16, vparam),
+        test_suite_p(db_result_bind_int16, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_sint32(void *param)
+int test_suite_db_type_sint32(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_sint32, param),
-        test_suite_p(db_result_bind_sint32, param),
+        test_suite_p(db_param_bind_sint32, vparam),
+        test_suite_p(db_result_bind_sint32, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_uint32(void *param)
+int test_suite_db_type_uint32(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_uint32, param),
-        test_suite_p(db_result_bind_uint32, param),
+        test_suite_p(db_param_bind_uint32, vparam),
+        test_suite_p(db_result_bind_uint32, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_int32(void *param)
+int test_suite_db_type_int32(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_int32, param),
-        test_suite_p(db_result_bind_int32, param),
+        test_suite_p(db_param_bind_int32, vparam),
+        test_suite_p(db_result_bind_int32, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_sint64(void *param)
+int test_suite_db_type_sint64(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_sint64, param),
-        test_suite_p(db_result_bind_sint64, param),
+        test_suite_p(db_param_bind_sint64, vparam),
+        test_suite_p(db_result_bind_sint64, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_uint64(void *param)
+int test_suite_db_type_uint64(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_uint64, param),
-        test_suite_p(db_result_bind_uint64, param),
+        test_suite_p(db_param_bind_uint64, vparam),
+        test_suite_p(db_result_bind_uint64, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_int64(void *param)
+int test_suite_db_type_int64(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_int64, param),
-        test_suite_p(db_result_bind_int64, param),
+        test_suite_p(db_param_bind_int64, vparam),
+        test_suite_p(db_result_bind_int64, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_float(void *param)
+int test_suite_db_type_float(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_float, param),
-        test_suite_p(db_result_bind_float, param),
+        test_suite_p(db_param_bind_float, vparam),
+        test_suite_p(db_result_bind_float, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_double(void *param)
+int test_suite_db_type_double(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_double, param),
-        test_suite_p(db_result_bind_double, param),
+        test_suite_p(db_param_bind_double, vparam),
+        test_suite_p(db_result_bind_double, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_text(void *param)
+int test_suite_db_type_ldouble(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_text, param),
-        test_suite_p(db_result_bind_text, param),
+        test_suite_p(db_param_bind_ldouble, vparam),
+        test_suite_p(db_result_bind_ldouble, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_blob(void *param)
+int test_suite_db_type_text(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_blob, param),
-        test_suite_p(db_result_bind_blob, param),
+        test_suite_p(db_param_bind_text, vparam),
+        test_suite_p(db_result_bind_text, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_date(void *param)
+int test_suite_db_type_blob(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_date, param),
-        test_suite_p(db_result_bind_date, param),
+        test_suite_p(db_param_bind_blob, vparam),
+        test_suite_p(db_result_bind_blob, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_time(void *param)
+int test_suite_db_type_date(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_time, param),
-        test_suite_p(db_result_bind_time, param),
+        test_suite_p(db_param_bind_date, vparam),
+        test_suite_p(db_result_bind_date, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_datetime(void *param)
+int test_suite_db_type_time(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_datetime, param),
-        test_suite_p(db_result_bind_datetime, param),
+        test_suite_p(db_param_bind_time, vparam),
+        test_suite_p(db_result_bind_time, vparam),
         NULL
     ));
 }
 
-int test_suite_db_type_timestamp(void *param)
+int test_suite_db_type_datetime(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_timestamp, param),
-        test_suite_p(db_result_bind_timestamp, param),
+        test_suite_p(db_param_bind_datetime, vparam),
+        test_suite_p(db_result_bind_datetime, vparam),
+        NULL
+    ));
+}
+
+int test_suite_db_type_timestamp(void *vparam)
+{
+    return error_pass_int(test_run_suites(NULL,
+        test_suite_p(db_param_bind_timestamp, vparam),
+        test_suite_p(db_result_bind_timestamp, vparam),
         NULL
     ));
 }

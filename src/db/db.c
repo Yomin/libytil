@@ -53,6 +53,8 @@ ERROR_DEFINE_LIST(DB,
     ERROR_INFO(E_DB_EXTENDED,           "Extended backend error."),
     ERROR_INFO(E_DB_FULL,               "Database is full."),
     ERROR_INFO(E_DB_ILLEGAL,            "Illegal operation."),
+    ERROR_INFO(E_DB_INCOMPATIBLE,       "Client/Server are not compatible."),
+    ERROR_INFO(E_DB_LOGIN_FAILED,       "Failed to login."),
     ERROR_INFO(E_DB_MALFORMED_SQL,      "Malformed SQL."),
     ERROR_INFO(E_DB_MAX_CONNECTIONS,    "Maximum connections."),
     ERROR_INFO(E_DB_MULTI_STMT,         "Multi statements unsupported."),
@@ -68,7 +70,6 @@ ERROR_DEFINE_LIST(DB,
     ERROR_INFO(E_DB_UNSUPPORTED,        "Unsupported function."),
     ERROR_INFO(E_DB_UNSUPPORTED_MODE,   "Unsupported mode."),
     ERROR_INFO(E_DB_UNSUPPORTED_TYPE,   "Unsupported type."),
-    ERROR_INFO(E_DB_VERSION_MISMATCH,   "Client - Server version mismatch.")
 );
 
 /// default error type for db module

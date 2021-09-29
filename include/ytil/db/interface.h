@@ -28,6 +28,31 @@
 #include <ytil/db/db.h>
 
 
+/// DB data union
+typedef union db_data
+{
+    bool            *b;         ///< boolean data
+    int8_t          *i8;        ///< signed 8 bit integer data
+    uint8_t         *u8;        ///< unsigned 8 bit integer data
+    int16_t         *i16;       ///< signed 16 bit integer data
+    uint16_t        *u16;       ///< unsigned 16 bit integer data
+    int32_t         *i32;       ///< signed 32 bit integer data
+    uint32_t        *u32;       ///< unsigned 32 bit integer data
+    int64_t         *i64;       ///< signed 64 bit integer data
+    uint64_t        *u64;       ///< unsigned 64 bit integer data
+    float           *f;         ///< float data
+    double          *d;         ///< double data
+    long double     *ld;        ///< long double data
+    char            *text;      ///< text data
+    char            **ptext;    ///< pointer to text data
+    void            *blob;      ///< binary data
+    void            **pblob;    ///< pointer to binary data
+    db_date_st      *date;      ///< date data
+    db_time_st      *time;      ///< time data
+    db_datetime_st  *dt;        ///< datetime data
+    time_t          *ts;        ///< timestamp data
+} db_data_un;
+
 /// DB parameter bind mode
 typedef enum db_param_bind_mode
 {
@@ -41,7 +66,7 @@ typedef struct db_param_bind
 {
     db_param_bind_id    mode;       ///< bind mode
     db_type_id          type;       ///< type of \p data
-    const void          *data;      ///< data to insert
+    db_data_un          data;       ///< data to insert
     size_t              vsize;      ///< size of \p data, valid for (fix|tmp)-mode
     const size_t        *rsize;     ///< size of \p data, valid for ref-mode, may be NULL for text
     const bool          *is_null;   ///< set on NULL data, may be NULL
@@ -60,7 +85,7 @@ typedef struct db_result_bind
 {
     db_result_bind_id   mode;       ///< bind mode
     db_type_id          type;       ///< type of \p data
-    void                *data;      ///< data to fill, may be NULL for fix mode
+    db_data_un          data;       ///< data to fill, may be NULL for fix mode
     size_t              cap;        ///< capacity of \p data
     size_t              *size;      ///< size to fill, may be NULL
     bool                *is_null;   ///< set on NULL field, may be NULL
@@ -168,18 +193,6 @@ typedef int (*db_param_bind_cb)(db_stmt_ct stmt, size_t index, const db_param_bi
 /// \retval -1/E_GENERIC_OOM            out of memory
 typedef int (*db_result_bind_cb)(db_stmt_ct stmt, size_t index, const db_result_bind_st *bind);
 
-/// DB interface callback to fetch result field
-///
-/// \param stmt     statement
-/// \param index    field index
-/// \param offset   value offset in bytes
-///
-/// \retval 0                       success
-/// \retval -1/E_DB_OUT_OF_BOUNDS   index is out of bounds
-/// \retval -1/E_DB_OUT_OF_RANGE    offset is out of range
-/// \retval -1/E_GENERIC_OOM        out of memory
-typedef int (*db_result_fetch_cb)(db_stmt_const_ct stmt, size_t index, size_t offset);
-
 /// DB interface callback to get result field type
 ///
 /// \param stmt     statement
@@ -223,7 +236,6 @@ typedef struct db_interface
     db_param_bind_cb    param_bind;     ///< callback to bind statement parameter
     db_count_cb         result_count;   ///< callback to get number of result fields
     db_result_bind_cb   result_bind;    ///< callback to bind result field
-    db_result_fetch_cb  result_fetch;   ///< callback to fetch result field
     db_type_cb          result_type;    ///< callback to get type of result field
     db_name_cb          result_name;    ///< callback to get table/database/field name of result field
     db_trace_cb         trace;          ///< callback to enable/disable tracing

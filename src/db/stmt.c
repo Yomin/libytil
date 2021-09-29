@@ -25,8 +25,11 @@
 #include <ytil/db/stmt.h>
 #include <ytil/def.h>
 #include <ytil/def/magic.h>
+#include <ytil/ext/string.h>
+#include <ytil/ext/time.h>
 #include <ytil/gen/str.h>
 #include <stdlib.h>
+#include <float.h>
 
 
 #define MAGIC define_magic("DBS")   ///< statement magic
@@ -39,13 +42,18 @@ typedef struct db_stmt
     db_ct   db;                     ///< database
     void    *ctx;                   ///< statement context
 
+    char *name;                     ///< statement name
+
     char    *sql;                   ///< SQL
-    str_ct  esql;                   ///< escaped SQL
+    str_ct  sql_exp;                ///< expanded SQL
+    str_ct  sql_esc;                ///< escaped SQL
 
     db_param_bind_st    *param;     ///< parameters
     size_t              params;     ///< number of parameters
     db_result_bind_st   *result;    ///< result fields
     size_t              results;    ///< number of result fields
+    char                *state;     ///< result states
+    size_t              stsize;     ///< result state size
 
     bool executing;                 ///< statement is being executed
 } db_stmt_st;
@@ -71,20 +79,20 @@ db_stmt_ct db_stmt_new(db_ct db, const void *ctx)
     return stmt;
 }
 
-static void db_stmt_free_params(db_stmt_ct stmt)
+static void db_stmt_free_param(db_param_bind_st *param)
 {
-    free(stmt->param); /// \todo
-
-    stmt->param     = NULL;
-    stmt->params    = 0;
+    if(param->mode == DB_PARAM_BIND_TMP)
+        free(param->data.blob);
 }
 
-static void db_stmt_free_results(db_stmt_ct stmt)
+static void db_stmt_free_params(db_stmt_ct stmt)
 {
-    free(stmt->result);
+    size_t p;
 
-    stmt->result    = NULL;
-    stmt->results   = 0;
+    for(p = 0; p < stmt->params; p++)
+        db_stmt_free_param(&stmt->param[p]);
+
+    free(stmt->param);
 }
 
 int db_stmt_finalize(db_stmt_ct stmt)
@@ -98,13 +106,18 @@ int db_stmt_finalize(db_stmt_ct stmt)
 
     db_unref(stmt->db);
 
+    free(stmt->name);
     free(stmt->sql);
 
-    if(stmt->esql)
-        str_unref(stmt->esql);
+    if(stmt->sql_exp)
+        str_unref(stmt->sql_exp);
+
+    if(stmt->sql_esc)
+        str_unref(stmt->sql_esc);
 
     db_stmt_free_params(stmt);
-    db_stmt_free_results(stmt);
+    free(stmt->result);
+    free(stmt->state);
 
     free(stmt);
 
@@ -132,6 +145,28 @@ const db_interface_st *db_stmt_get_interface(db_stmt_const_ct stmt)
     return db_get_interface(stmt->db);
 }
 
+int db_stmt_set_name(db_stmt_ct stmt, const char *name)
+{
+    char *dname = NULL;
+
+    assert_magic(stmt);
+
+    if(name && !(dname = strdup(name)))
+        return error_wrap_last_errno(strdup), -1;
+
+    free(stmt->name);
+    stmt->name = dname;
+
+    return 0;
+}
+
+const char *db_stmt_get_name(db_stmt_const_ct stmt)
+{
+    assert_magic(stmt);
+
+    return stmt->name;
+}
+
 int db_stmt_set_executing(db_stmt_ct stmt, bool executing)
 {
     assert_magic(stmt);
@@ -150,16 +185,18 @@ bool db_stmt_is_executing(db_stmt_const_ct stmt)
     return stmt->executing;
 }
 
-int db_stmt_prepare(db_stmt_ct stmt, const char *sql)
+db_stmt_ct db_stmt_prepare(db_ct db, const char *sql, const void *ctx)
 {
+    db_stmt_ct stmt;
     const char *ptr;
     size_t params;
     char *dsql;
 
-    assert_magic(stmt);
+    return_error_if_fail(sql[0], E_DB_MALFORMED_SQL, NULL);
+    return_error_if_pass((ptr = strchr(sql, ';')) && ptr[1], E_DB_MULTI_STMT, NULL);
 
-    return_error_if_fail(sql[0], E_DB_MALFORMED_SQL, -1);
-    return_error_if_pass((ptr = strchr(sql, ';')) && ptr[1], E_DB_MULTI_STMT, -1);
+    if(!(dsql = strdup(sql)))
+        return error_wrap_last_errno(strdup), NULL;
 
     for(params = 0; (sql = strchr(sql, '?')); sql++)
     {
@@ -169,16 +206,203 @@ int db_stmt_prepare(db_stmt_ct stmt, const char *sql)
             params++;
     }
 
-    if(!(dsql = strdup(sql)))
-        return error_wrap_last_errno(strdup), -1;
+    if(!(stmt = db_stmt_new(db, ctx)))
+        return error_pass(), free(dsql), NULL;
 
-    if(db_stmt_param_init(stmt, params))
-        return error_pass(), free(dsql), -1;
-
-    free(stmt->sql);
     stmt->sql = dsql;
 
-    return 0;
+    if(db_stmt_param_init(stmt, params))
+        return error_pass(), db_stmt_finalize(stmt), NULL;
+
+    return stmt;
+}
+
+static str_ct db_stmt_expand_data(str_ct sql, const db_param_bind_st *param)
+{
+    const char *data, *next;
+    size_t b, size;
+
+    switch(param->mode)
+    {
+    case DB_PARAM_BIND_FIX:
+    case DB_PARAM_BIND_TMP:
+        data    = param->data.blob;
+        size    = param->vsize;
+        break;
+
+    case DB_PARAM_BIND_REF:
+        assert(param->rsize || param->type != DB_TYPE_BLOB);
+
+        data    = *param->data.pblob;
+        size    = param->rsize ? *param->rsize : data ? strlen(data) : 0;
+        break;
+
+    default:
+        abort();
+    }
+
+    if(!data)
+        return error_wrap_ptr(str_append_c(sql, "NULL"));
+
+    if(param->type == DB_TYPE_TEXT)
+    {
+        if(!str_append_c(sql, "'"))
+            return error_wrap(), NULL;
+
+        for(; (next = memchr(data, '\'', size)); size -= next - data + 1, data = next + 1)
+        {
+            if(!str_append_cn(sql, data, next - data))
+                return error_wrap(), NULL;
+
+            if(!str_append_c(sql, "''"))
+                return error_wrap(), NULL;
+        }
+
+        if(!str_append_cn(sql, data, size))
+            return error_wrap(), NULL;
+    }
+    else
+    {
+        if(!str_append_c(sql, "x'"))
+            return error_wrap(), NULL;
+
+        for(b = 0; b < size; b++)
+        {
+            if(!str_append_f(sql, "%02hhx", (unsigned char)data[b]))
+                return error_wrap(), NULL;
+        }
+    }
+
+    if(!str_append_c(sql, "'"))
+        return error_wrap(), NULL;
+
+    return sql;
+}
+
+static str_ct db_stmt_expand_param(str_ct sql, const db_param_bind_st *param)
+{
+    tm_st tm;
+
+    if(param->type == DB_TYPE_NULL || (param->is_null && *param->is_null))
+        return error_wrap_ptr(str_append_c(sql, "NULL"));
+
+    switch(param->type)
+    {
+    case DB_TYPE_BOOL:
+        return error_wrap_ptr(
+            str_append_c(sql, *param->data.b ? "true" : "false"));
+
+    case DB_TYPE_INT8:
+        return error_wrap_ptr(
+            str_append_f(sql, "%"PRId8, *param->data.i8));
+
+    case DB_TYPE_UINT8:
+        return error_wrap_ptr(
+            str_append_f(sql, "%"PRIu8, *param->data.u8));
+
+    case DB_TYPE_INT16:
+        return error_wrap_ptr(
+            str_append_f(sql, "%"PRId16, *param->data.i16));
+
+    case DB_TYPE_UINT16:
+        return error_wrap_ptr(
+            str_append_f(sql, "%"PRIu16, *param->data.u16));
+
+    case DB_TYPE_INT32:
+        return error_wrap_ptr(
+            str_append_f(sql, "%"PRId32, *param->data.i32));
+
+    case DB_TYPE_UINT32:
+        return error_wrap_ptr(
+            str_append_f(sql, "%"PRIu32, *param->data.u32));
+
+    case DB_TYPE_INT64:
+        return error_wrap_ptr(
+            str_append_f(sql, "%"PRId64, *param->data.i64));
+
+    case DB_TYPE_UINT64:
+        return error_wrap_ptr(
+            str_append_f(sql, "%"PRIu64, *param->data.u64));
+
+    case DB_TYPE_FLOAT:
+        return error_wrap_ptr(
+            str_append_f(sql, "%.*g", FLT_DECIMAL_DIG, *param->data.f));
+
+    case DB_TYPE_DOUBLE:
+        return error_wrap_ptr(
+            str_append_f(sql, "%.*g", DBL_DECIMAL_DIG, *param->data.d));
+
+    case DB_TYPE_LDOUBLE:
+        return error_wrap_ptr(
+            str_append_f(sql, "%.*Lg", LDBL_DECIMAL_DIG, *param->data.ld));
+
+    case DB_TYPE_TEXT:
+    case DB_TYPE_BLOB:
+        return error_pass_ptr(db_stmt_expand_data(sql, param));
+
+    case DB_TYPE_DATE:
+        return error_wrap_ptr(str_append_f(sql, "'%04u-%02u-%02u'",
+            param->data.date->year, param->data.date->month, param->data.date->day));
+
+    case DB_TYPE_TIME:
+        return error_wrap_ptr(str_append_f(sql, "'%02u:%02u:%02u'",
+            param->data.time->hour, param->data.time->minute, param->data.time->second));
+
+    case DB_TYPE_DATETIME:
+        return error_wrap_ptr(str_append_f(sql, "'%04u-%02u-%02u %02u:%02u:%02u'",
+            param->data.dt->date.year, param->data.dt->date.month, param->data.dt->date.day,
+            param->data.dt->time.hour, param->data.dt->time.minute, param->data.dt->time.second));
+
+    case DB_TYPE_TIMESTAMP:
+        gmtime_r(param->data.ts, &tm);
+
+        return error_wrap_ptr(str_append_f(sql, "'%04u-%02u-%02u %02u:%02u:%02u'",
+            tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+            tm.tm_hour, tm.tm_min, tm.tm_sec));
+
+    default:
+        abort();
+    }
+}
+
+/// Expand SQL.
+///
+/// \param stmt     statement
+///
+/// \returns                    expanded SQL
+/// \retval NULL/E_GENERIC_OOM  out of memory
+static str_ct db_stmt_expand_sql(db_stmt_ct stmt)
+{
+    db_param_bind_st *param = stmt->param;
+    const char *sql, *next;
+
+    if(stmt->sql_exp)
+        str_clear(stmt->sql_exp);
+    else if(!(stmt->sql_exp = str_prepare_c(0, 100)))
+        return error_wrap(), NULL;
+
+    for(sql = stmt->sql; (next = strchr(sql, '?')); sql = next + 1)
+    {
+        if(!str_append_cn(stmt->sql_exp, sql, next - sql))
+            return error_wrap(), NULL;
+
+        if(next[1] == '?') // ?? = literal ?
+        {
+            if(!str_append_c(stmt->sql_exp, "?"))
+                return error_wrap(), NULL;
+
+            next++;
+        }
+        else
+        {
+            if(!db_stmt_expand_param(stmt->sql_exp, param))
+                return error_pass(), NULL;
+
+            param++;
+        }
+    }
+
+    return error_wrap_ptr(str_append_c(stmt->sql_exp, sql));
 }
 
 const char *db_stmt_sql(db_stmt_ct stmt, db_sql_id type)
@@ -192,7 +416,11 @@ const char *db_stmt_sql(db_stmt_ct stmt, db_sql_id type)
         return stmt->sql;
 
     case DB_SQL_EXPANDED:
-        return stmt->sql; /// \todo
+
+        if(!db_stmt_expand_sql(stmt))
+            return error_pass(), NULL;
+
+        return str_c(stmt->sql_exp);
 
     default:
         abort();
@@ -204,15 +432,15 @@ const char *db_stmt_escape_sql(db_stmt_ct stmt, const char *sql)
     assert_magic(stmt);
     assert(sql);
 
-    if(stmt->esql)
-        str_set_s(stmt->esql, sql);
-    else if(!(stmt->esql = str_new_s(sql)))
+    if(stmt->sql_esc)
+        str_set_s(stmt->sql_esc, sql);
+    else if(!(stmt->sql_esc = str_new_s(sql)))
         return error_wrap(), NULL;
 
-    if(!str_escape(stmt->esql))
+    if(!str_escape(stmt->sql_esc))
         return error_wrap(), NULL;
 
-    return str_c(stmt->esql);
+    return str_c(stmt->sql_esc);
 }
 
 int db_stmt_param_init(db_stmt_ct stmt, size_t n)
@@ -230,13 +458,31 @@ int db_stmt_param_init(db_stmt_ct stmt, size_t n)
     return 0;
 }
 
-int db_stmt_param_bind(db_stmt_ct stmt, size_t index, const db_param_bind_st *param)
+size_t db_stmt_param_count(db_stmt_const_ct stmt)
 {
     assert_magic(stmt);
 
+    return stmt->params;
+}
+
+int db_stmt_param_bind(db_stmt_ct stmt, size_t index, const db_param_bind_st *param)
+{
+    void *data;
+
+    assert_magic(stmt);
+    assert(param);
+
     return_error_if_fail(index < stmt->params, E_DB_OUT_OF_BOUNDS, -1);
 
-    stmt->param[index] = *param;
+    data = param->data.blob;
+
+    if(param->mode == DB_PARAM_BIND_TMP && !(data = memdup(data, param->vsize)))
+        return error_wrap_last_errno(memdup), -1;
+
+    db_stmt_free_param(&stmt->param[index]);
+
+    stmt->param[index]              = *param;
+    stmt->param[index].data.blob    = data;
 
     return 0;
 }
@@ -267,7 +513,7 @@ int db_stmt_param_map(db_stmt_const_ct stmt, db_param_map_cb map, const void *ct
     return 0;
 }
 
-int db_stmt_result_init(db_stmt_ct stmt, size_t n)
+int db_stmt_result_init(db_stmt_ct stmt, size_t n, size_t stsize)
 {
     assert_magic(stmt);
     assert(!stmt->result || stmt->results == n);
@@ -277,14 +523,26 @@ int db_stmt_result_init(db_stmt_ct stmt, size_t n)
     if(!(stmt->result = calloc(n, sizeof(db_result_bind_st))))
         return error_wrap_last_errno(calloc), -1;
 
-    stmt->results = n;
+    if(stsize && !(stmt->state = calloc(n, stsize)))
+        return error_wrap_last_errno(calloc), free(stmt->result), -1;
+
+    stmt->results   = n;
+    stmt->stsize    = stsize;
 
     return 0;
+}
+
+size_t db_stmt_result_count(db_stmt_const_ct stmt)
+{
+    assert_magic(stmt);
+
+    return stmt->results;
 }
 
 int db_stmt_result_bind(db_stmt_ct stmt, size_t index, const db_result_bind_st *result)
 {
     assert_magic(stmt);
+    assert(result);
 
     return_error_if_fail(index < stmt->results, E_DB_OUT_OF_BOUNDS, -1);
 
@@ -304,6 +562,8 @@ const db_result_bind_st *db_stmt_result_get(db_stmt_const_ct stmt, size_t index)
 
 int db_stmt_result_map(db_stmt_const_ct stmt, db_result_map_cb map, const void *ctx)
 {
+    db_result_bind_st *result;
+    void *state;
     size_t r;
     int rc;
 
@@ -312,7 +572,10 @@ int db_stmt_result_map(db_stmt_const_ct stmt, db_result_map_cb map, const void *
 
     for(r = 0; r < stmt->results; r++)
     {
-        if((rc = map(stmt, r, &stmt->result[r], (void *)ctx)))
+        result  = &stmt->result[r];
+        state   = stmt->state ? &stmt->state[r * stmt->stsize] : NULL;
+
+        if((rc = map(stmt, r, result, state, (void *)ctx)))
             return error_pack_int(E_DB_CALLBACK, rc);
     }
 

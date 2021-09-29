@@ -46,6 +46,7 @@ int test_suite_db_result_bind_int64(void *ctx);
 
 int test_suite_db_result_bind_float(void *ctx);
 int test_suite_db_result_bind_double(void *ctx);
+int test_suite_db_result_bind_ldouble(void *ctx);
 
 int test_suite_db_result_bind_text_tmp(void *ctx);
 int test_suite_db_result_bind_text_dup(void *ctx);
@@ -61,8 +62,6 @@ int test_suite_db_result_bind_date(void *ctx);
 int test_suite_db_result_bind_time(void *ctx);
 int test_suite_db_result_bind_datetime(void *ctx);
 int test_suite_db_result_bind_timestamp(void *ctx);
-
-int test_suite_db_result_fetch(void *ctx);
 
 int test_suite_db_result_get_type(void *ctx);
 

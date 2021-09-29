@@ -30,7 +30,7 @@
 
 typedef int (*db_param_map_cb)(db_stmt_const_ct stmt, size_t index, const db_param_bind_st *param, void *ctx);
 
-typedef int (*db_result_map_cb)(db_stmt_const_ct stmt, size_t index, const db_result_bind_st *result, void *ctx);
+typedef int (*db_result_map_cb)(db_stmt_const_ct stmt, size_t index, const db_result_bind_st *result, void *state, void *ctx);
 
 
 /// Create new statement.
@@ -71,6 +71,22 @@ db_ct db_stmt_get_db(db_stmt_const_ct stmt);
 /// \returns        interface
 const db_interface_st *db_stmt_get_interface(db_stmt_const_ct stmt);
 
+/// Set statement name.
+///
+/// \param stmt     statement
+/// \param name     name
+///
+/// \retval 0                   success
+/// \retval -1/E_GENERIC_OOM    out of memory
+int db_stmt_set_name(db_stmt_ct stmt, const char *name);
+
+/// Get statement name.
+///
+/// \param stmt     statement
+///
+/// \returns        statement name, NULL if not set
+const char *db_stmt_get_name(db_stmt_const_ct stmt);
+
 /// Set/Unset if statement is executing.
 ///
 /// \param stmt         statement
@@ -92,14 +108,15 @@ bool db_stmt_is_executing(db_stmt_const_ct stmt);
 ///
 /// The backend implementation may use this if no prepared statements are available.
 ///
-/// \param stmt     statement
+/// \param db       database
 /// \param sql      SQL
+/// \param ctx      statement context
 ///
-/// \retval 0                       success
-/// \retval -1/E_DB_MALFORMED_SQL   malformed SQL
-/// \retval -1/E_DB_MULTI_STMT      multi statements not supported
-/// \retval -1/E_GENERIC_OOM        out of memory
-int db_stmt_prepare(db_stmt_ct stmt, const char *sql);
+/// \returns                            db statement
+/// \retval NULL/E_DB_MALFORMED_SQL     malformed SQL
+/// \retval NULL/E_DB_MULTI_STMT        multi statements not supported
+/// \retval NULL/E_GENERIC_OOM          out of memory
+db_stmt_ct db_stmt_prepare(db_ct db, const char *sql, const void *ctx);
 
 /// Get SQL from statement.
 ///
@@ -134,6 +151,13 @@ const char *db_stmt_escape_sql(db_stmt_ct stmt, const char *sql);
 /// \retval 0                   success
 /// \retval -1/E_GENERIC_OOM    out of memory
 int db_stmt_param_init(db_stmt_ct stmt, size_t n);
+
+/// Get number of statement parameters.
+///
+/// \param stmt     statement
+///
+/// \returns        number of statement parameters
+size_t db_stmt_param_count(db_stmt_const_ct stmt);
 
 /// Bind parameter to statement.
 ///
@@ -171,10 +195,18 @@ int db_stmt_param_map(db_stmt_const_ct stmt, db_param_map_cb map, const void *ct
 ///
 /// \param stmt     statement
 /// \param n        number of result fields
+/// \param stsize   optional result state size
 ///
 /// \retval 0                   success
 /// \retval -1/E_GENERIC_OOM    out of memory
-int db_stmt_result_init(db_stmt_ct stmt, size_t n);
+int db_stmt_result_init(db_stmt_ct stmt, size_t n, size_t stsize);
+
+/// Get number of statement result fields.
+///
+/// \param stmt     statement
+///
+/// \returns        number of statement result fields
+size_t db_stmt_result_count(db_stmt_const_ct stmt);
 
 /// Bind result field to statement.
 ///

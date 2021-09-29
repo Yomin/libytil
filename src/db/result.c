@@ -74,7 +74,7 @@ int db_result_bind_bool(db_stmt_ct stmt, size_t index, bool *value, bool *is_nul
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_BOOL,
-        .data       = value,
+        .data.b     = value,
         .cap        = sizeof(bool),
         .is_null    = is_null,
     };
@@ -93,7 +93,7 @@ int db_result_bind_char(db_stmt_ct stmt, size_t index, char *value, bool *is_nul
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = db_inttype(sizeof(char), true),
-        .data       = value,
+        .data.blob  = value,
         .cap        = sizeof(char),
         .is_null    = is_null,
     };
@@ -112,7 +112,7 @@ int db_result_bind_short(db_stmt_ct stmt, size_t index, short *value, bool *is_n
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = db_inttype(sizeof(short), true),
-        .data       = value,
+        .data.blob  = value,
         .cap        = sizeof(short),
         .is_null    = is_null,
     };
@@ -131,7 +131,7 @@ int db_result_bind_int(db_stmt_ct stmt, size_t index, int *value, bool *is_null)
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = db_inttype(sizeof(int), true),
-        .data       = value,
+        .data.blob  = value,
         .cap        = sizeof(int),
         .is_null    = is_null,
     };
@@ -150,7 +150,7 @@ int db_result_bind_long(db_stmt_ct stmt, size_t index, long *value, bool *is_nul
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = db_inttype(sizeof(long), true),
-        .data       = value,
+        .data.blob  = value,
         .cap        = sizeof(long),
         .is_null    = is_null,
     };
@@ -169,7 +169,7 @@ int db_result_bind_longlong(db_stmt_ct stmt, size_t index, long long *value, boo
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = db_inttype(sizeof(long long), true),
-        .data       = value,
+        .data.blob  = value,
         .cap        = sizeof(long long),
         .is_null    = is_null,
     };
@@ -188,7 +188,7 @@ int db_result_bind_int8(db_stmt_ct stmt, size_t index, int8_t *value, bool *is_n
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_INT8,
-        .data       = value,
+        .data.i8    = value,
         .cap        = sizeof(int8_t),
         .is_null    = is_null,
     };
@@ -207,7 +207,7 @@ int db_result_bind_int16(db_stmt_ct stmt, size_t index, int16_t *value, bool *is
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_INT16,
-        .data       = value,
+        .data.i16   = value,
         .cap        = sizeof(int16_t),
         .is_null    = is_null,
     };
@@ -226,7 +226,7 @@ int db_result_bind_int32(db_stmt_ct stmt, size_t index, int32_t *value, bool *is
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_INT32,
-        .data       = value,
+        .data.i32   = value,
         .cap        = sizeof(int32_t),
         .is_null    = is_null,
     };
@@ -245,7 +245,7 @@ int db_result_bind_int64(db_stmt_ct stmt, size_t index, int64_t *value, bool *is
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_INT64,
-        .data       = value,
+        .data.i64   = value,
         .cap        = sizeof(int64_t),
         .is_null    = is_null,
     };
@@ -264,7 +264,7 @@ int db_result_bind_uchar(db_stmt_ct stmt, size_t index, unsigned char *value, bo
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = db_inttype(sizeof(unsigned char), false),
-        .data       = value,
+        .data.blob  = value,
         .cap        = sizeof(unsigned char),
         .is_null    = is_null,
     };
@@ -283,7 +283,7 @@ int db_result_bind_ushort(db_stmt_ct stmt, size_t index, unsigned short *value, 
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = db_inttype(sizeof(unsigned short), false),
-        .data       = value,
+        .data.blob  = value,
         .cap        = sizeof(unsigned short),
         .is_null    = is_null,
     };
@@ -302,7 +302,7 @@ int db_result_bind_uint(db_stmt_ct stmt, size_t index, unsigned int *value, bool
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = db_inttype(sizeof(unsigned int), false),
-        .data       = value,
+        .data.blob  = value,
         .cap        = sizeof(unsigned int),
         .is_null    = is_null,
     };
@@ -321,7 +321,7 @@ int db_result_bind_ulong(db_stmt_ct stmt, size_t index, unsigned long *value, bo
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = db_inttype(sizeof(unsigned long), false),
-        .data       = value,
+        .data.blob  = value,
         .cap        = sizeof(unsigned long),
         .is_null    = is_null,
     };
@@ -340,7 +340,7 @@ int db_result_bind_ulonglong(db_stmt_ct stmt, size_t index, unsigned long long *
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = db_inttype(sizeof(unsigned long long), false),
-        .data       = value,
+        .data.blob  = value,
         .cap        = sizeof(unsigned long long),
         .is_null    = is_null,
     };
@@ -359,7 +359,7 @@ int db_result_bind_uint8(db_stmt_ct stmt, size_t index, uint8_t *value, bool *is
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_UINT8,
-        .data       = value,
+        .data.u8    = value,
         .cap        = sizeof(uint8_t),
         .is_null    = is_null,
     };
@@ -378,7 +378,7 @@ int db_result_bind_uint16(db_stmt_ct stmt, size_t index, uint16_t *value, bool *
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_UINT16,
-        .data       = value,
+        .data.u16   = value,
         .cap        = sizeof(uint16_t),
         .is_null    = is_null,
     };
@@ -397,7 +397,7 @@ int db_result_bind_uint32(db_stmt_ct stmt, size_t index, uint32_t *value, bool *
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_UINT32,
-        .data       = value,
+        .data.u32   = value,
         .cap        = sizeof(uint32_t),
         .is_null    = is_null,
     };
@@ -416,7 +416,7 @@ int db_result_bind_uint64(db_stmt_ct stmt, size_t index, uint64_t *value, bool *
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_UINT64,
-        .data       = value,
+        .data.u64   = value,
         .cap        = sizeof(uint64_t),
         .is_null    = is_null,
     };
@@ -435,7 +435,7 @@ int db_result_bind_float(db_stmt_ct stmt, size_t index, float *value, bool *is_n
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_FLOAT,
-        .data       = value,
+        .data.f     = value,
         .cap        = sizeof(float),
         .is_null    = is_null,
     };
@@ -454,8 +454,27 @@ int db_result_bind_double(db_stmt_ct stmt, size_t index, double *value, bool *is
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_DOUBLE,
-        .data       = value,
+        .data.d     = value,
         .cap        = sizeof(double),
+        .is_null    = is_null,
+    };
+
+    assert(value);
+
+    return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
+
+    return error_pass_int(bind(stmt, index, &info));
+}
+
+int db_result_bind_ldouble(db_stmt_ct stmt, size_t index, long double *value, bool *is_null)
+{
+    db_result_bind_cb bind = db_stmt_get_interface(stmt)->result_bind;
+    db_result_bind_st info =
+    {
+        .mode       = DB_RESULT_BIND_FIX,
+        .type       = DB_TYPE_LDOUBLE,
+        .data.ld    = value,
+        .cap        = sizeof(long double),
         .is_null    = is_null,
     };
 
@@ -471,11 +490,11 @@ int db_result_bind_text(db_stmt_ct stmt, size_t index, char **text, size_t *size
     db_result_bind_cb bind = db_stmt_get_interface(stmt)->result_bind;
     db_result_bind_st info =
     {
-        .mode   = DB_RESULT_BIND_TMP,
-        .type   = DB_TYPE_TEXT,
-        .data   = text,
-        .cap    = sizeof(char *),
-        .size   = size,
+        .mode       = DB_RESULT_BIND_TMP,
+        .type       = DB_TYPE_TEXT,
+        .data.ptext = text,
+        .cap        = sizeof(char *),
+        .size       = size,
     };
 
     assert(text);
@@ -490,11 +509,11 @@ int db_result_bind_text_dup(db_stmt_ct stmt, size_t index, char **text, size_t *
     db_result_bind_cb bind = db_stmt_get_interface(stmt)->result_bind;
     db_result_bind_st info =
     {
-        .mode   = DB_RESULT_BIND_DUP,
-        .type   = DB_TYPE_TEXT,
-        .data   = text,
-        .cap    = sizeof(char *),
-        .size   = size,
+        .mode       = DB_RESULT_BIND_DUP,
+        .type       = DB_TYPE_TEXT,
+        .data.ptext = text,
+        .cap        = sizeof(char *),
+        .size       = size,
     };
 
     assert(text);
@@ -511,7 +530,7 @@ int db_result_bind_text_fix(db_stmt_ct stmt, size_t index, char *text, size_t ca
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_TEXT,
-        .data       = text,
+        .data.text  = text,
         .cap        = capacity,
         .size       = size,
         .is_null    = is_null,
@@ -528,11 +547,11 @@ int db_result_bind_blob(db_stmt_ct stmt, size_t index, void **blob, size_t *size
     db_result_bind_cb bind = db_stmt_get_interface(stmt)->result_bind;
     db_result_bind_st info =
     {
-        .mode   = DB_RESULT_BIND_TMP,
-        .type   = DB_TYPE_BLOB,
-        .data   = blob,
-        .cap    = sizeof(void *),
-        .size   = size,
+        .mode       = DB_RESULT_BIND_TMP,
+        .type       = DB_TYPE_BLOB,
+        .data.pblob = blob,
+        .cap        = sizeof(void *),
+        .size       = size,
     };
 
     assert(blob);
@@ -547,11 +566,11 @@ int db_result_bind_blob_dup(db_stmt_ct stmt, size_t index, void **blob, size_t *
     db_result_bind_cb bind = db_stmt_get_interface(stmt)->result_bind;
     db_result_bind_st info =
     {
-        .mode   = DB_RESULT_BIND_DUP,
-        .type   = DB_TYPE_BLOB,
-        .data   = blob,
-        .cap    = sizeof(void *),
-        .size   = size,
+        .mode       = DB_RESULT_BIND_DUP,
+        .type       = DB_TYPE_BLOB,
+        .data.pblob = blob,
+        .cap        = sizeof(void *),
+        .size       = size,
     };
 
     assert(blob);
@@ -568,7 +587,7 @@ int db_result_bind_blob_fix(db_stmt_ct stmt, size_t index, void *blob, size_t ca
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_BLOB,
-        .data       = blob,
+        .data.blob  = blob,
         .cap        = capacity,
         .size       = size,
         .is_null    = is_null,
@@ -586,7 +605,7 @@ int db_result_bind_date(db_stmt_ct stmt, size_t index, db_date_st *date, bool *i
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_DATE,
-        .data       = date,
+        .data.date  = date,
         .cap        = sizeof(db_date_st),
         .is_null    = is_null,
     };
@@ -605,7 +624,7 @@ int db_result_bind_time(db_stmt_ct stmt, size_t index, db_time_st *time, bool *i
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_TIME,
-        .data       = time,
+        .data.time  = time,
         .cap        = sizeof(db_time_st),
         .is_null    = is_null,
     };
@@ -624,7 +643,7 @@ int db_result_bind_datetime(db_stmt_ct stmt, size_t index, db_datetime_st *datet
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_DATETIME,
-        .data       = datetime,
+        .data.dt    = datetime,
         .cap        = sizeof(db_datetime_st),
         .is_null    = is_null,
     };
@@ -643,7 +662,7 @@ int db_result_bind_timestamp(db_stmt_ct stmt, size_t index, time_t *timestamp, b
     {
         .mode       = DB_RESULT_BIND_FIX,
         .type       = DB_TYPE_TIMESTAMP,
-        .data       = timestamp,
+        .data.ts    = timestamp,
         .cap        = sizeof(time_t),
         .is_null    = is_null,
     };
@@ -653,16 +672,6 @@ int db_result_bind_timestamp(db_stmt_ct stmt, size_t index, time_t *timestamp, b
     return_error_if_fail(bind, E_DB_UNSUPPORTED, -1);
 
     return error_pass_int(bind(stmt, index, &info));
-}
-
-int db_result_fetch(db_stmt_const_ct stmt, size_t index, size_t offset)
-{
-    db_result_fetch_cb fetch = db_stmt_get_interface(stmt)->result_fetch;
-
-    return_error_if_fail(fetch, E_DB_UNSUPPORTED, -1);
-    return_error_if_fail(db_stmt_is_executing(stmt), E_DB_ILLEGAL, -1);
-
-    return error_pass_int(fetch(stmt, index, offset));
 }
 
 db_type_id db_result_get_type(db_stmt_const_ct stmt, size_t index)

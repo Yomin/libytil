@@ -27,21 +27,31 @@
 
 typedef db_ct (*db_open_cb)(void);
 
-typedef struct test_suite_db
+typedef struct test_config_db
 {
-    db_open_cb  db_open;
-    bool        supported;
-} test_suite_db_st;
+    db_open_cb  open;
+    const char  *db;
+    uint8_t     flt_dig;
+    uint8_t     dbl_dig;
+    uint8_t     ldbl_dig;
+    const char  *nan;
+    const char  *inf;
+} test_config_db_st;
 
-#define test_suite_db(_suite, _supported, _open) \
-    test_suite_p(db_ ## _suite, \
-        (&(test_suite_db_st){ .db_open = _open, .supported = (_supported) }))
+typedef struct test_param_db
+{
+    bool                    supported;
+    const test_config_db_st *config;
+} test_param_db_st;
 
-#define test_suite_db_supported(_suite, _open) \
-    test_suite_db(_suite, true, _open)
+#define test_suite_db(suite, supported, config)   \
+    test_suite_p(db_ ## suite, (&(test_param_db_st) { (supported), &(config) }))
 
-#define test_suite_db_unsupported(_suite, _open) \
-    test_suite_db(_suite, false, _open)
+#define test_suite_db_supported(suite, config) \
+    test_suite_db(suite, true, (config))
+
+#define test_suite_db_unsupported(suite, config) \
+    test_suite_db(suite, false, (config))
 
 
 int test_suite_db_prepare(void *param);
@@ -77,6 +87,7 @@ int test_suite_db_type_int64(void *param);
 
 int test_suite_db_type_float(void *param);
 int test_suite_db_type_double(void *param);
+int test_suite_db_type_ldouble(void *param);
 
 int test_suite_db_type_text(void *param);
 int test_suite_db_type_blob(void *param);

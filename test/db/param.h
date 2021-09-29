@@ -70,6 +70,9 @@ int test_suite_db_param_bind_float(void *param);
 int test_suite_db_param_bind_double_tmp(void *param);
 int test_suite_db_param_bind_double_ref(void *param);
 int test_suite_db_param_bind_double(void *param);
+int test_suite_db_param_bind_ldouble_tmp(void *param);
+int test_suite_db_param_bind_ldouble_ref(void *param);
+int test_suite_db_param_bind_ldouble(void *param);
 
 int test_suite_db_param_bind_text_fix(void *param);
 int test_suite_db_param_bind_text_tmp(void *param);

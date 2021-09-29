@@ -730,56 +730,6 @@ int db_param_bind_ldouble(db_stmt_ct stmt, size_t index, long double value);
 /// \retval -1/E_GENERIC_OOM            out of memory
 int db_param_bind_ldouble_ref(db_stmt_ct stmt, size_t index, const long double *value, const bool *is_null);
 
-/// Bind static ID parameter value.
-///
-/// \param stmt     statement
-/// \param index    parameter index
-/// \param id       static ID
-/// \param size     ID size in bytes, -1 for null terminated strings
-///
-/// \retval 0                           success
-/// \retval -1/E_DB_ILLEGAL             statement is being executed
-/// \retval -1/E_DB_OUT_OF_BOUNDS       index is out of bounds
-/// \retval -1/E_DB_OUT_OF_RANGE        ID too big
-/// \retval -1/E_DB_UNSUPPORTED         bind not supported by backend
-/// \retval -1/E_DB_UNSUPPORTED_MODE    bind mode not supported for type
-/// \retval -1/E_DB_UNSUPPORTED_TYPE    type not supported by backend
-/// \retval -1/E_GENERIC_OOM            out of memory
-int db_param_bind_ident(db_stmt_ct stmt, size_t index, const char *id, ssize_t size);
-
-/// Bind transient ID parameter value.
-///
-/// \param stmt     statement
-/// \param index    parameter index
-/// \param id       transient ID, may be NULL to bind NULL value
-/// \param size     ID size in bytes, -1 for null terminated strings
-///
-/// \retval 0                           success
-/// \retval -1/E_DB_ILLEGAL             statement is being executed
-/// \retval -1/E_DB_OUT_OF_BOUNDS       index is out of bounds
-/// \retval -1/E_DB_OUT_OF_RANGE        ID too big
-/// \retval -1/E_DB_UNSUPPORTED         bind not supported by backend
-/// \retval -1/E_DB_UNSUPPORTED_MODE    bind mode not supported for type
-/// \retval -1/E_DB_UNSUPPORTED_TYPE    type not supported by backend
-/// \retval -1/E_GENERIC_OOM            out of memory
-int db_param_bind_ident_tmp(db_stmt_ct stmt, size_t index, const char *id, ssize_t size);
-
-/// Bind ID parameter reference.
-///
-/// \param stmt     statement
-/// \param index    parameter index
-/// \param id       ID reference
-/// \param size     ID size in bytes, may be NULL for null terminated IDs
-///
-/// \retval 0                           success
-/// \retval -1/E_DB_ILLEGAL             statement is being executed
-/// \retval -1/E_DB_OUT_OF_BOUNDS       index is out of bounds
-/// \retval -1/E_DB_UNSUPPORTED         bind not supported by backend
-/// \retval -1/E_DB_UNSUPPORTED_MODE    bind mode not supported for type
-/// \retval -1/E_DB_UNSUPPORTED_TYPE    type not supported by backend
-/// \retval -1/E_GENERIC_OOM            out of memory
-int db_param_bind_ident_ref(db_stmt_ct stmt, size_t index, const char *const *id, const size_t *size);
-
 /// Bind static text parameter value.
 ///
 /// \param stmt     statement

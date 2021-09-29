@@ -28,6 +28,7 @@ int test_suite_db(void *param);
 int test_suite_db_interface(void *param);
 int test_suite_db_sqlite(void *param);
 int test_suite_db_mysql(void *param);
+int test_suite_db_tds(void *param);
 
 
 #endif

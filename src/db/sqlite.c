@@ -31,6 +31,14 @@
 #include <math.h>
 
 
+/// SQLite statement
+typedef struct db_sqlite_stmt
+{
+    sqlite3_stmt    *stmt;      ///< statement
+    char            *sql;       ///< expanded sql
+} db_sqlite_stmt_st;
+
+
 /// Error description callback to retrieve SQLite error description.
 ///
 /// \implements error_desc_cb
@@ -130,22 +138,25 @@ static void db_sqlite_close(db_ct db)
 /// \implements db_prepare_cb
 static db_stmt_ct db_sqlite_prepare(db_ct db, const char *sql)
 {
-    sqlite3_stmt *stmt3 = NULL;
+    db_sqlite_stmt_st *stmt3;
     const char *tail;
     db_stmt_ct stmt;
     int rc;
 
-    if((rc = sqlite3_prepare_v3(db_get_ctx(db), sql, -1, 0, &stmt3, &tail)))
-        return error_map_sqlite(sqlite3_prepare_v3, rc), NULL;
+    if(!(stmt3 = calloc(1, sizeof(db_sqlite_stmt_st))))
+        return error_wrap_last_errno(calloc), NULL;
 
-    if(!stmt3) // sql is empty or comment
-        return error_set(E_DB_MALFORMED_SQL), NULL;
+    if((rc = sqlite3_prepare_v3(db_get_ctx(db), sql, -1, 0, &stmt3->stmt, &tail)))
+        return error_map_sqlite(sqlite3_prepare_v3, rc), free(stmt3), NULL;
+
+    if(!stmt3->stmt) // sql is empty or comment
+        return error_set(E_DB_MALFORMED_SQL), free(stmt3), NULL;
 
     if(tail[0])
-        return error_set(E_DB_MULTI_STMT), sqlite3_finalize(stmt3), NULL;
+        return error_set(E_DB_MULTI_STMT), sqlite3_finalize(stmt3->stmt), free(stmt3), NULL;
 
     if(!(stmt = db_stmt_new(db, stmt3)))
-        return error_pass(), sqlite3_finalize(stmt3), NULL;
+        return error_pass(), sqlite3_finalize(stmt3->stmt), free(stmt3), NULL;
 
     return stmt;
 }
@@ -155,7 +166,12 @@ static db_stmt_ct db_sqlite_prepare(db_ct db, const char *sql)
 /// \implements db_finalize_cb
 static void db_sqlite_finalize(db_stmt_ct stmt)
 {
-    sqlite3_finalize(db_stmt_get_ctx(stmt));
+    db_sqlite_stmt_st *stmt3 = db_stmt_get_ctx(stmt);
+
+    sqlite3_finalize(stmt3->stmt);
+    sqlite3_free(stmt3->sql);
+
+    free(stmt3);
 }
 
 /// Load SQLite statement parameter.
@@ -168,12 +184,12 @@ static void db_sqlite_finalize(db_stmt_ct stmt)
 /// \retval -1/E_GENERIC_OOM    out of memory
 static int db_sqlite_load_param(db_stmt_const_ct stmt, size_t index, const db_param_bind_st *param)
 {
-    sqlite3_stmt *stmt3 = db_stmt_get_ctx(stmt);
+    db_sqlite_stmt_st *stmt3 = db_stmt_get_ctx(stmt);
     int rc;
 
     if(param->type == DB_TYPE_NULL || (param->is_null && *param->is_null))
     {
-        if((rc = sqlite3_bind_null(stmt3, index + 1)))
+        if((rc = sqlite3_bind_null(stmt3->stmt, index + 1)))
             return error_map_sqlite(sqlite3_bind_null, rc), -1;
 
         return 0;
@@ -185,22 +201,30 @@ static int db_sqlite_load_param(db_stmt_const_ct stmt, size_t index, const db_pa
     case DB_TYPE_INT16:
     case DB_TYPE_INT32:
 
-        if((rc = sqlite3_bind_int(stmt3, index + 1, *(int *)param->data)))
+        if((rc = sqlite3_bind_int(stmt3->stmt, index + 1, *(int *)param->data.blob)))
             return error_map_sqlite(sqlite3_bind_int, rc), -1;
 
         break;
 
     case DB_TYPE_INT64:
 
-        if((rc = sqlite3_bind_int64(stmt3, index + 1, *(int64_t *)param->data)))
+        if((rc = sqlite3_bind_int64(stmt3->stmt, index + 1, *param->data.i64)))
             return error_map_sqlite(sqlite3_bind_int64, rc), -1;
 
         break;
 
     case DB_TYPE_DOUBLE:
 
-        if((rc = sqlite3_bind_double(stmt3, index + 1, *(double *)param->data)))
-            return error_map_sqlite(sqlite3_bind_double, rc), -1;
+        if(isnan(*param->data.d))
+        {
+            if((rc = sqlite3_bind_text(stmt3->stmt, index + 1, "NaN", -1, NULL)))
+                return error_map_sqlite(sqlite3_bind_text, rc), -1;
+        }
+        else
+        {
+            if((rc = sqlite3_bind_double(stmt3->stmt, index + 1, *param->data.d)))
+                return error_map_sqlite(sqlite3_bind_double, rc), -1;
+        }
 
         break;
 
@@ -209,17 +233,18 @@ static int db_sqlite_load_param(db_stmt_const_ct stmt, size_t index, const db_pa
         switch(param->mode)
         {
         case DB_PARAM_BIND_FIX:
-            rc = sqlite3_bind_text(stmt3, index + 1, param->data, param->vsize, NULL);
+            rc = sqlite3_bind_text(stmt3->stmt, index + 1,
+                param->data.text, param->vsize, NULL);
             break;
 
         case DB_PARAM_BIND_TMP:
-            rc = sqlite3_bind_text(stmt3,
-                index + 1, param->data, param->vsize, SQLITE_TRANSIENT);
+            rc = sqlite3_bind_text(stmt3->stmt, index + 1,
+                param->data.text, param->vsize, SQLITE_TRANSIENT);
             break;
 
         case DB_PARAM_BIND_REF:
-            rc = sqlite3_bind_text(stmt3,
-                index + 1, *(char **)param->data, param->rsize ? (int)*param->rsize : -1, NULL);
+            rc = sqlite3_bind_text(stmt3->stmt, index + 1,
+                *param->data.ptext, param->rsize ? (int)*param->rsize : -1, NULL);
             break;
 
         default:
@@ -236,18 +261,18 @@ static int db_sqlite_load_param(db_stmt_const_ct stmt, size_t index, const db_pa
         switch(param->mode)
         {
         case DB_PARAM_BIND_FIX:
-            rc = sqlite3_bind_blob(stmt3,
-                index + 1, param->data, param->vsize, NULL);
+            rc = sqlite3_bind_blob(stmt3->stmt, index + 1,
+                param->data.blob, param->vsize, NULL);
             break;
 
         case DB_PARAM_BIND_TMP:
-            rc = sqlite3_bind_blob(stmt3,
-                index + 1, param->data, param->vsize, SQLITE_TRANSIENT);
+            rc = sqlite3_bind_blob(stmt3->stmt, index + 1,
+                param->data.blob, param->vsize, SQLITE_TRANSIENT);
             break;
 
         case DB_PARAM_BIND_REF:
-            rc = sqlite3_bind_blob(stmt3,
-                index + 1, *(void **)param->data, *param->rsize, NULL);
+            rc = sqlite3_bind_blob(stmt3->stmt, index + 1,
+                *param->data.pblob, *param->rsize, NULL);
             break;
 
         default:
@@ -299,12 +324,12 @@ static int db_sqlite_update_params(db_stmt_const_ct stmt)
 /// \retval -1/E_GENERIC_OOM    out of memory
 static ssize_t db_sqlite_fetch_text(db_stmt_const_ct stmt, size_t index, const db_result_bind_st *result)
 {
-    sqlite3_stmt *stmt3 = db_stmt_get_ctx(stmt);
+    db_sqlite_stmt_st *stmt3 = db_stmt_get_ctx(stmt);
     size_t size, copysize;
     char *text;
     int rc;
 
-    if(!(text = (char *)sqlite3_column_text(stmt3, index)))
+    if(!(text = (char *)sqlite3_column_text(stmt3->stmt, index)))
     {
         rc = sqlite3_errcode(db_get_ctx(db_stmt_get_db(stmt)));
 
@@ -312,27 +337,27 @@ static ssize_t db_sqlite_fetch_text(db_stmt_const_ct stmt, size_t index, const d
             return error_map_sqlite(sqlite3_column_text, rc), -1;
     }
 
-    size = sqlite3_column_bytes(stmt3, index);
+    size = sqlite3_column_bytes(stmt3->stmt, index);
 
     switch(result->mode)
     {
     case DB_RESULT_BIND_TMP:
-        *(char **)result->data = text;
+        *result->data.ptext = text;
         break;
 
     case DB_RESULT_BIND_DUP:
         if(!text)
-            *(char **)result->data = NULL;
-        else if(!(*(char **)result->data = memdup(text, size + 1)))
+            *result->data.ptext = NULL;
+        else if(!(*result->data.ptext = memdup(text, size + 1)))
             return error_wrap_last_errno(memdup), -1;
         break;
 
     case DB_RESULT_BIND_FIX:
-        if(result->data && result->cap)
+        if(result->data.text && result->cap)
         {
             copysize = MIN(result->cap - 1, size);
-            memcpy(result->data, text, copysize);
-            ((char *)result->data)[copysize] = '\0';
+            memcpy(result->data.text, text, copysize);
+            result->data.text[copysize] = '\0';
         }
         break;
 
@@ -353,12 +378,12 @@ static ssize_t db_sqlite_fetch_text(db_stmt_const_ct stmt, size_t index, const d
 /// \retval -1/E_GENERIC_OOM    out of memory
 static ssize_t db_sqlite_fetch_blob(db_stmt_const_ct stmt, size_t index, const db_result_bind_st *result)
 {
-    sqlite3_stmt *stmt3 = db_stmt_get_ctx(stmt);
+    db_sqlite_stmt_st *stmt3 = db_stmt_get_ctx(stmt);
     size_t size;
     void *blob;
     int rc;
 
-    if(!(blob = (void *)sqlite3_column_blob(stmt3, index)))
+    if(!(blob = (void *)sqlite3_column_blob(stmt3->stmt, index)))
     {
         rc = sqlite3_errcode(db_get_ctx(db_stmt_get_db(stmt)));
 
@@ -366,24 +391,24 @@ static ssize_t db_sqlite_fetch_blob(db_stmt_const_ct stmt, size_t index, const d
             return error_map_sqlite(sqlite3_column_blob, rc), -1;
     }
 
-    size = sqlite3_column_bytes(stmt3, index);
+    size = sqlite3_column_bytes(stmt3->stmt, index);
 
     switch(result->mode)
     {
     case DB_RESULT_BIND_TMP:
-        *(void **)result->data = blob;
+        *result->data.pblob = blob;
         break;
 
     case DB_RESULT_BIND_DUP:
         if(!blob)
-            *(void **)result->data = NULL;
-        else if(!(*(void **)result->data = memdup(blob, size)))
+            *result->data.pblob = NULL;
+        else if(!(*result->data.pblob = memdup(blob, size)))
             return error_wrap_last_errno(memdup), -1;
         break;
 
     case DB_RESULT_BIND_FIX:
-        if(result->data && result->cap)
-            memcpy(result->data, blob, MIN(result->cap, size));
+        if(result->data.blob && result->cap)
+            memcpy(result->data.blob, blob, MIN(result->cap, size));
         break;
 
     default:
@@ -395,23 +420,17 @@ static ssize_t db_sqlite_fetch_blob(db_stmt_const_ct stmt, size_t index, const d
 
 /// Fetch SQLite result field.
 ///
-/// \param stmt     statement
-/// \param index    field index
-/// \param result   result bind infos
-/// \param ctx      unused
-///
-/// \retval 0                   success
-/// \retval -1/E_GENERIC_OOM    out of memory
-static int db_sqlite_fetch_field(db_stmt_const_ct stmt, size_t index, const db_result_bind_st *result, void *ctx)
+/// \implements db_result_map_cb
+static int db_sqlite_fetch_field(db_stmt_const_ct stmt, size_t index, const db_result_bind_st *result, void *state, void *ctx)
 {
-    sqlite3_stmt *stmt3 = db_stmt_get_ctx(stmt);
-    bool is_null;
+    db_sqlite_stmt_st *stmt3 = db_stmt_get_ctx(stmt);
     ssize_t size;
+    int type;
 
-    is_null = sqlite3_column_type(stmt3, index) == SQLITE_NULL;
+    type = sqlite3_column_type(stmt3->stmt, index);
 
     if(result->is_null)
-        *result->is_null = is_null;
+        *result->is_null = type == SQLITE_NULL;
 
     switch(result->type)
     {
@@ -423,26 +442,28 @@ static int db_sqlite_fetch_field(db_stmt_const_ct stmt, size_t index, const db_r
     case DB_TYPE_INT8:
     case DB_TYPE_INT16:
     case DB_TYPE_INT32:
-        if(result->data)
-            *(int *)result->data = sqlite3_column_int(stmt3, index);
+        if(result->data.blob)
+            *(int *)result->data.blob = sqlite3_column_int(stmt3->stmt, index);
 
         size = sizeof(int);
         break;
 
     case DB_TYPE_INT64:
-        if(result->data)
-            *(int64_t *)result->data = sqlite3_column_int64(stmt3, index);
+        if(result->data.i64)
+            *result->data.i64 = sqlite3_column_int64(stmt3->stmt, index);
 
         size = sizeof(int64_t);
         break;
 
     case DB_TYPE_DOUBLE:
-        if(result->data)
+        if(result->data.d)
         {
-            if(is_null)
-                *(double *)result->data = NAN;
+            if(type != SQLITE_TEXT)
+                *result->data.d = sqlite3_column_double(stmt3->stmt, index);
+            else if(!strcasecmp((char *)sqlite3_column_text(stmt3->stmt, index), "NaN"))
+                *result->data.d = NAN;
             else
-                *(double *)result->data = sqlite3_column_double(stmt3, index);
+                *result->data.d = sqlite3_column_double(stmt3->stmt, index);
         }
 
         size = sizeof(double);
@@ -485,21 +506,24 @@ static int db_sqlite_fetch_fields(db_stmt_const_ct stmt)
 /// \implements db_sql_cb
 static const char *db_sqlite_sql(db_stmt_ct stmt, db_sql_id type)
 {
-    sqlite3_stmt *stmt3 = db_stmt_get_ctx(stmt);
-    const char *sql;
+    db_sqlite_stmt_st *stmt3 = db_stmt_get_ctx(stmt);
+    char *sql;
 
     switch(type)
     {
     case DB_SQL_PLAIN:
-        return sqlite3_sql(stmt3);
+        return sqlite3_sql(stmt3->stmt);
 
     case DB_SQL_EXPANDED:
 
         if(db_sqlite_update_params(stmt))
             return error_pass(), NULL;
 
-        if(!(sql = sqlite3_expanded_sql(stmt3)))
+        if(!(sql = sqlite3_expanded_sql(stmt3->stmt)))
             return error_map_last_sqlite_stmt(sqlite3_expanded_sql, stmt), NULL;
+
+        sqlite3_free(stmt3->sql);
+        stmt3->sql = sql;
 
         return sql;
 
@@ -513,26 +537,26 @@ static const char *db_sqlite_sql(db_stmt_ct stmt, db_sql_id type)
 /// \implements db_exec_cb
 static int db_sqlite_exec(db_stmt_ct stmt, db_record_cb record, void *ctx)
 {
-    sqlite3_stmt *stmt3 = db_stmt_get_ctx(stmt);
+    db_sqlite_stmt_st *stmt3 = db_stmt_get_ctx(stmt);
     size_t row;
     int rc;
 
     if(db_sqlite_update_params(stmt))
         return error_pass(), -1;
 
-    for(row = 0; (rc = sqlite3_step(stmt3)) == SQLITE_ROW; row++)
+    for(row = 0; (rc = sqlite3_step(stmt3->stmt)) == SQLITE_ROW; row++)
     {
         if(db_sqlite_fetch_fields(stmt))
-            return error_pass(), sqlite3_reset(stmt3), -1;
+            return error_pass(), sqlite3_reset(stmt3->stmt), -1;
 
         if(!record)
-            return sqlite3_reset(stmt3), 0;
+            return sqlite3_reset(stmt3->stmt), 0;
 
         if((rc = record(stmt, row, ctx)))
-            return sqlite3_reset(stmt3), error_pack_int(E_DB_CALLBACK, rc);
+            return sqlite3_reset(stmt3->stmt), error_pack_int(E_DB_CALLBACK, rc);
     }
 
-    sqlite3_reset(stmt3);
+    sqlite3_reset(stmt3->stmt);
 
     if(rc != SQLITE_DONE)
         return error_map_sqlite(sqlite3_step, rc), -1;
@@ -545,7 +569,9 @@ static int db_sqlite_exec(db_stmt_ct stmt, db_record_cb record, void *ctx)
 /// \implements db_param_count_cb
 static ssize_t db_sqlite_param_count(db_stmt_const_ct stmt)
 {
-    return sqlite3_bind_parameter_count(db_stmt_get_ctx(stmt));
+    db_sqlite_stmt_st *stmt3 = db_stmt_get_ctx(stmt);
+
+    return sqlite3_bind_parameter_count(stmt3->stmt);
 }
 
 /// Bind SQLite statement parameter.
@@ -553,7 +579,8 @@ static ssize_t db_sqlite_param_count(db_stmt_const_ct stmt)
 /// \implements db_param_bind_cb
 static int db_sqlite_param_bind(db_stmt_ct stmt, size_t index, const db_param_bind_st *bind)
 {
-    size_t params = sqlite3_bind_parameter_count(db_stmt_get_ctx(stmt));
+    db_sqlite_stmt_st *stmt3    = db_stmt_get_ctx(stmt);
+    size_t params               = sqlite3_bind_parameter_count(stmt3->stmt);
 
     return_error_if_fail(index < params, E_DB_OUT_OF_BOUNDS, -1);
 
@@ -605,7 +632,9 @@ static int db_sqlite_param_bind(db_stmt_ct stmt, size_t index, const db_param_bi
 /// \implements db_result_count_cb
 static ssize_t db_sqlite_result_count(db_stmt_const_ct stmt)
 {
-    return sqlite3_column_count(db_stmt_get_ctx(stmt));
+    db_sqlite_stmt_st *stmt3 = db_stmt_get_ctx(stmt);
+
+    return sqlite3_column_count(stmt3->stmt);
 }
 
 /// Bind SQLite result field.
@@ -613,7 +642,8 @@ static ssize_t db_sqlite_result_count(db_stmt_const_ct stmt)
 /// \implements db_result_bind_cb
 static int db_sqlite_result_bind(db_stmt_ct stmt, size_t index, const db_result_bind_st *bind)
 {
-    size_t fields = sqlite3_column_count(db_stmt_get_ctx(stmt));
+    db_sqlite_stmt_st *stmt3    = db_stmt_get_ctx(stmt);
+    size_t fields               = sqlite3_column_count(stmt3->stmt);
 
     return_error_if_fail(index < fields, E_DB_OUT_OF_BOUNDS, -1);
 
@@ -623,24 +653,30 @@ static int db_sqlite_result_bind(db_stmt_ct stmt, size_t index, const db_result_
         break;
 
     case DB_TYPE_INT8:
-        if(sizeof(int) != sizeof(int8_t) || bind->mode != DB_RESULT_BIND_FIX)
+        if(sizeof(int) != sizeof(int8_t))
             return error_set(E_DB_UNSUPPORTED_TYPE), -1;
+        if(bind->mode != DB_RESULT_BIND_FIX)
+            return error_set(E_DB_UNSUPPORTED_MODE), -1;
         break;
 
     case DB_TYPE_INT16:
-        if(sizeof(int) != sizeof(int16_t) || bind->mode != DB_RESULT_BIND_FIX)
+        if(sizeof(int) != sizeof(int16_t))
             return error_set(E_DB_UNSUPPORTED_TYPE), -1;
+        if(bind->mode != DB_RESULT_BIND_FIX)
+            return error_set(E_DB_UNSUPPORTED_MODE), -1;
         break;
 
     case DB_TYPE_INT32:
-        if(sizeof(int) != sizeof(int32_t) || bind->mode != DB_RESULT_BIND_FIX)
+        if(sizeof(int) != sizeof(int32_t))
             return error_set(E_DB_UNSUPPORTED_TYPE), -1;
+        if(bind->mode != DB_RESULT_BIND_FIX)
+            return error_set(E_DB_UNSUPPORTED_MODE), -1;
         break;
 
     case DB_TYPE_INT64:
     case DB_TYPE_DOUBLE:
         if(bind->mode != DB_RESULT_BIND_FIX)
-            return error_set(E_DB_UNSUPPORTED_TYPE), -1;
+            return error_set(E_DB_UNSUPPORTED_MODE), -1;
         break;
 
     case DB_TYPE_TEXT:
@@ -661,25 +697,10 @@ static int db_sqlite_result_bind(db_stmt_ct stmt, size_t index, const db_result_
         return_error_if_reached(E_DB_UNSUPPORTED_TYPE, -1);
     }
 
-    if(db_stmt_result_init(stmt, fields) || db_stmt_result_bind(stmt, index, bind))
+    if(db_stmt_result_init(stmt, fields, 0) || db_stmt_result_bind(stmt, index, bind))
         return error_pass(), -1;
 
     return 0;
-}
-
-/// Fetch SQLite field.
-///
-/// \implements db_result_fetch_cb
-static int db_sqlite_result_fetch(db_stmt_const_ct stmt, size_t index, size_t offset)
-{
-    const db_result_bind_st *result;
-
-    return_error_if_pass(offset, E_DB_OUT_OF_RANGE, -1);
-
-    if(!(result = db_stmt_result_get(stmt, index)))
-        return error_pass(), -1;
-
-    return error_pass_int(db_sqlite_fetch_field(stmt, index, result, NULL));
 }
 
 /// Get SQLite database/table/field name.
@@ -687,28 +708,28 @@ static int db_sqlite_result_fetch(db_stmt_const_ct stmt, size_t index, size_t of
 /// \implements db_name_cb
 static const char *db_sqlite_result_name(db_stmt_const_ct stmt, size_t index, db_name_id type)
 {
-    sqlite3_stmt *stmt3 = db_stmt_get_ctx(stmt);
+    db_sqlite_stmt_st *stmt3 = db_stmt_get_ctx(stmt);
     const char *name;
 
-    if(index >= (unsigned)sqlite3_column_count(stmt3))
+    if(index >= (unsigned)sqlite3_column_count(stmt3->stmt))
         return error_set(E_DB_OUT_OF_BOUNDS), NULL;
 
     switch(type)
     {
     case DB_NAME_DATABASE:
-        name = sqlite3_column_database_name(stmt3, index);
+        name = sqlite3_column_database_name(stmt3->stmt, index);
         break;
 
     case DB_NAME_TABLE_ORG:
-        name = sqlite3_column_table_name(stmt3, index);
+        name = sqlite3_column_table_name(stmt3->stmt, index);
         break;
 
     case DB_NAME_FIELD:
-        name = sqlite3_column_name(stmt3, index);
+        name = sqlite3_column_name(stmt3->stmt, index);
         break;
 
     case DB_NAME_FIELD_ORG:
-        name = sqlite3_column_origin_name(stmt3, index);
+        name = sqlite3_column_origin_name(stmt3->stmt, index);
         break;
 
     default:
@@ -767,7 +788,6 @@ static const db_interface_st sqlite =
     .param_bind     = db_sqlite_param_bind,
     .result_count   = db_sqlite_result_count,
     .result_bind    = db_sqlite_result_bind,
-    .result_fetch   = db_sqlite_result_fetch,
     .result_name    = db_sqlite_result_name,
     .trace          = db_sqlite_trace,
 };

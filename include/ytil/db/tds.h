@@ -38,21 +38,17 @@ ERROR_DECLARE(TDS);
 /// \param host         hostname, may be NULL for localhost
 /// \param user         user name, may be NULL for current user
 /// \param password     user password, may be NULL
+/// \param timeout      connection timeout in seconds, 0 = default, -1 = infinite
 /// \param default_db   default database, may be NULL
 ///
 /// \returns                            db handle
 /// \retval NULL/E_DB_ACCESS_DENIED     access denied
 /// \retval NULL/E_DB_CONNECTION        could not reach server
+/// \retval NULL/E_DB_INCOMPATIBLE      TDS version not compatible with server
 /// \retval NULL/E_DB_UNKNOWN_DATABASE  default DB unknown or access denied
 /// \retval NULL/E_DB_UNKNOWN_HOST      host not found
-    /// \retval NULL/E_DB_VERSION_MISMATCH  client - server version mismatch
 /// \retval NULL/E_GENERIC_OOM          out of memory
-db_ct db_tds_connect(const char *app, const char *host, const char *user, const char *password, const char *default_db);
-
-/// Free TDS resources after all TDS connections are finished.
-///
-///
-void db_tds_free(void);
+db_ct db_tds_connect(const char *app, const char *host, const char *user, const char *password, int timeout, const char *default_db);
 
 
 #endif // ifndef YTIL_DB_TDS_H_INCLUDED

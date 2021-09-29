@@ -42,6 +42,8 @@ typedef enum db_error
     E_DB_EXTENDED,              ///< extended backend error, check next lower error
     E_DB_FULL,                  ///< database is full
     E_DB_ILLEGAL,               ///< illegal operation
+    E_DB_INCOMPATIBLE,          ///< client/server are not compatible
+    E_DB_LOGIN_FAILED,          ///< failed to login
     E_DB_MALFORMED_SQL,         ///< malformed SQL
     E_DB_MAX_CONNECTIONS,       ///< max connections
     E_DB_MULTI_STMT,            ///< multi statements unsupported by backend
@@ -57,7 +59,6 @@ typedef enum db_error
     E_DB_UNSUPPORTED,           ///< unsupported function
     E_DB_UNSUPPORTED_MODE,      ///< unsupported bind mode
     E_DB_UNSUPPORTED_TYPE,      ///< unsupported type
-    E_DB_VERSION_MISMATCH,      ///< client - server version mismatch
 } db_error_id;
 
 /// DB error type declaration
@@ -80,7 +81,6 @@ typedef enum db_type
     DB_TYPE_FLOAT,      ///< float
     DB_TYPE_DOUBLE,     ///< double
     DB_TYPE_LDOUBLE,    ///< long double
-    DB_TYPE_ID,         ///< ID
     DB_TYPE_TEXT,       ///< text
     DB_TYPE_BLOB,       ///< BLOB
     DB_TYPE_DATE,       ///< date
@@ -150,7 +150,7 @@ int db_close(db_ct db);
 /// Prepare statement.
 ///
 /// \param db       database
-/// \param sql      SQL
+/// \param sql      SQL format string
 ///
 /// \returns                        statement
 /// \retval NULL/E_DB_CONNECTION    connection error

@@ -23,10 +23,10 @@
 #include "test.h"
 #include <ytil/test/run.h>
 #include <ytil/test/test.h>
-#include <stdio.h>
+#include <ytil/ext/stdio.h>
 #include <inttypes.h>
 
-static test_suite_db_st *suite;
+static test_param_db_st *param;
 static db_ct db;
 static db_stmt_ct stmt;
 
@@ -37,10 +37,16 @@ static db_stmt_ct stmt;
     test_str_eq(sql_expanded, sql); \
 } while(0)
 
+#define test_fsql(fsql, ...) do { \
+    const char *sql = FMT(fsql, __VA_ARGS__), *sql_expanded; \
+    test_ptr_success(sql_expanded = db_sql_expanded(stmt)); \
+    test_str_eq(sql_expanded, sql); \
+} while(0)
+
 
 TEST_SETUP(db_prepare)
 {
-    test_ptr_success(db = suite->db_open());
+    test_ptr_success(db = param->config->open());
     test_ptr_success(stmt = db_prepare(db, "select ?;"));
 }
 
@@ -60,11 +66,11 @@ TEST_CASE_FIX(db_param_count, db_prepare, db_finalize)
     test_rc_success(db_param_count(stmt), 1, -1);
 }
 
-int test_suite_db_param_count(void *param)
+int test_suite_db_param_count(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_count_unsupported)));
 
@@ -90,11 +96,11 @@ TEST_CASE_FIX(db_param_bind_null, db_prepare, db_finalize)
     test_sql("select NULL;");
 }
 
-int test_suite_db_param_bind_null(void *param)
+int test_suite_db_param_bind_null(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_null_unsupported)));
 
@@ -127,11 +133,11 @@ TEST_CASE_FIX(db_param_bind_bool_tmp_false, db_prepare, db_finalize)
     test_sql("select 0;");
 }
 
-int test_suite_db_param_bind_bool_tmp(void *param)
+int test_suite_db_param_bind_bool_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_bool_tmp_unsupported)));
 
@@ -184,11 +190,11 @@ TEST_CASE_FIX(db_param_bind_bool_ref_null, db_prepare, db_finalize)
     test_sql("select 0;");
 }
 
-int test_suite_db_param_bind_bool_ref(void *param)
+int test_suite_db_param_bind_bool_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_bool_ref_unsupported)));
 
@@ -200,11 +206,11 @@ int test_suite_db_param_bind_bool_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_bool(void *param)
+int test_suite_db_param_bind_bool(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_bool_tmp, param),
-        test_suite_p(db_param_bind_bool_ref, param),
+        test_suite_p(db_param_bind_bool_tmp, vparam),
+        test_suite_p(db_param_bind_bool_ref, vparam),
         NULL
     ));
 }
@@ -221,29 +227,21 @@ TEST_CASE_FIX(db_param_bind_sint8_tmp_oob, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_sint8_tmp_min, db_prepare, db_finalize)
 {
-    char sql[100];
-
     test_int_success(db_param_bind_int8(stmt, 0, INT8_MIN));
-
-    snprintf(sql, sizeof(sql), "select %" PRId8 ";", INT8_MIN);
-    test_sql(sql);
+    test_fsql("select %" PRId8 ";", INT8_MIN);
 }
 
 TEST_CASE_FIX(db_param_bind_sint8_tmp_max, db_prepare, db_finalize)
 {
-    char sql[100];
-
     test_int_success(db_param_bind_int8(stmt, 0, INT8_MAX));
-
-    snprintf(sql, sizeof(sql), "select %" PRId8 ";", INT8_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRId8 ";", INT8_MAX);
 }
 
-int test_suite_db_param_bind_sint8_tmp(void *param)
+int test_suite_db_param_bind_sint8_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_sint8_tmp_unsupported)));
 
@@ -271,18 +269,15 @@ TEST_CASE_FIX(db_param_bind_sint8_ref_oob, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_sint8_ref, db_prepare, db_finalize)
 {
-    char sql[100];
     int8_t value = 123;
 
     test_int_success(db_param_bind_int8_ref(stmt, 0, &value, NULL));
 
     value = INT8_MIN;
-    snprintf(sql, sizeof(sql), "select %" PRId8 ";", INT8_MIN);
-    test_sql(sql);
+    test_fsql("select %" PRId8 ";", INT8_MIN);
 
     value = INT8_MAX;
-    snprintf(sql, sizeof(sql), "select %" PRId8 ";", INT8_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRId8 ";", INT8_MAX);
 }
 
 TEST_CASE_FIX(db_param_bind_sint8_ref_null, db_prepare, db_finalize)
@@ -299,11 +294,11 @@ TEST_CASE_FIX(db_param_bind_sint8_ref_null, db_prepare, db_finalize)
     test_sql("select 123;");
 }
 
-int test_suite_db_param_bind_sint8_ref(void *param)
+int test_suite_db_param_bind_sint8_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_sint8_ref_unsupported)));
 
@@ -315,11 +310,11 @@ int test_suite_db_param_bind_sint8_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_sint8(void *param)
+int test_suite_db_param_bind_sint8(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_sint8_tmp, param),
-        test_suite_p(db_param_bind_sint8_ref, param),
+        test_suite_p(db_param_bind_sint8_tmp, vparam),
+        test_suite_p(db_param_bind_sint8_ref, vparam),
         NULL
     ));
 }
@@ -342,19 +337,15 @@ TEST_CASE_FIX(db_param_bind_uint8_tmp_min, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_uint8_tmp_max, db_prepare, db_finalize)
 {
-    char sql[100];
-
     test_int_success(db_param_bind_uint8(stmt, 0, UINT8_MAX));
-
-    snprintf(sql, sizeof(sql), "select %" PRIu8 ";", UINT8_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRIu8 ";", UINT8_MAX);
 }
 
-int test_suite_db_param_bind_uint8_tmp(void *param)
+int test_suite_db_param_bind_uint8_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_uint8_tmp_unsupported)));
 
@@ -382,7 +373,6 @@ TEST_CASE_FIX(db_param_bind_uint8_ref_oob, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_uint8_ref, db_prepare, db_finalize)
 {
-    char sql[100];
     uint8_t value = 123;
 
     test_int_success(db_param_bind_uint8_ref(stmt, 0, &value, NULL));
@@ -391,8 +381,7 @@ TEST_CASE_FIX(db_param_bind_uint8_ref, db_prepare, db_finalize)
     test_sql("select 0;");
 
     value = UINT8_MAX;
-    snprintf(sql, sizeof(sql), "select %" PRIu8 ";", UINT8_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRIu8 ";", UINT8_MAX);
 }
 
 TEST_CASE_FIX(db_param_bind_uint8_ref_null, db_prepare, db_finalize)
@@ -409,11 +398,11 @@ TEST_CASE_FIX(db_param_bind_uint8_ref_null, db_prepare, db_finalize)
     test_sql("select 123;");
 }
 
-int test_suite_db_param_bind_uint8_ref(void *param)
+int test_suite_db_param_bind_uint8_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_uint8_ref_unsupported)));
 
@@ -425,20 +414,20 @@ int test_suite_db_param_bind_uint8_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_uint8(void *param)
+int test_suite_db_param_bind_uint8(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_uint8_tmp, param),
-        test_suite_p(db_param_bind_uint8_ref, param),
+        test_suite_p(db_param_bind_uint8_tmp, vparam),
+        test_suite_p(db_param_bind_uint8_ref, vparam),
         NULL
     ));
 }
 
-int test_suite_db_param_bind_int8(void *param)
+int test_suite_db_param_bind_int8(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_sint8, param),
-        test_suite_p(db_param_bind_uint8, param),
+        test_suite_p(db_param_bind_sint8, vparam),
+        test_suite_p(db_param_bind_uint8, vparam),
         NULL
     ));
 }
@@ -455,29 +444,21 @@ TEST_CASE_FIX(db_param_bind_sint16_tmp_oob, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_sint16_tmp_min, db_prepare, db_finalize)
 {
-    char sql[100];
-
     test_int_success(db_param_bind_int16(stmt, 0, INT16_MIN));
-
-    snprintf(sql, sizeof(sql), "select %" PRId16 ";", INT16_MIN);
-    test_sql(sql);
+    test_fsql("select %" PRId16 ";", INT16_MIN);
 }
 
 TEST_CASE_FIX(db_param_bind_sint16_tmp_max, db_prepare, db_finalize)
 {
-    char sql[100];
-
     test_int_success(db_param_bind_int16(stmt, 0, INT16_MAX));
-
-    snprintf(sql, sizeof(sql), "select %" PRId16 ";", INT16_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRId16 ";", INT16_MAX);
 }
 
-int test_suite_db_param_bind_sint16_tmp(void *param)
+int test_suite_db_param_bind_sint16_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_sint16_tmp_unsupported)));
 
@@ -505,18 +486,15 @@ TEST_CASE_FIX(db_param_bind_sint16_ref_oob, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_sint16_ref, db_prepare, db_finalize)
 {
-    char sql[100];
     int16_t value = 0;
 
     test_int_success(db_param_bind_int16_ref(stmt, 0, &value, NULL));
 
     value = INT16_MIN;
-    snprintf(sql, sizeof(sql), "select %" PRId16 ";", INT16_MIN);
-    test_sql(sql);
+    test_fsql("select %" PRId16 ";", INT16_MIN);
 
     value = INT16_MAX;
-    snprintf(sql, sizeof(sql), "select %" PRId16 ";", INT16_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRId16 ";", INT16_MAX);
 }
 
 TEST_CASE_FIX(db_param_bind_sint16_ref_null, db_prepare, db_finalize)
@@ -533,11 +511,11 @@ TEST_CASE_FIX(db_param_bind_sint16_ref_null, db_prepare, db_finalize)
     test_sql("select 123;");
 }
 
-int test_suite_db_param_bind_sint16_ref(void *param)
+int test_suite_db_param_bind_sint16_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_sint16_ref_unsupported)));
 
@@ -549,11 +527,11 @@ int test_suite_db_param_bind_sint16_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_sint16(void *param)
+int test_suite_db_param_bind_sint16(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_sint16_tmp, param),
-        test_suite_p(db_param_bind_sint16_ref, param),
+        test_suite_p(db_param_bind_sint16_tmp, vparam),
+        test_suite_p(db_param_bind_sint16_ref, vparam),
         NULL
     ));
 }
@@ -576,19 +554,15 @@ TEST_CASE_FIX(db_param_bind_uint16_tmp_min, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_uint16_tmp_max, db_prepare, db_finalize)
 {
-    char sql[100];
-
     test_int_success(db_param_bind_uint16(stmt, 0, UINT16_MAX));
-
-    snprintf(sql, sizeof(sql), "select %" PRIu16 ";", UINT16_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRIu16 ";", UINT16_MAX);
 }
 
-int test_suite_db_param_bind_uint16_tmp(void *param)
+int test_suite_db_param_bind_uint16_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_uint16_tmp_unsupported)));
 
@@ -616,7 +590,6 @@ TEST_CASE_FIX(db_param_bind_uint16_ref_oob, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_uint16_ref, db_prepare, db_finalize)
 {
-    char sql[100];
     uint16_t value = 123;
 
     test_int_success(db_param_bind_uint16_ref(stmt, 0, &value, NULL));
@@ -625,8 +598,7 @@ TEST_CASE_FIX(db_param_bind_uint16_ref, db_prepare, db_finalize)
     test_sql("select 0;");
 
     value = UINT16_MAX;
-    snprintf(sql, sizeof(sql), "select %" PRIu16 ";", UINT16_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRIu16 ";", UINT16_MAX);
 }
 
 TEST_CASE_FIX(db_param_bind_uint16_ref_null, db_prepare, db_finalize)
@@ -643,11 +615,11 @@ TEST_CASE_FIX(db_param_bind_uint16_ref_null, db_prepare, db_finalize)
     test_sql("select 123;");
 }
 
-int test_suite_db_param_bind_uint16_ref(void *param)
+int test_suite_db_param_bind_uint16_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_uint16_ref_unsupported)));
 
@@ -659,20 +631,20 @@ int test_suite_db_param_bind_uint16_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_uint16(void *param)
+int test_suite_db_param_bind_uint16(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_uint16_tmp, param),
-        test_suite_p(db_param_bind_uint16_ref, param),
+        test_suite_p(db_param_bind_uint16_tmp, vparam),
+        test_suite_p(db_param_bind_uint16_ref, vparam),
         NULL
     ));
 }
 
-int test_suite_db_param_bind_int16(void *param)
+int test_suite_db_param_bind_int16(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_sint16, param),
-        test_suite_p(db_param_bind_uint16, param),
+        test_suite_p(db_param_bind_sint16, vparam),
+        test_suite_p(db_param_bind_uint16, vparam),
         NULL
     ));
 }
@@ -689,29 +661,21 @@ TEST_CASE_FIX(db_param_bind_sint32_tmp_oob, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_sint32_tmp_min, db_prepare, db_finalize)
 {
-    char sql[100];
-
     test_int_success(db_param_bind_int32(stmt, 0, INT32_MIN));
-
-    snprintf(sql, sizeof(sql), "select %" PRId32 ";", INT32_MIN);
-    test_sql(sql);
+    test_fsql("select %" PRId32 ";", INT32_MIN);
 }
 
 TEST_CASE_FIX(db_param_bind_sint32_tmp_max, db_prepare, db_finalize)
 {
-    char sql[100];
-
     test_int_success(db_param_bind_int32(stmt, 0, INT32_MAX));
-
-    snprintf(sql, sizeof(sql), "select %" PRId32 ";", INT32_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRId32 ";", INT32_MAX);
 }
 
-int test_suite_db_param_bind_sint32_tmp(void *param)
+int test_suite_db_param_bind_sint32_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_sint32_tmp_unsupported)));
 
@@ -739,18 +703,15 @@ TEST_CASE_FIX(db_param_bind_sint32_ref_oob, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_sint32_ref, db_prepare, db_finalize)
 {
-    char sql[100];
     int32_t value = 0;
 
     test_int_success(db_param_bind_int32_ref(stmt, 0, &value, NULL));
 
     value = INT32_MIN;
-    snprintf(sql, sizeof(sql), "select %" PRId32 ";", INT32_MIN);
-    test_sql(sql);
+    test_fsql("select %" PRId32 ";", INT32_MIN);
 
     value = INT32_MAX;
-    snprintf(sql, sizeof(sql), "select %" PRId32 ";", INT32_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRId32 ";", INT32_MAX);
 }
 
 TEST_CASE_FIX(db_param_bind_sint32_ref_null, db_prepare, db_finalize)
@@ -767,11 +728,11 @@ TEST_CASE_FIX(db_param_bind_sint32_ref_null, db_prepare, db_finalize)
     test_sql("select 123;");
 }
 
-int test_suite_db_param_bind_sint32_ref(void *param)
+int test_suite_db_param_bind_sint32_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_sint32_ref_unsupported)));
 
@@ -783,11 +744,11 @@ int test_suite_db_param_bind_sint32_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_sint32(void *param)
+int test_suite_db_param_bind_sint32(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_sint32_tmp, param),
-        test_suite_p(db_param_bind_sint32_ref, param),
+        test_suite_p(db_param_bind_sint32_tmp, vparam),
+        test_suite_p(db_param_bind_sint32_ref, vparam),
         NULL
     ));
 }
@@ -810,19 +771,15 @@ TEST_CASE_FIX(db_param_bind_uint32_tmp_min, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_uint32_tmp_max, db_prepare, db_finalize)
 {
-    char sql[100];
-
     test_int_success(db_param_bind_uint32(stmt, 0, UINT32_MAX));
-
-    snprintf(sql, sizeof(sql), "select %" PRIu32 ";", UINT32_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRIu32 ";", UINT32_MAX);
 }
 
-int test_suite_db_param_bind_uint32_tmp(void *param)
+int test_suite_db_param_bind_uint32_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_uint32_tmp_unsupported)));
 
@@ -850,7 +807,6 @@ TEST_CASE_FIX(db_param_bind_uint32_ref_oob, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_uint32_ref, db_prepare, db_finalize)
 {
-    char sql[100];
     uint32_t value = 123;
 
     test_int_success(db_param_bind_uint32_ref(stmt, 0, &value, NULL));
@@ -859,8 +815,7 @@ TEST_CASE_FIX(db_param_bind_uint32_ref, db_prepare, db_finalize)
     test_sql("select 0;");
 
     value = UINT32_MAX;
-    snprintf(sql, sizeof(sql), "select %" PRIu32 ";", UINT32_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRIu32 ";", UINT32_MAX);
 }
 
 TEST_CASE_FIX(db_param_bind_uint32_ref_null, db_prepare, db_finalize)
@@ -877,11 +832,11 @@ TEST_CASE_FIX(db_param_bind_uint32_ref_null, db_prepare, db_finalize)
     test_sql("select 123;");
 }
 
-int test_suite_db_param_bind_uint32_ref(void *param)
+int test_suite_db_param_bind_uint32_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_uint32_ref_unsupported)));
 
@@ -893,20 +848,20 @@ int test_suite_db_param_bind_uint32_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_uint32(void *param)
+int test_suite_db_param_bind_uint32(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_uint32_tmp, param),
-        test_suite_p(db_param_bind_uint32_ref, param),
+        test_suite_p(db_param_bind_uint32_tmp, vparam),
+        test_suite_p(db_param_bind_uint32_ref, vparam),
         NULL
     ));
 }
 
-int test_suite_db_param_bind_int32(void *param)
+int test_suite_db_param_bind_int32(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_sint32, param),
-        test_suite_p(db_param_bind_uint32, param),
+        test_suite_p(db_param_bind_sint32, vparam),
+        test_suite_p(db_param_bind_uint32, vparam),
         NULL
     ));
 }
@@ -923,29 +878,21 @@ TEST_CASE_FIX(db_param_bind_sint64_tmp_oob, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_sint64_tmp_min, db_prepare, db_finalize)
 {
-    char sql[100];
-
     test_int_success(db_param_bind_int64(stmt, 0, INT64_MIN));
-
-    snprintf(sql, sizeof(sql), "select %" PRId64 ";", INT64_MIN);
-    test_sql(sql);
+    test_fsql("select %" PRId64 ";", INT64_MIN);
 }
 
 TEST_CASE_FIX(db_param_bind_sint64_tmp_max, db_prepare, db_finalize)
 {
-    char sql[100];
-
     test_int_success(db_param_bind_int64(stmt, 0, INT64_MAX));
-
-    snprintf(sql, sizeof(sql), "select %" PRId64 ";", INT64_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRId64 ";", INT64_MAX);
 }
 
-int test_suite_db_param_bind_sint64_tmp(void *param)
+int test_suite_db_param_bind_sint64_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_sint64_tmp_unsupported)));
 
@@ -973,18 +920,15 @@ TEST_CASE_FIX(db_param_bind_sint64_ref_oob, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_sint64_ref, db_prepare, db_finalize)
 {
-    char sql[100];
     int64_t value = 0;
 
     test_int_success(db_param_bind_int64_ref(stmt, 0, &value, NULL));
 
     value = INT64_MIN;
-    snprintf(sql, sizeof(sql), "select %" PRId64 ";", INT64_MIN);
-    test_sql(sql);
+    test_fsql("select %" PRId64 ";", INT64_MIN);
 
     value = INT64_MAX;
-    snprintf(sql, sizeof(sql), "select %" PRId64 ";", INT64_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRId64 ";", INT64_MAX);
 }
 
 TEST_CASE_FIX(db_param_bind_sint64_ref_null, db_prepare, db_finalize)
@@ -1001,11 +945,11 @@ TEST_CASE_FIX(db_param_bind_sint64_ref_null, db_prepare, db_finalize)
     test_sql("select 123;");
 }
 
-int test_suite_db_param_bind_sint64_ref(void *param)
+int test_suite_db_param_bind_sint64_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_sint64_ref_unsupported)));
 
@@ -1017,11 +961,11 @@ int test_suite_db_param_bind_sint64_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_sint64(void *param)
+int test_suite_db_param_bind_sint64(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_sint64_tmp, param),
-        test_suite_p(db_param_bind_sint64_ref, param),
+        test_suite_p(db_param_bind_sint64_tmp, vparam),
+        test_suite_p(db_param_bind_sint64_ref, vparam),
         NULL
     ));
 }
@@ -1044,19 +988,15 @@ TEST_CASE_FIX(db_param_bind_uint64_tmp_min, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_uint64_tmp_max, db_prepare, db_finalize)
 {
-    char sql[100];
-
     test_int_success(db_param_bind_uint64(stmt, 0, UINT64_MAX));
-
-    snprintf(sql, sizeof(sql), "select %" PRIu64 ";", UINT64_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRIu64 ";", UINT64_MAX);
 }
 
-int test_suite_db_param_bind_uint64_tmp(void *param)
+int test_suite_db_param_bind_uint64_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_uint64_tmp_unsupported)));
 
@@ -1084,7 +1024,6 @@ TEST_CASE_FIX(db_param_bind_uint64_ref_oob, db_prepare, db_finalize)
 
 TEST_CASE_FIX(db_param_bind_uint64_ref, db_prepare, db_finalize)
 {
-    char sql[100];
     uint64_t value = 123;
 
     test_int_success(db_param_bind_uint64_ref(stmt, 0, &value, NULL));
@@ -1093,8 +1032,7 @@ TEST_CASE_FIX(db_param_bind_uint64_ref, db_prepare, db_finalize)
     test_sql("select 0;");
 
     value = UINT64_MAX;
-    snprintf(sql, sizeof(sql), "select %" PRIu64 ";", UINT64_MAX);
-    test_sql(sql);
+    test_fsql("select %" PRIu64 ";", UINT64_MAX);
 }
 
 TEST_CASE_FIX(db_param_bind_uint64_ref_null, db_prepare, db_finalize)
@@ -1111,11 +1049,11 @@ TEST_CASE_FIX(db_param_bind_uint64_ref_null, db_prepare, db_finalize)
     test_sql("select 123;");
 }
 
-int test_suite_db_param_bind_uint64_ref(void *param)
+int test_suite_db_param_bind_uint64_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_uint64_ref_unsupported)));
 
@@ -1127,20 +1065,20 @@ int test_suite_db_param_bind_uint64_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_uint64(void *param)
+int test_suite_db_param_bind_uint64(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_uint64_tmp, param),
-        test_suite_p(db_param_bind_uint64_ref, param),
+        test_suite_p(db_param_bind_uint64_tmp, vparam),
+        test_suite_p(db_param_bind_uint64_ref, vparam),
         NULL
     ));
 }
 
-int test_suite_db_param_bind_int64(void *param)
+int test_suite_db_param_bind_int64(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_sint64, param),
-        test_suite_p(db_param_bind_uint64, param),
+        test_suite_p(db_param_bind_sint64, vparam),
+        test_suite_p(db_param_bind_uint64, vparam),
         NULL
     ));
 }
@@ -1155,35 +1093,42 @@ TEST_CASE_FIX(db_param_bind_float_tmp_oob, db_prepare, db_finalize)
     test_int_error(db_param_bind_float(stmt, 1, 123), E_DB_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIX(db_param_bind_float_tmp, db_prepare, db_finalize)
+TEST_CASE_FIX(db_param_bind_float_tmp_min, db_prepare, db_finalize)
 {
-    test_int_success(db_param_bind_float(stmt, 0, 123456.789012));
-    test_sql("select 123456.789012;");
+    test_int_success(db_param_bind_float(stmt, 0, FLT_MIN));
+    test_fsql("select %.*g;", param->config->flt_dig, FLT_MIN);
+}
+
+TEST_CASE_FIX(db_param_bind_float_tmp_max, db_prepare, db_finalize)
+{
+    test_int_success(db_param_bind_float(stmt, 0, FLT_MAX));
+    test_fsql("select %.*g;", param->config->flt_dig, FLT_MAX);
 }
 
 TEST_CASE_FIX(db_param_bind_float_tmp_nan, db_prepare, db_finalize)
 {
     test_int_success(db_param_bind_float(stmt, 0, NAN));
-    test_sql("select NULL;");
+    test_fsql("select %s;", param->config->nan);
 }
 
 TEST_CASE_FIX(db_param_bind_float_tmp_inf, db_prepare, db_finalize)
 {
     test_int_success(db_param_bind_float(stmt, 0, INFINITY));
-    test_sql("select Inf;");
+    test_fsql("select %s;", param->config->inf);
 }
 
-int test_suite_db_param_bind_float_tmp(void *param)
+int test_suite_db_param_bind_float_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_float_tmp_unsupported)));
 
     return error_pass_int(test_run_cases(NULL,
         test_case(db_param_bind_float_tmp_oob),
-        test_case(db_param_bind_float_tmp),
+        test_case(db_param_bind_float_tmp_min),
+        test_case(db_param_bind_float_tmp_max),
         test_case(db_param_bind_float_tmp_nan),
         test_case(db_param_bind_float_tmp_inf),
         NULL
@@ -1210,11 +1155,11 @@ TEST_CASE_FIX(db_param_bind_float_ref, db_prepare, db_finalize)
 
     test_int_success(db_param_bind_float_ref(stmt, 0, &value, NULL));
 
-    value = 123456.789012;
-    test_sql("select 123456.789012;");
+    value = FLT_MIN;
+    test_fsql("select %.*g;", param->config->flt_dig, value);
 
-    value = 654321.789012;
-    test_sql("select 654321.789012;");
+    value = FLT_MAX;
+    test_fsql("select %.*g;", param->config->flt_dig, value);
 }
 
 TEST_CASE_FIX(db_param_bind_float_ref_nan, db_prepare, db_finalize)
@@ -1224,10 +1169,10 @@ TEST_CASE_FIX(db_param_bind_float_ref_nan, db_prepare, db_finalize)
     test_int_success(db_param_bind_float_ref(stmt, 0, &value, NULL));
 
     value = NAN;
-    test_sql("select NULL;");
+    test_fsql("select %s;", param->config->nan);
 
-    value = 123456.789012;
-    test_sql("select 123456.789012;");
+    value = 123.5;
+    test_sql("select 123.5;");
 }
 
 TEST_CASE_FIX(db_param_bind_float_ref_inf, db_prepare, db_finalize)
@@ -1237,16 +1182,16 @@ TEST_CASE_FIX(db_param_bind_float_ref_inf, db_prepare, db_finalize)
     test_int_success(db_param_bind_float_ref(stmt, 0, &value, NULL));
 
     value = INFINITY;
-    test_sql("select Inf;");
+    test_fsql("select %s;", param->config->inf);
 
     value = -INFINITY;
-    test_sql("select -Inf;");
+    test_fsql("select -%s;", param->config->inf);
 }
 
 TEST_CASE_FIX(db_param_bind_float_ref_null, db_prepare, db_finalize)
 {
-    float value    = 123.5;
-    bool null       = false;
+    float value = 123.5;
+    bool null   = false;
 
     test_int_success(db_param_bind_float_ref(stmt, 0, &value, &null));
 
@@ -1257,11 +1202,11 @@ TEST_CASE_FIX(db_param_bind_float_ref_null, db_prepare, db_finalize)
     test_sql("select 123.5;");
 }
 
-int test_suite_db_param_bind_float_ref(void *param)
+int test_suite_db_param_bind_float_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_float_ref_unsupported)));
 
@@ -1275,11 +1220,11 @@ int test_suite_db_param_bind_float_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_float(void *param)
+int test_suite_db_param_bind_float(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_float_tmp, param),
-        test_suite_p(db_param_bind_float_ref, param),
+        test_suite_p(db_param_bind_float_tmp, vparam),
+        test_suite_p(db_param_bind_float_ref, vparam),
         NULL
     ));
 }
@@ -1294,35 +1239,42 @@ TEST_CASE_FIX(db_param_bind_double_tmp_oob, db_prepare, db_finalize)
     test_int_error(db_param_bind_double(stmt, 1, 123), E_DB_OUT_OF_BOUNDS);
 }
 
-TEST_CASE_FIX(db_param_bind_double_tmp, db_prepare, db_finalize)
+TEST_CASE_FIX(db_param_bind_double_tmp_min, db_prepare, db_finalize)
 {
-    test_int_success(db_param_bind_double(stmt, 0, 123456.789012));
-    test_sql("select 123456.789012;");
+    test_int_success(db_param_bind_double(stmt, 0, DBL_MIN));
+    test_fsql("select %.*g;", param->config->dbl_dig, DBL_MIN);
+}
+
+TEST_CASE_FIX(db_param_bind_double_tmp_max, db_prepare, db_finalize)
+{
+    test_int_success(db_param_bind_double(stmt, 0, DBL_MAX));
+    test_fsql("select %.*g;", param->config->dbl_dig, DBL_MAX);
 }
 
 TEST_CASE_FIX(db_param_bind_double_tmp_nan, db_prepare, db_finalize)
 {
     test_int_success(db_param_bind_double(stmt, 0, NAN));
-    test_sql("select NULL;");
+    test_fsql("select %s;", param->config->nan);
 }
 
 TEST_CASE_FIX(db_param_bind_double_tmp_inf, db_prepare, db_finalize)
 {
     test_int_success(db_param_bind_double(stmt, 0, INFINITY));
-    test_sql("select Inf;");
+    test_fsql("select %s;", param->config->inf);
 }
 
-int test_suite_db_param_bind_double_tmp(void *param)
+int test_suite_db_param_bind_double_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_double_tmp_unsupported)));
 
     return error_pass_int(test_run_cases(NULL,
         test_case(db_param_bind_double_tmp_oob),
-        test_case(db_param_bind_double_tmp),
+        test_case(db_param_bind_double_tmp_min),
+        test_case(db_param_bind_double_tmp_max),
         test_case(db_param_bind_double_tmp_nan),
         test_case(db_param_bind_double_tmp_inf),
         NULL
@@ -1349,11 +1301,11 @@ TEST_CASE_FIX(db_param_bind_double_ref, db_prepare, db_finalize)
 
     test_int_success(db_param_bind_double_ref(stmt, 0, &value, NULL));
 
-    value = 123456.789012;
-    test_sql("select 123456.789012;");
+    value = DBL_MIN;
+    test_fsql("select %.*g;", param->config->dbl_dig, value);
 
-    value = 654321.789012;
-    test_sql("select 654321.789012;");
+    value = DBL_MAX;
+    test_fsql("select %.*g;", param->config->dbl_dig, value);
 }
 
 TEST_CASE_FIX(db_param_bind_double_ref_nan, db_prepare, db_finalize)
@@ -1363,10 +1315,10 @@ TEST_CASE_FIX(db_param_bind_double_ref_nan, db_prepare, db_finalize)
     test_int_success(db_param_bind_double_ref(stmt, 0, &value, NULL));
 
     value = NAN;
-    test_sql("select NULL;");
+    test_fsql("select %s;", param->config->nan);
 
-    value = 123456.789012;
-    test_sql("select 123456.789012;");
+    value = 123.5;
+    test_sql("select 123.5;");
 }
 
 TEST_CASE_FIX(db_param_bind_double_ref_inf, db_prepare, db_finalize)
@@ -1376,10 +1328,10 @@ TEST_CASE_FIX(db_param_bind_double_ref_inf, db_prepare, db_finalize)
     test_int_success(db_param_bind_double_ref(stmt, 0, &value, NULL));
 
     value = INFINITY;
-    test_sql("select Inf;");
+    test_fsql("select %s;", param->config->inf);
 
     value = -INFINITY;
-    test_sql("select -Inf;");
+    test_fsql("select -%s;", param->config->inf);
 }
 
 TEST_CASE_FIX(db_param_bind_double_ref_null, db_prepare, db_finalize)
@@ -1396,11 +1348,11 @@ TEST_CASE_FIX(db_param_bind_double_ref_null, db_prepare, db_finalize)
     test_sql("select 123.5;");
 }
 
-int test_suite_db_param_bind_double_ref(void *param)
+int test_suite_db_param_bind_double_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_double_ref_unsupported)));
 
@@ -1414,11 +1366,157 @@ int test_suite_db_param_bind_double_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_double(void *param)
+int test_suite_db_param_bind_double(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_double_tmp, param),
-        test_suite_p(db_param_bind_double_ref, param),
+        test_suite_p(db_param_bind_double_tmp, vparam),
+        test_suite_p(db_param_bind_double_ref, vparam),
+        NULL
+    ));
+}
+
+TEST_CASE_FIX(db_param_bind_ldouble_tmp_unsupported, db_prepare, db_finalize)
+{
+    test_int_error(db_param_bind_ldouble(stmt, 0, 123), E_DB_UNSUPPORTED_TYPE);
+}
+
+TEST_CASE_FIX(db_param_bind_ldouble_tmp_oob, db_prepare, db_finalize)
+{
+    test_int_error(db_param_bind_ldouble(stmt, 1, 123), E_DB_OUT_OF_BOUNDS);
+}
+
+TEST_CASE_FIX(db_param_bind_ldouble_tmp_min, db_prepare, db_finalize)
+{
+    test_int_success(db_param_bind_ldouble(stmt, 0, LDBL_MIN));
+    test_fsql("select %.*Lg;", param->config->ldbl_dig, LDBL_MIN);
+}
+
+TEST_CASE_FIX(db_param_bind_ldouble_tmp_max, db_prepare, db_finalize)
+{
+    test_int_success(db_param_bind_ldouble(stmt, 0, LDBL_MAX));
+    test_fsql("select %.*Lg;", param->config->ldbl_dig, LDBL_MAX);
+}
+
+TEST_CASE_FIX(db_param_bind_ldouble_tmp_nan, db_prepare, db_finalize)
+{
+    test_int_success(db_param_bind_ldouble(stmt, 0, NAN));
+    test_fsql("select %s;", param->config->nan);
+}
+
+TEST_CASE_FIX(db_param_bind_ldouble_tmp_inf, db_prepare, db_finalize)
+{
+    test_int_success(db_param_bind_ldouble(stmt, 0, INFINITY));
+    test_fsql("select %s;", param->config->inf);
+}
+
+int test_suite_db_param_bind_ldouble_tmp(void *vparam)
+{
+    param = vparam;
+
+    if(!param->supported)
+        return error_pass_int(test_run_case(
+            test_case(db_param_bind_ldouble_tmp_unsupported)));
+
+    return error_pass_int(test_run_cases(NULL,
+        test_case(db_param_bind_ldouble_tmp_oob),
+        test_case(db_param_bind_ldouble_tmp_min),
+        test_case(db_param_bind_ldouble_tmp_max),
+        test_case(db_param_bind_ldouble_tmp_nan),
+        test_case(db_param_bind_ldouble_tmp_inf),
+        NULL
+    ));
+}
+
+TEST_CASE_FIX(db_param_bind_ldouble_ref_unsupported, db_prepare, db_finalize)
+{
+    long double value = 123;
+
+    test_int_error(db_param_bind_ldouble_ref(stmt, 0, &value, NULL), E_DB_UNSUPPORTED_TYPE);
+}
+
+TEST_CASE_FIX(db_param_bind_ldouble_ref_oob, db_prepare, db_finalize)
+{
+    long double value = 123;
+
+    test_int_error(db_param_bind_ldouble_ref(stmt, 1, &value, NULL), E_DB_OUT_OF_BOUNDS);
+}
+
+TEST_CASE_FIX(db_param_bind_ldouble_ref, db_prepare, db_finalize)
+{
+    long double value = 0;
+
+    test_int_success(db_param_bind_ldouble_ref(stmt, 0, &value, NULL));
+
+    value = LDBL_MIN;
+    test_fsql("select %.*Lg;", param->config->ldbl_dig, value);
+
+    value = LDBL_MAX;
+    test_fsql("select %.*Lg;", param->config->ldbl_dig, value);
+}
+
+TEST_CASE_FIX(db_param_bind_ldouble_ref_nan, db_prepare, db_finalize)
+{
+    long double value = 0;
+
+    test_int_success(db_param_bind_ldouble_ref(stmt, 0, &value, NULL));
+
+    value = NAN;
+    test_fsql("select %s;", param->config->nan);
+
+    value = 123.5;
+    test_sql("select 123.5;");
+}
+
+TEST_CASE_FIX(db_param_bind_ldouble_ref_inf, db_prepare, db_finalize)
+{
+    long double value = 0;
+
+    test_int_success(db_param_bind_ldouble_ref(stmt, 0, &value, NULL));
+
+    value = INFINITY;
+    test_fsql("select %s;", param->config->inf);
+
+    value = -INFINITY;
+    test_fsql("select -%s;", param->config->inf);
+}
+
+TEST_CASE_FIX(db_param_bind_ldouble_ref_null, db_prepare, db_finalize)
+{
+    long double value   = 123.5;
+    bool null           = false;
+
+    test_int_success(db_param_bind_ldouble_ref(stmt, 0, &value, &null));
+
+    null = true;
+    test_sql("select NULL;");
+
+    null = false;
+    test_sql("select 123.5;");
+}
+
+int test_suite_db_param_bind_ldouble_ref(void *vparam)
+{
+    param = vparam;
+
+    if(!param->supported)
+        return error_pass_int(test_run_case(
+            test_case(db_param_bind_ldouble_ref_unsupported)));
+
+    return error_pass_int(test_run_cases(NULL,
+        test_case(db_param_bind_ldouble_ref_oob),
+        test_case(db_param_bind_ldouble_ref),
+        test_case(db_param_bind_ldouble_ref_nan),
+        test_case(db_param_bind_ldouble_ref_inf),
+        test_case(db_param_bind_ldouble_ref_null),
+        NULL
+    ));
+}
+
+int test_suite_db_param_bind_ldouble(void *vparam)
+{
+    return error_pass_int(test_run_suites(NULL,
+        test_suite_p(db_param_bind_ldouble_tmp, vparam),
+        test_suite_p(db_param_bind_ldouble_ref, vparam),
         NULL
     ));
 }
@@ -1445,11 +1543,11 @@ TEST_CASE_FIX(db_param_bind_text_fix_len, db_prepare, db_finalize)
     test_sql("select 'foobar';");
 }
 
-int test_suite_db_param_bind_text_fix(void *param)
+int test_suite_db_param_bind_text_fix(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_text_fix_unsupported)));
 
@@ -1491,11 +1589,11 @@ TEST_CASE_FIX(db_param_bind_text_tmp_len, db_prepare, db_finalize)
     test_sql("select 'foobar';");
 }
 
-int test_suite_db_param_bind_text_tmp(void *param)
+int test_suite_db_param_bind_text_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_text_tmp_unsupported)));
 
@@ -1561,11 +1659,11 @@ TEST_CASE_FIX(db_param_bind_text_ref_null, db_prepare, db_finalize)
     test_sql("select 'bar';");
 }
 
-int test_suite_db_param_bind_text_ref(void *param)
+int test_suite_db_param_bind_text_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_text_ref_unsupported)));
 
@@ -1578,12 +1676,12 @@ int test_suite_db_param_bind_text_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_text(void *param)
+int test_suite_db_param_bind_text(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_text_fix, param),
-        test_suite_p(db_param_bind_text_tmp, param),
-        test_suite_p(db_param_bind_text_ref, param),
+        test_suite_p(db_param_bind_text_fix, vparam),
+        test_suite_p(db_param_bind_text_tmp, vparam),
+        test_suite_p(db_param_bind_text_ref, vparam),
         NULL
     ));
 }
@@ -1604,11 +1702,11 @@ TEST_CASE_FIX(db_param_bind_blob_fix, db_prepare, db_finalize)
     test_sql("select x'1234';");
 }
 
-int test_suite_db_param_bind_blob_fix(void *param)
+int test_suite_db_param_bind_blob_fix(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_blob_fix_unsupported)));
 
@@ -1639,11 +1737,11 @@ TEST_CASE_FIX(db_param_bind_blob_tmp, db_prepare, db_finalize)
     test_sql("select x'12345678';");
 }
 
-int test_suite_db_param_bind_blob_tmp(void *param)
+int test_suite_db_param_bind_blob_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_blob_tmp_unsupported)));
 
@@ -1700,11 +1798,11 @@ TEST_CASE_FIX(db_param_bind_blob_ref_null, db_prepare, db_finalize)
     test_sql("select x'deadbeef';");
 }
 
-int test_suite_db_param_bind_blob_ref(void *param)
+int test_suite_db_param_bind_blob_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_blob_ref_unsupported)));
 
@@ -1716,12 +1814,12 @@ int test_suite_db_param_bind_blob_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_blob(void *param)
+int test_suite_db_param_bind_blob(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_blob_fix, param),
-        test_suite_p(db_param_bind_blob_tmp, param),
-        test_suite_p(db_param_bind_blob_ref, param),
+        test_suite_p(db_param_bind_blob_fix, vparam),
+        test_suite_p(db_param_bind_blob_tmp, vparam),
+        test_suite_p(db_param_bind_blob_ref, vparam),
         NULL
     ));
 }
@@ -1748,11 +1846,11 @@ TEST_CASE_FIX(db_param_bind_date_fix, db_prepare, db_finalize)
     test_sql("select '2020-04-20';");
 }
 
-int test_suite_db_param_bind_date_fix(void *param)
+int test_suite_db_param_bind_date_fix(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_date_fix_unsupported)));
 
@@ -1784,14 +1882,14 @@ TEST_CASE_FIX(db_param_bind_date_tmp, db_prepare, db_finalize)
     test_int_success(db_param_bind_date_tmp(stmt, 0, &date));
 
     date.year++;
-    test_sql("select '2021-04-20';");
+    test_sql("select '2020-04-20';");
 }
 
-int test_suite_db_param_bind_date_tmp(void *param)
+int test_suite_db_param_bind_date_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_date_tmp_unsupported)));
 
@@ -1826,7 +1924,7 @@ TEST_CASE_FIX(db_param_bind_date_ref, db_prepare, db_finalize)
     test_sql("select '2021-04-20';");
 
     date.month++;
-    test_sql("select '2021-01-20';");
+    test_sql("select '2021-05-20';");
 }
 
 TEST_CASE_FIX(db_param_bind_date_ref_null, db_prepare, db_finalize)
@@ -1843,11 +1941,11 @@ TEST_CASE_FIX(db_param_bind_date_ref_null, db_prepare, db_finalize)
     test_sql("select '2020-04-20';");
 }
 
-int test_suite_db_param_bind_date_ref(void *param)
+int test_suite_db_param_bind_date_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_date_ref_unsupported)));
 
@@ -1859,12 +1957,12 @@ int test_suite_db_param_bind_date_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_date(void *param)
+int test_suite_db_param_bind_date(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_date_fix, param),
-        test_suite_p(db_param_bind_date_tmp, param),
-        test_suite_p(db_param_bind_date_ref, param),
+        test_suite_p(db_param_bind_date_fix, vparam),
+        test_suite_p(db_param_bind_date_tmp, vparam),
+        test_suite_p(db_param_bind_date_ref, vparam),
         NULL
     ));
 }
@@ -1891,11 +1989,11 @@ TEST_CASE_FIX(db_param_bind_time_fix, db_prepare, db_finalize)
     test_sql("select '20:04:20';");
 }
 
-int test_suite_db_param_bind_time_fix(void *param)
+int test_suite_db_param_bind_time_fix(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_time_fix_unsupported)));
 
@@ -1927,14 +2025,14 @@ TEST_CASE_FIX(db_param_bind_time_tmp, db_prepare, db_finalize)
     test_int_success(db_param_bind_time_tmp(stmt, 0, &time));
 
     time.hour++;
-    test_sql("select '21:04:20';");
+    test_sql("select '20:04:20';");
 }
 
-int test_suite_db_param_bind_time_tmp(void *param)
+int test_suite_db_param_bind_time_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_time_tmp_unsupported)));
 
@@ -1969,7 +2067,7 @@ TEST_CASE_FIX(db_param_bind_time_ref, db_prepare, db_finalize)
     test_sql("select '21:04:20';");
 
     time.minute++;
-    test_sql("select '21:01:20';");
+    test_sql("select '21:05:20';");
 }
 
 TEST_CASE_FIX(db_param_bind_time_ref_null, db_prepare, db_finalize)
@@ -1986,11 +2084,11 @@ TEST_CASE_FIX(db_param_bind_time_ref_null, db_prepare, db_finalize)
     test_sql("select '20:04:20';");
 }
 
-int test_suite_db_param_bind_time_ref(void *param)
+int test_suite_db_param_bind_time_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_time_ref_unsupported)));
 
@@ -2002,12 +2100,12 @@ int test_suite_db_param_bind_time_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_time(void *param)
+int test_suite_db_param_bind_time(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_time_fix, param),
-        test_suite_p(db_param_bind_time_tmp, param),
-        test_suite_p(db_param_bind_time_ref, param),
+        test_suite_p(db_param_bind_time_fix, vparam),
+        test_suite_p(db_param_bind_time_tmp, vparam),
+        test_suite_p(db_param_bind_time_ref, vparam),
         NULL
     ));
 }
@@ -2034,11 +2132,11 @@ TEST_CASE_FIX(db_param_bind_datetime_fix, db_prepare, db_finalize)
     test_sql("select '2020-04-20 12:34:56';");
 }
 
-int test_suite_db_param_bind_datetime_fix(void *param)
+int test_suite_db_param_bind_datetime_fix(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_datetime_fix_unsupported)));
 
@@ -2071,14 +2169,14 @@ TEST_CASE_FIX(db_param_bind_datetime_tmp, db_prepare, db_finalize)
 
     dt.date.year++;
     dt.time.hour++;
-    test_sql("select '2021-04-20 13:34:56';");
+    test_sql("select '2020-04-20 12:34:56';");
 }
 
-int test_suite_db_param_bind_datetime_tmp(void *param)
+int test_suite_db_param_bind_datetime_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_datetime_tmp_unsupported)));
 
@@ -2132,11 +2230,11 @@ TEST_CASE_FIX(db_param_bind_datetime_ref_null, db_prepare, db_finalize)
     test_sql("select '2020-04-20 12:34:56';");
 }
 
-int test_suite_db_param_bind_datetime_ref(void *param)
+int test_suite_db_param_bind_datetime_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_datetime_ref_unsupported)));
 
@@ -2148,12 +2246,12 @@ int test_suite_db_param_bind_datetime_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_datetime(void *param)
+int test_suite_db_param_bind_datetime(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_datetime_fix, param),
-        test_suite_p(db_param_bind_datetime_tmp, param),
-        test_suite_p(db_param_bind_datetime_ref, param),
+        test_suite_p(db_param_bind_datetime_fix, vparam),
+        test_suite_p(db_param_bind_datetime_tmp, vparam),
+        test_suite_p(db_param_bind_datetime_ref, vparam),
         NULL
     ));
 }
@@ -2174,11 +2272,11 @@ TEST_CASE_FIX(db_param_bind_timestamp_tmp, db_prepare, db_finalize)
     test_sql("select '2020-04-20 12:34:56';");
 }
 
-int test_suite_db_param_bind_timestamp_tmp(void *param)
+int test_suite_db_param_bind_timestamp_tmp(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_timestamp_tmp_unsupported)));
 
@@ -2210,7 +2308,7 @@ TEST_CASE_FIX(db_param_bind_timestamp_ref, db_prepare, db_finalize)
     test_int_success(db_param_bind_timestamp_ref(stmt, 0, &ts, NULL));
 
     ts = 1587386096;
-    test_sql("select '2020-04-20 12:34:56;");
+    test_sql("select '2020-04-20 12:34:56';");
 
     ts = 1;
     test_sql("select '1970-01-01 00:00:01';");
@@ -2230,11 +2328,11 @@ TEST_CASE_FIX(db_param_bind_timestamp_ref_null, db_prepare, db_finalize)
     test_sql("select '2020-04-20 12:34:56';");
 }
 
-int test_suite_db_param_bind_timestamp_ref(void *param)
+int test_suite_db_param_bind_timestamp_ref(void *vparam)
 {
-    suite = param;
+    param = vparam;
 
-    if(!suite->supported)
+    if(!param->supported)
         return error_pass_int(test_run_case(
             test_case(db_param_bind_timestamp_ref_unsupported)));
 
@@ -2246,11 +2344,11 @@ int test_suite_db_param_bind_timestamp_ref(void *param)
     ));
 }
 
-int test_suite_db_param_bind_timestamp(void *param)
+int test_suite_db_param_bind_timestamp(void *vparam)
 {
     return error_pass_int(test_run_suites(NULL,
-        test_suite_p(db_param_bind_timestamp_tmp, param),
-        test_suite_p(db_param_bind_timestamp_ref, param),
+        test_suite_p(db_param_bind_timestamp_tmp, vparam),
+        test_suite_p(db_param_bind_timestamp_ref, vparam),
         NULL
     ));
 }
