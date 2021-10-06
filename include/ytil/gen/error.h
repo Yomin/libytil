@@ -1281,6 +1281,7 @@ typedef enum generic_error
     E_GENERIC_SKIP      = -4,   ///< SKIP error
     E_GENERIC_SYSTEM    = -10,  ///< generic SYSTEM error
     E_GENERIC_OOM       = -11,  ///< generic out-of-memory error
+    E_GENERIC_NYI       = -12,  ///< generic not-yet-implemented error
 } generic_error_id;
 
 

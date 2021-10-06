@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2018-2021 Martin Rödel aka Yomin
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,15 +20,26 @@
  * THE SOFTWARE.
  */
 
-#include "parsers.h"
-#include <ytil/test/run.h>
+/// \file
+
+#include <ytil/parser/num.h>
+#include <ytil/def.h>
+
+/// default error type for num parser module
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_PARSER
 
 
-int test_suite_parsers(void *param)
+parser_ct parser_int(void)
 {
-    return error_pass_int(test_run_suites("parsers",
-        test_suite(parsers_parser),
+    return error_set(E_GENERIC_NYI), NULL;
+}
 
-        NULL
-    ));
+parser_ct parser_uint(void)
+{
+    return error_set(E_GENERIC_NYI), NULL;
+}
+
+parser_ct parser_float(void)
+{
+    return error_set(E_GENERIC_NYI), NULL;
 }

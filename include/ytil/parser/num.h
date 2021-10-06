@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2018-2021 Martin Rödel aka Yomin
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,15 +20,31 @@
  * THE SOFTWARE.
  */
 
-#include "parsers.h"
-#include <ytil/test/run.h>
+/// \file
+
+#ifndef YTIL_PARSER_NUM_H_INCLUDED
+#define YTIL_PARSER_NUM_H_INCLUDED
+
+#include <ytil/parser/parser.h>
 
 
-int test_suite_parsers(void *param)
-{
-    return error_pass_int(test_run_suites("parsers",
-        test_suite(parsers_parser),
+/// New signed integer parser.
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_int(void);
 
-        NULL
-    ));
-}
+/// New unsigned integer parser.
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_uint(void);
+
+/// New floating point parser.
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_float(void);
+
+
+#endif

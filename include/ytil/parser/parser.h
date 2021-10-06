@@ -20,85 +20,234 @@
  * THE SOFTWARE.
  */
 
+/// \file
+
 #ifndef YTIL_PARSER_PARSER_H_INCLUDED
 #define YTIL_PARSER_PARSER_H_INCLUDED
 
-#include <stddef.h>
-#include <unistd.h>
-#include <stdbool.h>
-#include <stdarg.h>
-#include <ytil/gen/str.h>
-//#include <ytil/type/type.h>
+#include <ytil/gen/error.h>
+#include <sys/types.h>
 
 
 /// parser error
 typedef enum parser_error
 {
-    E_PARSER_INVALID_NAME
+    E_PARSER_DEFINED,       ///< parser already defined
+    E_PARSER_FAIL,          ///< parser failed
+    E_PARSER_STACK_EMPTY,   ///< parse stack is empty
+    E_PARSER_STACK_TYPE,    ///< wrong stack type requested
 } parser_error_id;
 
 /// parser error type declaration
 ERROR_DECLARE(PARSER);
 
-typedef enum parser_show
+/*typedef enum parser_show
 {
       PARSER_SHOW_DEFAULT
     , PARSER_SHOW_TOP
     , PARSER_SHOW_GROUP
-} parser_show_id;
+} parser_show_id;*/
 
 struct parser;
-typedef struct parser       *parser_ct;
-typedef const struct parser *parser_const_ct;
-typedef struct parser_stack *parser_stack_ct;
+typedef       struct parser *parser_ct;         ///< parser type
+typedef const struct parser *parser_const_ct;   ///< const parser type
+typedef struct parser_stack *parser_stack_ct;   ///< parser stack type
 
 
-typedef ssize_t (*parser_parse_fold_cb)(parser_const_ct p, const char *input, size_t size, bool result, parser_stack_ct stack, void *parse_ctx);
-typedef ssize_t (*parser_parse_cb)(const char *input, size_t size, bool result, void *parser_ctx, parser_stack_ct stack, parser_parse_fold_cb parse, void *parse_ctx);
-typedef int     (*parser_show_fold_cb)(parser_const_ct p, parser_show_id mode, void *state);
-typedef int     (*parser_show_cb)(str_ct str, parser_show_id mode, void *ctx, parser_show_fold_cb show, void *state);
+//typedef ssize_t (*parser_parse_fold_cb)(parser_const_ct p, const char *input, size_t size, bool result, parser_stack_ct stack, void *parse_ctx);
+//typedef ssize_t (*parser_parse_cb)(const char *input, size_t size, bool result, void *parser_ctx, parser_stack_ct stack, parser_parse_fold_cb parse, void *parse_ctx);
+//typedef int     (*parser_show_fold_cb)(parser_const_ct p, parser_show_id mode, void *state);
+//typedef int     (*parser_show_cb)(str_ct str, parser_show_id mode, void *ctx, parser_show_fold_cb show, void *state);
 
-typedef void    (*parser_dtor_cb)(void *ctx);
+/// parser parse callback
+///
+/// \param input    input
+/// \param len      \p input length in bytes
+/// \param ctx      parser context
+/// \param stack    parse stack, if NULL no results are to be produced
+///
+/// \returns        number of bytes parsed
+/// \retval -1/?    ?
+typedef ssize_t (*parser_parse_cb)(const void *input, size_t len, void *ctx, parser_stack_ct stack);
+
+/// parser show callback
+typedef int (*parser_show_cb)(void);
+
+/// parser callback context dtor callback
+///
+/// \param ctx  context to destroy
+typedef void (*parser_dtor_cb)(void *ctx);
 
 
-//type_id   parser_type(void);
+/// Create new parser.
+///
+/// \param parse    parse callback
+/// \param ctx      callback context
+/// \param dtor     \p ctx dtor
+///
+/// \returns                    new parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_new(parser_parse_cb parse, const void *ctx, parser_dtor_cb dtor);
 
-// create new parser
-// parse is mandatory, show is optional
-parser_ct parser_new(parser_parse_cb parse, parser_show_cb show, void *ctx, parser_dtor_cb dtor);
-// free parser
-void      parser_free(parser_ct p);
+/// Free parser.
+///
+/// \param p    parser
+void parser_free(parser_ct p);
 
-// set parser name
-parser_ct parser_set_name(parser_ct p, str_const_ct name);
-parser_ct parser_set_show(parser_ct p, parser_show_cb show);
+/// Set parser name.
+///
+/// \param p        parser
+/// \param name     new parser name
+void parser_set_name(parser_ct p, const char *name);
 
-// define parser with name, used for parser building, frees parser on error
-parser_ct parser_define(str_const_ct name, parser_ct p);
+/// Set parser show callback.
+///
+/// \param p        parser
+/// \param show     new parser show callback
+void parser_set_show(parser_ct p, parser_show_cb show);
+
+/// Define parser with name.
+///
+/// Set parser name.
+/// Used for parser building.
+/// If \p p is NULL, pass error.
+///
+/// \param name     parser name
+/// \param p        parser
+///
+/// \returns                        parser
+/// \retval NULL/E_PARSER_DEFINED   parser already defined
+parser_ct parser_define(const char *name, parser_ct p);
+
+/// Parse input.
+///
+/// \param p        parser
+/// \param input    input
+/// \param len      \p input length in bytes
+/// \param stack    parse stack, may be NULL if no results are to be produced
+///
+/// \returns        number of bytes parsed
+/// \retval -1/?    ?
+ssize_t parser_parse(parser_const_ct p, const void *input, size_t len, parser_stack_ct stack);
+
+/// Push item onto parse stack.
+///
+/// \param stack    parse stack
+/// \param type     item type
+/// \param data     pointer to item data
+/// \param size     item size
+/// \param dtor     item destructor
+///
+/// \retval 0                   success
+/// \retval -1/E_GENERIC_OOM    out of memory
+int parser_stack_push(parser_stack_ct stack, const char *type, const void *data, size_t size, parser_dtor_cb dtor);
+
+/// Push pointer item onto parse stack.
+///
+/// \param stack    parse stack
+/// \param type     item type
+/// \param ptr      pointer item, must not be NULL
+/// \param dtor     item destructor
+///
+/// \retval 0                   success
+/// \retval -1/E_GENERIC_OOM    out of memory
+int parser_stack_push_p(parser_stack_ct stack, const char *type, const void *ptr, parser_dtor_cb dtor);
+
+/// Pop item from parse stack.
+///
+/// \param stack    parse stack
+/// \param type     item type
+/// \param data     pointer to item to fill, may be NULL
+///
+/// \retval 0                           success
+/// \retval -1/E_PARSER_STACK_EMPTY     parse stack is empty
+/// \retval -1/E_PARSER_STACK_TYPE      stack item has not requested type
+int parser_stack_pop(parser_stack_ct stack, const char *type, void *data);
+
+/// Pop pointer item from parse stack.
+///
+/// \param stack    parse stack
+/// \param type     item type
+///
+/// \returns                            pointer item
+/// \retval NULL/E_PARSER_STACK_EMPTY   parse stack is empty
+/// \retval NULL/E_PARSER_STACK_TYPE    stack item has not requested type
+void *parser_stack_pop_p(parser_stack_ct stack, const char *type);
+
+/// Get item at position from parse stack.
+///
+/// \param stack    parse stack
+/// \param type     item type
+/// \param data     pointer to item to fill, may be NULL
+/// \param pos      position of item, 0 is top of stack
+///
+/// \retval 0                           success
+/// \retval -1/E_PARSER_STACK_EMPTY     parse stack is empty
+/// \retval -1/E_PARSER_STACK_TYPE      stack item has not requested type
+int parser_stack_get(parser_stack_ct stack, const char *type, void *data, size_t pos);
+
+/// Get pointer item at position from parse stack.
+///
+/// \param stack    parse stack
+/// \param type     item type
+/// \param pos      position of item, 0 is top of stack
+///
+/// \returns                            pointer item
+/// \retval NULL/E_PARSER_STACK_EMPTY   parse stack is empty
+/// \retval NULL/E_PARSER_STACK_TYPE    stack item has not requested type
+void *parser_stack_get_p(parser_stack_ct stack, const char *type, size_t pos);
+
+/// Get item type at position from parse stack.
+///
+/// \param stack    parse stack
+/// \param pos      position of item, 0 is top of stack
+///
+/// \returns                            item type
+/// \retval NULL/E_PARSER_STACK_EMPTY   parse stack is empty
+const char *parser_stack_get_type(parser_stack_ct stack, size_t pos);
+
+/// Get item size at position from parse stack.
+///
+/// \param stack    parse stack
+/// \param pos      position of item, 0 is top of stack
+///
+/// \returns                            item size
+/// \retval -1/E_PARSER_STACK_EMPTY     parse stack is empty
+ssize_t parser_stack_get_size(parser_stack_ct stack, size_t pos);
+
+/// Drop n items from parse stack.
+///
+/// \param stack    parse stack
+/// \param n        number of items to drop
+///
+/// \retval 0                           success
+/// \retval -1/E_PARSER_STACK_EMPTY     less than \p n items on stack
+int parser_stack_drop(parser_stack_ct stack, size_t n);
+
+/// Get parse stack size.
+///
+/// \param stack    parse stack
+///
+/// \returns        number of items on stack
+size_t parser_stack_size(parser_stack_ct stack);
+
+/// Clear parse stack.
+///
+/// \param stack    parse stack
+void parser_stack_clear(parser_stack_ct stack);
+
 
 //str_ct parser_show(parser_const_ct p);
 
-ssize_t parser_parse(parser_const_ct p, const char *input, size_t len, size_t n, ...); // type_id type, void *result
-ssize_t parser_parse_v(parser_const_ct p, const char *input, size_t len, size_t n, va_list ap);
-ssize_t parser_parse_x(parser_const_ct p, const char *input, size_t len, void *ctx, size_t n, ...); // type_id type, void *result
-ssize_t parser_parse_vx(parser_const_ct p, const char *input, size_t len, void *ctx, size_t n, va_list ap);
+//ssize_t parser_parse(parser_const_ct p, const char *input, size_t len, size_t n, ...); // type_id type, void *result
+//ssize_t parser_parse_v(parser_const_ct p, const char *input, size_t len, size_t n, va_list ap);
+//ssize_t parser_parse_x(parser_const_ct p, const char *input, size_t len, void *ctx, size_t n, ...); // type_id type, void *result
+//ssize_t parser_parse_vx(parser_const_ct p, const char *input, size_t len, void *ctx, size_t n, va_list ap);
 
-//int    parser_stack_push(parser_stack_ct stack, type_id type, const void *result);
-//int    parser_stack_push_p(parser_stack_ct stack, type_id type, const void *result);
 
-//int    parser_stack_pop(parser_stack_ct stack, type_id type, void *result);
-//void  *parser_stack_pop_p(parser_stack_ct stack, type_id type);
-//int    parser_stack_get(parser_stack_ct stack, size_t pos, type_id type, void *result);
-//void  *parser_stack_get_p(parser_stack_ct stack, size_t pos, type_id type);
 
-int    parser_stack_drop(parser_stack_ct stack, size_t n);
+//str_ct  parser_stack_show(parser_stack_ct stack, str_ct str, size_t pos);
 
-//type_id parser_stack_type(parser_stack_ct stack, size_t pos);
-size_t  parser_stack_size(parser_stack_ct stack, size_t pos);
-str_ct  parser_stack_show(parser_stack_ct stack, str_ct str, size_t pos);
-
-size_t parser_stack_results(parser_stack_ct stack);
-void   parser_stack_clear(parser_stack_ct stack);
 
 /*
 #ifndef __PARSER_INTERN__

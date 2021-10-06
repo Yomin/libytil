@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2020-2021 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,14 +34,14 @@ static const struct not_a_parser
 static parser_ct parser;
 
 
-static ssize_t test_parser_parse(const char *input, size_t size, bool result, void *parser_ctx, parser_stack_ct stack, parser_parse_fold_cb parse, void *parse_ctx)
+static ssize_t test_parser_parse(const void *input, size_t len, void *ctx, parser_stack_ct stack)
 {
     return 0;
 }
 
 TEST_SETUP(parser_new)
 {
-    test_ptr_success(parser = parser_new(test_parser_parse, NULL, NULL, NULL));
+    test_ptr_success(parser = parser_new(test_parser_parse, NULL, NULL));
 }
 
 TEST_TEARDOWN(parser_free)
@@ -51,7 +51,7 @@ TEST_TEARDOWN(parser_free)
 
 TEST_CASE_ABORT(parser_new_invalid_parse)
 {
-    parser_new(NULL, NULL, NULL, NULL);
+    parser_new(NULL, NULL, NULL);
 }
 
 TEST_CASE_ABORT(parser_free_invalid_magic)
@@ -66,25 +66,15 @@ TEST_CASE_FIX(parser_new_free, parser_new, parser_free)
 
 TEST_CASE_ABORT(parser_set_name_invalid_magic)
 {
-    parser_set_name((parser_ct)&not_a_parser, LIT("test"));
-}
-
-TEST_CASE_FIX_ABORT(parser_set_name_invalid_name1, parser_new, parser_free)
-{
-    parser_set_name(parser, NULL);
-}
-
-TEST_CASE_FIX(parser_set_name_invalid_name2, parser_new, no_teardown)
-{
-    test_ptr_error(parser_set_name(parser, LIT("")), E_PARSER_INVALID_NAME);
+    parser_set_name((parser_ct)&not_a_parser, "test");
 }
 
 TEST_CASE_FIX(parser_set_name, parser_new, parser_free)
 {
-    test_ptr_success(parser_set_name(parser, LIT("test")));
+    test_void(parser_set_name(parser, "test"));
 }
 
-static int test_parser_show(str_ct str, parser_show_id mode, void *ctx, parser_show_fold_cb show, void *state)
+static int test_parser_show(void)
 {
     return 0;
 }
@@ -94,39 +84,39 @@ TEST_CASE_ABORT(parser_set_show_invalid_magic)
     parser_set_show((parser_ct)&not_a_parser, test_parser_show);
 }
 
-TEST_CASE_FIX_ABORT(parser_set_show_invalid_show, parser_new, parser_free)
-{
-    parser_set_show(parser, NULL);
-}
-
 TEST_CASE_FIX(parser_set_show, parser_new, parser_free)
 {
-    test_ptr_success(parser_set_show(parser, test_parser_show));
+    test_void(parser_set_show(parser, test_parser_show));
 }
 
 TEST_CASE_ABORT(parser_define_invalid_magic)
 {
-    parser_define(LIT("test"), (parser_ct)&not_a_parser);
-}
-
-TEST_CASE_FIX_ABORT(parser_define_invalid_name1, parser_new, parser_free)
-{
-    parser_define(NULL, parser);
-}
-
-TEST_CASE_FIX(parser_define_invalid_name2, parser_new, no_teardown)
-{
-    test_ptr_error(parser_define(LIT(""), parser), E_PARSER_INVALID_NAME);
+    parser_define("test", (parser_ct)&not_a_parser);
 }
 
 TEST_CASE_FIX(parser_define, parser_new, parser_free)
 {
-    test_ptr_success(parser_define(LIT("test"), parser));
+    parser_ct p;
+
+    test_ptr_success(p = parser_define("test", parser));
+    test_ptr_eq(p, parser);
 }
 
-TEST_CASE_FIX_ABORT(parser_define_defined, parser_new, parser_free)
+TEST_CASE_FIX(parser_define_defined, parser_new, parser_free)
 {
-    parser_define(LIT("foo"), parser_define(LIT("test"), parser));
+    test_ptr_error(parser_define("foo", parser_define("test", parser)), E_PARSER_DEFINED);
+}
+
+#include <ytil/parser/char.h>
+
+TEST_CASE(parser_parse)
+{
+    parser_ct p;
+
+    test_ptr_success(p = parser_char('X'));
+    test_rc_success(parser_parse(p, "X", 1, NULL), 1, -1);
+    test_rc_error(parser_parse(p, "Y", 1, NULL), -1, E_PARSER_FAIL);
+    test_void(parser_free(p));
 }
 
 int test_suite_parsers_parser(void *param)
@@ -137,18 +127,15 @@ int test_suite_parsers_parser(void *param)
         test_case(parser_new_free),
 
         test_case(parser_set_name_invalid_magic),
-        test_case(parser_set_name_invalid_name1),
-        test_case(parser_set_name_invalid_name2),
         test_case(parser_set_name),
         test_case(parser_set_show_invalid_magic),
-        test_case(parser_set_show_invalid_show),
         test_case(parser_set_show),
 
         test_case(parser_define_invalid_magic),
-        test_case(parser_define_invalid_name1),
-        test_case(parser_define_invalid_name2),
         test_case(parser_define),
         test_case(parser_define_defined),
+
+        test_case(parser_parse),
 
         NULL
     ));
