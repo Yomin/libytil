@@ -28,6 +28,7 @@ int test_suite_parsers(void *param)
 {
     return error_pass_int(test_run_suites("parsers",
         test_suite(parsers_parser),
+        test_suite(parsers_null),
 
         NULL
     ));

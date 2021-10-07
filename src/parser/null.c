@@ -166,7 +166,7 @@ static ssize_t parser_parse_lift_ctor(const void *input, size_t size, void *ctx,
 {
     parser_lift_ctor_st *lift = ctx;
 
-    if(lift->lift(stack, lift->ctx))
+    if(stack && lift->lift(stack, lift->ctx))
         return error_pass(), -1;
 
     return 0;

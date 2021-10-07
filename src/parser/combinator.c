@@ -328,7 +328,7 @@ static ssize_t parser_parse_not_lift_ctor(const void *input, size_t size, void *
     if(!error_check(0, 1, E_PARSER_FAIL))
         return error_pass(), -1;
 
-    if(lift->lift(stack, lift->ctx))
+    if(stack && lift->lift(stack, lift->ctx))
         return error_pass(), -1;
 
     return 0;
@@ -421,7 +421,7 @@ static ssize_t parser_parse_maybe_lift_ctor(const void *input, size_t size, void
     if(!error_check(0, 1, E_PARSER_FAIL))
         return error_pass(), -1;
 
-    if(lift->lift(stack, lift->ctx))
+    if(stack && lift->lift(stack, lift->ctx))
         return error_pass(), -1;
 
     return 0;
