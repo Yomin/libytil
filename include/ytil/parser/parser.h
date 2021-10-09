@@ -32,10 +32,14 @@
 /// parser error
 typedef enum parser_error
 {
-    E_PARSER_DEFINED,       ///< parser already defined
-    E_PARSER_FAIL,          ///< parser failed
-    E_PARSER_STACK_EMPTY,   ///< parse stack is empty
-    E_PARSER_STACK_TYPE,    ///< wrong stack type requested
+    E_PARSER_DEFINED,           ///< parser already defined
+    E_PARSER_FAIL,              ///< parser failed
+    E_PARSER_STACK_EMPTY,       ///< parse stack is empty
+    E_PARSER_STACK_TYPE,        ///< wrong stack type requested
+    E_PARSER_ARG_MISSING,       ///< missing parser argument on stack
+    E_PARSER_ARG_TYPE,          ///< parser argument with wrong type on stack
+    E_PARSER_RESULT_MISSING,    ///< missing parser result on stack
+    E_PARSER_RESULT_TYPE,       ///< parser result with wrong type on stack
 } parser_error_id;
 
 /// parser error type declaration
@@ -66,8 +70,12 @@ typedef struct parser_stack *parser_stack_ct;   ///< parser stack type
 /// \param ctx      parser context
 /// \param stack    parse stack, if NULL no results are to be produced
 ///
-/// \returns        number of bytes parsed
-/// \retval -1/?    ?
+/// \returns                            number of bytes parsed
+/// \retval -1/E_PARSER_FAIL            parser failed
+/// \retval -1/E_PARSER_ARG_MISSING     missing parser argument on stack
+/// \retval -1/E_PARSER_ARG_TYPE        parser argument with wrong type on stack
+/// \retval -1/E_PARSER_RESULT_MISSING  missing parser result on stack
+/// \retval -1/E_PARSER_RESULT_TYPE     parser result with wrong type on stack
 typedef ssize_t (*parser_parse_cb)(const void *input, size_t len, void *ctx, parser_stack_ct stack);
 
 /// parser show callback
@@ -164,6 +172,17 @@ int parser_stack_push_p(parser_stack_ct stack, const char *type, const void *ptr
 /// \retval -1/E_PARSER_STACK_TYPE      stack item has not requested type
 int parser_stack_pop(parser_stack_ct stack, const char *type, void *data);
 
+/// Pop argument from parse stack.
+///
+/// \param stack    parse stack
+/// \param type     argument type
+/// \param data     pointer to argument to fill, may be NULL
+///
+/// \retval 0                           success
+/// \retval -1/E_PARSER_ARG_MISSING     parse stack is empty
+/// \retval -1/E_PARSER_ARG_TYPE        stack item has not requested type
+int parser_stack_pop_arg(parser_stack_ct stack, const char *type, void *data);
+
 /// Pop pointer item from parse stack.
 ///
 /// \param stack    parse stack
@@ -173,6 +192,16 @@ int parser_stack_pop(parser_stack_ct stack, const char *type, void *data);
 /// \retval NULL/E_PARSER_STACK_EMPTY   parse stack is empty
 /// \retval NULL/E_PARSER_STACK_TYPE    stack item has not requested type
 void *parser_stack_pop_p(parser_stack_ct stack, const char *type);
+
+/// Pop pointer argument from parse stack.
+///
+/// \param stack    parse stack
+/// \param type     argument type
+///
+/// \returns                            pointer item
+/// \retval NULL/E_PARSER_ARG_MISSING   parse stack is empty
+/// \retval NULL/E_PARSER_ARG_TYPE      stack item has not requested type
+void *parser_stack_pop_arg_p(parser_stack_ct stack, const char *type);
 
 /// Get item at position from parse stack.
 ///

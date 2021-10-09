@@ -38,6 +38,77 @@
 typedef int (*parser_lift_cb)(parser_stack_ct stack, void *ctx);
 
 
+/// Create new parser which lifts a value on success.
+///
+/// Equivalent: parser_seq(2,
+///     parser_new(parse, parse_ctx, parse_dtor),
+///     parser_lift(type, data, size, data_dtor))
+///
+/// \param parse        parse callback
+/// \param parse_ctx    \p parse context
+/// \param parse_dtor   \p parse_ctx destructor
+/// \param type         lift value type
+/// \param data         pointer to lift value data
+/// \param size         lift value size
+/// \param data_dtor    lift value destructor
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_new_lift_success(parser_parse_cb parse, const void *parse_ctx, parser_dtor_cb parse_dtor, const char *type, const void *data, size_t size, parser_dtor_cb data_dtor);
+
+/// Create new parser which lifts a value on fail.
+///
+/// Equivalent: parser_or(2,
+///     parser_new(parse, parse_ctx, parse_dtor),
+///     parser_lift(type, data, size, data_dtor))
+///
+/// \param parse        parse callback
+/// \param parse_ctx    \p parse context
+/// \param parse_dtor   \p parse_ctx destructor
+/// \param type         lift value type
+/// \param data         pointer to lift value data
+/// \param size         lift value size
+/// \param data_dtor    lift value destructor
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_new_lift_fail(parser_parse_cb parse, const void *parse_ctx, parser_dtor_cb parse_dtor, const char *type, const void *data, size_t size, parser_dtor_cb data_dtor);
+
+/// Create new parser which executes a lift CTOR on success.
+///
+/// Equivalent: parser_seq(2,
+///     parser_new(parse, parse_ctx, parse_dtor),
+///     parser_lift_f(lift, lift_ctx, lift_dtor))
+///
+/// \param parse        parse callback
+/// \param parse_ctx    \p parse context
+/// \param parse_dtor   \p parse_ctx destructor
+/// \param lift         callback to push values onto the stack
+/// \param lift_ctx     \p lift context
+/// \param lift_dtor    \p lift_ctx destructor
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_new_lift_success_f(parser_parse_cb parse, const void *parse_ctx, parser_dtor_cb parse_dtor, parser_lift_cb lift, const void *lift_ctx, parser_dtor_cb lift_dtor);
+
+/// Create new parser which executes a lift CTOR on fail.
+///
+/// Equivalent: parser_or(2,
+///     parser_new(parse, parse_ctx, parse_dtor),
+///     parser_lift_f(lift, lift_ctx, lift_dtor))
+///
+/// \param parse        parse callback
+/// \param parse_ctx    \p parse context
+/// \param parse_dtor   \p parse_ctx destructor
+/// \param lift         callback to push values onto the stack
+/// \param lift_ctx     \p lift context
+/// \param lift_dtor    \p lift_ctx destructor
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_new_lift_fail_f(parser_parse_cb parse, const void *parse_ctx, parser_dtor_cb parse_dtor, parser_lift_cb lift, const void *lift_ctx, parser_dtor_cb lift_dtor);
+
+
 /// New parser which always succeeds.
 ///
 /// \returns                    parser

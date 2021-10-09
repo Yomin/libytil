@@ -46,20 +46,22 @@ typedef struct parser
     parser_dtor_cb  dtor;   ///< callback context dtor
 } parser_st;
 
+/// parser stack
 typedef struct parser_stack
 {
     DEBUG_MAGIC
 
-    size_t  size;
-    vec_ct  stack;
-    vec_ct  frame;
+    size_t  size;   ///< number of items on stack
+    vec_ct  stack;  ///< stack
+    vec_ct  frame;  ///< stack frames
 } parser_stack_st;
 
+/// parser stack item
 typedef struct parser_stack_item
 {
-    const char      *type;
-    size_t          size;
-    parser_dtor_cb  dtor;
+    const char      *type;  ///< item type
+    size_t          size;   ///< item size
+    parser_dtor_cb  dtor;   ///< item destructor
 } parser_stack_item_st;
 
 /*typedef struct parser_arg
@@ -80,7 +82,11 @@ ERROR_DEFINE_LIST(PARSER,
     ERROR_INFO(E_PARSER_DEFINED, "Parser already defined."),
     ERROR_INFO(E_PARSER_FAIL, "Parser failed."),
     ERROR_INFO(E_PARSER_STACK_EMPTY, "Parse stack is empty."),
-    ERROR_INFO(E_PARSER_STACK_TYPE, "Wrong stack type requested.")
+    ERROR_INFO(E_PARSER_STACK_TYPE, "Wrong stack type requested."),
+    ERROR_INFO(E_PARSER_ARG_MISSING, "Missing parser argument on stack."),
+    ERROR_INFO(E_PARSER_ARG_TYPE, "Parser argument with wrong type on stack."),
+    ERROR_INFO(E_PARSER_RESULT_MISSING, "Missing parser result on stack."),
+    ERROR_INFO(E_PARSER_RESULT_TYPE, "Parser result with wrong type on stack.")
 );
 
 /// default error type for parser module
@@ -202,6 +208,24 @@ int parser_stack_pop(parser_stack_ct stack, const char *type, void *data)
     return 0;
 }
 
+int parser_stack_pop_arg(parser_stack_ct stack, const char *type, void *data)
+{
+    if(!parser_stack_pop(stack, type, data))
+        return 0;
+
+    switch(error_code(0))
+    {
+    case E_PARSER_STACK_EMPTY:
+        return error_push(E_PARSER_ARG_MISSING), -1;
+
+    case E_PARSER_STACK_TYPE:
+        return error_push(E_PARSER_ARG_TYPE), -1;
+
+    default:
+        return error_pass(), -1;
+    }
+}
+
 void *parser_stack_pop_p(parser_stack_ct stack, const char *type)
 {
     void *data;
@@ -212,6 +236,22 @@ void *parser_stack_pop_p(parser_stack_ct stack, const char *type)
     return data;
 }
 
+void *parser_stack_pop_arg_p(parser_stack_ct stack, const char *type)
+{
+    void *data;
+
+    if(parser_stack_pop_arg(stack, type, &data))
+        return error_pass(), NULL;
+
+    return data;
+}
+
+/// Get byte offset of item down the stack.
+///
+/// \param stack    stack
+/// \param pos      position from top of stack
+///
+/// \returns byte offset, 0 for position 0
 static size_t parser_stack_get_offset(parser_stack_ct stack, size_t pos)
 {
     parser_stack_item_st *item;

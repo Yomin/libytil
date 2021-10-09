@@ -31,7 +31,228 @@
 #define ERROR_TYPE_DEFAULT ERROR_TYPE_PARSER
 
 
-/// Parse callback for parser which always succeeds.
+/// Parser context for parser_new_lift().
+typedef struct parser_ctx_new_lift
+{
+    parser_parse_cb     parse;      ///< parse callback
+    void                *parse_ctx; ///< \p parse context
+    parser_dtor_cb      parse_dtor; ///< \p parse_ctx destructor
+    bool                success;    ///< lift on success
+    const char          *type;      ///< value type
+    size_t              size;       ///< value size
+    parser_dtor_cb      data_dtor;  ///< value destructor
+    char                data[];     ///< value data
+} parser_ctx_new_lift_st;
+
+/// Free parser context of parser_new_lift().
+///
+/// \implements parser_dtor_cb
+static void parser_dtor_new_lift(void *ctx)
+{
+    parser_ctx_new_lift_st *lift = ctx;
+
+    if(lift->parse_dtor)
+        lift->parse_dtor(lift->parse_ctx);
+
+    if(lift->data_dtor)
+        lift->data_dtor(lift->data);
+
+    free(lift);
+}
+
+/// Parse callback for parser_new_lift().
+///
+/// \implements parser_parse_cb
+static ssize_t parser_parse_new_lift(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+{
+    parser_ctx_new_lift_st *lift = ctx;
+
+    if(lift->parse(input, size, lift->parse_ctx, stack) < 0)
+    {
+        if(lift->success)
+            return error_pass(), -1;
+
+        if(!error_check(0, 1, E_PARSER_FAIL))
+            return error_pass(), -1;
+    }
+    else
+    {
+        if(!lift->success)
+            return 0;
+    }
+
+    if(stack && parser_stack_push(stack, lift->type, lift->data, lift->size, lift->data_dtor))
+        return error_pass(), -1;
+
+    return 0;
+}
+
+/// Create new parser which lifts a value.
+///
+/// Equivalent: parser_seq(2,
+///     parser_new(parse, parse_ctx, parse_dtor),
+///     parser_lift(type, data, size, data_dtor))
+///
+/// \param parse        parse callback
+/// \param parse_ctx    \p parse context
+/// \param parse_dtor   \p parse_ctx destructor
+/// \param success      lift on success
+/// \param type         lift value type
+/// \param data         pointer to lift value data
+/// \param size         lift value size
+/// \param data_dtor    lift value destructor
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+static parser_ct parser_new_lift(parser_parse_cb parse, const void *parse_ctx, parser_dtor_cb parse_dtor, bool success, const char *type, const void *data, size_t size, parser_dtor_cb data_dtor)
+{
+    parser_ctx_new_lift_st *lift;
+    parser_ct p;
+
+    assert(parse);
+    assert(type);
+    assert(data || !size);
+
+    if(!(lift = calloc(1, sizeof(parser_ctx_new_lift_st) + size)))
+        return error_wrap_last_errno(calloc), NULL;
+
+    lift->parse         = parse;
+    lift->parse_ctx     = (void *)parse_ctx;
+    lift->parse_dtor    = parse_dtor;
+    lift->success       = success;
+    lift->type          = type;
+    lift->size          = size;
+    lift->data_dtor     = data_dtor;
+
+    memcpy(lift->data, data, size);
+
+    if(!(p = parser_new(parser_parse_new_lift, lift, parser_dtor_new_lift)))
+        return error_pass(), free(lift), NULL;
+
+    return p;
+}
+
+parser_ct parser_new_lift_success(parser_parse_cb parse, const void *parse_ctx, parser_dtor_cb parse_dtor, const char *type, const void *data, size_t size, parser_dtor_cb data_dtor)
+{
+    return error_pass_ptr(parser_new_lift(
+        parse, parse_ctx, parse_dtor, true, type, data, size, data_dtor));
+}
+
+parser_ct parser_new_lift_fail(parser_parse_cb parse, const void *parse_ctx, parser_dtor_cb parse_dtor, const char *type, const void *data, size_t size, parser_dtor_cb data_dtor)
+{
+    return error_pass_ptr(parser_new_lift(
+        parse, parse_ctx, parse_dtor, false, type, data, size, data_dtor));
+}
+
+/// Parser context for parser_new_lift_f().
+typedef struct parser_ctx_new_lift_f
+{
+    parser_parse_cb     parse;      ///< parse callback
+    void                *parse_ctx; ///< \p parse context
+    parser_dtor_cb      parse_dtor; ///< \p parse_ctx destructor
+    bool                success;    ///< lift on success
+    parser_lift_cb      lift;       ///< lift callback
+    void                *lift_ctx;  ///< \p lift context
+    parser_dtor_cb      lift_dtor;  ///< \p lift_ctx destructor
+} parser_ctx_new_lift_f_st;
+
+/// Free parser context of parser_new_lift_f().
+///
+/// \implements parser_dtor_cb
+static void parser_dtor_new_lift_f(void *ctx)
+{
+    parser_ctx_new_lift_f_st *lift = ctx;
+
+    if(lift->parse_dtor)
+        lift->parse_dtor(lift->parse_ctx);
+
+    if(lift->lift_dtor)
+        lift->lift_dtor(lift->lift_ctx);
+
+    free(lift);
+}
+
+/// Parse callback for parser_new_lift_f().
+///
+/// \implements parser_parse_cb
+static ssize_t parser_parse_new_lift_f(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+{
+    parser_ctx_new_lift_f_st *lift = ctx;
+
+    if(lift->parse(input, size, lift->parse_ctx, stack) < 0)
+    {
+        if(lift->success)
+            return error_pass(), -1;
+
+        if(!error_check(0, 1, E_PARSER_FAIL))
+            return error_pass(), -1;
+    }
+    else
+    {
+        if(!lift->success)
+            return 0;
+    }
+
+    if(stack && lift->lift(stack, lift->lift_ctx))
+        return error_pass(), -1;
+
+    return 0;
+}
+
+/// Create new parser which executes a lift CTOR on success.
+///
+/// Equivalent: parser_seq(2,
+///     parser_new(parse, parse_ctx, parse_dtor),
+///     parser_lift_f(lift, lift_ctx, lift_dtor))
+///
+/// \param parse        parse callback
+/// \param parse_ctx    \p parse context
+/// \param parse_dtor   \p parse_ctx destructor
+/// \param success      lift on success
+/// \param lift         callback to push values onto the stack
+/// \param lift_ctx     \p lift context
+/// \param lift_dtor    \p lift_ctx destructor
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+static parser_ct parser_new_lift_f(parser_parse_cb parse, const void *parse_ctx, parser_dtor_cb parse_dtor, bool success, parser_lift_cb lift, const void *lift_ctx, parser_dtor_cb lift_dtor)
+{
+    parser_ctx_new_lift_f_st *state;
+    parser_ct p;
+
+    assert(parse);
+    assert(lift);
+
+    if(!(state = calloc(1, sizeof(parser_ctx_new_lift_f_st))))
+        return error_wrap_last_errno(calloc), NULL;
+
+    state->parse        = parse;
+    state->parse_ctx    = (void *)parse_ctx;
+    state->parse_dtor   = parse_dtor;
+    state->success      = success;
+    state->lift         = lift;
+    state->lift_ctx     = (void *)lift_ctx;
+    state->lift_dtor    = lift_dtor;
+
+    if(!(p = parser_new(parser_parse_new_lift_f, state, parser_dtor_new_lift_f)))
+        return error_pass(), free(state), NULL;
+
+    return p;
+}
+
+parser_ct parser_new_lift_success_f(parser_parse_cb parse, const void *parse_ctx, parser_dtor_cb parse_dtor, parser_lift_cb lift, const void *lift_ctx, parser_dtor_cb lift_dtor)
+{
+    return error_pass_ptr(parser_new_lift_f(
+        parse, parse_ctx, parse_dtor, true, lift, lift_ctx, lift_dtor));
+}
+
+parser_ct parser_new_lift_fail_f(parser_parse_cb parse, const void *parse_ctx, parser_dtor_cb parse_dtor, parser_lift_cb lift, const void *lift_ctx, parser_dtor_cb lift_dtor)
+{
+    return error_pass_ptr(parser_new_lift_f(
+        parse, parse_ctx, parse_dtor, false, lift, lift_ctx, lift_dtor));
+}
+
+/// Parse callback for parser_success().
 ///
 /// \implements parser_parse_cb
 static ssize_t parser_parse_success(const void *input, size_t size, void *ctx, parser_stack_ct stack)
@@ -45,7 +266,7 @@ parser_ct parser_success(void)
         parser_new(parser_parse_success, NULL, NULL));
 }
 
-/// Parse callback for parser which always fails.
+/// Parse callback for parser_fail().
 ///
 /// \implements parser_parse_cb
 static ssize_t parser_parse_fail(const void *input, size_t size, void *ctx, parser_stack_ct stack)
@@ -59,7 +280,7 @@ parser_ct parser_fail(void)
         parser_new(parser_parse_fail, NULL, NULL));
 }
 
-/// Parse callback for parser matching end of input.
+/// Parse callback for parser_end().
 ///
 /// \implements parser_parse_cb
 static ssize_t parser_parse_end(const void *input, size_t size, void *ctx, parser_stack_ct stack)
@@ -75,21 +296,21 @@ parser_ct parser_end(void)
         parser_new(parser_parse_end, NULL, NULL));
 }
 
-/// lift value parser state
-typedef struct parser_lift_value
+/// Parser context of parser_lift().
+typedef struct parser_ctx_lift
 {
     const char      *type;  ///< value type
     size_t          size;   ///< value size
     parser_dtor_cb  dtor;   ///< value destructor
     char            data[]; ///< value data
-} parser_lift_value_st;
+} parser_ctx_lift_st;
 
-/// Free lift value context.
+/// Free parser context of parser_lift().
 ///
 /// \implements parser_dtor_cb
-static void parser_free_lift_value(void *ctx)
+static void parser_dtor_lift(void *ctx)
 {
-    parser_lift_value_st *lift = ctx;
+    parser_ctx_lift_st *lift = ctx;
 
     if(lift->dtor)
         lift->dtor(lift->data);
@@ -97,12 +318,12 @@ static void parser_free_lift_value(void *ctx)
     free(lift);
 }
 
-/// Parse callback for parser lifting a value.
+/// Parse callback for parser_lift().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_lift_value(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_lift(const void *input, size_t size, void *ctx, parser_stack_ct stack)
 {
-    parser_lift_value_st *lift = ctx;
+    parser_ctx_lift_st *lift = ctx;
 
     if(stack && parser_stack_push(stack, lift->type, lift->data, lift->size, lift->dtor))
         return error_pass(), -1;
@@ -112,13 +333,13 @@ static ssize_t parser_parse_lift_value(const void *input, size_t size, void *ctx
 
 parser_ct parser_lift(const char *type, const void *data, size_t size, parser_dtor_cb dtor)
 {
-    parser_lift_value_st *lift;
+    parser_ctx_lift_st *lift;
     parser_ct p;
 
     assert(type);
     assert(data || !size);
 
-    if(!(lift = calloc(1, sizeof(parser_lift_value_st) + size)))
+    if(!(lift = calloc(1, sizeof(parser_ctx_lift_st) + size)))
         return error_wrap_last_errno(calloc), NULL;
 
     lift->type  = type;
@@ -127,7 +348,7 @@ parser_ct parser_lift(const char *type, const void *data, size_t size, parser_dt
 
     memcpy(lift->data, data, size);
 
-    if(!(p = parser_new(parser_parse_lift_value, lift, parser_free_lift_value)))
+    if(!(p = parser_new(parser_parse_lift, lift, parser_dtor_lift)))
         return error_pass(), free(lift), NULL;
 
     return p;
@@ -138,20 +359,20 @@ parser_ct parser_lift_p(const char *type, const void *ptr, parser_dtor_cb dtor)
     return error_pass_ptr(parser_lift(type, &ptr, sizeof(void *), dtor));
 }
 
-/// lift CTOR parser state
-typedef struct parser_lift_ctor
+/// Parser context of parser_lift_f().
+typedef struct parser_ctx_lift_f
 {
     parser_lift_cb  lift;   ///< lift callback
-    void            *ctx;   ///< lift callback context
-    parser_dtor_cb  dtor;   ///< context destructor
-} parser_lift_ctor_st;
+    void            *ctx;   ///< \p lift context
+    parser_dtor_cb  dtor;   ///< \p ctx destructor
+} parser_ctx_lift_f_st;
 
-/// Free lift CTOR context.
+/// Free parser context of parser_lift_f().
 ///
 /// \implements parser_dtor_cb
-static void parser_free_lift_ctor(void *ctx)
+static void parser_dtor_lift_f(void *ctx)
 {
-    parser_lift_ctor_st *lift = ctx;
+    parser_ctx_lift_f_st *lift = ctx;
 
     if(lift->dtor)
         lift->dtor(lift->ctx);
@@ -159,12 +380,12 @@ static void parser_free_lift_ctor(void *ctx)
     free(lift);
 }
 
-/// Parse callback for parser lifting values via a CTOR.
+/// Parse callback of parser_lift_f().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_lift_ctor(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_lift_f(const void *input, size_t size, void *ctx, parser_stack_ct stack)
 {
-    parser_lift_ctor_st *lift = ctx;
+    parser_ctx_lift_f_st *lift = ctx;
 
     if(stack && lift->lift(stack, lift->ctx))
         return error_pass(), -1;
@@ -174,19 +395,19 @@ static ssize_t parser_parse_lift_ctor(const void *input, size_t size, void *ctx,
 
 parser_ct parser_lift_f(parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor)
 {
-    parser_lift_ctor_st *state;
+    parser_ctx_lift_f_st *state;
     parser_ct p;
 
     assert(lift);
 
-    if(!(state = calloc(1, sizeof(parser_lift_ctor_st))))
+    if(!(state = calloc(1, sizeof(parser_ctx_lift_f_st))))
         return error_wrap_last_errno(calloc), NULL;
 
     state->lift = lift;
     state->ctx  = (void *)ctx;
     state->dtor = dtor;
 
-    if(!(p = parser_new(parser_parse_lift_ctor, state, parser_free_lift_ctor)))
+    if(!(p = parser_new(parser_parse_lift_f, state, parser_dtor_lift_f)))
         return error_pass(), free(state), NULL;
 
     return p;
