@@ -67,7 +67,7 @@ regex_compiler_ct regex_compiler_new(void)
 
     init_magic_n(c, MAGIC_COMPILER);
 
-    if(!(c->p = parser_regex()))
+    if(!(c->p = parser_ref_sink(parser_regex())))
         return error_wrap(), free(c), NULL;
 
     return c;
@@ -77,7 +77,7 @@ void regex_compiler_free(regex_compiler_ct c)
 {
     assert_magic_n(c, MAGIC_COMPILER);
 
-    parser_free(c->p);
+    parser_unref(c->p);
     free(c);
 }
 
@@ -93,7 +93,7 @@ regex_ct regex_compile(regex_compiler_const_ct c, const char *text, size_t len)
     init_magic_n(re, MAGIC_REGEX);
 
     /// \todo
-    //if(!(re->p = parser_fail()))
+    //if(!(re->p = parser_ref_sink(parser_fail())))
     //    return error_wrap(), free(re), NULL;
 
     return re;
@@ -103,7 +103,7 @@ void regex_free(regex_ct re)
 {
     assert_magic_n(re, MAGIC_REGEX);
 
-    parser_free(re->p);
+    parser_unref(re->p);
     free(re);
 }
 

@@ -49,7 +49,8 @@ parser_ct parser_check(parser_ct p);
 /// Discard matched input.
 /// Push a value onto the stack.
 ///
-/// Equivalent: parser_and(2, p, parser_lift(type, data, size, dtor))
+/// \par Equivalent
+///     parser_and(2, p, parser_lift(type, data, size, dtor))
 ///
 /// \param p        parser
 /// \param type     value type
@@ -68,7 +69,8 @@ parser_ct parser_check_lift(parser_ct p, const char *type, const void *data, siz
 /// Discard matched input.
 /// Push a pointer value onto the stack.
 ///
-/// Equivalent: parser_and(2, p, parser_lift_p(type, ptr, dtor))
+/// \par Equivalent
+///     parser_and(2, p, parser_lift_p(type, ptr, dtor))
 ///
 /// \param p        parser
 /// \param type     value type
@@ -86,7 +88,8 @@ parser_ct parser_check_lift_p(parser_ct p, const char *type, const void *ptr, pa
 /// Discard matched input.
 /// Push values onto the stack via \p lift callback.
 ///
-/// Equivalent: parser_and(2, p, parser_lift_f(lift, ctx, dtor))
+/// \par Equivalent
+///     parser_and(2, p, parser_lift_f(lift, ctx, dtor))
 ///
 /// \param p        parser
 /// \param lift     callback to push values onto the stack
@@ -114,7 +117,8 @@ parser_ct parser_drop(parser_ct p);
 /// Keep matched input.
 /// Push a value onto the stack.
 ///
-/// Equivalent: parser_seq(2, parser_drop(p), parser_lift(type, data, size, dtor))
+/// \par Equivalent
+///     parser_seq(2, parser_drop(p), parser_lift(type, data, size, dtor))
 ///
 /// \param p        parser
 /// \param type     value type
@@ -132,7 +136,8 @@ parser_ct parser_drop_lift(parser_ct p, const char *type, const void *data, size
 /// Keep matched input.
 /// Push a pointer value onto the stack.
 ///
-/// Equivalent: parser_seq(2, parser_drop(p), parser_lift_p(type, ptr, dtor))
+/// \par Equivalent
+///     parser_seq(2, parser_drop(p), parser_lift_p(type, ptr, dtor))
 ///
 /// \param p        parser
 /// \param type     value type
@@ -149,7 +154,8 @@ parser_ct parser_drop_lift_p(parser_ct p, const char *type, const void *ptr, par
 /// Keep matched input.
 /// Push values onto the stack via \p lift callback.
 ///
-/// Equivalent: parser_seq(2, parser_drop(p), parser_lift_f(lift, ctx, dtor))
+/// \par Equivalent
+///     parser_seq(2, parser_drop(p), parser_lift_f(lift, ctx, dtor))
 ///
 /// \param p        parser
 /// \param lift     callback to push values onto the stack
@@ -178,7 +184,8 @@ parser_ct parser_not(parser_ct p);
 /// Succeed if sub parser fails and fail if sub parser suceeds.
 /// If sub parser fails, push a value onto the stack.
 ///
-/// Equivalent: parser_and(2, parser_not(p), parser_lift(type, data, size, dtor))
+/// \par Equivalent
+///     parser_and(2, parser_not(p), parser_lift(type, data, size, dtor))
 ///
 /// \param p        parser
 /// \param type     value type
@@ -196,7 +203,8 @@ parser_ct parser_not_lift(parser_ct p, const char *type, const void *data, size_
 /// Succeed if sub parser fails and fail if sub parser suceeds.
 /// If sub parser fails, push a pointer value onto the stack.
 ///
-/// Equivalent: parser_and(2, parser_not(p), parser_lift_p(type, ptr, dtor))
+/// \par Equivalent
+///     parser_and(2, parser_not(p), parser_lift_p(type, ptr, dtor))
 ///
 /// \param p        parser
 /// \param type     value type
@@ -213,7 +221,8 @@ parser_ct parser_not_lift_p(parser_ct p, const char *type, const void *ptr, pars
 /// Succeed if sub parser fails and fail if sub parser suceeds.
 /// If sub parser fails, push values onto the stack via \p lift callback.
 ///
-/// Equivalent: parser_and(2, parser_not(p), parser_lift_f(lift, ctx, dtor))
+/// \par Equivalent
+///     parser_and(2, parser_not(p), parser_lift_f(lift, ctx, dtor))
 ///
 /// \param p        parser
 /// \param lift     callback to push values onto the stack
@@ -228,7 +237,8 @@ parser_ct parser_not_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, p
 ///
 /// Sub parser may fail or succeed.
 ///
-/// Equivalent: parser_or(2, p, parser_success())
+/// \par Equivalent
+///     parser_or(2, p, parser_success())
 ///
 /// \param p    parser
 ///
@@ -242,7 +252,8 @@ parser_ct parser_maybe(parser_ct p);
 /// Discard results.
 /// Keep matched input.
 ///
-/// Equivalent: parser_or(2, parser_drop(p), parser_success())
+/// \par Equivalent
+///     parser_or(2, parser_drop(p), parser_success())
 ///
 /// \param p    parser
 ///
@@ -255,7 +266,8 @@ parser_ct parser_maybe_drop(parser_ct p);
 /// Sub parser may fail or succeed.
 /// If sub parser fails, push a value onto the stack.
 ///
-/// Equivalent: parser_or(2, p, parser_lift(type, data, size, dtor))
+/// \par Equivalent
+///     parser_or(2, p, parser_lift(type, data, size, dtor))
 ///
 /// \param p        parser
 /// \param type     value type
@@ -272,7 +284,8 @@ parser_ct parser_maybe_lift(parser_ct p, const char *type, const void *data, siz
 /// Sub parser may fail or succeed.
 /// If sub parser fails, push a pointer value onto the stack.
 ///
-/// Equivalent: parser_or(2, p, parser_lift_p(type, ptr, dtor))
+/// \par Equivalent
+///     parser_or(2, p, parser_lift_p(type, ptr, dtor))
 ///
 /// \param p        parser
 /// \param type     value type
@@ -288,7 +301,8 @@ parser_ct parser_maybe_lift_p(parser_ct p, const char *type, const void *ptr, pa
 /// Sub parser may fail or succeed.
 /// If sub parser fails, push values onto the stack via \p lift callback.
 ///
-/// Equivalent: parser_or(2, p, parser_lift_f(lift, ctx, dtor))
+/// \par Equivalent
+///     parser_or(2, p, parser_lift_f(lift, ctx, dtor))
 ///
 /// \param p        parser
 /// \param lift     callback to push values onto the stack
@@ -305,7 +319,8 @@ parser_ct parser_maybe_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx,
 /// All parsers need to succeed.
 /// Only the last parser may produce results.
 ///
-/// Equivalent: parser_seq(n, parser_check(p1), parser_check(p2), ..., pn)
+/// \par Equivalent
+///     parser_seq(n, parser_check(p1), parser_check(p2), ..., pn)
 ///
 /// \param n    number of parsers
 /// \param ...  variadic list of parser_ct

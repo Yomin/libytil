@@ -28,42 +28,42 @@
 static parser_ct parser;
 
 
-TEST_TEARDOWN(parser_free)
+TEST_TEARDOWN(parser_sink)
 {
-    test_void(parser_free(parser));
+    test_ptr_eq(parser_sink(parser), NULL);
 }
 
-TEST_CASE_FIX(parser_success, no_setup, parser_free)
+TEST_CASE_FIX(parser_success, no_setup, parser_sink)
 {
     test_ptr_success(parser = parser_success());
     test_rc_success(parser_parse(parser, "foo", 3, NULL), 0, -1);
 }
 
-TEST_CASE_FIX(parser_fail, no_setup, parser_free)
+TEST_CASE_FIX(parser_fail, no_setup, parser_sink)
 {
     test_ptr_success(parser = parser_fail());
     test_int_error(parser_parse(parser, "foo", 3, NULL), E_PARSER_FAIL);
 }
 
-TEST_CASE_FIX(parser_end_fail, no_setup, parser_free)
+TEST_CASE_FIX(parser_end_fail, no_setup, parser_sink)
 {
     test_ptr_success(parser = parser_end());
     test_int_error(parser_parse(parser, "foo", 3, NULL), E_PARSER_FAIL);
 }
 
-TEST_CASE_FIX(parser_end_success, no_setup, parser_free)
+TEST_CASE_FIX(parser_end_success, no_setup, parser_sink)
 {
     test_ptr_success(parser = parser_end());
     test_rc_success(parser_parse(parser, "", 0, NULL), 0, -1);
 }
 
-TEST_CASE_FIX(parser_lift, no_setup, parser_free)
+TEST_CASE_FIX(parser_lift, no_setup, parser_sink)
 {
     test_ptr_success(parser = parser_lift("char", "foo", 4, NULL));
     test_rc_success(parser_parse(parser, "bar", 3, NULL), 0, -1);
 }
 
-TEST_CASE_FIX(parser_lift_p, no_setup, parser_free)
+TEST_CASE_FIX(parser_lift_p, no_setup, parser_sink)
 {
     test_ptr_success(parser = parser_lift_p("string", "foo", NULL));
     test_rc_success(parser_parse(parser, "bar", 3, NULL), 0, -1);
@@ -76,7 +76,7 @@ static int parser_test_lift(parser_stack_ct stack, void *ctx)
     return 0;
 }
 
-TEST_CASE_FIX(parser_lift_f, no_setup, parser_free)
+TEST_CASE_FIX(parser_lift_f, no_setup, parser_sink)
 {
     test_ptr_success(parser = parser_lift_f(parser_test_lift, "foo", NULL));
     test_rc_success(parser_parse(parser, "bar", 3, NULL), 0, -1);

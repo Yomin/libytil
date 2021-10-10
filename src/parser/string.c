@@ -94,7 +94,6 @@ static ssize_t parser_parse_string_accept(const void *input, size_t size, void *
 parser_ct parser_string_accept_v(size_t n, va_list strings)
 {
     const char **list;
-    parser_ct p;
     size_t i;
 
     if(!n)
@@ -112,8 +111,5 @@ parser_ct parser_string_accept_v(size_t n, va_list strings)
         assert(list[i]);
     }
 
-    if(!(p = parser_new(parser_parse_string_accept, list, free)))
-        return error_pass(), free(list), NULL;
-
-    return p;
+    return error_pass_ptr(parser_new(parser_parse_string_accept, list, free));
 }

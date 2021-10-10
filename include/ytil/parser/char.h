@@ -45,7 +45,8 @@ parser_ct parser_char(char c);
 
 /// New parser matching an arbitrary character which is not a specific character.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_char(c)), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_char(c)), parser_any())
 ///
 /// \param c    character to parse
 ///
@@ -63,7 +64,8 @@ parser_ct parser_pred(ctype_pred_cb pred);
 
 /// New parser matching a character not matching a predicate.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_pred(pred)), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_pred(pred)), parser_any())
 ///
 /// \param pred     predicate
 ///
@@ -79,7 +81,8 @@ parser_ct parser_digit(void);
 
 /// New parser matching an arbitrary character which is not a decimal digit character.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_digit()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_digit()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -93,7 +96,8 @@ parser_ct parser_bdigit(void);
 
 /// New parser matching an arbitrary character which is not a binary digit character.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_bdigit()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_bdigit()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -107,7 +111,8 @@ parser_ct parser_odigit(void);
 
 /// New parser matching an arbitrary character which is not an octal digit character.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_odigit()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_odigit()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -121,7 +126,8 @@ parser_ct parser_xdigit(void);
 
 /// New parser matching an arbitrary character which is not a hexadecimal digit character.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_xdigit()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_xdigit()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -135,7 +141,8 @@ parser_ct parser_lxdigit(void);
 
 /// New parser matching an arbitrary character which is not a lowercase hexadecimal digit character.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_lxdigit()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_lxdigit()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -149,7 +156,8 @@ parser_ct parser_uxdigit(void);
 
 /// New parser matching an arbitrary character which is not an uppercase hexadecimal digit character.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_uxdigit()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_uxdigit()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -163,7 +171,8 @@ parser_ct parser_lower(void);
 
 /// New parser matching an arbitrary character which is not a lowercase character.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_lower()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_lower()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -177,7 +186,8 @@ parser_ct parser_upper(void);
 
 /// New parser matching an arbitrary character which is not an uppercase character.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_upper()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_upper()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -196,7 +206,8 @@ parser_ct parser_alnum(void);
 /// Parses any character which is not an alphabetic
 /// or numeric character as defined by isalnum().
 ///
-/// Equivalent: parser_and(2, parser_not(parser_alnum()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_alnum()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -215,7 +226,8 @@ parser_ct parser_alpha(void);
 /// Parses any character which is not an alphabetic
 /// character as defined by isalpha().
 ///
-/// Equivalent: parser_and(2, parser_not(parser_alpha()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_alpha()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -234,7 +246,8 @@ parser_ct parser_ascii(void);
 /// Parses any character which is not a 7bit ASCII
 /// character as defined by isascii().
 ///
-/// Equivalent: parser_and(2, parser_not(parser_ascii()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_ascii()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -253,7 +266,8 @@ parser_ct parser_blank(void);
 /// Parses any character which is not a space or tab
 /// character as defined by isblank().
 ///
-/// Equivalent: parser_and(2, parser_not(parser_blank()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_blank()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -272,7 +286,8 @@ parser_ct parser_cntrl(void);
 /// Parses any character which is not a control
 /// character as defined by iscntrl().
 ///
-/// Equivalent: parser_and(2, parser_not(parser_cntrl()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_cntrl()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -291,7 +306,8 @@ parser_ct parser_graph(void);
 /// Parses any character which is not a printable
 /// character except space as defined by isgraph().
 ///
-/// Equivalent: parser_and(2, parser_not(parser_graph()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_graph()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -310,7 +326,8 @@ parser_ct parser_print(void);
 /// Parses any character which is not a printable character
 /// including space as defined by isprint().
 ///
-/// Equivalent: parser_and(2, parser_not(parser_print()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_print()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -330,7 +347,8 @@ parser_ct parser_punct(void);
 /// Parses any character which is not a printable character
 /// except space or alphanumeric character as defined by ispunct().
 ///
-/// Equivalent: parser_and(2, parser_not(parser_punct()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_punct()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -349,7 +367,8 @@ parser_ct parser_whitespace(void);
 /// Parses any character which is not a whitespace
 /// character as defined by isspace().
 ///
-/// Equivalent: parser_and(2, parser_not(parser_whitespace()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_whitespace()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -367,7 +386,8 @@ parser_ct parser_sign(void);
 ///
 /// Parses any character which is not a plus and minus character.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_sign()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_sign()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -385,7 +405,8 @@ parser_ct parser_word(void);
 ///
 /// Parses any character which is not an underscore and alphanumeric character.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_word()), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_word()), parser_any())
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
@@ -401,7 +422,8 @@ parser_ct parser_accept(const char *accept);
 
 /// New parser matching an arbitrary acceptable character.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_accept(reject)), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_accept(reject)), parser_any())
 ///
 /// \param reject   unacceptable characters
 ///
@@ -420,7 +442,8 @@ parser_ct parser_range(char start, char end);
 
 /// New parser matching a character from outside a character range.
 ///
-/// Equivalent: parser_and(2, parser_not(parser_range(start, end)), parser_any())
+/// \par Equivalent
+///     parser_and(2, parser_not(parser_range(start, end)), parser_any())
 ///
 /// \param start    first unacceptable character
 /// \param end      last unacceptable character

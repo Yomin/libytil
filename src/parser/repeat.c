@@ -47,7 +47,7 @@ static void parser_dtor_repeat(void *ctx)
 {
     parser_ctx_repeat_st *repeat = ctx;
 
-    parser_free(repeat->p);
+    parser_unref(repeat->p);
     free(repeat);
 }
 
@@ -79,27 +79,19 @@ parser_ct parser_repeat(size_t n, parser_ct p)
     if(!p)
         return error_pass(), NULL;
 
-    switch(n)
-    {
-    case 0:
-        parser_free(p);
-        return error_pass_ptr(parser_success());
+    if(!n)
+        return parser_sink(p), error_pass_ptr(parser_success());
 
-    case 1:
+    if(n == 1)
         return p;
 
-    default:
-        if(!(repeat = calloc(1, sizeof(parser_ctx_repeat_st))))
-            return error_wrap_last_errno(calloc), parser_free(p), NULL;
+    if(!(repeat = calloc(1, sizeof(parser_ctx_repeat_st))))
+        return error_wrap_last_errno(calloc), parser_sink(p), NULL;
 
-        repeat->p   = p;
-        repeat->n   = n;
+    repeat->p   = parser_ref_sink(p);
+    repeat->n   = n;
 
-        if(!(p = parser_new(parser_parse_repeat, repeat, parser_dtor_repeat)))
-            return error_pass(), parser_free(repeat->p), free(repeat), NULL;
-
-        return p;
-    }
+    return error_pass_ptr(parser_new(parser_parse_repeat, repeat, parser_dtor_repeat));
 }
 
 /// Parse callback for parser_repeat_x().
@@ -117,7 +109,7 @@ static ssize_t parser_parse_repeat_x(const void *input, size_t size, void *ctx, 
 
 parser_ct parser_repeat_x(parser_ct p)
 {
-    return error_wrap_ptr(parser_new_parser(parser_parse_repeat_x, p));
+    return error_pass_ptr(parser_new_parser(parser_parse_repeat_x, p));
 }
 
 /// Parser context for parser_min().
@@ -134,7 +126,7 @@ static void parser_dtor_min(void *ctx)
 {
     parser_ctx_min_st *min = ctx;
 
-    parser_free(min->p);
+    parser_unref(min->p);
     free(min);
 }
 
@@ -172,26 +164,19 @@ parser_ct parser_min(size_t n, parser_ct p)
     if(!p)
         return error_pass(), NULL;
 
-    switch(n)
-    {
-    case 0:
+    if(!n)
         return error_pass_ptr(parser_many(p));
 
-    case 1:
+    if(n == 1)
         return error_pass_ptr(parser_min1(p));
 
-    default:
-        if(!(min = calloc(1, sizeof(parser_ctx_min_st))))
-            return error_wrap_last_errno(calloc), parser_free(p), NULL;
+    if(!(min = calloc(1, sizeof(parser_ctx_min_st))))
+        return error_wrap_last_errno(calloc), parser_sink(p), NULL;
 
-        min->p  = p;
-        min->n  = n;
+    min->p  = parser_ref_sink(p);
+    min->n  = n;
 
-        if(!(p = parser_new(parser_parse_min, min, parser_dtor_min)))
-            return error_pass(), parser_free(min->p), free(min), NULL;
-
-        return p;
-    }
+    return error_pass_ptr(parser_new(parser_parse_min, min, parser_dtor_min));
 }
 
 /// Parse callback for parser_min1().
@@ -239,7 +224,7 @@ static void parser_dtor_minmax(void *ctx)
 {
     parser_ctx_minmax_st *minmax = ctx;
 
-    parser_free(minmax->p);
+    parser_unref(minmax->p);
     free(minmax);
 }
 
@@ -290,16 +275,13 @@ parser_ct parser_minmax(size_t min, size_t max, parser_ct p)
         return error_pass_ptr(parser_repeat(min, p));
 
     if(!(minmax = calloc(1, sizeof(parser_ctx_minmax_st))))
-        return error_wrap_last_errno(calloc), parser_free(p), NULL;
+        return error_wrap_last_errno(calloc), parser_sink(p), NULL;
 
-    minmax->p   = p;
+    minmax->p   = parser_ref_sink(p);
     minmax->min = min;
     minmax->max = max;
 
-    if(!(p = parser_new(parser_parse_minmax, minmax, parser_dtor_minmax)))
-        return error_pass(), parser_free(minmax->p), free(minmax), NULL;
-
-    return p;
+    return error_pass_ptr(parser_new(parser_parse_minmax, minmax, parser_dtor_minmax));
 }
 
 /// Parser context for parser_max().
@@ -316,7 +298,7 @@ static void parser_dtor_max(void *ctx)
 {
     parser_ctx_max_st *max = ctx;
 
-    parser_free(max->p);
+    parser_unref(max->p);
     free(max);
 }
 
@@ -338,25 +320,17 @@ parser_ct parser_max(size_t n, parser_ct p)
     if(!p)
         return error_pass(), NULL;
 
-    switch(n)
-    {
-    case 0:
-        parser_free(p);
-        return error_pass_ptr(parser_success());
+    if(!n)
+        return parser_sink(p), error_pass_ptr(parser_success());
 
-    case 1:
+    if(n == 1)
         return error_pass_ptr(parser_maybe(p));
 
-    default:
-        if(!(max = calloc(1, sizeof(parser_ctx_max_st))))
-            return error_wrap_last_errno(calloc), parser_free(p), NULL;
+    if(!(max = calloc(1, sizeof(parser_ctx_max_st))))
+        return error_wrap_last_errno(calloc), parser_sink(p), NULL;
 
-        max->p  = p;
-        max->n  = n;
+    max->p  = parser_ref_sink(p);
+    max->n  = n;
 
-        if(!(p = parser_new(parser_parse_max, max, parser_dtor_max)))
-            return error_pass(), parser_free(max->p), free(max), NULL;
-
-        return p;
-    }
+    return error_pass_ptr(parser_new(parser_parse_max, max, parser_dtor_max));
 }

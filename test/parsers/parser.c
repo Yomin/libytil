@@ -44,9 +44,9 @@ TEST_SETUP(parser_new)
     test_ptr_success(parser = parser_new(test_parser_parse, NULL, NULL));
 }
 
-TEST_TEARDOWN(parser_free)
+TEST_TEARDOWN(parser_sink)
 {
-    parser_free(parser);
+    test_ptr_eq(parser_sink(parser), NULL);
 }
 
 TEST_CASE_ABORT(parser_new_invalid_parse)
@@ -54,22 +54,22 @@ TEST_CASE_ABORT(parser_new_invalid_parse)
     parser_new(NULL, NULL, NULL);
 }
 
-TEST_CASE_ABORT(parser_free_invalid_magic)
+TEST_CASE_ABORT(parser_sink_invalid_magic)
 {
-    parser_free((parser_ct)&not_a_parser);
+    parser_sink((parser_ct)&not_a_parser);
 }
 
-TEST_CASE_FIX(parser_new_free, parser_new, parser_free)
+TEST_CASE_FIX(parser_new_free, parser_new, parser_sink)
 {
 
 }
 
-TEST_CASE_ABORT(parser_set_name_invalid_magic)
+/*TEST_CASE_ABORT(parser_set_name_invalid_magic)
 {
     parser_set_name((parser_ct)&not_a_parser, "test");
 }
 
-TEST_CASE_FIX(parser_set_name, parser_new, parser_free)
+TEST_CASE_FIX(parser_set_name, parser_new, parser_sink)
 {
     test_void(parser_set_name(parser, "test"));
 }
@@ -84,7 +84,7 @@ TEST_CASE_ABORT(parser_set_show_invalid_magic)
     parser_set_show((parser_ct)&not_a_parser, test_parser_show);
 }
 
-TEST_CASE_FIX(parser_set_show, parser_new, parser_free)
+TEST_CASE_FIX(parser_set_show, parser_new, parser_sink)
 {
     test_void(parser_set_show(parser, test_parser_show));
 }
@@ -94,7 +94,7 @@ TEST_CASE_ABORT(parser_define_invalid_magic)
     parser_define("test", (parser_ct)&not_a_parser);
 }
 
-TEST_CASE_FIX(parser_define, parser_new, parser_free)
+TEST_CASE_FIX(parser_define, parser_new, parser_sink)
 {
     parser_ct p;
 
@@ -102,10 +102,10 @@ TEST_CASE_FIX(parser_define, parser_new, parser_free)
     test_ptr_eq(p, parser);
 }
 
-TEST_CASE_FIX(parser_define_defined, parser_new, parser_free)
+TEST_CASE_FIX(parser_define_defined, parser_new, parser_sink)
 {
     test_ptr_error(parser_define("foo", parser_define("test", parser)), E_PARSER_DEFINED);
-}
+}*/
 
 #include <ytil/parser/char.h>
 
@@ -116,24 +116,24 @@ TEST_CASE(parser_parse)
     test_ptr_success(p = parser_char('X'));
     test_rc_success(parser_parse(p, "X", 1, NULL), 1, -1);
     test_rc_error(parser_parse(p, "Y", 1, NULL), -1, E_PARSER_FAIL);
-    test_void(parser_free(p));
+    test_ptr_eq(parser_sink(p), NULL);
 }
 
 int test_suite_parsers_parser(void *param)
 {
     return error_pass_int(test_run_cases("parser",
         test_case(parser_new_invalid_parse),
-        test_case(parser_free_invalid_magic),
+        test_case(parser_sink_invalid_magic),
         test_case(parser_new_free),
 
-        test_case(parser_set_name_invalid_magic),
-        test_case(parser_set_name),
-        test_case(parser_set_show_invalid_magic),
-        test_case(parser_set_show),
+        //test_case(parser_set_name_invalid_magic),
+        //test_case(parser_set_name),
+        //test_case(parser_set_show_invalid_magic),
+        //test_case(parser_set_show),
 
-        test_case(parser_define_invalid_magic),
-        test_case(parser_define),
-        test_case(parser_define_defined),
+        //test_case(parser_define_invalid_magic),
+        //test_case(parser_define),
+        //test_case(parser_define_defined),
 
         test_case(parser_parse),
 

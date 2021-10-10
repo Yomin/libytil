@@ -31,22 +31,20 @@
 #define ERROR_TYPE_DEFAULT ERROR_TYPE_PARSER
 
 
-void parser_dtor_parser(void *ctx)
+/// Free parser context with sub parser as context.
+///
+/// \implements parser_dtor_cb
+static void parser_dtor_parser(void *ctx)
 {
-    parser_free(ctx);
+    parser_unref(ctx);
 }
 
-parser_ct parser_new_parser(parser_parse_cb parse, parser_ct sub)
+parser_ct parser_new_parser(parser_parse_cb parse, parser_ct p)
 {
-    parser_ct p;
-
-    if(!sub)
+    if(!p)
         return error_pass(), NULL;
 
-    if(!(p = parser_new(parse, sub, parser_dtor_parser)))
-        return error_pass(), parser_free(sub), NULL;
-
-    return p;
+    return error_pass_ptr(parser_new(parse, parser_ref_sink(p), parser_dtor_parser));
 }
 
 parser_ct *parser_list_new_v(size_t n, va_list parsers)
@@ -62,7 +60,7 @@ parser_ct *parser_list_new_v(size_t n, va_list parsers)
         if(!va_arg(ap, parser_ct))
         {
             error_pass();
-            goto error;
+            goto sink;
         }
     }
 
@@ -71,19 +69,19 @@ parser_ct *parser_list_new_v(size_t n, va_list parsers)
     if(!(list = calloc(n + 1, sizeof(parser_ct))))
     {
         error_wrap_last_errno(calloc);
-        goto error;
+        goto sink;
     }
 
     for(i = 0; i < n; i++)
-        list[i] = va_arg(parsers, parser_ct);
+        list[i] = parser_ref_sink(va_arg(parsers, parser_ct));
 
     return list;
 
-error:
+sink:
     for(i = 0; i < n; i++)
     {
         if((p = va_arg(parsers, parser_ct)))
-            parser_free(p);
+            parser_sink(p);
     }
 
     return NULL;
@@ -94,7 +92,7 @@ void parser_list_free(parser_ct *list)
     parser_ct *p;
 
     for(p = list; *p; p++)
-        parser_free(*p);
+        parser_unref(*p);
 
     free(list);
 }
@@ -109,15 +107,12 @@ static void parser_dtor_new_parser_list_v(void *ctx)
 
 parser_ct parser_new_parser_list_v(parser_parse_cb parse, size_t n, va_list parsers)
 {
-    parser_ct *list, p;
+    parser_ct *list;
 
     if(!(list = parser_list_new_v(n, parsers)))
         return error_pass(), NULL;
 
-    if(!(p = parser_new(parse, list, parser_dtor_new_parser_list_v)))
-        return error_pass(), parser_list_free(list), NULL;
-
-    return p;
+    return error_pass_ptr(parser_new(parse, list, parser_dtor_new_parser_list_v));
 }
 
 /// Parse callback for parser_seq().
@@ -154,21 +149,11 @@ parser_ct parser_seq(size_t n, ...)
 
 parser_ct parser_seq_v(size_t n, va_list parsers)
 {
-    parser_ct p;
+    if(!n)
+        return error_pass_ptr(parser_success());
 
-    switch(n)
-    {
-    case 0:
-        p = parser_success();
-        break;
+    if(n == 1)
+        return error_pass_ptr(va_arg(parsers, parser_ct));
 
-    case 1:
-        p = va_arg(parsers, parser_ct);
-        break;
-
-    default:
-        p = parser_new_parser_list_v(parser_parse_seq, n, parsers);
-    }
-
-    return error_pass_ptr(p);
+    return error_pass_ptr(parser_new_parser_list_v(parser_parse_seq, n, parsers));
 }

@@ -35,7 +35,6 @@ typedef enum parser_error
     E_PARSER_FAIL,              ///< parser failed, another parser may succeed
     E_PARSER_ABORT,             ///< parser aborted, stop parsing altogether
     E_PARSER_ERROR,             ///< parser aborted with error
-    E_PARSER_DEFINED,           ///< parser already defined
     E_PARSER_STACK_EMPTY,       ///< parse stack is empty
     E_PARSER_STACK_TYPE,        ///< wrong stack type requested
     E_PARSER_ARG_MISSING,       ///< missing parser argument on stack
@@ -47,23 +46,11 @@ typedef enum parser_error
 /// parser error type declaration
 ERROR_DECLARE(PARSER);
 
-/*typedef enum parser_show
-{
-      PARSER_SHOW_DEFAULT
-    , PARSER_SHOW_TOP
-    , PARSER_SHOW_GROUP
-} parser_show_id;*/
-
 struct parser;
 typedef       struct parser *parser_ct;         ///< parser type
 typedef const struct parser *parser_const_ct;   ///< const parser type
 typedef struct parser_stack *parser_stack_ct;   ///< parser stack type
 
-
-//typedef ssize_t (*parser_parse_fold_cb)(parser_const_ct p, const char *input, size_t size, bool result, parser_stack_ct stack, void *parse_ctx);
-//typedef ssize_t (*parser_parse_cb)(const char *input, size_t size, bool result, void *parser_ctx, parser_stack_ct stack, parser_parse_fold_cb parse, void *parse_ctx);
-//typedef int     (*parser_show_fold_cb)(parser_const_ct p, parser_show_id mode, void *state);
-//typedef int     (*parser_show_cb)(str_ct str, parser_show_id mode, void *ctx, parser_show_fold_cb show, void *state);
 
 /// parser parse callback
 ///
@@ -74,14 +61,13 @@ typedef struct parser_stack *parser_stack_ct;   ///< parser stack type
 ///
 /// \returns                            number of bytes parsed
 /// \retval -1/E_PARSER_FAIL            parser failed
+/// \retval -1/E_PARSER_ABORT           parser aborted
+/// \retval -1/E_PARSER_ERROR           parser aborted with error
 /// \retval -1/E_PARSER_ARG_MISSING     missing parser argument on stack
 /// \retval -1/E_PARSER_ARG_TYPE        parser argument with wrong type on stack
 /// \retval -1/E_PARSER_RESULT_MISSING  missing parser result on stack
 /// \retval -1/E_PARSER_RESULT_TYPE     parser result with wrong type on stack
 typedef ssize_t (*parser_parse_cb)(const void *input, size_t len, void *ctx, parser_stack_ct stack);
-
-/// parser show callback
-typedef int (*parser_show_cb)(void);
 
 /// parser callback context dtor callback
 ///
@@ -89,7 +75,9 @@ typedef int (*parser_show_cb)(void);
 typedef void (*parser_dtor_cb)(void *ctx);
 
 
-/// Create new parser.
+/// Create new parser with a floating reference.
+///
+/// \note If this function fails, the callback context is immediately destroyed.
 ///
 /// \param parse    parse callback
 /// \param ctx      callback context
@@ -99,35 +87,63 @@ typedef void (*parser_dtor_cb)(void *ctx);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_new(parser_parse_cb parse, const void *ctx, parser_dtor_cb dtor);
 
-/// Free parser.
+/// Increase reference count of parser.
+///
+/// \param p    parser, may be NULL
+///
+/// \returns    p
+parser_ct parser_ref(parser_ct p);
+
+/// Decrease reference count of parser and free if no longer referenced.
+///
+/// \param p    parser, must not be NULL
+///
+/// \retval p       parser is still referenced
+/// \retval NULL    parser was freed
+parser_ct parser_unref(parser_ct p);
+
+/// Sink floating reference of parser and free if no longer referenced.
+///
+/// \param p    parser, may be NULL
+///
+/// \retval p       parser is still referenced
+/// \retval NULL    parser was freed
+parser_ct parser_sink(parser_ct p);
+
+/// Increase reference count and sink floating reference of parser.
+///
+/// \param p    parser, may be NULL
+///
+/// \returns    p
+parser_ct parser_ref_sink(parser_ct p);
+
+/// Get reference count of parser.
 ///
 /// \param p    parser
-void parser_free(parser_ct p);
+///
+/// \returns reference count
+size_t parser_get_ref_count(parser_const_ct p);
 
-/// Set parser name.
+/// Check if parser has a floating reference.
 ///
-/// \param p        parser
-/// \param name     new parser name
-void parser_set_name(parser_ct p, const char *name);
+/// \param p    parser
+///
+/// \retval true    parser is floating
+/// \retval false   parser is not floating
+bool parser_is_floating(parser_const_ct p);
 
-/// Set parser show callback.
+/// Get parser context.
 ///
-/// \param p        parser
-/// \param show     new parser show callback
-void parser_set_show(parser_ct p, parser_show_cb show);
+/// \param p    parser
+///
+/// \returns parser context
+void *parser_get_ctx(parser_const_ct p);
 
-/// Define parser with name.
+/// Free current parser context and set new one.
 ///
-/// Set parser name.
-/// Used for parser building.
-/// If \p p is NULL, pass error.
-///
-/// \param name     parser name
-/// \param p        parser
-///
-/// \returns                        parser
-/// \retval NULL/E_PARSER_DEFINED   parser already defined
-parser_ct parser_define(const char *name, parser_ct p);
+/// \param p    parser
+/// \param ctx  new parser context
+void parser_set_ctx(parser_ct p, const void *ctx);
 
 /// Parse input.
 ///
@@ -137,7 +153,7 @@ parser_ct parser_define(const char *name, parser_ct p);
 /// \param stack    parse stack, may be NULL if no results are to be produced
 ///
 /// \returns        number of bytes parsed
-/// \retval -1/?    ?
+/// \retval -1/?    \todo
 ssize_t parser_parse(parser_const_ct p, const void *input, size_t len, parser_stack_ct stack);
 
 /// Push item onto parse stack.
@@ -267,6 +283,51 @@ size_t parser_stack_size(parser_stack_ct stack);
 /// \param stack    parse stack
 void parser_stack_clear(parser_stack_ct stack);
 
+
+
+
+/*
+typedef enum parser_show
+{
+      PARSER_SHOW_DEFAULT
+    , PARSER_SHOW_TOP
+    , PARSER_SHOW_GROUP
+} parser_show_id;
+
+//typedef ssize_t (*parser_parse_fold_cb)(parser_const_ct p, const char *input, size_t size, bool result, parser_stack_ct stack, void *parse_ctx);
+//typedef ssize_t (*parser_parse_cb)(const char *input, size_t size, bool result, void *parser_ctx, parser_stack_ct stack, parser_parse_fold_cb parse, void *parse_ctx);
+//typedef int     (*parser_show_fold_cb)(parser_const_ct p, parser_show_id mode, void *state);
+//typedef int     (*parser_show_cb)(str_ct str, parser_show_id mode, void *ctx, parser_show_fold_cb show, void *state);
+
+/// parser show callback
+typedef int (*parser_show_cb)(void);
+
+
+
+/// Set parser name.
+///
+/// \param p        parser
+/// \param name     new parser name
+void parser_set_name(parser_ct p, const char *name);
+
+/// Set parser show callback.
+///
+/// \param p        parser
+/// \param show     new parser show callback
+void parser_set_show(parser_ct p, parser_show_cb show);
+
+/// Define parser with name.
+///
+/// Set parser name.
+/// Used for parser building.
+/// If \p p is NULL, pass error.
+///
+/// \param name     parser name
+/// \param p        parser
+///
+/// \returns                        parser
+/// \retval NULL/E_PARSER_DEFINED   parser already defined
+parser_ct parser_define(const char *name, parser_ct p);*/
 
 //str_ct parser_show(parser_const_ct p);
 

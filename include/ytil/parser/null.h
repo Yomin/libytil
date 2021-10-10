@@ -40,9 +40,13 @@ typedef int (*parser_lift_cb)(parser_stack_ct stack, void *ctx);
 
 /// Create new parser which lifts a value on success.
 ///
-/// Equivalent: parser_seq(2,
-///     parser_new(parse, parse_ctx, parse_dtor),
-///     parser_lift(type, data, size, data_dtor))
+/// \note If this function fails, the callback context and the lift value
+///       are immediately destroyed.
+///
+/// \par Equivalent
+///     parser_seq(2,
+///         parser_new(parse, parse_ctx, parse_dtor),
+///         parser_lift(type, data, size, data_dtor))
 ///
 /// \param parse        parse callback
 /// \param parse_ctx    \p parse context
@@ -58,9 +62,13 @@ parser_ct parser_new_lift_success(parser_parse_cb parse, const void *parse_ctx, 
 
 /// Create new parser which lifts a value on fail.
 ///
-/// Equivalent: parser_or(2,
-///     parser_new(parse, parse_ctx, parse_dtor),
-///     parser_lift(type, data, size, data_dtor))
+/// \note If this function fails, the callback context and the lift value
+///       are immediately destroyed.
+///
+/// \par Equivalent
+///     parser_or(2,
+///         parser_new(parse, parse_ctx, parse_dtor),
+///         parser_lift(type, data, size, data_dtor))
 ///
 /// \param parse        parse callback
 /// \param parse_ctx    \p parse context
@@ -76,9 +84,12 @@ parser_ct parser_new_lift_fail(parser_parse_cb parse, const void *parse_ctx, par
 
 /// Create new parser which executes a lift CTOR on success.
 ///
-/// Equivalent: parser_seq(2,
-///     parser_new(parse, parse_ctx, parse_dtor),
-///     parser_lift_f(lift, lift_ctx, lift_dtor))
+/// \note If this function fails, the callback contexts are immediately destroyed.
+///
+/// \par Equivalent
+///     parser_seq(2,
+///         parser_new(parse, parse_ctx, parse_dtor),
+///         parser_lift_f(lift, lift_ctx, lift_dtor))
 ///
 /// \param parse        parse callback
 /// \param parse_ctx    \p parse context
@@ -93,9 +104,12 @@ parser_ct parser_new_lift_success_f(parser_parse_cb parse, const void *parse_ctx
 
 /// Create new parser which executes a lift CTOR on fail.
 ///
-/// Equivalent: parser_or(2,
-///     parser_new(parse, parse_ctx, parse_dtor),
-///     parser_lift_f(lift, lift_ctx, lift_dtor))
+/// \note If this function fails, the callback contexts are immediately destroyed.
+///
+/// \par Equivalent
+///     parser_or(2,
+///         parser_new(parse, parse_ctx, parse_dtor),
+///         parser_lift_f(lift, lift_ctx, lift_dtor))
 ///
 /// \param parse        parse callback
 /// \param parse_ctx    \p parse context
@@ -141,7 +155,8 @@ parser_ct parser_abort_e(const char *name, const error_type_st *type, int code);
 ///
 /// Abort if sub parser fails.
 ///
-/// Equivalent: parser_or(p, parser_abort())
+/// \par Equivalent
+///     parser_or(p, parser_abort())
 ///
 /// \param p    parser
 ///
@@ -153,7 +168,8 @@ parser_ct parser_assert(parser_ct p);
 ///
 /// Abort with error if sub parser fails.
 ///
-/// Equivalent: parser_or(p, parser_abort_e(name, type, code))
+/// \par Equivalent
+///     parser_or(p, parser_abort_e(name, type, code))
 ///
 /// \param p        parser
 /// \param name     function name
@@ -172,6 +188,8 @@ parser_ct parser_end(void);
 
 /// New parser which pushes a value onto the stack and succeeds.
 ///
+/// \note If this function fails, the lift value is immediately destroyed.
+///
 /// \param type     value type
 /// \param data     pointer to value data
 /// \param size     value size
@@ -183,6 +201,8 @@ parser_ct parser_lift(const char *type, const void *data, size_t size, parser_dt
 
 /// New parser which pushes a pointer value onto the stack and succeeds.
 ///
+/// \note If this function fails, the pointer lift value is immediately destroyed.
+///
 /// \param type     value type
 /// \param ptr      pointer value, must not be NULL
 /// \param dtor     value destructor
@@ -193,6 +213,8 @@ parser_ct parser_lift_p(const char *type, const void *ptr, parser_dtor_cb dtor);
 
 /// New parser which pushes values onto the stack and succeeds.
 ///
+/// \note If this function fails, the callback context is immediately destroyed.
+///
 /// \param lift     callback to push values onto the stack
 /// \param ctx      \p lift context
 /// \param dtor     \p ctx destructor
@@ -200,6 +222,32 @@ parser_ct parser_lift_p(const char *type, const void *ptr, parser_dtor_cb dtor);
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_lift_f(parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor);
+
+/// New phony parser which executes a parser which it has no reference for.
+///
+/// Used for building self-reference parsers.
+///
+/// \code
+/// parser_ct parser_foo(void)
+/// {
+///     parser_ct foo;
+///
+///     if(!(foo = parser_new_link()))
+///         return error_pass(), NULL;
+///
+///     return parser_link(foo, parser_or(2, parser_bar(foo), parser_baz(foo));
+/// }
+/// \endcode
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_link(void);
+
+/// Link the phony parser to the actual parser.
+///
+/// \param link     link parser
+/// \param p        sub parser, may be NULL to unset
+void parser_link_set(parser_ct link, parser_const_ct p);
 
 
 #endif

@@ -38,10 +38,10 @@ typedef struct parser
 {
     DEBUG_MAGIC
 
-    const char *name;       ///< parser name
+    size_t  ref;        ///< reference counter
+    bool    floating;   ///< floating reference
 
     parser_parse_cb parse;  ///< parse callback
-    parser_show_cb  show;   ///< show callback
     void            *ctx;   ///< callback context
     parser_dtor_cb  dtor;   ///< callback context dtor
 } parser_st;
@@ -64,25 +64,12 @@ typedef struct parser_stack_item
     parser_dtor_cb  dtor;   ///< item destructor
 } parser_stack_item_st;
 
-/*typedef struct parser_arg
-{
-    //type_id type;
-    void *arg;
-} parser_arg_st;
-
-typedef struct parser_show_state
-{
-    str_ct str;
-    vec_ct list;
-    size_t insert;
-} parser_show_st;*/
 
 /// parser error type definition
 ERROR_DEFINE_LIST(PARSER,
     ERROR_INFO(E_PARSER_FAIL, "Parser failed."),
     ERROR_INFO(E_PARSER_ABORT, "Parser aborted."),
     ERROR_INFO(E_PARSER_ERROR, "Parser aborted with error."),
-    ERROR_INFO(E_PARSER_DEFINED, "Parser already defined."),
     ERROR_INFO(E_PARSER_STACK_EMPTY, "Parse stack is empty."),
     ERROR_INFO(E_PARSER_STACK_TYPE, "Wrong stack type requested."),
     ERROR_INFO(E_PARSER_ARG_MISSING, "Missing parser argument on stack."),
@@ -102,9 +89,19 @@ parser_ct parser_new(parser_parse_cb parse, const void *ctx, parser_dtor_cb dtor
     assert(parse);
 
     if(!(p = calloc(1, sizeof(parser_st))))
-        return error_wrap_last_errno(calloc), NULL;
+    {
+        error_wrap_last_errno(calloc);
+
+        if(dtor)
+            dtor((void *)ctx);
+
+        return NULL;
+    }
 
     init_magic(p);
+
+    p->ref      = 1;
+    p->floating = true;
 
     p->parse    = parse;
     p->ctx      = (void *)ctx;
@@ -113,42 +110,107 @@ parser_ct parser_new(parser_parse_cb parse, const void *ctx, parser_dtor_cb dtor
     return p;
 }
 
-void parser_free(parser_ct p)
+/// Free parser.
+///
+/// \param p    parser
+static void parser_free(parser_ct p)
 {
-    assert_magic(p);
-
     if(p->dtor)
         p->dtor(p->ctx);
 
     free(p);
 }
 
-void parser_set_name(parser_ct p, const char *name)
-{
-    assert_magic(p);
-
-    p->name = name;
-}
-
-void parser_set_show(parser_ct p, parser_show_cb show)
-{
-    assert_magic(p);
-
-    p->show = show;
-}
-
-parser_ct parser_define(const char *name, parser_ct p)
+parser_ct parser_ref(parser_ct p)
 {
     if(!p)
         return error_pass(), NULL;
 
     assert_magic(p);
-    assert(name);
-    return_error_if_pass(p->name, E_PARSER_DEFINED, NULL);
 
-    p->name = name;
+    p->ref++;
 
     return p;
+}
+
+parser_ct parser_unref(parser_ct p)
+{
+    assert_magic(p);
+    assert(p->ref && (!p->floating || p->ref > 1));
+
+    if(--p->ref)
+        return p;
+
+    parser_free(p);
+
+    return NULL;
+}
+
+parser_ct parser_sink(parser_ct p)
+{
+    if(!p)
+        return error_pass(), NULL;
+
+    assert_magic(p);
+    assert(p->ref);
+
+    if(!p->floating)
+        return p;
+
+    p->floating = false;
+
+    if(--p->ref)
+        return p;
+
+    parser_free(p);
+
+    return NULL;
+}
+
+parser_ct parser_ref_sink(parser_ct p)
+{
+    if(!p)
+        return error_pass(), NULL;
+
+    assert_magic(p);
+
+    if(p->floating)
+        p->floating = false;
+    else
+        p->ref++;
+
+    return p;
+}
+
+size_t parser_get_ref_count(parser_const_ct p)
+{
+    assert_magic(p);
+
+    return p->ref;
+}
+
+bool parser_is_floating(parser_const_ct p)
+{
+    assert_magic(p);
+
+    return p->floating;
+}
+
+void *parser_get_ctx(parser_const_ct p)
+{
+    assert_magic(p);
+
+    return p->ctx;
+}
+
+void parser_set_ctx(parser_ct p, const void *ctx)
+{
+    assert_magic(p);
+
+    if(p->dtor)
+        p->dtor(p->ctx);
+
+    p->ctx = (void *)ctx;
 }
 
 ssize_t parser_parse(parser_const_ct p, const void *input, size_t len, parser_stack_ct stack)
@@ -365,6 +427,47 @@ void parser_stack_clear(parser_stack_ct stack)
 
 
 /*
+typedef struct parser_arg
+{
+    //type_id type;
+    void *arg;
+} parser_arg_st;
+
+typedef struct parser_show_state
+{
+    str_ct str;
+    vec_ct list;
+    size_t insert;
+} parser_show_st;
+
+void parser_set_name(parser_ct p, const char *name)
+{
+    assert_magic(p);
+
+    p->name = name;
+}
+
+void parser_set_show(parser_ct p, parser_show_cb show)
+{
+    assert_magic(p);
+
+    p->show = show;
+}
+
+parser_ct parser_define(const char *name, parser_ct p)
+{
+    if(!p)
+        return error_pass(), NULL;
+
+    assert_magic(p);
+    assert(name);
+    return_error_if_pass(p->name, E_PARSER_DEFINED, NULL);
+
+    p->name = name;
+
+    return p;
+}
+
 static bool vec_cmp_parser(vec_const_ct vec, const void *elem, void *ctx)
 {
     parser_const_ct p = *(parser_const_ct*)elem;

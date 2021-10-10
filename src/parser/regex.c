@@ -138,35 +138,31 @@ static parser_ct parser_regex_quantifier(void)
 
 static parser_ct parser_regex_term(void)
 {
-    parser_ct term, link = parser_fail();
+    parser_ct term, link;
 
-    term = parser_min1(parser_seq(2,
+    link    = parser_ref(parser_link());
+    term    = parser_min1(parser_seq(2,
         parser_regex_token(link),
         parser_maybe(parser_regex_quantifier())));
 
-    if(!term)
-        return error_pass(), NULL;
+    parser_link_set(link, term);
+    parser_unref(link);
 
-    //parser_link_set(link, term);
-
-    return term;
+    return error_pass_ptr(term);
 }
 
 parser_ct parser_regex(void)
 {
     parser_ct term, regex;
 
-    if(!(term = parser_regex_term()))
-        return error_pass(), NULL;
-
-    regex = parser_seq(2,
+    term    = parser_ref(parser_regex_term());
+    regex   = parser_seq(2,
         term,
         parser_many(parser_seq(2,
             parser_drop(parser_char('|')),
             parser_assert(term))));
 
-    if(!regex)
-        return error_pass(), parser_free(term), NULL;
+    parser_unref(term);
 
-    return regex;
+    return error_pass_ptr(regex);
 }

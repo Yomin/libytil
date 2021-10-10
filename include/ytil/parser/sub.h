@@ -29,23 +29,22 @@
 #include <stdarg.h>
 
 
-/// Free parser context with sub parser as context.
-///
-/// \implements parser_dtor_cb
-void parser_dtor_parser(void *ctx);
-
 /// Create new parser with sub parser as context.
+///
+/// The parser takes ownership of the sub parser.
 ///
 /// parser context type: parser_ct
 ///
 /// \param parse    parse callback
-/// \param sub      sub parser
+/// \param p        sub parser
 ///
 /// \returns                    new parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_new_parser(parser_parse_cb parse, parser_ct sub);
+parser_ct parser_new_parser(parser_parse_cb parse, parser_ct p);
 
 /// Create parser list from variadic argument list.
+///
+/// Takes ownership of all parsers.
 ///
 /// \param n        number of sub parsers
 /// \param parsers  variadic list of parser_ct
@@ -60,6 +59,8 @@ parser_ct *parser_list_new_v(size_t n, va_list parsers);
 void parser_list_free(parser_ct *list);
 
 /// Create new parser with sub parser list as context.
+///
+/// The parser takes ownership of all sub parsers.
 ///
 /// parser context type: NULL terminated list of parser_ct
 ///

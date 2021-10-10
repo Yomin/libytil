@@ -30,6 +30,14 @@
 #define ERROR_TYPE_DEFAULT ERROR_TYPE_PARSER
 
 
+/// Free parser context with sub parser as context.
+///
+/// \implements parser_dtor_cb
+static void parser_dtor_parser(void *ctx)
+{
+    parser_unref(ctx);
+}
+
 /// Parse callback for parser_check().
 ///
 /// \implements parser_parse_cb
@@ -51,7 +59,8 @@ parser_ct parser_check(parser_ct p)
 parser_ct parser_check_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor)
 {
     return error_pass_ptr(parser_new_lift_success(
-        parser_parse_check, p, parser_dtor_parser, type, data, size, dtor));
+        parser_parse_check, parser_ref_sink(p), parser_dtor_parser,
+        type, data, size, dtor));
 }
 
 parser_ct parser_check_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor)
@@ -62,7 +71,8 @@ parser_ct parser_check_lift_p(parser_ct p, const char *type, const void *ptr, pa
 parser_ct parser_check_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor)
 {
     return error_pass_ptr(parser_new_lift_success_f(
-        parser_parse_check, p, parser_dtor_parser, lift, ctx, dtor));
+        parser_parse_check, parser_ref_sink(p), parser_dtor_parser,
+        lift, ctx, dtor));
 }
 
 /// Parse callback for parser_drop().
@@ -83,7 +93,8 @@ parser_ct parser_drop(parser_ct p)
 parser_ct parser_drop_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor)
 {
     return error_pass_ptr(parser_new_lift_success(
-        parser_parse_drop, p, parser_dtor_parser, type, data, size, dtor));
+        parser_parse_drop, parser_ref_sink(p), parser_dtor_parser,
+        type, data, size, dtor));
 }
 
 parser_ct parser_drop_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor)
@@ -94,7 +105,8 @@ parser_ct parser_drop_lift_p(parser_ct p, const char *type, const void *ptr, par
 parser_ct parser_drop_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor)
 {
     return error_pass_ptr(parser_new_lift_success_f(
-        parser_parse_drop, p, parser_dtor_parser, lift, ctx, dtor));
+        parser_parse_drop, parser_ref_sink(p), parser_dtor_parser,
+        lift, ctx, dtor));
 }
 
 /// Parse callback for parser_not().
@@ -121,7 +133,8 @@ parser_ct parser_not(parser_ct p)
 parser_ct parser_not_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor)
 {
     return error_pass_ptr(parser_new_lift_success(
-        parser_parse_not, p, parser_dtor_parser, type, data, size, dtor));
+        parser_parse_not, parser_ref_sink(p), parser_dtor_parser,
+        type, data, size, dtor));
 }
 
 parser_ct parser_not_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor)
@@ -132,7 +145,8 @@ parser_ct parser_not_lift_p(parser_ct p, const char *type, const void *ptr, pars
 parser_ct parser_not_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor)
 {
     return error_pass_ptr(parser_new_lift_success_f(
-        parser_parse_not, p, parser_dtor_parser, lift, ctx, dtor));
+        parser_parse_not, parser_ref_sink(p), parser_dtor_parser,
+        lift, ctx, dtor));
 }
 
 /// Parse callback for parser_maybe().
@@ -187,7 +201,8 @@ static ssize_t parser_parse_maybe_lift(const void *input, size_t size, void *ctx
 parser_ct parser_maybe_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor)
 {
     return error_pass_ptr(parser_new_lift_fail(
-        parser_parse_maybe_lift, p, parser_dtor_parser, type, data, size, dtor));
+        parser_parse_maybe_lift, parser_ref_sink(p), parser_dtor_parser,
+        type, data, size, dtor));
 }
 
 parser_ct parser_maybe_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor)
@@ -198,7 +213,8 @@ parser_ct parser_maybe_lift_p(parser_ct p, const char *type, const void *ptr, pa
 parser_ct parser_maybe_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor)
 {
     return error_pass_ptr(parser_new_lift_fail_f(
-        parser_parse_maybe_lift, p, parser_dtor_parser, lift, ctx, dtor));
+        parser_parse_maybe_lift, parser_ref_sink(p), parser_dtor_parser,
+        lift, ctx, dtor));
 }
 
 /// Parse callback for parser_and().
@@ -234,23 +250,13 @@ parser_ct parser_and(size_t n, ...)
 
 parser_ct parser_and_v(size_t n, va_list parsers)
 {
-    parser_ct p;
+    if(!n)
+        return error_pass_ptr(parser_success());
 
-    switch(n)
-    {
-    case 0:
-        p = parser_success();
-        break;
+    if(n == 1)
+        return error_pass_ptr(va_arg(parsers, parser_ct));
 
-    case 1:
-        p = va_arg(parsers, parser_ct);
-        break;
-
-    default:
-        p = parser_new_parser_list_v(parser_parse_and, n, parsers);
-    }
-
-    return error_pass_ptr(p);
+    return error_pass_ptr(parser_new_parser_list_v(parser_parse_and, n, parsers));
 }
 
 /// Parse callback for parser_or().
@@ -291,21 +297,11 @@ parser_ct parser_or(size_t n, ...)
 
 parser_ct parser_or_v(size_t n, va_list parsers)
 {
-    parser_ct p;
+    if(!n)
+        return error_pass_ptr(parser_success());
 
-    switch(n)
-    {
-    case 0:
-        p = parser_success();
-        break;
+    if(n == 1)
+        return error_pass_ptr(va_arg(parsers, parser_ct));
 
-    case 1:
-        p = va_arg(parsers, parser_ct);
-        break;
-
-    default:
-        p = parser_new_parser_list_v(parser_parse_or, n, parsers);
-    }
-
-    return error_pass_ptr(p);
+    return error_pass_ptr(parser_new_parser_list_v(parser_parse_or, n, parsers));
 }

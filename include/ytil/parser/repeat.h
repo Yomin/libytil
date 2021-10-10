@@ -70,7 +70,8 @@ parser_ct parser_min(size_t n, parser_ct p);
 /// Execute sub parser as many times as possible.
 /// Sub parser must succeed at least once.
 ///
-/// Equivalent: parser_min(1, p)
+/// \par Equivalent
+///     parser_min(1, p)
 ///
 /// \param p    parser
 ///
