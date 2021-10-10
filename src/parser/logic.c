@@ -30,10 +30,10 @@
 #define ERROR_TYPE_DEFAULT ERROR_TYPE_PARSER
 
 
-/// Parse callback for parser_assert().
+/// Parse callback for parser_check().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_assert(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_check(const void *input, size_t size, void *ctx, parser_stack_ct stack)
 {
     parser_ct p = ctx;
 
@@ -43,26 +43,26 @@ static ssize_t parser_parse_assert(const void *input, size_t size, void *ctx, pa
     return 0; // discard matched input
 }
 
-parser_ct parser_assert(parser_ct p)
+parser_ct parser_check(parser_ct p)
 {
-    return error_pass_ptr(parser_new_parser(parser_parse_assert, p));
+    return error_pass_ptr(parser_new_parser(parser_parse_check, p));
 }
 
-parser_ct parser_assert_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor)
+parser_ct parser_check_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor)
 {
     return error_pass_ptr(parser_new_lift_success(
-        parser_parse_assert, p, parser_dtor_parser, type, data, size, dtor));
+        parser_parse_check, p, parser_dtor_parser, type, data, size, dtor));
 }
 
-parser_ct parser_assert_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor)
+parser_ct parser_check_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor)
 {
-    return error_pass_ptr(parser_assert_lift(p, type, &ptr, sizeof(void *), dtor));
+    return error_pass_ptr(parser_check_lift(p, type, &ptr, sizeof(void *), dtor));
 }
 
-parser_ct parser_assert_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor)
+parser_ct parser_check_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor)
 {
     return error_pass_ptr(parser_new_lift_success_f(
-        parser_parse_assert, p, parser_dtor_parser, lift, ctx, dtor));
+        parser_parse_check, p, parser_dtor_parser, lift, ctx, dtor));
 }
 
 /// Parse callback for parser_drop().
@@ -159,6 +159,19 @@ static ssize_t parser_parse_maybe(const void *input, size_t size, void *ctx, par
 parser_ct parser_maybe(parser_ct p)
 {
     return error_pass_ptr(parser_new_parser(parser_parse_maybe, p));
+}
+
+/// Parse callback for parser_maybe_drop().
+///
+/// \implements parser_parse_cb
+static ssize_t parser_parse_maybe_drop(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+{
+    return error_pass_int(parser_parse_maybe(input, size, ctx, NULL));
+}
+
+parser_ct parser_maybe_drop(parser_ct p)
+{
+    return error_pass_ptr(parser_new_parser(parser_parse_maybe_drop, p));
 }
 
 /// Parse callback for parser_maybe_lift().

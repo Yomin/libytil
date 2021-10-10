@@ -23,6 +23,7 @@
 /// \file
 
 #include <ytil/parser/null.h>
+#include <ytil/parser/sub.h>
 #include <ytil/def.h>
 #include <stdlib.h>
 #include <string.h>
@@ -278,6 +279,146 @@ parser_ct parser_fail(void)
 {
     return error_pass_ptr(
         parser_new(parser_parse_fail, NULL, NULL));
+}
+
+/// Parse callback for parser_abort().
+///
+/// \implements parser_parse_cb
+static ssize_t parser_parse_abort(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+{
+    return_error_if_reached(E_PARSER_ABORT, -1);
+}
+
+parser_ct parser_abort(void)
+{
+    return error_pass_ptr(
+        parser_new(parser_parse_abort, NULL, NULL));
+}
+
+/// Parser context of parser_abort_e().
+typedef struct parser_ctx_abort_e
+{
+    const char          *name;  ///< function name
+    const error_type_st *type;  ///< error type
+    int                 code;   ///< error code
+} parser_ctx_abort_e_st;
+
+/// Parse callback for parser_abort_e().
+///
+/// \implements parser_parse_cb
+static ssize_t parser_parse_abort_e(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+{
+    parser_ctx_abort_e_st *abrt = ctx;
+
+    error_set_f(abrt->name, abrt->type, abrt->code, NULL);
+    error_push(E_PARSER_ERROR);
+
+    return -1;
+}
+
+parser_ct parser_abort_e(const char *name, const error_type_st *type, int code)
+{
+    parser_ctx_abort_e_st *abrt;
+    parser_ct p;
+
+    assert(type);
+
+    if(!(abrt = calloc(1, sizeof(parser_ctx_abort_e_st))))
+        return error_wrap_last_errno(calloc), NULL;
+
+    abrt->name  = name;
+    abrt->type  = type;
+    abrt->code  = code;
+
+    if(!(p = parser_new(parser_parse_abort_e, abrt, free)))
+        return error_pass(), free(abrt), NULL;
+
+    return p;
+}
+
+/// Parse callback for parser_assert().
+///
+/// \implements parser_parse_cb
+static ssize_t parser_parse_assert(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+{
+    parser_ct p = ctx;
+    ssize_t rc;
+
+    if((rc = parser_parse(p, input, size, stack)) >= 0)
+        return rc;
+
+    if(!error_check(0, 1, E_PARSER_FAIL))
+        return error_pass(), -1;
+
+    error_push(E_PARSER_ABORT);
+
+    return -1;
+}
+
+parser_ct parser_assert(parser_ct p)
+{
+    return error_pass_ptr(parser_new_parser(parser_parse_assert, p));
+}
+
+/// Parser context of parser_assert_e().
+typedef struct parser_ctx_assert_e
+{
+    parser_ct               p;      ///< sub parser
+    parser_ctx_abort_e_st   error;  ///< error
+} parser_ctx_assert_e_st;
+
+/// Free parser context of parser_assert_e().
+///
+/// \implements parser_dtor_cb
+static void parser_dtor_assert_e(void *ctx)
+{
+    parser_ctx_assert_e_st *ass = ctx;
+
+    parser_free(ass->p);
+    free(ass);
+}
+
+/// Parse callback for parser_assert_e().
+///
+/// \implements parser_parse_cb
+static ssize_t parser_parse_assert_e(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+{
+    parser_ctx_assert_e_st *ass = ctx;
+    ssize_t rc;
+
+    if((rc = parser_parse(ass->p, input, size, stack)) >= 0)
+        return rc;
+
+    if(!error_check(0, 1, E_PARSER_FAIL))
+        return error_pass(), -1;
+
+    error_push_f(ass->error.name, ass->error.type, ass->error.code, NULL);
+    error_push(E_PARSER_ERROR);
+
+    return -1;
+}
+
+parser_ct parser_assert_e(parser_ct p, const char *name, const error_type_st *type, int code)
+{
+    parser_ctx_assert_e_st *ass;
+
+    assert(type);
+
+    if(!p)
+        return error_pass(), NULL;
+
+    if(!(ass = calloc(1, sizeof(parser_ctx_assert_e_st))))
+        return error_wrap_last_errno(calloc), NULL;
+
+    ass->p          = p;
+    ass->error.name = name;
+    ass->error.type = type;
+    ass->error.code = code;
+
+    if(!(p = parser_new(parser_parse_assert_e, ass, parser_dtor_assert_e)))
+        return error_pass(), free(ass), NULL;
+
+    return p;
 }
 
 /// Parse callback for parser_end().

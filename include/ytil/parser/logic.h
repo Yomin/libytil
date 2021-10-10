@@ -30,9 +30,9 @@
 #include <stdarg.h>
 
 
-/// New parser asserting success of a parser.
+/// New parser which checks for success of a parser.
 ///
-/// Execute sub parser.
+/// Positive lookahead.
 /// Discard matched input.
 /// Discard results.
 ///
@@ -40,11 +40,11 @@
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_assert(parser_ct p);
+parser_ct parser_check(parser_ct p);
 
-/// New parser asserting success of a parser and lifting a value.
+/// New parser which checks for success of a parser and lifts a value.
 ///
-/// Execute sub parser.
+/// Positive lookahead.
 /// Discard results.
 /// Discard matched input.
 /// Push a value onto the stack.
@@ -59,11 +59,11 @@ parser_ct parser_assert(parser_ct p);
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_assert_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor);
+parser_ct parser_check_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor);
 
-/// New parser asserting success of a parser and lifting a pointer value.
+/// New parser which checks for success of a parser and lifts a pointer value.
 ///
-/// Execute sub parser.
+/// Positive lookahead.
 /// Discard results.
 /// Discard matched input.
 /// Push a pointer value onto the stack.
@@ -77,13 +77,13 @@ parser_ct parser_assert_lift(parser_ct p, const char *type, const void *data, si
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_assert_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor);
+parser_ct parser_check_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor);
 
-/// New parser asserting success of a parser and lifting values.
+/// New parser which checks for success of a parser and lifts values.
 ///
-/// Execute sub parser.
+/// Positive lookahead.
 /// Discard results.
-/// Disacrd matched input.
+/// Discard matched input.
 /// Push values onto the stack via \p lift callback.
 ///
 /// Equivalent: parser_and(2, p, parser_lift_f(lift, ctx, dtor))
@@ -95,11 +95,10 @@ parser_ct parser_assert_lift_p(parser_ct p, const char *type, const void *ptr, p
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_assert_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor);
+parser_ct parser_check_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor);
 
-/// New parser executing a parser and dropping its results.
+/// New parser which executs a parser and drops its results.
 ///
-/// Execute sub parser.
 /// Discard results.
 /// Keep matched input.
 ///
@@ -109,9 +108,8 @@ parser_ct parser_assert_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_drop(parser_ct p);
 
-/// New parser executing a parser, dropping its results and lifting a value.
+/// New parser which executs a parser, drops its results and lifts a value.
 ///
-/// Execute sub parser.
 /// Discard results.
 /// Keep matched input.
 /// Push a value onto the stack.
@@ -128,9 +126,8 @@ parser_ct parser_drop(parser_ct p);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_drop_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor);
 
-/// New parser executing a parser, dropping its results and lifting a pointer value.
+/// New parser which executs a parser, drops its results and lifts a pointer value.
 ///
-/// Execute sub parser.
 /// Discard results.
 /// Keep matched input.
 /// Push a pointer value onto the stack.
@@ -146,9 +143,8 @@ parser_ct parser_drop_lift(parser_ct p, const char *type, const void *data, size
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_drop_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor);
 
-/// New parser executing a parser, dropping its results and lifting values if it fails.
+/// New parser which executs a parser, drops its results and lifts values if it fails.
 ///
-/// Execute sub parser.
 /// Discard results.
 /// Keep matched input.
 /// Push values onto the stack via \p lift callback.
@@ -164,9 +160,9 @@ parser_ct parser_drop_lift_p(parser_ct p, const char *type, const void *ptr, par
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_drop_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor);
 
-/// New parser inverting the status of a parser.
+/// New parser which inverts the status of a parser.
 ///
-/// Execute sub parser.
+/// Negative lookahead.
 /// Succeed if sub parser fails and fail if sub parser suceeds.
 /// No results produced.
 ///
@@ -176,9 +172,9 @@ parser_ct parser_drop_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, 
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_not(parser_ct p);
 
-/// New parser inverting the status of a parser and lifting a value if it fails.
+/// New parser which inverts the status of a parser and lifts a value if it fails.
 ///
-/// Execute sub parser.
+/// Negative lookahead.
 /// Succeed if sub parser fails and fail if sub parser suceeds.
 /// If sub parser fails, push a value onto the stack.
 ///
@@ -194,9 +190,9 @@ parser_ct parser_not(parser_ct p);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_not_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor);
 
-/// New parser inverting the status of a parser and lifting a pointer value if it fails.
+/// New parser which inverts the status of a parser and lifts a pointer value if it fails.
 ///
-/// Execute sub parser.
+/// Negative lookahead.
 /// Succeed if sub parser fails and fail if sub parser suceeds.
 /// If sub parser fails, push a pointer value onto the stack.
 ///
@@ -211,9 +207,9 @@ parser_ct parser_not_lift(parser_ct p, const char *type, const void *data, size_
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_not_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor);
 
-/// New parser inverting the status of a parser and lifting values if it fails.
+/// New parser which inverts the status of a parser and lifts values if it fails.
 ///
-/// Execute sub parser.
+/// Negative lookahead.
 /// Succeed if sub parser fails and fail if sub parser suceeds.
 /// If sub parser fails, push values onto the stack via \p lift callback.
 ///
@@ -228,9 +224,8 @@ parser_ct parser_not_lift_p(parser_ct p, const char *type, const void *ptr, pars
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_not_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor);
 
-/// New parser trying to execute a parser.
+/// New parser which tries to execute a parser.
 ///
-/// Execute sub parser once.
 /// Sub parser may fail or succeed.
 ///
 /// Equivalent: parser_or(2, p, parser_success())
@@ -241,9 +236,22 @@ parser_ct parser_not_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, p
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_maybe(parser_ct p);
 
-/// New parser trying to execute a parser and lifting a value if it fails.
+/// New parser which tries to execute a parser and drops its results.
 ///
-/// Execute sub parser once.
+/// Sub parser may fail or succeed.
+/// Discard results.
+/// Keep matched input.
+///
+/// Equivalent: parser_or(2, parser_drop(p), parser_success())
+///
+/// \param p    parser
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_maybe_drop(parser_ct p);
+
+/// New parser which tries to execute a parser and lifts a value if it fails.
+///
 /// Sub parser may fail or succeed.
 /// If sub parser fails, push a value onto the stack.
 ///
@@ -259,9 +267,8 @@ parser_ct parser_maybe(parser_ct p);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_maybe_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor);
 
-/// New parser trying to execute a parser and lifting a pointer value if it fails.
+/// New parser which tries to execute a parser and lifts a pointer value if it fails.
 ///
-/// Execute sub parser once.
 /// Sub parser may fail or succeed.
 /// If sub parser fails, push a pointer value onto the stack.
 ///
@@ -276,9 +283,8 @@ parser_ct parser_maybe_lift(parser_ct p, const char *type, const void *data, siz
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_maybe_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor);
 
-/// New parser trying to execute a parser and lifting values if it fails.
+/// New parser which tries to execute a parser and lifts values if it fails.
 ///
-/// Execute sub parser once.
 /// Sub parser may fail or succeed.
 /// If sub parser fails, push values onto the stack via \p lift callback.
 ///
@@ -293,13 +299,13 @@ parser_ct parser_maybe_lift_p(parser_ct p, const char *type, const void *ptr, pa
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_maybe_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor);
 
-/// New parser combining a number of parsers with logical AND.
+/// New parser which combines a number of parsers with logical AND.
 ///
 /// Execute parsers on same input.
 /// All parsers need to succeed.
 /// Only the last parser may produce results.
 ///
-/// Equivalent: parser_seq(n, parser_assert(p1), parser_assert(p2), ..., pn)
+/// Equivalent: parser_seq(n, parser_check(p1), parser_check(p2), ..., pn)
 ///
 /// \param n    number of parsers
 /// \param ...  variadic list of parser_ct
@@ -308,7 +314,7 @@ parser_ct parser_maybe_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx,
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_and(size_t n, ...);
 
-/// New parser combining a number of parsers with logical AND.
+/// New parser which combines a number of parsers with logical AND.
 ///
 /// Execute parsers on same input.
 /// All parsers need to succeed.
@@ -321,7 +327,7 @@ parser_ct parser_and(size_t n, ...);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_and_v(size_t n, va_list parsers);
 
-/// New parser combining a number of parsers with logical OR.
+/// New parser which combines a number of parsers with logical OR.
 ///
 /// Execute parsers on same input.
 /// At least one parser needs to succeed.
@@ -334,7 +340,7 @@ parser_ct parser_and_v(size_t n, va_list parsers);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_or(size_t n, ...);
 
-/// New parser combining a number of parsers with logical OR.
+/// New parser which combines a number of parsers with logical OR.
 ///
 /// Execute parsers on same input.
 /// At least one parser needs to succeed.

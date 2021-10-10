@@ -121,6 +121,49 @@ parser_ct parser_success(void);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_fail(void);
 
+/// New parser which always aborts.
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_abort(void);
+
+/// New parser which always aborts and pushes an error.
+///
+/// \param name     function name
+/// \param type     error type
+/// \param code     error code
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_abort_e(const char *name, const error_type_st *type, int code);
+
+/// New parser which asserts success of a parser or aborts.
+///
+/// Abort if sub parser fails.
+///
+/// Equivalent: parser_or(p, parser_abort())
+///
+/// \param p    parser
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_assert(parser_ct p);
+
+/// New parser which asserts success of a parser or aborts with error.
+///
+/// Abort with error if sub parser fails.
+///
+/// Equivalent: parser_or(p, parser_abort_e(name, type, code))
+///
+/// \param p        parser
+/// \param name     function name
+/// \param type     error type
+/// \param code     error code
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+parser_ct parser_assert_e(parser_ct p, const char *name, const error_type_st *type, int code);
+
 /// New parser matching end of input.
 ///
 /// \returns                    parser

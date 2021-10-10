@@ -79,8 +79,10 @@ typedef struct parser_show_state
 
 /// parser error type definition
 ERROR_DEFINE_LIST(PARSER,
-    ERROR_INFO(E_PARSER_DEFINED, "Parser already defined."),
     ERROR_INFO(E_PARSER_FAIL, "Parser failed."),
+    ERROR_INFO(E_PARSER_ABORT, "Parser aborted."),
+    ERROR_INFO(E_PARSER_ERROR, "Parser aborted with error."),
+    ERROR_INFO(E_PARSER_DEFINED, "Parser already defined."),
     ERROR_INFO(E_PARSER_STACK_EMPTY, "Parse stack is empty."),
     ERROR_INFO(E_PARSER_STACK_TYPE, "Wrong stack type requested."),
     ERROR_INFO(E_PARSER_ARG_MISSING, "Missing parser argument on stack."),

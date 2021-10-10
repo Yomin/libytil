@@ -32,8 +32,10 @@
 /// parser error
 typedef enum parser_error
 {
+    E_PARSER_FAIL,              ///< parser failed, another parser may succeed
+    E_PARSER_ABORT,             ///< parser aborted, stop parsing altogether
+    E_PARSER_ERROR,             ///< parser aborted with error
     E_PARSER_DEFINED,           ///< parser already defined
-    E_PARSER_FAIL,              ///< parser failed
     E_PARSER_STACK_EMPTY,       ///< parse stack is empty
     E_PARSER_STACK_TYPE,        ///< wrong stack type requested
     E_PARSER_ARG_MISSING,       ///< missing parser argument on stack
