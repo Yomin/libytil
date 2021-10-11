@@ -227,6 +227,9 @@ parser_ct parser_lift_f(parser_lift_cb lift, const void *ctx, parser_dtor_cb dto
 ///
 /// Used for building self-reference parsers.
 ///
+/// \note The parser is created with a real reference
+///       which is expected to be consumed by parser_link().
+///
 /// \code
 /// parser_ct parser_foo(void)
 /// {
@@ -235,19 +238,25 @@ parser_ct parser_lift_f(parser_lift_cb lift, const void *ctx, parser_dtor_cb dto
 ///     if(!(foo = parser_new_link()))
 ///         return error_pass(), NULL;
 ///
-///     return parser_link(foo, parser_or(2, parser_bar(foo), parser_baz(foo));
+///     return error_pass_ptr(parser_link(foo, parser_or(2, parser_bar(foo), parser_baz(foo))));
 /// }
 /// \endcode
 ///
-/// \returns                    parser
+/// \returns                    parser with real reference
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_link(void);
+parser_ct parser_new_link(void);
 
 /// Link the phony parser to the actual parser.
 ///
-/// \param link     link parser
-/// \param p        sub parser, may be NULL to unset
-void parser_link_set(parser_ct link, parser_const_ct p);
+/// \note This function consumes the reference introduced by parser_new_link().
+///       If the link was not used or \p has failed and thus put no reference on \p link,
+///       it is freed here.
+///
+/// \param link     link parser, must be valid
+/// \param p        actual parser, may have failed
+///
+/// \returns p
+parser_ct parser_link(parser_ct link, parser_const_ct p);
 
 
 #endif

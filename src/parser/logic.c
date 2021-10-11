@@ -264,10 +264,12 @@ parser_ct parser_and_v(size_t n, va_list parsers)
 /// \implements parser_parse_cb
 static ssize_t parser_parse_or(const void *input, size_t size, void *ctx, parser_stack_ct stack)
 {
-    parser_ct *list;
+    parser_ct *list = ctx;
     ssize_t count;
 
-    for(list = ctx; *list; list++)
+    assert(*list);
+
+    for(; *list; list++)
     {
         if((count = parser_parse(*list, input, size, stack)) >= 0)
         {
@@ -277,10 +279,10 @@ static ssize_t parser_parse_or(const void *input, size_t size, void *ctx, parser
         }
 
         if(!error_check(0, 1, E_PARSER_FAIL))
-            return error_pass(), -1;
+            break;
     }
 
-    return_error_if_reached(E_PARSER_FAIL, -1);
+    return error_pass(), -1;
 }
 
 parser_ct parser_or(size_t n, ...)

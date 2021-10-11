@@ -23,6 +23,7 @@
 /// \file
 
 #include <ytil/parser/num.h>
+#include <ytil/parser/null.h>
 #include <ytil/def.h>
 
 /// default error type for num parser module
@@ -31,15 +32,15 @@
 
 parser_ct parser_int(void)
 {
-    return error_set(E_GENERIC_NYI), NULL;
+    return error_pass_ptr(parser_fail());
 }
 
 parser_ct parser_uint(void)
 {
-    return error_set(E_GENERIC_NYI), NULL;
+    return error_pass_ptr(parser_fail());
 }
 
 parser_ct parser_float(void)
 {
-    return error_set(E_GENERIC_NYI), NULL;
+    return error_pass_ptr(parser_fail());
 }

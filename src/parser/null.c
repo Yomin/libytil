@@ -569,22 +569,33 @@ parser_ct parser_lift_f(parser_lift_cb lift, const void *ctx, parser_dtor_cb dto
     return error_pass_ptr(parser_new(parser_parse_lift_f, state, parser_dtor_lift_f));
 }
 
-/// Parse callback of parser_link().
+/// Parse callback of parser_new_link().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_link(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_new_link(const void *input, size_t size, void *ctx, parser_stack_ct stack)
 {
     parser_ct p = ctx;
 
     return error_pass_int(parser_parse(p, input, size, stack));
 }
 
-parser_ct parser_link(void)
+parser_ct parser_new_link(void)
 {
-    return error_pass_ptr(parser_new(parser_parse_link, NULL, NULL));
+    return error_pass_ptr(parser_ref_sink(parser_new(parser_parse_new_link, NULL, NULL)));
 }
 
-void parser_link_set(parser_ct link, parser_const_ct p)
+parser_ct parser_link(parser_ct link, parser_const_ct p)
 {
-    parser_set_ctx(link, p);
+    assert(!parser_is_floating(link));
+
+    if(!p)
+        error_pass();
+    else
+        parser_set_ctx(link, p);
+
+    // Remove reference introduced by parser_new_link().
+    // If link was not referenced by p or p failed, it is freed here.
+    parser_unref(link);
+
+    return (parser_ct)p;
 }

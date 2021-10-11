@@ -64,6 +64,11 @@ static parser_ct parser_regex_option(void)
             parser_min1(parser_accept("icsmxtn"))))));
 }
 
+static parser_ct foo(parser_ct p)
+{
+    return p;
+}
+
 static parser_ct parser_regex_group(parser_ct term)
 {
     return error_pass_ptr(parser_seq(2,
@@ -75,8 +80,8 @@ static parser_ct parser_regex_group(parser_ct term)
                     parser_assert(parser_or(3,
                         parser_regex_group_no_capture(term),
                         parser_regex_group_named_capture(term),
-                        parser_regex_option())),
-                term)),
+                        parser_regex_option()))),
+                foo(term)),
             parser_drop(parser_char(')'))))));
 }
 
@@ -114,7 +119,7 @@ static parser_ct parser_regex_token(parser_ct term)
     return error_pass_ptr(parser_or(3,
         parser_regex_group(term),
         parser_regex_bracket(),
-        parser_min1(parser_any())));
+        parser_min1(parser_reject("()[]{}+*?|^$"))));
 }
 
 static parser_ct parser_regex_minmax(void)
@@ -138,25 +143,25 @@ static parser_ct parser_regex_quantifier(void)
 
 static parser_ct parser_regex_term(void)
 {
-    parser_ct term, link;
+    parser_ct term;
 
-    link    = parser_ref(parser_link());
-    term    = parser_min1(parser_seq(2,
-        parser_regex_token(link),
-        parser_maybe(parser_regex_quantifier())));
+    if(!(term = parser_new_link()))
+        return error_pass(), NULL;
 
-    parser_link_set(link, term);
-    parser_unref(link);
-
-    return error_pass_ptr(term);
+    return error_pass_ptr(parser_link(term,
+        parser_min1(parser_seq(2,
+            parser_regex_token(term),
+            parser_maybe(parser_regex_quantifier())))));
 }
 
 parser_ct parser_regex(void)
 {
     parser_ct term, regex;
 
-    term    = parser_ref(parser_regex_term());
-    regex   = parser_seq(2,
+    if(!(term = parser_ref(parser_regex_term())))
+        return error_pass(), NULL;
+
+    regex = parser_seq(2,
         term,
         parser_many(parser_seq(2,
             parser_drop(parser_char('|')),

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Martin Rödel a.k.a. Yomin Nimoy
+ * Copyright (c) 2021 Martin Rödel a.k.a. Yomin Nimoy
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,14 +20,32 @@
  * THE SOFTWARE.
  */
 
-#ifndef YTIL_TEST_SUITE_PARSERS_INCLUDED
-#define YTIL_TEST_SUITE_PARSERS_INCLUDED
+#include "parsers.h"
+#include <ytil/test/run.h>
+#include <ytil/test/test.h>
+#include <ytil/parser/regex.h>
+
+static parser_ct parser;
 
 
-int test_suite_parsers(void *param);
-int test_suite_parsers_parser(void *param);
-int test_suite_parsers_null(void *param);
-int test_suite_parsers_regex(void *param);
+TEST_TEARDOWN(parser_sink)
+{
+    test_ptr_eq(parser_sink(parser), NULL);
+}
 
+TEST_CASE_FIX(parser_regex, no_setup, parser_sink)
+{
+    const char *foo = ")foo";
 
-#endif
+    test_ptr_success(parser = parser_regex());
+    test_rc_success(parser_parse(parser, foo, strlen(foo), (parser_stack_ct)1), strlen(foo), -1);
+}
+
+int test_suite_parsers_regex(void *param)
+{
+    return error_pass_int(test_run_cases("regex",
+        test_case(parser_regex),
+
+        NULL
+    ));
+}

@@ -221,9 +221,15 @@ ssize_t parser_parse(parser_const_ct p, const void *input, size_t len, parser_st
     return error_pass_int(p->parse(input, len, p->ctx, stack));
 }
 
+/// \todo remove
+#include <stdio.h>
+
 int parser_stack_push(parser_stack_ct stack, const char *type, const void *data, size_t size, parser_dtor_cb dtor)
 {
     parser_stack_item_st item = {0};
+
+    printf("push %s\n", type);
+    return 0;
 
     assert_magic_n(stack, MAGIC_STACK);
     assert(type);
@@ -255,6 +261,9 @@ int parser_stack_push_p(parser_stack_ct stack, const char *type, const void *ptr
 int parser_stack_pop(parser_stack_ct stack, const char *type, void *data)
 {
     parser_stack_item_st item;
+
+    printf("pop %s\n", type);
+    return 0;
 
     assert_magic_n(stack, MAGIC_STACK);
     assert(type);
@@ -334,6 +343,9 @@ int parser_stack_get(parser_stack_ct stack, const char *type, void *data, size_t
 {
     parser_stack_item_st *item;
     size_t offset;
+
+    printf("get %s\n", type);
+    return 0;
 
     assert_magic_n(stack, MAGIC_STACK);
     assert(type);
