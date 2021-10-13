@@ -28,10 +28,13 @@
 #include <ytil/parser/parser.h>
 
 
-/// New parser executing a parser an exact number of times.
+/// New parser which executes a parser an exact number of times.
 ///
 /// Execute sub parser n times.
 /// Sub parser must succeed every time.
+///
+/// \par Equivalent
+///     parser_seq(n, p(1), p(2), ..., p(n))
 ///
 /// \param n    number of executions
 /// \param p    parser
@@ -40,7 +43,7 @@
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_repeat(size_t n, parser_ct p);
 
-/// New parser executing a parser an exact number of times.
+/// New parser which executes a parser an exact number of times.
 ///
 /// Execute sub parser n times.
 /// Sub parser must succeed every time.
@@ -53,10 +56,13 @@ parser_ct parser_repeat(size_t n, parser_ct p);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_repeat_x(parser_ct p);
 
-/// New parser executing a parser at least a number of times.
+/// New parser which executes a parser at least a number of times.
 ///
 /// Execute sub parser as many times as possible.
 /// Sub parser must succeed at least the first n times.
+///
+/// \par Equivalent
+///     parser_seq(n + 1, p(1), p(2), ..., p(n), parser_many(p))
 ///
 /// \param n    minimum number of executions
 /// \param p    parser
@@ -65,13 +71,13 @@ parser_ct parser_repeat_x(parser_ct p);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_min(size_t n, parser_ct p);
 
-/// New parser executing a parser at least once.
+/// New parser which executes a parser at least once.
 ///
 /// Execute sub parser as many times as possible.
 /// Sub parser must succeed at least once.
 ///
 /// \par Equivalent
-///     parser_min(1, p)
+///     parser_seq(2, p, parser_many(p))
 ///
 /// \param p    parser
 ///
@@ -79,7 +85,7 @@ parser_ct parser_min(size_t n, parser_ct p);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_min1(parser_ct p);
 
-/// New parser executing a parser as many times as possible.
+/// New parser which executes a parser as many times as possible.
 ///
 /// Execute sub parser as many times as possible.
 /// Sub parser may fail or succeed.
@@ -90,11 +96,16 @@ parser_ct parser_min1(parser_ct p);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_many(parser_ct p);
 
-/// New parser executing a parser at least a minimum number of times
+/// New parser which executes a parser at least a minimum number of times
 /// but at most a maximum number of times.
 ///
 /// Execute sub parser up to \p max times.
 /// Sub parser must succeed at least the first \p min times.
+///
+/// \par Equivalent
+///     parser_seq(max,
+///         p(1), p(2), ..., p(min),
+///         parser_maybe(p(min+1)), parser_maybe(p(min+2)), ..., parser_maybe(p(max)))
 ///
 /// \param min  minimum number of executions
 /// \param max  maximum number of executions
@@ -104,10 +115,13 @@ parser_ct parser_many(parser_ct p);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_minmax(size_t min, size_t max, parser_ct p);
 
-/// New parser executing a parser at most a number of times.
+/// New parser which executes a parser at most a number of times.
 ///
 /// Execute sub parser up to n times.
 /// Sub parser may fail or succeed.
+///
+/// \par Equivalent
+///     parser_seq(n, parser_maybe(p(1)), parser_maybe(p(2)), ..., parser_maybe(p(n)))
 ///
 /// \param n    maximum number of executions
 /// \param p    parser

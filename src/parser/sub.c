@@ -118,7 +118,7 @@ parser_ct parser_new_parser_list_v(parser_parse_cb parse, size_t n, va_list pars
 /// Parse callback for parser_seq().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_seq(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_seq(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ct *list;
     const char *ptr;
@@ -126,7 +126,7 @@ static ssize_t parser_parse_seq(const void *input, size_t size, void *ctx, parse
 
     for(list = ctx, ptr = input; *list; list++, ptr += count, size -= count)
     {
-        if((count = parser_parse(*list, ptr, size, stack)) < 0)
+        if((count = parser_parse(*list, ptr, size, stack, state)) < 0)
             return error_pass(), -1;
 
         assert((size_t)count <= size);

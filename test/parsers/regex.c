@@ -25,20 +25,27 @@
 #include <ytil/test/test.h>
 #include <ytil/parser/regex.h>
 
+static parser_stack_ct stack;
 static parser_ct parser;
 
+
+TEST_SETUP(parser_stack_new)
+{
+    test_ptr_success(stack = parser_stack_new());
+}
 
 TEST_TEARDOWN(parser_sink)
 {
     test_ptr_eq(parser_sink(parser), NULL);
+    test_void(parser_stack_free(stack));
 }
 
-TEST_CASE_FIX(parser_regex, no_setup, parser_sink)
+TEST_CASE_FIX(parser_regex, parser_stack_new, parser_sink)
 {
-    const char *foo = ")foo";
+    const char *foo = "asd[[:space:]]";
 
     test_ptr_success(parser = parser_regex());
-    test_rc_success(parser_parse(parser, foo, strlen(foo), (parser_stack_ct)1), strlen(foo), -1);
+    test_rc_success(parser_parse(parser, foo, strlen(foo), stack, NULL), strlen(foo), -1);
 }
 
 int test_suite_parsers_regex(void *param)

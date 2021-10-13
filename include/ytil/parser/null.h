@@ -141,7 +141,17 @@ parser_ct parser_fail(void);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_abort(void);
 
-/// New parser which always aborts and pushes an error.
+/// New parser which always aborts and pushes an error of default type.
+///
+/// \param name     function name
+/// \param code     error code
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+#define parser_abort_e(name, code) \
+    parser_abort_es((name), ERROR_TYPE(DEFAULT), (code))
+
+/// New parser which always aborts and pushes an error of specific type.
 ///
 /// \param name     function name
 /// \param type     error type
@@ -149,7 +159,7 @@ parser_ct parser_abort(void);
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_abort_e(const char *name, const error_type_st *type, int code);
+parser_ct parser_abort_es(const char *name, const error_type_st *type, int code);
 
 /// New parser which asserts success of a parser or aborts.
 ///
@@ -164,12 +174,28 @@ parser_ct parser_abort_e(const char *name, const error_type_st *type, int code);
 /// \retval NULL/E_GENERIC_OOM  out of memory
 parser_ct parser_assert(parser_ct p);
 
-/// New parser which asserts success of a parser or aborts with error.
+/// New parser which asserts success of a parser or aborts with an error of default type.
 ///
 /// Abort with error if sub parser fails.
 ///
 /// \par Equivalent
-///     parser_or(p, parser_abort_e(name, type, code))
+///     parser_or(p, parser_abort_e(name, code))
+///
+/// \param p        parser
+/// \param name     function name
+/// \param code     error code
+///
+/// \returns                    parser
+/// \retval NULL/E_GENERIC_OOM  out of memory
+#define parser_assert_e(p, name, code) \
+    parser_assert_es((p), (name), ERROR_TYPE(DEFAULT), (code))
+
+/// New parser which asserts success of a parser or aborts with an error of specific type.
+///
+/// Abort with error if sub parser fails.
+///
+/// \par Equivalent
+///     parser_or(p, parser_abort_es(name, type, code))
 ///
 /// \param p        parser
 /// \param name     function name
@@ -178,7 +204,7 @@ parser_ct parser_assert(parser_ct p);
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_assert_e(parser_ct p, const char *name, const error_type_st *type, int code);
+parser_ct parser_assert_es(parser_ct p, const char *name, const error_type_st *type, int code);
 
 /// New parser matching end of input.
 ///

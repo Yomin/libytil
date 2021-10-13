@@ -23,24 +23,41 @@
 /// \file
 
 #include <ytil/parser/num.h>
+#include <ytil/parser/sub.h>
 #include <ytil/parser/null.h>
+#include <ytil/parser/logic.h>
+#include <ytil/parser/char.h>
+#include <ytil/parser/string.h>
 #include <ytil/def.h>
 
 /// default error type for num parser module
 #define ERROR_TYPE_DEFAULT ERROR_TYPE_PARSER
 
 
+parser_ct parser_num(void)
+{
+    return error_pass_ptr(parser_seq(2, parser_maybe(parser_sign()), parser_digits(1)));
+}
+
 parser_ct parser_int(void)
 {
-    return error_pass_ptr(parser_fail());
+    return error_pass_ptr(parser_num());
 }
 
 parser_ct parser_uint(void)
 {
-    return error_pass_ptr(parser_fail());
+    return error_pass_ptr(parser_digits(1));
+}
+
+parser_ct parser_real(void)
+{
+    return error_pass_ptr(parser_seq(3,
+        parser_num(),
+            parser_maybe(parser_seq(2, parser_char('.'), parser_digits(1))),
+            parser_maybe(parser_seq(2, parser_accept("eE"), parser_num()))));
 }
 
 parser_ct parser_float(void)
 {
-    return error_pass_ptr(parser_fail());
+    return error_pass_ptr(parser_real());
 }

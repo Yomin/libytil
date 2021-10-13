@@ -34,7 +34,7 @@ static const struct not_a_parser
 static parser_ct parser;
 
 
-static ssize_t test_parser_parse(const void *input, size_t len, void *ctx, parser_stack_ct stack)
+static ssize_t test_parser_parse(const void *input, size_t len, void *ctx, parser_stack_ct stack, void *state)
 {
     return 0;
 }
@@ -111,12 +111,15 @@ TEST_CASE_FIX(parser_define_defined, parser_new, parser_sink)
 
 TEST_CASE(parser_parse)
 {
+    parser_stack_ct stack;
     parser_ct p;
 
+    test_ptr_success(stack = parser_stack_new());
     test_ptr_success(p = parser_char('X'));
-    test_rc_success(parser_parse(p, "X", 1, NULL), 1, -1);
-    test_rc_error(parser_parse(p, "Y", 1, NULL), -1, E_PARSER_FAIL);
+    test_rc_success(parser_parse(p, "X", 1, stack, NULL), 1, -1);
+    test_rc_error(parser_parse(p, "Y", 1, stack, NULL), -1, E_PARSER_FAIL);
     test_ptr_eq(parser_sink(p), NULL);
+    test_void(parser_stack_free(stack));
 }
 
 int test_suite_parsers_parser(void *param)

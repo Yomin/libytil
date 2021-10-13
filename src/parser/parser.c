@@ -25,13 +25,10 @@
 #include <ytil/parser/parser.h>
 #include <ytil/def.h>
 #include <ytil/def/magic.h>
-#include <ytil/con/vec.h>
 #include <stdlib.h>
-#include <string.h>
 
 
-#define MAGIC       define_magic("PAR") ///< parser magic
-#define MAGIC_STACK define_magic("PST") ///< parser stack magic
+#define MAGIC define_magic("PAR") ///< parser magic
 
 /// parser
 typedef struct parser
@@ -45,24 +42,6 @@ typedef struct parser
     void            *ctx;   ///< callback context
     parser_dtor_cb  dtor;   ///< callback context dtor
 } parser_st;
-
-/// parser stack
-typedef struct parser_stack
-{
-    DEBUG_MAGIC
-
-    size_t  size;   ///< number of items on stack
-    vec_ct  stack;  ///< stack
-    vec_ct  frame;  ///< stack frames
-} parser_stack_st;
-
-/// parser stack item
-typedef struct parser_stack_item
-{
-    const char      *type;  ///< item type
-    size_t          size;   ///< item size
-    parser_dtor_cb  dtor;   ///< item destructor
-} parser_stack_item_st;
 
 
 /// parser error type definition
@@ -213,229 +192,24 @@ void parser_set_ctx(parser_ct p, const void *ctx)
     p->ctx = (void *)ctx;
 }
 
-ssize_t parser_parse(parser_const_ct p, const void *input, size_t len, parser_stack_ct stack)
+ssize_t parser_parse(parser_const_ct p, const void *input, size_t len, parser_stack_ct stack, const void *state)
 {
+    ssize_t rc;
+
     assert_magic(p);
     assert(input);
 
-    return error_pass_int(p->parse(input, len, p->ctx, stack));
-}
-
-/// \todo remove
-#include <stdio.h>
-
-int parser_stack_push(parser_stack_ct stack, const char *type, const void *data, size_t size, parser_dtor_cb dtor)
-{
-    parser_stack_item_st item = {0};
-
-    printf("push %s\n", type);
-    return 0;
-
-    assert_magic_n(stack, MAGIC_STACK);
-    assert(type);
-    assert(data || !size);
-
-    if(!stack->stack && !(stack->stack = vec_new(10 * (sizeof(parser_stack_item_st) + sizeof(void*)), 1)))
-        return error_wrap(), -1;
-
-    if(!vec_push_en(stack->stack, size, data))
-        return error_wrap(), -1;
-
-    item.type   = type;
-    item.size   = size;
-    item.dtor   = dtor;
-
-    if(!vec_push_en(stack->stack, sizeof(parser_stack_item_st), &item))
-        return error_wrap(), vec_pop_n(stack->stack, size), -1;
-
-    stack->size++;
-
-    return 0;
-}
-
-int parser_stack_push_p(parser_stack_ct stack, const char *type, const void *ptr, parser_dtor_cb dtor)
-{
-    return error_pass_int(parser_stack_push(stack, type, &ptr, sizeof(void *), dtor));
-}
-
-int parser_stack_pop(parser_stack_ct stack, const char *type, void *data)
-{
-    parser_stack_item_st item;
-
-    printf("pop %s\n", type);
-    return 0;
-
-    assert_magic_n(stack, MAGIC_STACK);
-    assert(type);
-    return_error_if_fail(stack->size, E_PARSER_STACK_EMPTY, -1);
-
-    vec_get_n(stack->stack, &item, -sizeof(parser_stack_item_st), sizeof(parser_stack_item_st));
-
-    if(strcmp(type, item.type))
-        return error_set(E_PARSER_STACK_TYPE), -1;
-
-    vec_pop_n(stack->stack, sizeof(parser_stack_item_st));
-    vec_pop_en(stack->stack, data, item.size);
-    stack->size--;
-
-    return 0;
-}
-
-int parser_stack_pop_arg(parser_stack_ct stack, const char *type, void *data)
-{
-    if(!parser_stack_pop(stack, type, data))
-        return 0;
-
-    switch(error_code(0))
-    {
-    case E_PARSER_STACK_EMPTY:
-        return error_push(E_PARSER_ARG_MISSING), -1;
-
-    case E_PARSER_STACK_TYPE:
-        return error_push(E_PARSER_ARG_TYPE), -1;
-
-    default:
+    if(parser_stack_frame_push(stack))
         return error_pass(), -1;
-    }
+
+    if((rc = p->parse(input, len, p->ctx, stack, (void *)state)) < 0)
+        parser_stack_clear(stack);
+
+    parser_stack_frame_pop(stack);
+
+    return error_pass_int(rc);
 }
 
-void *parser_stack_pop_p(parser_stack_ct stack, const char *type)
-{
-    void *data;
-
-    if(parser_stack_pop(stack, type, &data))
-        return error_pass(), NULL;
-
-    return data;
-}
-
-void *parser_stack_pop_arg_p(parser_stack_ct stack, const char *type)
-{
-    void *data;
-
-    if(parser_stack_pop_arg(stack, type, &data))
-        return error_pass(), NULL;
-
-    return data;
-}
-
-/// Get byte offset of item down the stack.
-///
-/// \param stack    stack
-/// \param pos      position from top of stack
-///
-/// \returns byte offset, 0 for position 0
-static size_t parser_stack_get_offset(parser_stack_ct stack, size_t pos)
-{
-    parser_stack_item_st *item;
-    size_t offset;
-
-    for(offset = 0; pos; pos--)
-    {
-        item    = vec_at(stack->stack, -offset - sizeof(parser_stack_item_st));
-        offset  += sizeof(parser_stack_item_st) + item->size;
-    }
-
-    return offset;
-}
-
-int parser_stack_get(parser_stack_ct stack, const char *type, void *data, size_t pos)
-{
-    parser_stack_item_st *item;
-    size_t offset;
-
-    printf("get %s\n", type);
-    return 0;
-
-    assert_magic_n(stack, MAGIC_STACK);
-    assert(type);
-    assert(data);
-    return_error_if_fail(pos < stack->size, E_PARSER_STACK_EMPTY, -1);
-
-    offset  = parser_stack_get_offset(stack, pos);
-    item    = vec_at(stack->stack, -offset - sizeof(parser_stack_item_st));
-
-    if(strcmp(type, item->type))
-        return error_set(E_PARSER_STACK_TYPE), -1;
-
-    offset += sizeof(parser_stack_item_st) + item->size;
-    vec_get_n(stack->stack, data, -offset, item->size);
-
-    return 0;
-}
-
-void *parser_stack_get_p(parser_stack_ct stack, const char *type, size_t pos)
-{
-    void *data;
-
-    if(parser_stack_get(stack, type, &data, pos))
-        return error_pass(), NULL;
-
-    return data;
-}
-
-const char *parser_stack_get_type(parser_stack_ct stack, size_t pos)
-{
-    parser_stack_item_st *item;
-    size_t offset;
-
-    assert_magic_n(stack, MAGIC_STACK);
-    return_error_if_fail(pos < stack->size, E_PARSER_STACK_EMPTY, NULL);
-
-    offset  = parser_stack_get_offset(stack, pos);
-    item    = vec_at(stack->stack, -offset - sizeof(parser_stack_item_st));
-
-    return item->type;
-}
-
-ssize_t parser_stack_get_size(parser_stack_ct stack, size_t pos)
-{
-    parser_stack_item_st *item;
-    size_t offset;
-
-    assert_magic_n(stack, MAGIC_STACK);
-    return_error_if_fail(pos < stack->size, E_PARSER_STACK_EMPTY, -1);
-
-    offset  = parser_stack_get_offset(stack, pos);
-    item    = vec_at(stack->stack, -offset - sizeof(parser_stack_item_st));
-
-    return item->size;
-}
-
-int parser_stack_drop(parser_stack_ct stack, size_t n)
-{
-    parser_stack_item_st item;
-
-    assert_magic_n(stack, MAGIC_STACK);
-    return_error_if_fail(n <= stack->size, E_PARSER_STACK_EMPTY, -1);
-
-    for(; n; n--)
-    {
-        vec_pop_en(stack->stack, &item, sizeof(parser_stack_item_st));
-
-        if(item.dtor)
-            item.dtor(vec_at(stack->stack, -item.size));
-
-        vec_pop_n(stack->stack, item.size);
-        stack->size--;
-    }
-
-    return 0;
-}
-
-size_t parser_stack_size(parser_stack_ct stack)
-{
-    assert_magic_n(stack, MAGIC_STACK);
-
-    return stack->size;
-}
-
-void parser_stack_clear(parser_stack_ct stack)
-{
-    assert_magic_n(stack, MAGIC_STACK);
-
-    parser_stack_drop(stack, stack->size);
-}
 
 
 /*

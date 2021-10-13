@@ -31,7 +31,7 @@
 /// regex error
 typedef enum regex_error
 {
-    E_REGEX_FOO, ///< foo
+    E_REGEX_INVALID_BRACKET,
 } regex_error_id;
 
 /// regex error type declaration

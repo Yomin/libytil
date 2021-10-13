@@ -51,7 +51,7 @@ typedef struct regex
 
 /// regex error type definition
 ERROR_DEFINE_LIST(REGEX,
-    ERROR_INFO(E_REGEX_FOO, "foo")
+    ERROR_INFO(E_REGEX_INVALID_BRACKET, "Invalid bracket expression.")
 );
 
 /// default error type for regex module

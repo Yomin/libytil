@@ -64,11 +64,11 @@ static void parser_dtor_new_lift(void *ctx)
 /// Parse callback for parser_new_lift().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_new_lift(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_new_lift(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ctx_new_lift_st *lift = ctx;
 
-    if(lift->parse(input, size, lift->parse_ctx, stack) < 0)
+    if(lift->parse(input, size, lift->parse_ctx, stack, state) < 0)
     {
         if(lift->success)
             return error_pass(), -1;
@@ -82,7 +82,7 @@ static ssize_t parser_parse_new_lift(const void *input, size_t size, void *ctx, 
             return 0;
     }
 
-    if(stack && parser_stack_push(stack, lift->type, lift->data, lift->size, lift->data_dtor))
+    if(parser_stack_push(stack, lift->type, lift->data, lift->size, lift->data_dtor))
         return error_pass(), -1;
 
     return 0;
@@ -186,11 +186,11 @@ static void parser_dtor_new_lift_f(void *ctx)
 /// Parse callback for parser_new_lift_f().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_new_lift_f(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_new_lift_f(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ctx_new_lift_f_st *lift = ctx;
 
-    if(lift->parse(input, size, lift->parse_ctx, stack) < 0)
+    if(lift->parse(input, size, lift->parse_ctx, stack, state) < 0)
     {
         if(lift->success)
             return error_pass(), -1;
@@ -204,7 +204,7 @@ static ssize_t parser_parse_new_lift_f(const void *input, size_t size, void *ctx
             return 0;
     }
 
-    if(stack && lift->lift(stack, lift->lift_ctx))
+    if(lift->lift(stack, lift->lift_ctx))
         return error_pass(), -1;
 
     return 0;
@@ -276,7 +276,7 @@ parser_ct parser_new_lift_fail_f(parser_parse_cb parse, const void *parse_ctx, p
 /// Parse callback for parser_success().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_success(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_success(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     return 0;
 }
@@ -289,7 +289,7 @@ parser_ct parser_success(void)
 /// Parse callback for parser_fail().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_fail(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_fail(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     return_error_if_reached(E_PARSER_FAIL, -1);
 }
@@ -302,7 +302,7 @@ parser_ct parser_fail(void)
 /// Parse callback for parser_abort().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_abort(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_abort(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     return_error_if_reached(E_PARSER_ABORT, -1);
 }
@@ -312,20 +312,20 @@ parser_ct parser_abort(void)
     return error_pass_ptr(parser_new(parser_parse_abort, NULL, NULL));
 }
 
-/// Parser context of parser_abort_e().
-typedef struct parser_ctx_abort_e
+/// Parser context of parser_abort_es().
+typedef struct parser_ctx_abort_es
 {
     const char          *name;  ///< function name
     const error_type_st *type;  ///< error type
     int                 code;   ///< error code
-} parser_ctx_abort_e_st;
+} parser_ctx_abort_es_st;
 
-/// Parse callback for parser_abort_e().
+/// Parse callback for parser_abort_es().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_abort_e(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_abort_es(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
-    parser_ctx_abort_e_st *abrt = ctx;
+    parser_ctx_abort_es_st *abrt = ctx;
 
     error_set_f(abrt->name, abrt->type, abrt->code, NULL);
     error_push(E_PARSER_ERROR);
@@ -333,31 +333,31 @@ static ssize_t parser_parse_abort_e(const void *input, size_t size, void *ctx, p
     return -1;
 }
 
-parser_ct parser_abort_e(const char *name, const error_type_st *type, int code)
+parser_ct parser_abort_es(const char *name, const error_type_st *type, int code)
 {
-    parser_ctx_abort_e_st *abrt;
+    parser_ctx_abort_es_st *abrt;
 
     assert(type);
 
-    if(!(abrt = calloc(1, sizeof(parser_ctx_abort_e_st))))
+    if(!(abrt = calloc(1, sizeof(parser_ctx_abort_es_st))))
         return error_wrap_last_errno(calloc), NULL;
 
     abrt->name  = name;
     abrt->type  = type;
     abrt->code  = code;
 
-    return error_pass_ptr(parser_new(parser_parse_abort_e, abrt, free));
+    return error_pass_ptr(parser_new(parser_parse_abort_es, abrt, free));
 }
 
 /// Parse callback for parser_assert().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_assert(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_assert(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ct p = ctx;
     ssize_t rc;
 
-    if((rc = parser_parse(p, input, size, stack)) >= 0)
+    if((rc = parser_parse(p, input, size, stack, state)) >= 0)
         return rc;
 
     if(!error_check(0, 1, E_PARSER_FAIL))
@@ -373,36 +373,36 @@ parser_ct parser_assert(parser_ct p)
     return error_pass_ptr(parser_new_parser(parser_parse_assert, p));
 }
 
-/// Parser context of parser_assert_e().
-typedef struct parser_ctx_assert_e
+/// Parser context of parser_assert_es().
+typedef struct parser_ctx_assert_es
 {
     parser_ct               p;      ///< sub parser
-    parser_ctx_abort_e_st   error;  ///< error
-} parser_ctx_assert_e_st;
+    parser_ctx_abort_es_st  error;  ///< error
+} parser_ctx_assert_es_st;
 
-/// Free parser context of parser_assert_e().
+/// Free parser context of parser_assert_es().
 ///
 /// \implements parser_dtor_cb
-static void parser_dtor_assert_e(void *ctx)
+static void parser_dtor_assert_es(void *ctx)
 {
-    parser_ctx_assert_e_st *ass = ctx;
+    parser_ctx_assert_es_st *ass = ctx;
 
     parser_unref(ass->p);
     free(ass);
 }
 
-/// Parse callback for parser_assert_e().
+/// Parse callback for parser_assert_es().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_assert_e(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_assert_es(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
-    parser_ctx_assert_e_st *ass = ctx;
+    parser_ctx_assert_es_st *ass = ctx;
     ssize_t rc;
 
-    if((rc = parser_parse(ass->p, input, size, stack)) >= 0)
+    if((rc = parser_parse(ass->p, input, size, stack, state)) >= 0)
         return rc;
 
-    if(!error_check(0, 1, E_PARSER_FAIL))
+    if(!error_check(0, 2, E_PARSER_FAIL, E_PARSER_ABORT))
         return error_pass(), -1;
 
     error_push_f(ass->error.name, ass->error.type, ass->error.code, NULL);
@@ -411,16 +411,16 @@ static ssize_t parser_parse_assert_e(const void *input, size_t size, void *ctx, 
     return -1;
 }
 
-parser_ct parser_assert_e(parser_ct p, const char *name, const error_type_st *type, int code)
+parser_ct parser_assert_es(parser_ct p, const char *name, const error_type_st *type, int code)
 {
-    parser_ctx_assert_e_st *ass;
+    parser_ctx_assert_es_st *ass;
 
     assert(type);
 
     if(!p)
         return error_pass(), NULL;
 
-    if(!(ass = calloc(1, sizeof(parser_ctx_assert_e_st))))
+    if(!(ass = calloc(1, sizeof(parser_ctx_assert_es_st))))
         return error_wrap_last_errno(calloc), parser_sink(p), NULL;
 
     ass->p          = parser_ref_sink(p);
@@ -428,13 +428,13 @@ parser_ct parser_assert_e(parser_ct p, const char *name, const error_type_st *ty
     ass->error.type = type;
     ass->error.code = code;
 
-    return error_pass_ptr(parser_new(parser_parse_assert_e, ass, parser_dtor_assert_e));
+    return error_pass_ptr(parser_new(parser_parse_assert_es, ass, parser_dtor_assert_es));
 }
 
 /// Parse callback for parser_end().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_end(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_end(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     return_error_if_fail(!size, E_PARSER_FAIL, -1);
 
@@ -471,11 +471,11 @@ static void parser_dtor_lift(void *ctx)
 /// Parse callback for parser_lift().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_lift(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_lift(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ctx_lift_st *lift = ctx;
 
-    if(stack && parser_stack_push(stack, lift->type, lift->data, lift->size, lift->dtor))
+    if(parser_stack_push(stack, lift->type, lift->data, lift->size, lift->dtor))
         return error_pass(), -1;
 
     return 0;
@@ -536,11 +536,11 @@ static void parser_dtor_lift_f(void *ctx)
 /// Parse callback of parser_lift_f().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_lift_f(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_lift_f(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ctx_lift_f_st *lift = ctx;
 
-    if(stack && lift->lift(stack, lift->ctx))
+    if(lift->lift(stack, lift->ctx))
         return error_pass(), -1;
 
     return 0;
@@ -572,11 +572,11 @@ parser_ct parser_lift_f(parser_lift_cb lift, const void *ctx, parser_dtor_cb dto
 /// Parse callback of parser_new_link().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_new_link(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_new_link(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ct p = ctx;
 
-    return error_pass_int(parser_parse(p, input, size, stack));
+    return error_pass_int(parser_parse(p, input, size, stack, state));
 }
 
 parser_ct parser_new_link(void)

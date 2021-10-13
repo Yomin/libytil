@@ -31,14 +31,14 @@
 #define ERROR_TYPE_DEFAULT ERROR_TYPE_PARSER
 
 
-/// Parse callback for parser matching an arbitrary character.
+/// Parse callback for parser_any().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_any(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_any(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     return_error_if_fail(size, E_PARSER_FAIL, -1);
 
-    if(stack && parser_stack_push(stack, "char", input, sizeof(char), NULL))
+    if(parser_stack_push(stack, "char", input, sizeof(char), NULL))
         return error_pass(), -1;
 
     return 1;
@@ -46,21 +46,20 @@ static ssize_t parser_parse_any(const void *input, size_t size, void *ctx, parse
 
 parser_ct parser_any(void)
 {
-    return error_pass_ptr(
-        parser_new(parser_parse_any, NULL, NULL));
+    return error_pass_ptr(parser_new(parser_parse_any, NULL, NULL));
 }
 
-/// Parse callback for parser matching a specific character.
+/// Parse callback for parser_char().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_char(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_char(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     const char *text    = input;
     char c              = POINTER_TO_VALUE(ctx, char);
 
     return_error_if_fail(size && text[0] == c, E_PARSER_FAIL, -1);
 
-    if(stack && parser_stack_push(stack, "char", text, sizeof(char), NULL))
+    if(parser_stack_push(stack, "char", text, sizeof(char), NULL))
         return error_pass(), -1;
 
     return 1;
@@ -68,21 +67,20 @@ static ssize_t parser_parse_char(const void *input, size_t size, void *ctx, pars
 
 parser_ct parser_char(char c)
 {
-    return error_pass_ptr(
-        parser_new(parser_parse_char, VALUE_TO_POINTER(c), NULL));
+    return error_pass_ptr(parser_new(parser_parse_char, VALUE_TO_POINTER(c), NULL));
 }
 
-/// Parse callback for parser matching an arbitrary character which is not a specific character.
+/// Parse callback for parser_not_char().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_not_char(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_not_char(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     const char *text    = input;
     char c              = POINTER_TO_VALUE(ctx, char);
 
     return_error_if_fail(size && text[0] != c, E_PARSER_FAIL, -1);
 
-    if(stack && parser_stack_push(stack, "char", text, sizeof(char), NULL))
+    if(parser_stack_push(stack, "char", text, sizeof(char), NULL))
         return error_pass(), -1;
 
     return 1;
@@ -90,21 +88,20 @@ static ssize_t parser_parse_not_char(const void *input, size_t size, void *ctx, 
 
 parser_ct parser_not_char(char c)
 {
-    return error_pass_ptr(
-        parser_new(parser_parse_not_char, VALUE_TO_POINTER(c), NULL));
+    return error_pass_ptr(parser_new(parser_parse_not_char, VALUE_TO_POINTER(c), NULL));
 }
 
-/// Parse callback for parser matching a character matching a predicate.
+/// Parse callback for parser_pred().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_pred(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_pred(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     const char *text    = input;
     ctype_pred_cb pred  = POINTER_TO_FUNC(ctx, ctype_pred_cb);
 
     return_error_if_fail(size && pred(text[0]), E_PARSER_FAIL, -1);
 
-    if(stack && parser_stack_push(stack, "char", text, sizeof(char), NULL))
+    if(parser_stack_push(stack, "char", text, sizeof(char), NULL))
         return error_pass(), -1;
 
     return 1;
@@ -114,21 +111,20 @@ parser_ct parser_pred(ctype_pred_cb pred)
 {
     assert(pred);
 
-    return error_pass_ptr(
-        parser_new(parser_parse_pred, FUNC_TO_POINTER(pred), NULL));
+    return error_pass_ptr(parser_new(parser_parse_pred, FUNC_TO_POINTER(pred), NULL));
 }
 
-/// Parse callback for parser matching a character not matching a predicate.
+/// Parse callback for parser_not_pred().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_not_pred(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_not_pred(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     const char *text    = input;
     ctype_pred_cb pred  = POINTER_TO_FUNC(ctx, ctype_pred_cb);
 
     return_error_if_fail(size && !pred(text[0]), E_PARSER_FAIL, -1);
 
-    if(stack && parser_stack_push(stack, "char", text, sizeof(char), NULL))
+    if(parser_stack_push(stack, "char", text, sizeof(char), NULL))
         return error_pass(), -1;
 
     return 1;
@@ -138,8 +134,7 @@ parser_ct parser_not_pred(ctype_pred_cb pred)
 {
     assert(pred);
 
-    return error_pass_ptr(
-        parser_new(parser_parse_not_pred, FUNC_TO_POINTER(pred), NULL));
+    return error_pass_ptr(parser_new(parser_parse_not_pred, FUNC_TO_POINTER(pred), NULL));
 }
 
 parser_ct parser_digit(void)
@@ -332,16 +327,16 @@ parser_ct parser_not_word(void)
     return error_pass_ptr(parser_not_pred(isword));
 }
 
-/// Parse callback for parser matching a specific acceptable character.
+/// Parse callback for parser_accept().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_accept(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_accept(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     const char *text = input, *accept = ctx;
 
     return_error_if_fail(size && strchr(accept, text[0]), E_PARSER_FAIL, -1);
 
-    if(stack && parser_stack_push(stack, "char", text, sizeof(char), NULL))
+    if(parser_stack_push(stack, "char", text, sizeof(char), NULL))
         return error_pass(), -1;
 
     return 1;
@@ -357,20 +352,19 @@ parser_ct parser_accept(const char *accept)
     if(!accept[1])
         return error_pass_ptr(parser_char(accept[0]));
 
-    return error_pass_ptr(
-        parser_new(parser_parse_accept, accept, NULL));
+    return error_pass_ptr(parser_new(parser_parse_accept, accept, NULL));
 }
 
-/// Parse callback for parser matching an arbitrary acceptable character.
+/// Parse callback for parser_reject().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_reject(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_reject(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     const char *text = input, *reject = ctx;
 
     return_error_if_fail(size && !strchr(reject, text[0]), E_PARSER_FAIL, -1);
 
-    if(stack && parser_stack_push(stack, "char", text, sizeof(char), NULL))
+    if(parser_stack_push(stack, "char", text, sizeof(char), NULL))
         return error_pass(), -1;
 
     return 1;
@@ -386,14 +380,13 @@ parser_ct parser_reject(const char *reject)
     if(!reject[1])
         return error_pass_ptr(parser_not_char(reject[0]));
 
-    return error_pass_ptr(
-        parser_new(parser_parse_reject, reject, NULL));
+    return error_pass_ptr(parser_new(parser_parse_reject, reject, NULL));
 }
 
-/// Parse callback for parser matching a character from a character range.
+/// Parse callback for parser_range().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_range(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_range(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     const char *text    = input;
     int range           = POINTER_TO_VALUE(ctx, int);
@@ -402,7 +395,7 @@ static ssize_t parser_parse_range(const void *input, size_t size, void *ctx, par
 
     return_error_if_fail(size && RANGE(text[0], start, end), E_PARSER_FAIL, -1);
 
-    if(stack && parser_stack_push(stack, "char", text, sizeof(char), NULL))
+    if(parser_stack_push(stack, "char", text, sizeof(char), NULL))
         return error_pass(), -1;
 
     return 1;
@@ -417,14 +410,13 @@ parser_ct parser_range(char start, char end)
     if(start == end)
         return error_pass_ptr(parser_char(start));
 
-    return error_pass_ptr(
-        parser_new(parser_parse_range, VALUE_TO_POINTER(range), NULL));
+    return error_pass_ptr(parser_new(parser_parse_range, VALUE_TO_POINTER(range), NULL));
 }
 
-/// Parse callback for parser matching a character from outside a character range.
+/// Parse callback for parser_not_range().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_not_range(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_not_range(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     const char *text    = input;
     int range           = POINTER_TO_VALUE(ctx, int);
@@ -433,7 +425,7 @@ static ssize_t parser_parse_not_range(const void *input, size_t size, void *ctx,
 
     return_error_if_fail(size && !RANGE(text[0], start, end), E_PARSER_FAIL, -1);
 
-    if(stack && parser_stack_push(stack, "char", text, sizeof(char), NULL))
+    if(parser_stack_push(stack, "char", text, sizeof(char), NULL))
         return error_pass(), -1;
 
     return 1;
@@ -450,4 +442,25 @@ parser_ct parser_not_range(char start, char end)
 
     return error_pass_ptr(
         parser_new(parser_parse_not_range, VALUE_TO_POINTER(range), NULL));
+}
+
+/// Parse callback for parser_escape().
+///
+/// \implements parser_parse_cb
+static ssize_t parser_parse_escape(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
+{
+    const char *text    = input;
+    char esc            = POINTER_TO_VALUE(ctx, char);
+
+    return_error_if_fail(size >= 2 && text[0] == esc, E_PARSER_FAIL, -1);
+
+    if(parser_stack_push(stack, "char", &text[1], sizeof(char), NULL))
+        return error_pass(), -1;
+
+    return 2;
+}
+
+parser_ct parser_escape(char esc)
+{
+    return error_pass_ptr(parser_new(parser_parse_escape, VALUE_TO_POINTER(esc), NULL));
 }

@@ -32,19 +32,70 @@
 
 
 /// default error type for regex parser module
-#define ERROR_TYPE_DEFAULT ERROR_TYPE_PARSER
+#define ERROR_TYPE_DEFAULT ERROR_TYPE_REGEX
 
 
-static parser_ct parser_regex_term(void);
+static parser_ct parser_regex_dot(void)
+{
+    return error_pass_ptr(parser_char('.'));
+}
 
-static parser_ct parser_regex_group_no_capture(parser_ct term)
+static parser_ct parser_regex_class(void)
+{
+    return error_pass_ptr(parser_seq(2,
+        parser_drop(parser_string("[:")),
+        parser_assert(parser_seq(2,
+            parser_string_accept(14,
+                "alnum", "alpha", "ascii", "blank", "cntrl", "digit", "graph",
+                "lower", "print", "punct", "space", "upper", "word", "xdigit"),
+            parser_drop(parser_string(":]"))))));
+}
+
+static parser_ct parser_regex_range(void)
+{
+    return error_pass_ptr(parser_seq(3,
+        parser_reject("-]"),
+        parser_char('-'),
+        parser_reject("-]")));
+}
+
+static parser_ct parser_regex_bracket(void)
+{
+    parser_ct accept, bracket;
+
+    accept = parser_ref(parser_or(3,
+        parser_regex_class(),
+        parser_regex_range(),
+        parser_not_char(']')));
+
+    if(!accept)
+        return error_pass(), NULL;
+
+    bracket = parser_seq(2,
+        parser_drop(parser_char('[')),
+        parser_assert_e(parser_seq(3,
+            parser_maybe(parser_char('^')),
+            parser_or(2,
+                parser_seq(2,
+                    parser_char(']'),
+                    parser_many(accept)),
+                parser_min1(accept)),
+            parser_drop(parser_char(']'))),
+            "foo", E_REGEX_INVALID_BRACKET));
+
+    parser_unref(accept);
+
+    return error_pass_ptr(bracket);
+}
+
+static parser_ct parser_regex_group_no_capture(parser_ct expr)
 {
     return error_pass_ptr(parser_seq(2,
         parser_drop(parser_char(':')),
-        term));
+        expr));
 }
 
-static parser_ct parser_regex_group_named_capture(parser_ct term)
+static parser_ct parser_regex_group_named_capture(parser_ct expr)
 {
     return error_pass_ptr(parser_seq(3,
         parser_maybe_drop(parser_char('P')),
@@ -52,24 +103,28 @@ static parser_ct parser_regex_group_named_capture(parser_ct term)
             parser_drop(parser_char('<')),
             parser_min1(parser_not_char('>')),
             parser_drop(parser_char('>'))),
-        term));
+        expr));
 }
 
-static parser_ct parser_regex_option(void)
+static parser_ct parser_regex_options(void)
 {
-    return error_pass_ptr(parser_seq(2,
-        parser_min1(parser_accept("icsmxtn")),
+    parser_ct option, options;
+
+    if(!(option = parser_ref(parser_min1(parser_accept("icsmxtn")))))
+        return error_pass(), NULL;
+
+    options = parser_seq(2,
+        option,
         parser_maybe(parser_seq(2,
             parser_char('-'),
-            parser_min1(parser_accept("icsmxtn"))))));
+            option)));
+
+    parser_unref(option);
+
+    return error_pass_ptr(options);
 }
 
-static parser_ct foo(parser_ct p)
-{
-    return p;
-}
-
-static parser_ct parser_regex_group(parser_ct term)
+static parser_ct parser_regex_group(parser_ct expr)
 {
     return error_pass_ptr(parser_seq(2,
         parser_drop(parser_char('(')),
@@ -78,48 +133,21 @@ static parser_ct parser_regex_group(parser_ct term)
                 parser_seq(2,
                     parser_drop(parser_char('?')),
                     parser_assert(parser_or(3,
-                        parser_regex_group_no_capture(term),
-                        parser_regex_group_named_capture(term),
-                        parser_regex_option()))),
-                foo(term)),
+                        parser_regex_group_no_capture(expr),
+                        parser_regex_group_named_capture(expr),
+                        parser_regex_options()))),
+                expr),
             parser_drop(parser_char(')'))))));
 }
 
-static parser_ct parser_regex_class(void)
+static parser_ct parser_regex_token(parser_ct expr)
 {
-    return error_pass_ptr(parser_seq(3,
-        parser_drop(parser_string("[:")),
-        parser_string_accept(14,
-            "alnum", "alpha", "ascii", "blank", "cntrl", "digit", "graph",
-            "lower", "print", "punct", "space", "upper", "word", "xdigit"),
-        parser_drop(parser_string(":]"))));
-}
-
-static parser_ct parser_regex_range(void)
-{
-    return error_pass_ptr(parser_seq(3,
-        parser_word(),
-        parser_char('-'),
-        parser_word()));
-}
-
-static parser_ct parser_regex_bracket(void)
-{
-    return error_pass_ptr(parser_seq(3,
-        parser_drop(parser_char('[')),
-        parser_or(3,
-            parser_regex_class(),
-            parser_regex_range(),
-            parser_min1(parser_not_char(']'))),
-        parser_drop(parser_char(']'))));
-}
-
-static parser_ct parser_regex_token(parser_ct term)
-{
-    return error_pass_ptr(parser_or(3,
-        parser_regex_group(term),
+    return error_pass_ptr(parser_or(5,
+        parser_min1(parser_reject("|.+*?[](){}^$")),
+        parser_escape('\\'),
+        parser_regex_dot(),
         parser_regex_bracket(),
-        parser_min1(parser_reject("()[]{}+*?|^$"))));
+        parser_regex_group(expr)));
 }
 
 static parser_ct parser_regex_minmax(void)
@@ -141,31 +169,28 @@ static parser_ct parser_regex_quantifier(void)
         parser_regex_minmax()));
 }
 
-static parser_ct parser_regex_term(void)
+static parser_ct parser_regex_term(parser_ct expr)
 {
-    parser_ct term;
-
-    if(!(term = parser_new_link()))
-        return error_pass(), NULL;
-
-    return error_pass_ptr(parser_link(term,
-        parser_min1(parser_seq(2,
-            parser_regex_token(term),
-            parser_maybe(parser_regex_quantifier())))));
+    return error_pass_ptr(parser_min1(parser_seq(2,
+        parser_regex_token(expr),
+        parser_maybe(parser_regex_quantifier()))));
 }
 
 parser_ct parser_regex(void)
 {
     parser_ct term, regex;
 
-    if(!(term = parser_ref(parser_regex_term())))
+    if(!(regex = parser_new_link()))
         return error_pass(), NULL;
 
-    regex = parser_seq(2,
+    if(!(term = parser_ref(parser_regex_term(regex))))
+        return error_pass(), parser_unref(regex), NULL;
+
+    regex = parser_link(regex, parser_seq(2,
         term,
         parser_many(parser_seq(2,
             parser_drop(parser_char('|')),
-            parser_assert(term))));
+            parser_assert(term)))));
 
     parser_unref(term);
 

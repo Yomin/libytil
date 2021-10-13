@@ -54,7 +54,7 @@ static void parser_dtor_repeat(void *ctx)
 /// Parse callback for parser_repeat().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_repeat(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_repeat(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ctx_repeat_st *repeat = ctx;
     const char *ptr;
@@ -63,7 +63,7 @@ static ssize_t parser_parse_repeat(const void *input, size_t size, void *ctx, pa
 
     for(ptr = input, n = 0; n < repeat->n; ptr += count, size -= count, n++)
     {
-        if((count = parser_parse(repeat->p, ptr, size, stack)) < 0)
+        if((count = parser_parse(repeat->p, ptr, size, stack, state)) < 0)
             return error_pass(), -1;
 
         assert((size_t)count <= size);
@@ -97,14 +97,14 @@ parser_ct parser_repeat(size_t n, parser_ct p)
 /// Parse callback for parser_repeat_x().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_repeat_x(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_repeat_x(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ctx_repeat_st repeat = { .p = ctx };
 
     if(parser_stack_pop_arg(stack, "size_t", &repeat.n))
         return error_pass(), -1;
 
-    return error_pass_int(parser_parse_repeat(input, size, &repeat, stack));
+    return error_pass_int(parser_parse_repeat(input, size, &repeat, stack, state));
 }
 
 parser_ct parser_repeat_x(parser_ct p)
@@ -133,7 +133,7 @@ static void parser_dtor_min(void *ctx)
 /// Parse callback for parser_min().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_min(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_min(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ctx_min_st *min = ctx;
     const char *ptr;
@@ -142,7 +142,7 @@ static ssize_t parser_parse_min(const void *input, size_t size, void *ctx, parse
 
     for(ptr = input, n = 0;; ptr += count, size -= count, n++)
     {
-        if((count = parser_parse(min->p, ptr, size, stack)) < 0)
+        if((count = parser_parse(min->p, ptr, size, stack, state)) < 0)
         {
             if(!error_check(0, 1, E_PARSER_FAIL))
                 return error_pass(), -1;
@@ -182,11 +182,11 @@ parser_ct parser_min(size_t n, parser_ct p)
 /// Parse callback for parser_min1().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_min1(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_min1(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ctx_min_st min = { .p = ctx, .n = 1 };
 
-    return error_pass_int(parser_parse_min(input, size, &min, stack));
+    return error_pass_int(parser_parse_min(input, size, &min, stack, state));
 }
 
 parser_ct parser_min1(parser_ct p)
@@ -197,11 +197,11 @@ parser_ct parser_min1(parser_ct p)
 /// Parse callback for parser_many().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_many(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_many(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ctx_min_st min = { .p = ctx, .n = 0 };
 
-    return error_pass_int(parser_parse_min(input, size, &min, stack));
+    return error_pass_int(parser_parse_min(input, size, &min, stack, state));
 }
 
 parser_ct parser_many(parser_ct p)
@@ -231,7 +231,7 @@ static void parser_dtor_minmax(void *ctx)
 /// Parse callback for parser_minmax().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_minmax(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_minmax(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ctx_minmax_st *minmax = ctx;
     const char *ptr;
@@ -240,7 +240,7 @@ static ssize_t parser_parse_minmax(const void *input, size_t size, void *ctx, pa
 
     for(ptr = input, n = 0; n < minmax->max; ptr += count, size -= count, n++)
     {
-        if((count = parser_parse(minmax->p, ptr, size, stack)) >= 0)
+        if((count = parser_parse(minmax->p, ptr, size, stack, state)) >= 0)
         {
             assert((size_t)count <= size);
 
@@ -305,12 +305,12 @@ static void parser_dtor_max(void *ctx)
 /// Parse callback for parser_max().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_max(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_max(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ctx_max_st *max = ctx;
     parser_ctx_minmax_st minmax = { .p = max->p, .min = 0, .max = max->n };
 
-    return error_pass_int(parser_parse_minmax(input, size, &minmax, stack));
+    return error_pass_int(parser_parse_minmax(input, size, &minmax, stack, state));
 }
 
 parser_ct parser_max(size_t n, parser_ct p)

@@ -41,11 +41,13 @@ static void parser_dtor_parser(void *ctx)
 /// Parse callback for parser_check().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_check(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_check(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ct p = ctx;
 
-    if(parser_parse(p, input, size, NULL) < 0)
+    parser_stack_activate(stack, false);
+
+    if(parser_parse(p, input, size, stack, state) < 0)
         return error_pass(), -1;
 
     return 0; // discard matched input
@@ -78,11 +80,13 @@ parser_ct parser_check_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx,
 /// Parse callback for parser_drop().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_drop(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_drop(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ct p = ctx;
 
-    return error_pass_int(parser_parse(p, input, size, NULL));
+    parser_stack_activate(stack, false);
+
+    return error_pass_int(parser_parse(p, input, size, stack, state));
 }
 
 parser_ct parser_drop(parser_ct p)
@@ -112,11 +116,13 @@ parser_ct parser_drop_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, 
 /// Parse callback for parser_not().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_not(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_not(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ct p = ctx;
 
-    if(parser_parse(p, input, size, NULL) >= 0)
+    parser_stack_activate(stack, false);
+
+    if(parser_parse(p, input, size, stack, state) >= 0)
         return error_set(E_PARSER_FAIL), -1;
 
     if(!error_check(0, 1, E_PARSER_FAIL))
@@ -152,12 +158,12 @@ parser_ct parser_not_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, p
 /// Parse callback for parser_maybe().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_maybe(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_maybe(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ct p = ctx;
     ssize_t count;
 
-    if((count = parser_parse(p, input, size, stack)) >= 0)
+    if((count = parser_parse(p, input, size, stack, state)) >= 0)
     {
         assert((size_t)count <= size);
 
@@ -178,9 +184,11 @@ parser_ct parser_maybe(parser_ct p)
 /// Parse callback for parser_maybe_drop().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_maybe_drop(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_maybe_drop(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
-    return error_pass_int(parser_parse_maybe(input, size, ctx, NULL));
+    parser_stack_activate(stack, false);
+
+    return error_pass_int(parser_parse_maybe(input, size, ctx, stack, state));
 }
 
 parser_ct parser_maybe_drop(parser_ct p)
@@ -191,11 +199,11 @@ parser_ct parser_maybe_drop(parser_ct p)
 /// Parse callback for parser_maybe_lift().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_maybe_lift(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_maybe_lift(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ct p = ctx;
 
-    return error_pass_int(parser_parse(p, input, size, stack));
+    return error_pass_int(parser_parse(p, input, size, stack, state));
 }
 
 parser_ct parser_maybe_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor)
@@ -220,14 +228,16 @@ parser_ct parser_maybe_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx,
 /// Parse callback for parser_and().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_and(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_and(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ct *list;
     ssize_t count = 0;
 
     for(list = ctx; *list; list++)
     {
-        if((count = parser_parse(*list, input, size, list[1] ? NULL : stack)) < 0)
+        parser_stack_activate(stack, !list[1]);
+
+        if((count = parser_parse(*list, input, size, stack, state)) < 0)
             return error_pass(), -1;
 
         assert((size_t)count <= size);
@@ -262,7 +272,7 @@ parser_ct parser_and_v(size_t n, va_list parsers)
 /// Parse callback for parser_or().
 ///
 /// \implements parser_parse_cb
-static ssize_t parser_parse_or(const void *input, size_t size, void *ctx, parser_stack_ct stack)
+static ssize_t parser_parse_or(const void *input, size_t size, void *ctx, parser_stack_ct stack, void *state)
 {
     parser_ct *list = ctx;
     ssize_t count;
@@ -271,7 +281,7 @@ static ssize_t parser_parse_or(const void *input, size_t size, void *ctx, parser
 
     for(; *list; list++)
     {
-        if((count = parser_parse(*list, input, size, stack)) >= 0)
+        if((count = parser_parse(*list, input, size, stack, state)) >= 0)
         {
             assert((size_t)count <= size);
 
