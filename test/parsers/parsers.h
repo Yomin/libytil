@@ -25,6 +25,7 @@
 
 
 int test_suite_parsers(void *param);
+int test_suite_parsers_stack(void *param);
 int test_suite_parsers_parser(void *param);
 int test_suite_parsers_null(void *param);
 int test_suite_parsers_regex(void *param);

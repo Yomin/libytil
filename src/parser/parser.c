@@ -49,12 +49,8 @@ ERROR_DEFINE_LIST(PARSER,
     ERROR_INFO(E_PARSER_FAIL, "Parser failed."),
     ERROR_INFO(E_PARSER_ABORT, "Parser aborted."),
     ERROR_INFO(E_PARSER_ERROR, "Parser aborted with error."),
-    ERROR_INFO(E_PARSER_STACK_EMPTY, "Parse stack is empty."),
-    ERROR_INFO(E_PARSER_STACK_TYPE, "Wrong stack type requested."),
-    ERROR_INFO(E_PARSER_ARG_MISSING, "Missing parser argument on stack."),
-    ERROR_INFO(E_PARSER_ARG_TYPE, "Parser argument with wrong type on stack."),
-    ERROR_INFO(E_PARSER_RESULT_MISSING, "Missing parser result on stack."),
-    ERROR_INFO(E_PARSER_RESULT_TYPE, "Parser result with wrong type on stack.")
+    ERROR_INFO(E_PARSER_STACK_MISSING, "Missing stack item."),
+    ERROR_INFO(E_PARSER_STACK_TYPE, "Wrong stack item type requested."),
 );
 
 /// default error type for parser module

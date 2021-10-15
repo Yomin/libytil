@@ -35,12 +35,9 @@ typedef enum parser_error
     E_PARSER_FAIL,              ///< parser failed, another parser may succeed
     E_PARSER_ABORT,             ///< parser aborted, stop parsing altogether
     E_PARSER_ERROR,             ///< parser aborted with error
-    E_PARSER_STACK_EMPTY,       ///< parse stack is empty
-    E_PARSER_STACK_TYPE,        ///< wrong stack type requested
-    E_PARSER_ARG_MISSING,       ///< missing parser argument on stack
-    E_PARSER_ARG_TYPE,          ///< parser argument with wrong type on stack
-    E_PARSER_RESULT_MISSING,    ///< missing parser result on stack
-    E_PARSER_RESULT_TYPE,       ///< parser result with wrong type on stack
+    E_PARSER_STACK_MISSING,     ///< missing stack item
+    E_PARSER_STACK_TYPE,        ///< wrong stack item type requested
+    E_PARSER_STACK_NULL,        ///< NULL pointer is valid pointer item
 } parser_error_id;
 
 /// parser error type declaration

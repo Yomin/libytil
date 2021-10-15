@@ -71,8 +71,15 @@ int parser_stack_frame_push(parser_stack_ct stack);
 /// \param stack    parse stack
 ///
 /// \retval 0                           success
-/// \retval -1/E_PARSER_STACK_EMPTY     no frame left
+/// \retval -1/E_PARSER_STACK_MISSING   no frame left
 int parser_stack_frame_pop(parser_stack_ct stack);
+
+/// Get number of stack frames.
+///
+/// \param stack    parse stack
+///
+/// \returns        number of stack frames
+size_t parser_stack_frame_depth(parser_stack_ct stack);
 
 /// Push item onto current parse stack frame.
 ///
@@ -90,7 +97,7 @@ int parser_stack_push(parser_stack_ct stack, const char *type, const void *data,
 ///
 /// \param stack    parse stack
 /// \param type     item type
-/// \param ptr      pointer item, must not be NULL
+/// \param ptr      pointer item
 /// \param dtor     item destructor
 ///
 /// \retval 0                   success
@@ -101,41 +108,42 @@ int parser_stack_push_p(parser_stack_ct stack, const char *type, const void *ptr
 ///
 /// \param stack    parse stack
 /// \param type     item type
-/// \param data     pointer to item to fill, may be NULL
+/// \param data     pointer to item to fill, if NULL item is destructed
 ///
 /// \retval 0                           success
-/// \retval -1/E_PARSER_STACK_EMPTY     parse stack is empty
+/// \retval -1/E_PARSER_STACK_MISSING   parse stack frame is empty
 /// \retval -1/E_PARSER_STACK_TYPE      stack item has not requested type
 int parser_stack_pop(parser_stack_ct stack, const char *type, void *data);
-
-/// Pop argument from current parse stack frame.
-///
-/// \param stack    parse stack
-/// \param type     argument type
-/// \param data     pointer to argument to fill, may be NULL
-///
-/// \retval 0                           success
-/// \retval -1/E_PARSER_ARG_MISSING     parse stack is empty
-/// \retval -1/E_PARSER_ARG_TYPE        stack item has not requested type
-int parser_stack_pop_arg(parser_stack_ct stack, const char *type, void *data);
 
 /// Pop pointer item from current parse stack frame.
 ///
 /// \param stack    parse stack
 /// \param type     item type
 ///
-/// \returns                            pointer item
-/// \retval NULL/E_PARSER_STACK_EMPTY   parse stack is empty
-/// \retval NULL/E_PARSER_STACK_TYPE    stack item has not requested type
+/// \returns                                pointer item
+/// \retval NULL/E_PARSER_STACK_MISSING     parse stack frame is empty
+/// \retval NULL/E_PARSER_STACK_TYPE        stack item has not requested type
+/// \retval NULL/E_PARSER_STACK_NULL        NULL pointer is valid
 void *parser_stack_pop_p(parser_stack_ct stack, const char *type);
 
-/// Pop pointer argument from current parse stack frame.
+/// Pop item from last parse stack frame.
 ///
 /// \param stack    parse stack
-/// \param type     argument type
+/// \param type     item type
+/// \param data     pointer to item to fill, if NULL item is destructed
+///
+/// \retval 0                           success
+/// \retval -1/E_PARSER_ARG_MISSING     last parse stack frame is empty
+/// \retval -1/E_PARSER_ARG_TYPE        stack item has not requested type
+int parser_stack_pop_arg(parser_stack_ct stack, const char *type, void *data);
+
+/// Pop pointer item from last parse stack frame.
+///
+/// \param stack    parse stack
+/// \param type     item type
 ///
 /// \returns                            pointer item
-/// \retval NULL/E_PARSER_ARG_MISSING   parse stack is empty
+/// \retval NULL/E_PARSER_ARG_MISSING   last parse stack is empty
 /// \retval NULL/E_PARSER_ARG_TYPE      stack item has not requested type
 void *parser_stack_pop_arg_p(parser_stack_ct stack, const char *type);
 
@@ -143,32 +151,20 @@ void *parser_stack_pop_arg_p(parser_stack_ct stack, const char *type);
 ///
 /// \param stack    parse stack
 /// \param type     item type
-/// \param data     pointer to item to fill, may be NULL
 /// \param pos      position of item, 0 is top of stack
 ///
-/// \retval 0                           success
-/// \retval -1/E_PARSER_STACK_EMPTY     parse stack is empty
-/// \retval -1/E_PARSER_STACK_TYPE      stack item has not requested type
-int parser_stack_get(parser_stack_const_ct stack, const char *type, void *data, size_t pos);
-
-/// Get pointer item at position from current parse stack frame.
-///
-/// \param stack    parse stack
-/// \param type     item type
-/// \param pos      position of item, 0 is top of stack
-///
-/// \returns                            pointer item
-/// \retval NULL/E_PARSER_STACK_EMPTY   parse stack is empty
-/// \retval NULL/E_PARSER_STACK_TYPE    stack item has not requested type
-void *parser_stack_get_p(parser_stack_const_ct stack, const char *type, size_t pos);
+/// \returns                                pointer to stack item
+/// \retval NULL/E_PARSER_STACK_MISSING     requested item not in stack frame
+/// \retval NULL/E_PARSER_STACK_TYPE        stack item has not requested type
+void *parser_stack_at(parser_stack_const_ct stack, const char *type, size_t pos);
 
 /// Get item type at position from current parse stack frame.
 ///
 /// \param stack    parse stack
 /// \param pos      position of item, 0 is top of stack
 ///
-/// \returns                            item type
-/// \retval NULL/E_PARSER_STACK_EMPTY   parse stack is empty
+/// \returns                                item type
+/// \retval NULL/E_PARSER_STACK_MISSING     requested item not in stack frame
 const char *parser_stack_get_type(parser_stack_const_ct stack, size_t pos);
 
 /// Get item size at position from current parse stack frame.
@@ -176,8 +172,8 @@ const char *parser_stack_get_type(parser_stack_const_ct stack, size_t pos);
 /// \param stack    parse stack
 /// \param pos      position of item, 0 is top of stack
 ///
-/// \returns                            item size
-/// \retval -1/E_PARSER_STACK_EMPTY     parse stack is empty
+/// \returns                                item size
+/// \retval -1/E_PARSER_STACK_MISSING       requested item not in stack frame
 ssize_t parser_stack_get_size(parser_stack_const_ct stack, size_t pos);
 
 /// Enable/Disable result pushing in the current stack frame.
@@ -200,8 +196,13 @@ bool parser_stack_is_active(parser_stack_const_ct stack);
 /// \param n        number of items to drop
 ///
 /// \retval 0                           success
-/// \retval -1/E_PARSER_STACK_EMPTY     less than \p n items on stack
+/// \retval -1/E_PARSER_STACK_MISSING   less than \p n items on stack
 int parser_stack_drop(parser_stack_ct stack, size_t n);
+
+/// Clear current parse stack frame.
+///
+/// \param stack    parse stack
+void parser_stack_clear(parser_stack_ct stack);
 
 /// Get current parse stack frame size.
 ///
@@ -210,10 +211,13 @@ int parser_stack_drop(parser_stack_ct stack, size_t n);
 /// \returns        number of items on stack
 size_t parser_stack_size(parser_stack_const_ct stack);
 
-/// Clear current parse stack frame.
+/// Get last parse stack frame size.
 ///
 /// \param stack    parse stack
-void parser_stack_clear(parser_stack_ct stack);
+///
+/// \returns                            number of items on stack
+/// \retval -1/E_PARSER_STACK_MISSING   no last frame available
+ssize_t parser_stack_args(parser_stack_const_ct stack);
 
 
 #endif
