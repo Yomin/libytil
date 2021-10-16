@@ -164,11 +164,7 @@ static ssize_t parser_parse_maybe(const void *input, size_t size, void *ctx, par
     ssize_t count;
 
     if((count = parser_parse(p, input, size, stack, state)) >= 0)
-    {
-        assert((size_t)count <= size);
-
         return count;
-    }
 
     if(!error_check(0, 1, E_PARSER_FAIL))
         return error_pass(), -1;
@@ -239,8 +235,6 @@ static ssize_t parser_parse_and(const void *input, size_t size, void *ctx, parse
 
         if((count = parser_parse(*list, input, size, stack, state)) < 0)
             return error_pass(), -1;
-
-        assert((size_t)count <= size);
     }
 
     return count;
@@ -282,11 +276,7 @@ static ssize_t parser_parse_or(const void *input, size_t size, void *ctx, parser
     for(; *list; list++)
     {
         if((count = parser_parse(*list, input, size, stack, state)) >= 0)
-        {
-            assert((size_t)count <= size);
-
             return count;
-        }
 
         if(!error_check(0, 1, E_PARSER_FAIL))
             break;

@@ -128,8 +128,6 @@ static ssize_t parser_parse_seq(const void *input, size_t size, void *ctx, parse
     {
         if((count = parser_parse(*list, ptr, size, stack, state)) < 0)
             return error_pass(), -1;
-
-        assert((size_t)count <= size);
     }
 
     return ptr - (const char*)input;

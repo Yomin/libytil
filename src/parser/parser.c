@@ -201,6 +201,8 @@ ssize_t parser_parse(parser_const_ct p, const void *input, size_t len, parser_st
     if((rc = p->parse(input, len, p->ctx, stack, (void *)state)) < 0)
         parser_stack_clear(stack);
 
+    assert(rc < 0 || (size_t)rc <= len);
+
     parser_stack_frame_pop(stack);
 
     return error_pass_int(rc);

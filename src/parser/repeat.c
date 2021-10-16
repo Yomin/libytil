@@ -65,8 +65,6 @@ static ssize_t parser_parse_repeat(const void *input, size_t size, void *ctx, pa
     {
         if((count = parser_parse(repeat->p, ptr, size, stack, state)) < 0)
             return error_pass(), -1;
-
-        assert((size_t)count <= size);
     }
 
     return ptr - (const char *)input;
@@ -152,8 +150,6 @@ static ssize_t parser_parse_min(const void *input, size_t size, void *ctx, parse
 
             return ptr - (const char *)input;
         }
-
-        assert((size_t)count <= size);
     }
 }
 
@@ -241,11 +237,7 @@ static ssize_t parser_parse_minmax(const void *input, size_t size, void *ctx, pa
     for(ptr = input, n = 0; n < minmax->max; ptr += count, size -= count, n++)
     {
         if((count = parser_parse(minmax->p, ptr, size, stack, state)) >= 0)
-        {
-            assert((size_t)count <= size);
-
             continue;
-        }
 
         if(!error_check(0, 1, E_PARSER_FAIL))
             return error_pass(), -1;
