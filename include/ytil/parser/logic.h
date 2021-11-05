@@ -50,17 +50,16 @@ parser_ct parser_check(parser_ct p);
 /// Push a value onto the stack.
 ///
 /// \par Equivalent
-///     parser_and(2, p, parser_lift(type, data, size, dtor))
+///     parser_and(2, p, parser_lift(type, data, size))
 ///
 /// \param p        parser
 /// \param type     value type
 /// \param data     pointer to value data
 /// \param size     value size
-/// \param dtor     value destructor
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_check_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor);
+parser_ct parser_check_lift(parser_ct p, const char *type, const void *data, size_t size);
 
 /// New parser which checks for success of a parser and lifts a pointer value.
 ///
@@ -70,16 +69,15 @@ parser_ct parser_check_lift(parser_ct p, const char *type, const void *data, siz
 /// Push a pointer value onto the stack.
 ///
 /// \par Equivalent
-///     parser_and(2, p, parser_lift_p(type, ptr, dtor))
+///     parser_and(2, p, parser_lift_p(type, ptr))
 ///
 /// \param p        parser
 /// \param type     value type
 /// \param ptr      pointer value, must not be NULL
-/// \param dtor     value destructor
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_check_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor);
+parser_ct parser_check_lift_p(parser_ct p, const char *type, const void *ptr);
 
 /// New parser which checks for success of a parser and lifts values.
 ///
@@ -118,17 +116,16 @@ parser_ct parser_drop(parser_ct p);
 /// Push a value onto the stack.
 ///
 /// \par Equivalent
-///     parser_seq(2, parser_drop(p), parser_lift(type, data, size, dtor))
+///     parser_seq(2, parser_drop(p), parser_lift(type, data, size))
 ///
 /// \param p        parser
 /// \param type     value type
 /// \param data     pointer to value data
 /// \param size     value size
-/// \param dtor     value destructor
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_drop_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor);
+parser_ct parser_drop_lift(parser_ct p, const char *type, const void *data, size_t size);
 
 /// New parser which executs a parser, drops its results and lifts a pointer value.
 ///
@@ -137,16 +134,15 @@ parser_ct parser_drop_lift(parser_ct p, const char *type, const void *data, size
 /// Push a pointer value onto the stack.
 ///
 /// \par Equivalent
-///     parser_seq(2, parser_drop(p), parser_lift_p(type, ptr, dtor))
+///     parser_seq(2, parser_drop(p), parser_lift_p(type, ptr))
 ///
 /// \param p        parser
 /// \param type     value type
 /// \param ptr      pointer value, must not be NULL
-/// \param dtor     value destructor
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_drop_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor);
+parser_ct parser_drop_lift_p(parser_ct p, const char *type, const void *ptr);
 
 /// New parser which executs a parser, drops its results and lifts values if it fails.
 ///
@@ -185,17 +181,16 @@ parser_ct parser_not(parser_ct p);
 /// If sub parser fails, push a value onto the stack.
 ///
 /// \par Equivalent
-///     parser_and(2, parser_not(p), parser_lift(type, data, size, dtor))
+///     parser_and(2, parser_not(p), parser_lift(type, data, size))
 ///
 /// \param p        parser
 /// \param type     value type
 /// \param data     pointer to value data
 /// \param size     value size
-/// \param dtor     value destructor
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_not_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor);
+parser_ct parser_not_lift(parser_ct p, const char *type, const void *data, size_t size);
 
 /// New parser which inverts the status of a parser and lifts a pointer value if it fails.
 ///
@@ -204,16 +199,15 @@ parser_ct parser_not_lift(parser_ct p, const char *type, const void *data, size_
 /// If sub parser fails, push a pointer value onto the stack.
 ///
 /// \par Equivalent
-///     parser_and(2, parser_not(p), parser_lift_p(type, ptr, dtor))
+///     parser_and(2, parser_not(p), parser_lift_p(type, ptr))
 ///
 /// \param p        parser
 /// \param type     value type
 /// \param ptr      pointer value, must not be NULL
-/// \param dtor     value destructor
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_not_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor);
+parser_ct parser_not_lift_p(parser_ct p, const char *type, const void *ptr);
 
 /// New parser which inverts the status of a parser and lifts values if it fails.
 ///
@@ -267,17 +261,16 @@ parser_ct parser_maybe_drop(parser_ct p);
 /// If sub parser fails, push a value onto the stack.
 ///
 /// \par Equivalent
-///     parser_or(2, p, parser_lift(type, data, size, dtor))
+///     parser_or(2, p, parser_lift(type, data, size))
 ///
 /// \param p        parser
 /// \param type     value type
 /// \param data     pointer to value data
 /// \param size     value size
-/// \param dtor     value destructor
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_maybe_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor);
+parser_ct parser_maybe_lift(parser_ct p, const char *type, const void *data, size_t size);
 
 /// New parser which tries to execute a parser and lifts a pointer value if it fails.
 ///
@@ -285,16 +278,15 @@ parser_ct parser_maybe_lift(parser_ct p, const char *type, const void *data, siz
 /// If sub parser fails, push a pointer value onto the stack.
 ///
 /// \par Equivalent
-///     parser_or(2, p, parser_lift_p(type, ptr, dtor))
+///     parser_or(2, p, parser_lift_p(type, ptr))
 ///
 /// \param p        parser
 /// \param type     value type
 /// \param ptr      pointer value, must not be NULL
-/// \param dtor     value destructor
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_maybe_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor);
+parser_ct parser_maybe_lift_p(parser_ct p, const char *type, const void *ptr);
 
 /// New parser which tries to execute a parser and lifts values if it fails.
 ///

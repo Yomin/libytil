@@ -216,16 +216,21 @@ TEST_CASE_PFIX_ABORT(parser_parse_too_much, parser_init, parser_finish, test_par
 
 static ssize_t test_parser_parse_fail(const void *input, size_t len, void *ctx, parser_stack_ct stack, void *state)
 {
+    test_int_success(parser_stack_push_p(stack, "string", input, NULL));
+
     return error_set_s(PARSER, E_PARSER_FAIL), -1;
 }
 
 TEST_CASE_PFIX(parser_parse_fail, parser_init, parser_finish, test_parser_parse_fail)
 {
     test_int_error(parser_parse(parser, "foo", 3, stack, NULL), E_PARSER_FAIL);
+    test_uint_eq(parser_stack_size(stack), 0);
 }
 
 static ssize_t test_parser_parse_success(const void *input, size_t len, void *ctx, parser_stack_ct stack, void *state)
 {
+    test_int_success(parser_stack_push_p(stack, "string", input, NULL));
+
     test_str_eq(input, "foo");
     test_uint_eq(len, 3);
     test_str_eq(ctx, "ctx");
@@ -236,7 +241,12 @@ static ssize_t test_parser_parse_success(const void *input, size_t len, void *ct
 
 TEST_CASE_PFIX(parser_parse_success, parser_init, parser_finish, test_parser_parse_success)
 {
+    const char *str;
+
     test_rc_success(parser_parse(parser, "foo", 3, stack, "state"), 3, -1);
+    test_uint_eq(parser_stack_size(stack), 1);
+    test_ptr_success(str = parser_stack_pop_p(stack, "string"));
+    test_str_eq(str, "foo");
 }
 
 int test_suite_parsers_parser(void *param)

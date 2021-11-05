@@ -58,16 +58,16 @@ parser_ct parser_check(parser_ct p)
     return error_pass_ptr(parser_new_parser(parser_parse_check, p));
 }
 
-parser_ct parser_check_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor)
+parser_ct parser_check_lift(parser_ct p, const char *type, const void *data, size_t size)
 {
     return error_pass_ptr(parser_new_lift_success(
         parser_parse_check, parser_ref_sink(p), parser_dtor_parser,
-        type, data, size, dtor));
+        type, data, size));
 }
 
-parser_ct parser_check_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor)
+parser_ct parser_check_lift_p(parser_ct p, const char *type, const void *ptr)
 {
-    return error_pass_ptr(parser_check_lift(p, type, &ptr, sizeof(void *), dtor));
+    return error_pass_ptr(parser_check_lift(p, type, &ptr, sizeof(void *)));
 }
 
 parser_ct parser_check_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor)
@@ -94,16 +94,16 @@ parser_ct parser_drop(parser_ct p)
     return error_pass_ptr(parser_new_parser(parser_parse_drop, p));
 }
 
-parser_ct parser_drop_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor)
+parser_ct parser_drop_lift(parser_ct p, const char *type, const void *data, size_t size)
 {
     return error_pass_ptr(parser_new_lift_success(
         parser_parse_drop, parser_ref_sink(p), parser_dtor_parser,
-        type, data, size, dtor));
+        type, data, size));
 }
 
-parser_ct parser_drop_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor)
+parser_ct parser_drop_lift_p(parser_ct p, const char *type, const void *ptr)
 {
-    return error_pass_ptr(parser_drop_lift(p, type, &ptr, sizeof(void *), dtor));
+    return error_pass_ptr(parser_drop_lift(p, type, &ptr, sizeof(void *)));
 }
 
 parser_ct parser_drop_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor)
@@ -136,16 +136,16 @@ parser_ct parser_not(parser_ct p)
     return error_pass_ptr(parser_new_parser(parser_parse_not, p));
 }
 
-parser_ct parser_not_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor)
+parser_ct parser_not_lift(parser_ct p, const char *type, const void *data, size_t size)
 {
     return error_pass_ptr(parser_new_lift_success(
         parser_parse_not, parser_ref_sink(p), parser_dtor_parser,
-        type, data, size, dtor));
+        type, data, size));
 }
 
-parser_ct parser_not_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor)
+parser_ct parser_not_lift_p(parser_ct p, const char *type, const void *ptr)
 {
-    return error_pass_ptr(parser_not_lift(p, type, &ptr, sizeof(void *), dtor));
+    return error_pass_ptr(parser_not_lift(p, type, &ptr, sizeof(void *)));
 }
 
 parser_ct parser_not_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor)
@@ -202,16 +202,16 @@ static ssize_t parser_parse_maybe_lift(const void *input, size_t size, void *ctx
     return error_pass_int(parser_parse(p, input, size, stack, state));
 }
 
-parser_ct parser_maybe_lift(parser_ct p, const char *type, const void *data, size_t size, parser_dtor_cb dtor)
+parser_ct parser_maybe_lift(parser_ct p, const char *type, const void *data, size_t size)
 {
     return error_pass_ptr(parser_new_lift_fail(
         parser_parse_maybe_lift, parser_ref_sink(p), parser_dtor_parser,
-        type, data, size, dtor));
+        type, data, size));
 }
 
-parser_ct parser_maybe_lift_p(parser_ct p, const char *type, const void *ptr, parser_dtor_cb dtor)
+parser_ct parser_maybe_lift_p(parser_ct p, const char *type, const void *ptr)
 {
-    return error_pass_ptr(parser_maybe_lift(p, type, &ptr, sizeof(void *), dtor));
+    return error_pass_ptr(parser_maybe_lift(p, type, &ptr, sizeof(void *)));
 }
 
 parser_ct parser_maybe_lift_f(parser_ct p, parser_lift_cb lift, const void *ctx, parser_dtor_cb dtor)

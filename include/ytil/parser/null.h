@@ -32,55 +32,52 @@
 ///
 /// \param stack    parse stack
 /// \param ctx      callback context
+/// \param state    parse state
 ///
 /// \retval 0                   success
 /// \retval -1/E_GENERIC_OOM    out of memory
-typedef int (*parser_lift_cb)(parser_stack_ct stack, void *ctx);
+typedef int (*parser_lift_cb)(parser_stack_ct stack, void *ctx, void *state);
 
 
 /// Create new parser which lifts a value on success.
 ///
-/// \note If this function fails, the callback context and the lift value
-///       are immediately destroyed.
+/// \note If this function fails, the callback context is immediately destroyed.
 ///
 /// \par Equivalent
 ///     parser_seq(2,
-///         parser_new(parse, parse_ctx, parse_dtor),
-///         parser_lift(type, data, size, data_dtor))
+///         parser_new(parse, ctx, dtor),
+///         parser_lift(type, data, size))
 ///
-/// \param parse        parse callback
-/// \param parse_ctx    \p parse context
-/// \param parse_dtor   \p parse_ctx destructor
-/// \param type         lift value type
-/// \param data         pointer to lift value data
-/// \param size         lift value size
-/// \param data_dtor    lift value destructor
+/// \param parse    parse callback
+/// \param ctx      \p parse context
+/// \param dtor     \p ctx destructor
+/// \param type     lift value type
+/// \param data     pointer to lift value data
+/// \param size     lift value size
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_new_lift_success(parser_parse_cb parse, const void *parse_ctx, parser_dtor_cb parse_dtor, const char *type, const void *data, size_t size, parser_dtor_cb data_dtor);
+parser_ct parser_new_lift_success(parser_parse_cb parse, const void *ctx, parser_dtor_cb dtor, const char *type, const void *data, size_t size);
 
 /// Create new parser which lifts a value on fail.
 ///
-/// \note If this function fails, the callback context and the lift value
-///       are immediately destroyed.
+/// \note If this function fails, the callback context is immediately destroyed.
 ///
 /// \par Equivalent
 ///     parser_or(2,
-///         parser_new(parse, parse_ctx, parse_dtor),
-///         parser_lift(type, data, size, data_dtor))
+///         parser_new(parse, ctx, dtor),
+///         parser_lift(type, data, size))
 ///
-/// \param parse        parse callback
-/// \param parse_ctx    \p parse context
-/// \param parse_dtor   \p parse_ctx destructor
-/// \param type         lift value type
-/// \param data         pointer to lift value data
-/// \param size         lift value size
-/// \param data_dtor    lift value destructor
+/// \param parse    parse callback
+/// \param ctx      \p parse context
+/// \param dtor     \p ctx destructor
+/// \param type     lift value type
+/// \param data     pointer to lift value data
+/// \param size     lift value size
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_new_lift_fail(parser_parse_cb parse, const void *parse_ctx, parser_dtor_cb parse_dtor, const char *type, const void *data, size_t size, parser_dtor_cb data_dtor);
+parser_ct parser_new_lift_fail(parser_parse_cb parse, const void *ctx, parser_dtor_cb dtor, const char *type, const void *data, size_t size);
 
 /// Create new parser which executes a lift CTOR on success.
 ///
@@ -214,28 +211,22 @@ parser_ct parser_end(void);
 
 /// New parser which pushes a value onto the stack and succeeds.
 ///
-/// \note If this function fails, the lift value is immediately destroyed.
-///
 /// \param type     value type
 /// \param data     pointer to value data
 /// \param size     value size
-/// \param dtor     value destructor
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_lift(const char *type, const void *data, size_t size, parser_dtor_cb dtor);
+parser_ct parser_lift(const char *type, const void *data, size_t size);
 
 /// New parser which pushes a pointer value onto the stack and succeeds.
 ///
-/// \note If this function fails, the pointer lift value is immediately destroyed.
-///
 /// \param type     value type
 /// \param ptr      pointer value, must not be NULL
-/// \param dtor     value destructor
 ///
 /// \returns                    parser
 /// \retval NULL/E_GENERIC_OOM  out of memory
-parser_ct parser_lift_p(const char *type, const void *ptr, parser_dtor_cb dtor);
+parser_ct parser_lift_p(const char *type, const void *ptr);
 
 /// New parser which pushes values onto the stack and succeeds.
 ///
