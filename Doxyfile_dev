@@ -1,0 +1,17 @@
+
+@INCLUDE = Doxyfile
+
+INPUT                  += src/con/vec.c
+INPUT                  += src/con/list.c
+INPUT                  += src/con/art.c
+INPUT                  += src/gen/log.c
+INPUT                  += src/gen/error.c
+INPUT                  += util/config.c
+INPUT                  += src/test/case.c
+INPUT                  += src/test/com.h
+INPUT                  += src/test/com.c
+INPUT                  += src/test/run.c
+INPUT                  += src/sys/service.c
+
+EXTRACT_STATIC          = YES
+INTERNAL_DOCS           = YES

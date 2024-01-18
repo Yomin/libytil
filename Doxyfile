@@ -1,0 +1,48 @@
+
+PROJECT_NAME            = libytil
+PROJECT_BRIEF           = "yomin's utility library"
+PROJECT_LOGO            = 
+
+INPUT                   = readme.md
+INPUT                  += include/ytil/con/vec.h
+INPUT                  += include/ytil/con/list.h
+INPUT                  += include/ytil/con/art.h
+INPUT                  += include/ytil/gen/log.h
+INPUT                  += include/ytil/gen/error.h
+INPUT                  += include/ytil/def.h
+INPUT                  += include/ytil/def/bits.h
+INPUT                  += include/ytil/def/cast.h
+INPUT                  += include/ytil/def/color.h
+INPUT                  += include/ytil/def/gen.h
+INPUT                  += include/ytil/def/magic.h
+INPUT                  += include/ytil/def/os.h
+INPUT                  += include/ytil/def/rc.h
+INPUT                  += include/ytil/def/simd.h
+INPUT                  += include/ytil/test/case.h
+INPUT                  += include/ytil/test/run.h
+INPUT                  += include/ytil/test/test.h
+INPUT                  += include/ytil/test/test_error.h
+INPUT                  += include/ytil/test/test_rc.h
+INPUT                  += include/ytil/test/test_value.h
+INPUT                  += include/ytil/sys/service.h
+RECURSIVE               = YES
+OUTPUT_DIRECTORY        = doc
+USE_MDFILE_AS_MAINPAGE  = readme.md
+
+TAB_SIZE                = 4
+OPTIMIZE_OUTPUT_FOR_C   = YES
+TYPEDEF_HIDES_STRUCT    = YES
+MULTILINE_CPP_IS_BRIEF  = YES
+REFERENCED_BY_RELATION  = YES
+REFERENCES_RELATION     = YES
+
+ENABLE_PREPROCESSING    = YES
+MACRO_EXPANSION         = YES
+EXPAND_ONLY_PREDEF      = YES
+PREDEFINED              = DOXYGEN=1 __attribute__(x)=
+#EXPAND_AS_DEFINED       = DEBUG_MAGIC DEBUG_MEMBER
+
+GENERATE_TAGFILE        = doc/doxygen.tag
+TAGFILES                = 
+
+QUIET                   = YES
