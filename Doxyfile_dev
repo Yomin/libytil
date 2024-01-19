@@ -4,6 +4,7 @@
 INPUT                  += src/con/vec.c
 INPUT                  += src/con/list.c
 INPUT                  += src/con/art.c
+INPUT                  += src/con/ring.c
 INPUT                  += src/gen/log.c
 INPUT                  += src/gen/error.c
 INPUT                  += util/config.c

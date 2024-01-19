@@ -7,6 +7,7 @@ INPUT                   = readme.md
 INPUT                  += include/ytil/con/vec.h
 INPUT                  += include/ytil/con/list.h
 INPUT                  += include/ytil/con/art.h
+INPUT                  += include/ytil/con/ring.h
 INPUT                  += include/ytil/gen/log.h
 INPUT                  += include/ytil/gen/error.h
 INPUT                  += include/ytil/def.h
