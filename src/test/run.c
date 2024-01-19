@@ -516,7 +516,7 @@ int test_run_add_filter(const char *filter)
     if(!filter[0])
         return 0;
 
-    if(!run->filter && !(run->filter = vec_new(2, sizeof(path_ct))))
+    if(!run->filter && !(run->filter = vec_new_c(2, sizeof(path_ct))))
         return error_wrap(), -1;
 
     if(!(path = path_new_c(filter, PATH_STYLE_POSIX)))

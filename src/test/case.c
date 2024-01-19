@@ -192,7 +192,7 @@ static int test_state_push_call(bool exact, const char *text)
 {
     test_call_st *call;
 
-    if(!state->call && !(state->call = vec_new(2, sizeof(test_call_st))))
+    if(!state->call && !(state->call = vec_new_c(2, sizeof(test_call_st))))
         return error_wrap(), -1;
 
     if(!(call = vec_push(state->call)))
@@ -293,7 +293,7 @@ static int test_state_append_msg(int level, const char *msg)
     if(!state->msg || !(cmsg = vec_last(state->msg)))
         return 0; // ignore
 
-    if(!cmsg->line && !(cmsg->line = vec_new(1, sizeof(test_line_st))))
+    if(!cmsg->line && !(cmsg->line = vec_new_c(1, sizeof(test_line_st))))
         return error_wrap(), -1;
 
     if(!(line = vec_push(cmsg->line)))
@@ -342,7 +342,7 @@ static int test_state_add_msg(test_msg_id type, bool exact, const char *msg)
         abort();
     }
 
-    if(!state->msg && !(state->msg = vec_new(2, sizeof(test_case_msg_st))))
+    if(!state->msg && !(state->msg = vec_new_c(2, sizeof(test_case_msg_st))))
         return error_wrap(), -1;
 
     if(!(cmsg = vec_push(state->msg)))

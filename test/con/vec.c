@@ -40,14 +40,14 @@ static vec_ct vec;
 
 TEST_SETUP(vec_new_int)
 {
-    test_ptr_success(vec = vec_new(5, sizeof(int)));
+    test_ptr_success(vec = vec_new_c(5, sizeof(int)));
     memset(j, 0, sizeof(j));
     count = 0;
 }
 
 TEST_SETUP(vec_new_int1)
 {
-    test_ptr_success(vec = vec_new(5, sizeof(int)));
+    test_ptr_success(vec = vec_new_c(5, sizeof(int)));
     test_ptr_success(vec_push_e(vec, i));
     memset(j, 0, sizeof(j));
     count = 0;
@@ -55,7 +55,7 @@ TEST_SETUP(vec_new_int1)
 
 TEST_SETUP(vec_new_int10)
 {
-    test_ptr_success(vec = vec_new(5, sizeof(int)));
+    test_ptr_success(vec = vec_new_c(5, sizeof(int)));
     test_ptr_success(vec_push_en(vec, 10, i));
     memset(j, 0, sizeof(j));
     count = 0;
@@ -63,18 +63,18 @@ TEST_SETUP(vec_new_int10)
 
 TEST_SETUP(vec_new_ptr)
 {
-    test_ptr_success(vec = vec_new(5, sizeof(int *)));
+    test_ptr_success(vec = vec_new_c(5, sizeof(int *)));
 }
 
 TEST_SETUP(vec_new_ptr1)
 {
-    test_ptr_success(vec = vec_new(5, sizeof(int *)));
+    test_ptr_success(vec = vec_new_c(5, sizeof(int *)));
     test_ptr_success(vec_push_p(vec, pi[0]));
 }
 
 TEST_SETUP(vec_new_ptr10)
 {
-    test_ptr_success(vec = vec_new(5, sizeof(int *)));
+    test_ptr_success(vec = vec_new_c(5, sizeof(int *)));
     test_ptr_success(vec_push_en(vec, 10, pi));
 }
 
@@ -85,7 +85,12 @@ TEST_TEARDOWN(vec_free)
 
 TEST_CASE_ABORT(vec_new_invalid_elemsize)
 {
-    test_void(vec_new(1, 0));
+    test_void(vec_new(0));
+}
+
+TEST_CASE_ABORT(vec_new_c_invalid_elemsize)
+{
+    test_void(vec_new_c(1, 0));
 }
 
 TEST_CASE_ABORT(vec_elemsize_invalid_magic)
@@ -2492,6 +2497,7 @@ int test_suite_con_vec(void *param)
 {
     return error_pass_int(test_run_cases("vec",
         test_case(vec_new_invalid_elemsize),
+        test_case(vec_new_c_invalid_elemsize),
 
         test_case(vec_elemsize_invalid_magic),
         test_case(vec_elemsize),

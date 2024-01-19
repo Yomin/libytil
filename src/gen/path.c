@@ -145,7 +145,7 @@ path_ct path_new_parent(void)
     if(!(path = path_new_current()))
         return error_pass(), NULL;
     
-    if(!(path->comp = vec_new(1, sizeof(path_comp_st))))
+    if(!(path->comp = vec_new_c(1, sizeof(path_comp_st))))
         return error_wrap(), path_free(path), NULL;
     
     comp = vec_push(path->comp);
@@ -183,7 +183,7 @@ path_ct path_dup(path_const_ct path)
     
     if(path->comp && !vec_is_empty(path->comp))
     {
-        if(!(npath->comp = vec_new(vec_size(path->comp), sizeof(path_comp_st))))
+        if(!(npath->comp = vec_new_c(vec_size(path->comp), sizeof(path_comp_st))))
             return error_wrap(), free(npath), NULL;
         
         if(vec_fold(path->comp, path_vec_dup_comp, npath->comp))
@@ -475,7 +475,7 @@ static path_ct path_parse_comp(path_ct path, const char *str, size_t len, path_s
     if(!len)
         return path;
     
-    if(!path->comp && !(path->comp = vec_new(AVG_PATH_COMPS, sizeof(path_comp_st))))
+    if(!path->comp && !(path->comp = vec_new_c(AVG_PATH_COMPS, sizeof(path_comp_st))))
         return error_wrap(), NULL;
     
     for(; (ptr = strnpbrk(str, path_props[style].sep, len)); len -= ptr-str+1, str = ptr+1)

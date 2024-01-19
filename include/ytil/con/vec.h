@@ -111,6 +111,14 @@ typedef int (*vec_clone_cb)(vec_const_ct src_vec, void *dst, const void *src, vo
 typedef int (*vec_sort_cb)(const void *elem1, const void *elem2, void *ctx);
 
 
+/// Create new vector of default capacity.
+///
+/// \param elemsize     element size
+///
+/// \returns                    new vector
+/// \retval NULL/E_GENERIC_OOM  out of memory
+vec_ct vec_new(size_t elemsize);
+
 /// Create new vector.
 ///
 /// \param capacity     initial vector capacity in number of elements
@@ -118,7 +126,7 @@ typedef int (*vec_sort_cb)(const void *elem1, const void *elem2, void *ctx);
 ///
 /// \returns                    new vector
 /// \retval NULL/E_GENERIC_OOM  out of memory
-vec_ct vec_new(size_t capacity, size_t elemsize);
+vec_ct vec_new_c(size_t capacity, size_t elemsize);
 
 /// Free vector.
 ///
@@ -237,7 +245,7 @@ size_t vec_memsize(vec_const_ct vec);
 ///
 /// \param vec      vector
 /// \param size     callback to determine size of element, may be NULL
-/// \param ctx      \p sfun context
+/// \param ctx      \p size context
 ///
 /// \returns        allocated size in bytes
 size_t vec_memsize_f(vec_const_ct vec, vec_size_cb size, const void *ctx);

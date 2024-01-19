@@ -22,8 +22,8 @@
 
 /// \file
 
-#ifndef YTIL_TEST_TEST_NUM_H_INCLUDED
-#define YTIL_TEST_TEST_NUM_H_INCLUDED
+#ifndef YTIL_TEST_TEST_VALUE_H_INCLUDED
+#define YTIL_TEST_TEST_VALUE_H_INCLUDED
 
 #include <ytil/test/test.h>
 #include <stdint.h>
@@ -1069,4 +1069,4 @@
 #define test_mem_gt(m1, m2, n) test_mem((m1), #m1, >, (m2), #m2, (n))
 
 
-#endif // ifndef YTIL_TEST_TEST_NUM_H_INCLUDED
+#endif // ifndef YTIL_TEST_TEST_VALUE_H_INCLUDED

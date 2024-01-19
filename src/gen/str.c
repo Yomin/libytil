@@ -1918,7 +1918,7 @@ str_ct str_replace_cn(str_ct str, const char *sub, size_t sublen, const char *ns
     if(!_str_get_len(str) || !sublen)
         return str;
     
-    if(!(positions = vec_new(2, sizeof(size_t))))
+    if(!(positions = vec_new_c(2, sizeof(size_t))))
         return error_wrap(), NULL;
     
     for(ptr = str->data, len = str->len;

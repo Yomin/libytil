@@ -192,7 +192,7 @@ ssize_t log_unit_add(str_const_ct name)
     if(log.units && vec_find(log.units, log_vec_find_unit, &state))
         return error_set(E_LOG_EXISTS), -1;
 
-    if(!log.units && !(log.units = vec_new(2, sizeof(log_unit_st))))
+    if(!log.units && !(log.units = vec_new_c(2, sizeof(log_unit_st))))
         return error_wrap(), -1;
 
     if(!(unit = vec_push(log.units)))
@@ -307,7 +307,7 @@ ssize_t log_target_add_stream(str_const_ct name, FILE *stream, bool close, log_c
     if((fd = fileno(stream)) < 0)
         return error_pack_last_errno(E_LOG_INVALID_STREAM, fileno), -1;
 
-    if(!log.targets && !(log.targets = vec_new(2, sizeof(log_target_st))))
+    if(!log.targets && !(log.targets = vec_new_c(2, sizeof(log_target_st))))
         return error_wrap(), -1;
 
     if(!(target = vec_push(log.targets)))
@@ -514,7 +514,7 @@ static int log_sink_set(log_unit_st *unit, log_target_st *target, log_level_id l
     }
     else if(!unit->sinks || !(sink = vec_find(unit->sinks, log_vec_find_sink, target)))
     {
-        if(!unit->sinks && !(unit->sinks = vec_new(2, sizeof(log_sink_st))))
+        if(!unit->sinks && !(unit->sinks = vec_new_c(2, sizeof(log_sink_st))))
             return error_wrap(), -1;
 
         if(!(sink = vec_push(unit->sinks)))
@@ -763,7 +763,7 @@ int log_prefix_add_spec(char spec, log_spec_cb write, const void *ctx)
 
     assert(write);
 
-    if(!log.specs && !(log.specs = vec_new(2, sizeof(log_spec_st))))
+    if(!log.specs && !(log.specs = vec_new_c(2, sizeof(log_spec_st))))
         return error_wrap(), -1;
 
     if(!(log_spec = vec_push(log.specs)))

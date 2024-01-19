@@ -144,9 +144,11 @@ static int vec_resize(vec_ct vec, size_t capacity)
 /// \retval -1/E_GENERIC_OOM    out of memory
 static inline int vec_grow(vec_ct vec, size_t n)
 {
-    if(  vec->size + n > vec->cap
-      && vec_resize(vec, MAX3(vec->min_cap, vec->cap + n, vec->cap * RESIZE_FACTOR)))
+    if(vec->size + n > vec->cap
+    && vec_resize(vec, MAX3(vec->min_cap, vec->cap + n, vec->cap * RESIZE_FACTOR)))
+    {
         return error_pass(), -1;
+    }
 
     return 0;
 }
@@ -156,8 +158,7 @@ static inline int vec_grow(vec_ct vec, size_t n)
 /// \param vec      vector
 static inline void vec_shrink(vec_ct vec)
 {
-    if(  vec->cap > vec->min_cap
-      && vec->size <= vec->cap / (RESIZE_FACTOR * 2))
+    if(vec->cap > vec->min_cap && vec->size <= vec->cap / (RESIZE_FACTOR * 2))
         vec_resize(vec, MAX(vec->cap / RESIZE_FACTOR, vec->min_cap));
 }
 
@@ -180,7 +181,12 @@ static int vec_check_range(vec_const_ct vec, const void *velem)
     return 0;
 }
 
-vec_ct vec_new(size_t capacity, size_t elemsize)
+vec_ct vec_new(size_t elemsize)
+{
+    return error_pass_ptr(vec_new_c(0, elemsize));
+}
+
+vec_ct vec_new_c(size_t capacity, size_t elemsize)
 {
     vec_ct vec;
 
@@ -1089,8 +1095,10 @@ ssize_t vec_find_pos(vec_const_ct vec, vec_pred_cb pred, const void *ctx)
     assert(pred);
 
     for(i = 0; i < vec->size; i++)
+    {
         if(pred(vec, ELEM(i), (void *)ctx))
             return i;
+    }
 
     return_error_if_reached(E_VEC_NOT_FOUND, -1);
 }
@@ -1103,8 +1111,10 @@ ssize_t vec_find_pos_r(vec_const_ct vec, vec_pred_cb pred, const void *ctx)
     assert(pred);
 
     for(i = vec->size; i > 0; i--)
+    {
         if(pred(vec, ELEM(i - 1), (void *)ctx))
             return i - 1;
+    }
 
     return_error_if_reached(E_VEC_NOT_FOUND, -1);
 }
@@ -1220,6 +1230,7 @@ size_t vec_find_remove_all_f(vec_ct vec, vec_pred_cb pred, const void *pred_ctx,
     assert(pred);
 
     for(i = 0, keep = 0, size = 0; i < vec->size; i++)
+    {
         if(pred(vec, ELEM(i), (void *)pred_ctx))
         {
             if(dtor)
@@ -1235,6 +1246,7 @@ size_t vec_find_remove_all_f(vec_ct vec, vec_pred_cb pred, const void *pred_ctx,
         {
             keep++;
         }
+    }
 
     if(keep && i > keep)
         memmove(ELEM(size), ELEM(i - keep), keep);
@@ -1365,8 +1377,10 @@ int vec_fold(vec_const_ct vec, vec_fold_cb fold, const void *ctx)
     assert(fold);
 
     for(i = 0; i < vec->size; i++)
+    {
         if((rc = fold(vec, i, ELEM(i), (void *)ctx)))
             return error_pack_int(E_VEC_CALLBACK, rc);
+    }
 
     return 0;
 }
@@ -1380,8 +1394,10 @@ int vec_fold_r(vec_const_ct vec, vec_fold_cb fold, const void *ctx)
     assert(fold);
 
     for(i = 0; i < vec->size; i++)
+    {
         if((rc = fold(vec, i, ELEM(vec->size - i - 1), (void *)ctx)))
             return error_pack_int(E_VEC_CALLBACK, rc);
+    }
 
     return 0;
 }
