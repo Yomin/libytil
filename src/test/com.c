@@ -190,7 +190,7 @@ static int test_com_read(int com, void *data, size_t size)
 
     if(!buf->data || buf->pos + size > buf->cap)
     {
-        cap = MAX3(64U, size, buf->cap * 2);
+        cap = MAX3(64U, buf->size + size, buf->cap * 2);
 
         if(!(tmp = realloc(buf->data, cap + 1)))
             return error_pass_last_errno(realloc), -1;
@@ -210,7 +210,6 @@ static int test_com_read(int com, void *data, size_t size)
                 return error_pass_last_errno(recv), -1;
             else if(!count)
                 return error_set_s(ERRNO, ENODATA), -1; // EOF
-
         }
 
         rdata[0] = '\0'; // always terminate buffer
