@@ -90,7 +90,7 @@ type_id type_new(const char *name)
 
     assert(name);
 
-    if(!types && !(types = vec_new(2, sizeof(type_st))))
+    if(!types && !(types = vec_new_c(2, sizeof(type_st))))
         return error_wrap(), TYPE_INVALID;
 
     if(!(type = vec_push(types)))

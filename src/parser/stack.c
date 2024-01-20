@@ -110,7 +110,7 @@ int parser_stack_frame_push(parser_stack_ct stack)
 {
     assert_magic(stack);
 
-    if(!stack->frames && !(stack->frames = vec_new(10, sizeof(parser_stack_frame_st))))
+    if(!stack->frames && !(stack->frames = vec_new(sizeof(parser_stack_frame_st))))
         return error_wrap(), -1;
 
     if(!vec_push_e(stack->frames, &stack->frame))
@@ -153,10 +153,10 @@ int parser_stack_push(parser_stack_ct stack, const char *type, const void *data,
     if(!stack->frame.active)
         return 0;
 
-    if(!stack->items && !(stack->items = vec_new(10, sizeof(parser_stack_item_st))))
+    if(!stack->items && !(stack->items = vec_new(sizeof(parser_stack_item_st))))
         return error_wrap(), -1;
 
-    if(!stack->data && !(stack->data = vec_new(10 * sizeof(void *), 1)))
+    if(!stack->data && !(stack->data = vec_new_c(10 * sizeof(void *), 1)))
         return error_wrap(), -1;
 
     if(!(item = vec_push(stack->items)))
