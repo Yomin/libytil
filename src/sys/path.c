@@ -73,14 +73,14 @@ static path_ct path_get_home(void)
     str_const_ct value;
     
     if((value = env_get(LIT("HOME"))))
-        return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
+        return error_wrap_ptr(path_new(value));
     
     if(error_code(0) != E_ENV_NOT_FOUND)
         return error_wrap(), NULL;
     
 #ifdef _WIN32
     if((value = env_get(LIT("USERPROFILE"))))
-        return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
+        return error_wrap_ptr(path_new(value));
     
     if(error_code(0) != E_ENV_NOT_FOUND)
         return error_wrap(), NULL;
@@ -92,7 +92,7 @@ static path_ct path_get_home(void)
     if(!(pwd = getpwuid(getuid())))
         return error_wrap_last_errno(getpwuid), NULL;
     
-    return error_wrap_ptr(path_new_c(pwd->pw_dir, PATH_STYLE_NATIVE));
+    return error_wrap_ptr(path_new_c(pwd->pw_dir));
 #endif
 }
 
@@ -103,15 +103,15 @@ static path_ct path_get_tmp(void)
     if((value = env_get(LIT("TMP")))
     || (value = env_get(LIT("TEMP")))
     || (value = env_get(LIT("TMPDIR"))))
-        return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
+        return error_wrap_ptr(path_new(value));
     
     if(error_code(0) != E_ENV_NOT_FOUND)
         return error_wrap(), NULL;
     
 #ifdef _WIN32
-    return error_wrap_ptr(path_new(LIT("/windows/temp"), PATH_STYLE_NATIVE));
+    return error_wrap_ptr(path_new(LIT("/windows/temp")));
 #else
-    return error_wrap_ptr(path_new(LIT("/tmp"), PATH_STYLE_NATIVE));
+    return error_wrap_ptr(path_new(LIT("/tmp")));
 #endif
 }
 
@@ -146,7 +146,7 @@ static path_ct path_get_xdg_dir(const path_xdg_dir_info_st *info, bool def)
     path_ct path;
     
     if((value = env_get(STR(info->env))))
-        return error_wrap_ptr(path_new(value, PATH_STYLE_NATIVE));
+        return error_wrap_ptr(path_new(value));
     
     if(error_code(0) != E_ENV_NOT_FOUND)
         return error_wrap(), NULL;
@@ -157,7 +157,7 @@ static path_ct path_get_xdg_dir(const path_xdg_dir_info_st *info, bool def)
     if(!(path = path_get_home()))
         return error_pass(), NULL;
     
-    if(!path_append_c(path, info->def, PATH_STYLE_POSIX))
+    if(!path_append_c(path, info->def))
         return error_wrap(), path_free(path), NULL;
     
     return path;
@@ -299,10 +299,10 @@ path_ct path_get_app_dir(path_app_dir_id id, str_const_ct author, str_const_ct a
     sub = info->xdg;
 #endif
     
-    if((author && !path_append(path, author, PATH_STYLE_NATIVE))
-    || (app && !path_append(path, app, PATH_STYLE_NATIVE))
-    || (version && !path_append(path, version, PATH_STYLE_NATIVE))
-    || (sub && !path_append_c(path, sub, PATH_STYLE_POSIX)))
+    if((author && !path_append(path, author))
+    || (app && !path_append(path, app))
+    || (version && !path_append(path, version))
+    || (sub && !path_append_c(path, sub)))
         return error_wrap(), path_free(path), NULL;
     
     return path;

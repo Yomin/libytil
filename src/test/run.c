@@ -519,7 +519,7 @@ int test_run_add_filter(const char *filter)
     if(!run->filter && !(run->filter = vec_new_c(2, sizeof(path_ct))))
         return error_wrap(), -1;
 
-    if(!(path = path_new_c(filter, PATH_STYLE_POSIX)))
+    if(!(path = path_new_c(filter)))
         return error_wrap(), -1;
 
     if(!vec_push_p(run->filter, path))
@@ -543,9 +543,9 @@ static int test_run_vec_match_filter(vec_const_ct vec, size_t pos, void *elem, v
     int rc;
 
     if(*complete)
-        pattern = path_get(*filter, PATH_STYLE_POSIX);
+        pattern = path_get_s(*filter, PATH_STYLE_UNIX);
     else
-        pattern = path_get_n(*filter, path_depth(run->path), PATH_STYLE_POSIX, false);
+        pattern = path_get_ns(*filter, path_depth(run->path), false, PATH_STYLE_UNIX);
 
     if(!pattern)
         return error_wrap(), -1;
@@ -573,7 +573,7 @@ static int test_run_match_path(bool complete)
     if(!run->filter)
         return 1;
 
-    if(!(run->name = path_get(run->path, PATH_STYLE_POSIX)))
+    if(!(run->name = path_get_s(run->path, PATH_STYLE_UNIX)))
         return error_wrap(), -1;
 
     return error_pick_int(E_VEC_CALLBACK,
@@ -609,9 +609,9 @@ static int test_run_begin(const char *name, bool tcase)
     assert(run);
 
     if(!run->path)
-        path = path_new_c(name, PATH_STYLE_POSIX);
+        path = path_new_cs(name, PATH_STYLE_UNIX);
     else
-        path = path_append_c(run->path, name, PATH_STYLE_POSIX);
+        path = path_append_cs(run->path, name, PATH_STYLE_UNIX);
 
     if(!path)
         return error_wrap(), -1;
@@ -651,7 +651,7 @@ int test_run_begin_suite(const char *name, test_check_cb check)
     if(run->log >= TEST_LOG_SUITE)
     {
         if(!run->name)
-            run->name = path_get(run->path, PATH_STYLE_POSIX);
+            run->name = path_get_s(run->path, PATH_STYLE_UNIX);
 
         printf("[%s%s" COLOR_OFF "] %s: %s\n", result_info[result].color,
             result_info[result].caps, run->name ? str_c(run->name) : name, msg);
@@ -668,7 +668,7 @@ void test_run_end_suite(bool info)
     if(info && run->log >= TEST_LOG_SUITE)
     {
         if(!run->name)
-            run->name = path_get(run->path, PATH_STYLE_POSIX);
+            run->name = path_get_s(run->path, PATH_STYLE_UNIX);
 
         printf("[DONE] %s\n", run->name ? str_c(run->name) : "<suite>");
     }
@@ -797,7 +797,7 @@ void test_run_end_case(bool info)
     }
 
     if(!run->name)
-        run->name = path_get(run->path, PATH_STYLE_POSIX);
+        run->name = path_get_s(run->path, PATH_STYLE_UNIX);
 
     printf("[%s%s" COLOR_OFF "] %s\n", result_info[result].color,
         result_info[result].caps, run->name ? str_c(run->name) : test_case_name());
