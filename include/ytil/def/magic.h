@@ -70,9 +70,9 @@
 ///
 /// \param obj      object to check
 /// \param _magic   magic value to match
-#define try_magic_n(obj, _magic) do {    \
-    if((obj))                            \
-        assert((obj)->magic == (_magic)) \
+#define try_magic_n(obj, _magic) do {       \
+    if((obj))                               \
+        assert((obj)->magic == (_magic));   \
 } while(0)
 
 #endif // if NDEBUG

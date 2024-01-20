@@ -196,17 +196,17 @@ vec_ct vec_clone(vec_const_ct vec);
 /// \retval NULL/E_VEC_CALLBACK     \p clone callback error
 vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, const void *ctx);
 
-/// Check if vector is empty.
+/// Check if vector is NULL or empty.
 ///
-/// \param vec      vector
+/// \param vec      vector, may be NULL
 ///
-/// \retval true    vector is empty
+/// \retval true    vector is NULL or empty
 /// \retval false   vector is not empty
 bool vec_is_empty(vec_const_ct vec);
 
 /// Get number of vector elements.
 ///
-/// \param vec      vector
+/// \param vec      vector, may be NULL
 ///
 /// \returns        number of vector elements
 size_t vec_size(vec_const_ct vec);

@@ -161,6 +161,11 @@ TEST_CASE_ABORT(list_is_empty_invalid_magic)
     list_is_empty((list_ct)&not_a_list);
 }
 
+TEST_CASE(list_is_empty_null)
+{
+    test_true(list_is_empty(NULL));
+}
+
 TEST_CASE_FIX(list_is_empty, list_new_empty, list_free)
 {
     test_true(list_is_empty(list));
@@ -173,6 +178,11 @@ TEST_CASE_FIX(list_is_empty, list_new_empty, list_free)
 TEST_CASE_ABORT(list_size_invalid_magic)
 {
     list_size((list_ct)&not_a_list);
+}
+
+TEST_CASE(list_size_null)
+{
+    test_uint_eq(list_size(NULL), 0);
 }
 
 TEST_CASE_FIX(list_size, list_new_empty, list_free)
@@ -904,8 +914,10 @@ int test_suite_con_list(void *param)
         test_case(list_clone_f),
 
         test_case(list_is_empty_invalid_magic),
+        test_case(list_is_empty_null),
         test_case(list_is_empty),
         test_case(list_size_invalid_magic),
+        test_case(list_size_null),
         test_case(list_size),
         test_case(list_memsize_invalid_magic),
         test_case(list_memsize_f_invalid_magic),

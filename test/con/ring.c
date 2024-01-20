@@ -269,6 +269,11 @@ TEST_CASE_ABORT(ring_is_empty__invalid_magic)
     ring_is_empty((ring_ct)&not_a_ring);
 }
 
+TEST_CASE(ring_is_empty__null)
+{
+    test_true(ring_is_empty(NULL));
+}
+
 TEST_CASE_FIX(ring_is_empty, ring_new_empty, ring_free)
 {
     test_true(ring_is_empty(ring));
@@ -281,6 +286,11 @@ TEST_CASE_FIX(ring_is_empty, ring_new_empty, ring_free)
 TEST_CASE_ABORT(ring_size__invalid_magic)
 {
     ring_size((ring_ct)&not_a_ring);
+}
+
+TEST_CASE(ring_size__null)
+{
+    test_uint_eq(ring_size(NULL), 0);
 }
 
 TEST_CASE_FIX(ring_size, ring_new_empty, ring_free)
@@ -767,8 +777,10 @@ int test_suite_con_ring(void *param)
         test_case(ring_clone_f__deep_fail),
 
         test_case(ring_is_empty__invalid_magic),
+        test_case(ring_is_empty__null),
         test_case(ring_is_empty),
         test_case(ring_size__invalid_magic),
+        test_case(ring_size__null),
         test_case(ring_size),
         test_case(ring_elemsize__invalid_magic),
         test_case(ring_elemsize),

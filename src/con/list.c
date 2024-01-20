@@ -228,16 +228,16 @@ list_ct list_clone_f(list_const_ct list1, list_clone_cb clone, list_dtor_cb dtor
 
 bool list_is_empty(list_const_ct list)
 {
-    assert_magic(list);
+    try_magic(list);
 
-    return !list->size;
+    return !list || !list->size;
 }
 
 size_t list_size(list_const_ct list)
 {
-    assert_magic(list);
+    try_magic(list);
 
-    return list->size;
+    return list ? list->size : 0;
 }
 
 size_t list_memsize(list_const_ct list)

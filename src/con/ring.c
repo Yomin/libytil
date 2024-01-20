@@ -211,16 +211,16 @@ ring_ct ring_clone_f(ring_const_ct ring, ring_clone_cb clone, ring_dtor_cb dtor,
 
 bool ring_is_empty(ring_const_ct ring)
 {
-    assert_magic(ring);
+    try_magic(ring);
 
-    return !ring->size;
+    return !ring || !ring->size;
 }
 
 size_t ring_size(ring_const_ct ring)
 {
-    assert_magic(ring);
+    try_magic(ring);
 
-    return ring->size;
+    return ring ? ring->size : 0;
 }
 
 size_t ring_elemsize(ring_const_ct ring)

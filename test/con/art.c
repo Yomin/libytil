@@ -65,6 +65,11 @@ TEST_CASE_ABORT(art_is_empty_invalid_magic)
     art_is_empty((art_ct)&not_an_art);
 }
 
+TEST_CASE(art_is_empty_null)
+{
+    test_true(art_is_empty(NULL));
+}
+
 TEST_CASE_FIX(art_is_empty, art_new_empty, art_free)
 {
     test_true(art_is_empty(art));
@@ -77,6 +82,11 @@ TEST_CASE_FIX(art_is_empty, art_new_empty, art_free)
 TEST_CASE_ABORT(art_size_invalid_magic)
 {
     art_size((art_ct)&not_an_art);
+}
+
+TEST_CASE(art_size_null)
+{
+    test_uint_eq(art_size(NULL), 0);
 }
 
 TEST_CASE_FIX(art_size, art_new_empty, art_free)
@@ -905,8 +915,10 @@ int test_suite_con_art(void *param)
 {
     return error_pass_int(test_run_cases("art",
         test_case(art_is_empty_invalid_magic),
+        test_case(art_is_empty_null),
         test_case(art_is_empty),
         test_case(art_size_invalid_magic),
+        test_case(art_size_null),
         test_case(art_size),
         test_case(art_memsize_invalid_magic),
         test_case(art_memsize),

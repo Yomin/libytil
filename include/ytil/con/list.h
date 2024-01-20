@@ -176,17 +176,17 @@ list_ct list_clone(list_const_ct list);
 /// \retval NULL/E_LIST_CALLBACK    \p clone callback error
 list_ct list_clone_f(list_const_ct list, list_clone_cb clone, list_dtor_cb dtor, const void *ctx);
 
-/// Check if list is empty.
+/// Check if list is NULL or empty.
 ///
-/// \param list     list
+/// \param list     list, may be NULL
 ///
-/// \retval true    list is empty
+/// \retval true    list is NULL or empty
 /// \retval false   list is not empty
 bool list_is_empty(list_const_ct list);
 
 /// Get number of list nodes.
 ///
-/// \param list     list
+/// \param list     list, may be NULL
 ///
 /// \returns        number of list nodes
 size_t list_size(list_const_ct list);

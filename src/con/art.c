@@ -820,16 +820,16 @@ void art_clear_f(art_ct art, art_dtor_cb dtor, const void *ctx)
 
 bool art_is_empty(art_const_ct art)
 {
-    assert_magic(art);
+    try_magic(art);
 
-    return !art->size;
+    return !art || !art->size;
 }
 
 size_t art_size(art_const_ct art)
 {
-    assert_magic(art);
+    try_magic(art);
 
-    return art->size;
+    return art ? art->size : 0;
 }
 
 /// Get ART node size.

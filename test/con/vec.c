@@ -108,6 +108,11 @@ TEST_CASE_ABORT(vec_is_empty_invalid_magic)
     vec_is_empty((vec_const_ct)&not_a_vector);
 }
 
+TEST_CASE(vec_is_empty_null)
+{
+    test_true(vec_is_empty(NULL));
+}
+
 TEST_CASE_FIX(vec_is_empty_on_init, vec_new_int, vec_free)
 {
     test_true(vec_is_empty(vec));
@@ -129,6 +134,11 @@ TEST_CASE_FIX(vec_is_empty_after_push_pop, vec_new_int, vec_free)
 TEST_CASE_ABORT(vec_size_invalid_magic)
 {
     vec_size((vec_const_ct)&not_a_vector);
+}
+
+TEST_CASE(vec_size_null)
+{
+    test_uint_eq(vec_size(NULL), 0);
 }
 
 TEST_CASE_FIX(vec_size_zero_on_init, vec_new_int, vec_free)
@@ -2503,11 +2513,13 @@ int test_suite_con_vec(void *param)
         test_case(vec_elemsize),
 
         test_case(vec_is_empty_invalid_magic),
+        test_case(vec_is_empty_null),
         test_case(vec_is_empty_on_init),
         test_case(vec_is_not_empty_after_push),
         test_case(vec_is_empty_after_push_pop),
 
         test_case(vec_size_invalid_magic),
+        test_case(vec_size_null),
         test_case(vec_size_zero_on_init),
         test_case(vec_size_one_after_push),
         test_case(vec_size_zero_after_push_pop),

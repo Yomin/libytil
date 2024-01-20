@@ -307,16 +307,16 @@ vec_ct vec_clone_f(vec_const_ct vec, vec_clone_cb clone, vec_dtor_cb dtor, const
 
 bool vec_is_empty(vec_const_ct vec)
 {
-    assert_magic(vec);
+    try_magic(vec);
 
-    return !vec->size;
+    return !vec || !vec->size;
 }
 
 size_t vec_size(vec_const_ct vec)
 {
-    assert_magic(vec);
+    try_magic(vec);
 
-    return vec->size;
+    return vec ? vec->size : 0;
 }
 
 size_t vec_elemsize(vec_const_ct vec)

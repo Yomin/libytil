@@ -159,17 +159,17 @@ void art_clear(art_ct art);
 /// \param ctx      \p dtor context
 void art_clear_f(art_ct art, art_dtor_cb dtor, const void *ctx);
 
-/// Check if ART is empty.
+/// Check if ART is NULL or empty.
 ///
-/// \param art      ART
+/// \param art      ART, may be NULL
 ///
-/// \retval true    ART is empty
+/// \retval true    ART is NULL or empty
 /// \retval false   ART is not empty
 bool art_is_empty(art_const_ct art);
 
 /// Get number of leaf nodes.
 ///
-/// \param art      ART
+/// \param art      ART, may be NULL
 ///
 /// \returns        number of leaf nodes
 size_t art_size(art_const_ct art);

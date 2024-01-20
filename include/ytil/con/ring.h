@@ -171,17 +171,17 @@ ring_ct ring_clone(ring_const_ct ring);
 /// \retval NULL/E_RING_CALLBACK    \p clone callback error
 ring_ct ring_clone_f(ring_const_ct ring, ring_clone_cb clone, ring_dtor_cb dtor, const void *ctx);
 
-/// Check if ring is empty.
+/// Check if ring is NULL or empty.
 ///
-/// \param ring     ring
+/// \param ring     ring, may be NULL
 ///
-/// \retval true    ring is empty
+/// \retval true    ring is NULL or empty
 /// \retval false   ring is not empty
 bool ring_is_empty(ring_const_ct ring);
 
 /// Get number of ring elements.
 ///
-/// \param ring     ring
+/// \param ring     ring, may be NULL
 ///
 /// \returns        number of ring elements
 size_t ring_size(ring_const_ct ring);
